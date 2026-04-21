@@ -59,6 +59,10 @@ docker compose up -d
 cd backend && pip install -e ".[dev]" && alembic upgrade head
 cd ../frontend && npm install
 
+# Pre-Commit-Hooks aktivieren (einmal pro Klon)
+pipx install pre-commit    # oder: brew install pre-commit
+pre-commit install         # aktiviert automatische Checks bei jedem commit
+
 # Entwickeln
 uvicorn interfaces.rest.app:app --reload        # Backend
 npm run dev                                      # Frontend

@@ -1,0 +1,50 @@
+# Pre-Commit-Hooks für PRISMA.
+# Installation (einmal pro Dev-Maschine):
+#   brew install pre-commit  (oder: pipx install pre-commit)
+#   cd ~/Projects/prisma-capstone && pre-commit install
+#
+# Ab dann läuft's bei jedem `git commit` automatisch. Manuell gegen alle
+# Files: `pre-commit run --all-files`.
+
+default_language_version:
+  python: python3.12
+
+repos:
+  # ── Allgemeine Hygiene ──────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^.*\.md$  # Markdown two-space line-breaks sind zulässig
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  # ── Python (Backend) ────────────────────────────────────────────────────
+  # Pin MUSS mit der Version in pyproject.toml übereinstimmen — sonst Drift
+  # zwischen lokalem Pre-Commit und CI (die aus pyproject installiert).
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  # ── Frontend (prettier via lokal installiertes npm) ─────────────────────
+  # Nutzt die Prettier-Version aus frontend/package.json (nicht ein separater
+  # Pin), weil Frontend-Devs sowieso `npm install` gemacht haben und wir die
+  # Versionen so in einem einzigen Artefakt (package.json) halten.
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier (frontend)
+        entry: bash -c 'cd frontend && npx --no-install prettier --write "$@"' --
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx|json|css|md|yaml|yml)$
+        pass_filenames: true

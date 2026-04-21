@@ -13,7 +13,9 @@ services:
     plan: free
     healthCheckPath: /health
     autoDeploy: true
-    preDeployCommand: "alembic upgrade head"
+    # Free tier does not support preDeployCommand; run alembic inline
+    # in the container start command so migrations apply on every boot.
+    dockerCommand: "sh -c 'alembic upgrade head && uvicorn backend.interfaces.rest.main:app --host 0.0.0.0 --port 8000'"
     envVars:
       - key: DATABASE_URL
         fromDatabase:

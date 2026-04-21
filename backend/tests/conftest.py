@@ -12,7 +12,6 @@ from backend.domain.repositories.stock_repository import StockRepository
 from backend.interfaces.rest.app import create_app
 from backend.interfaces.rest.dependencies import get_stock_repository
 
-
 # ---------------------------------------------------------------------------
 # In-Memory StockRepository für Integration-Tests ohne Datenbankverbindung
 # ---------------------------------------------------------------------------

@@ -1,9 +1,10 @@
 """Application-wide settings loaded from environment variables or a .env file."""
 
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -16,9 +17,9 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     environment: str = "development"
 
-    # Stored as a comma-separated string in the environment variable,
-    # parsed into a list by the validator below.
-    cors_origins: list[str] = ["http://localhost:3000"]
+    # NoDecode prevents pydantic-settings from JSON-decoding the raw env string;
+    # the validator below accepts either comma-separated strings or real lists.
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
 
     api_key: str = "change-me"
 

@@ -18,6 +18,26 @@ Pro PR mit substantieller Agent-Beteiligung ein Eintrag:
 
 ## Einträge
 
+## 2026-04-21 · Render-Deployment Phase 1 — 4 Commits bis End-to-End-grün (Commits `7b2de04` bis `87e2407`)
+- **Agent**: Claude Code (Opus 4.7)
+- **Scope**: Blueprint-basiertes Deployment (DB + Backend + Frontend) auf Render's Free-Tier. Vier aufeinanderfolgende Produktions-Deploy-Versuche, drei davon an Details der Render-Plattform gescheitert bevor der Fourth Green wurde.
+- **Was gut lief**:
+  - Die Render-Logs waren in jedem Fehlerfall konkret genug, um die Root-Cause nach einmal Lesen zu isolieren — kein rätselhaftes "works on my machine"-Debugging nötig.
+  - DATABASE_URL-Scheme-Rewrite via pydantic-Validator (`postgresql://` → `postgresql+asyncpg://`) war proaktiv eingebaut — sonst wäre ein fünfter Deploy-Cycle nötig gewesen.
+  - Commit-Disziplin blieb trotz Zeitdruck sauber: ein Fix pro Commit, aussagekräftige Messages, nichts gebündelt.
+- **Was nicht klappte — drei Render-spezifische Stolpersteine**:
+  1. **`preDeployCommand` ist Paid-Tier-only** — der Agent hat das Field gesetzt um Alembic-Migrationen vor dem App-Start zu triggern, aber Render's Blueprint-Validator hat den Deploy sofort abgelehnt: "preDeployCommand is not supported on free plan". Fix: Migrations inside Container-Start-Sequence.
+  2. **`dockerCommand: "sh -c 'alembic upgrade head && exec uvicorn ...'"` exit 127 "not found"** — Render's YAML-Parser übergibt den gesamten String als EINEN argv-Eintrag (nicht wie die Shell `sh -c` + zwei weitere Args). Docker sucht dann nach einem Executable namens `sh -c 'alembic …'` (mit Leerzeichen im Namen) und findet es natürlich nicht. **Fix**: Start-Sequenz in ein `scripts/backend-start.sh` auslagern und nur ein `CMD ["/app/backend-start.sh"]` im Dockerfile — dann ist der argv-Split wieder sauber. Render wollte gar kein `dockerCommand`-Override mehr.
+  3. **`NEXT_PUBLIC_API_URL` via `fromService.property: host` liefert nur den Hostname — ohne `https://`** — das Frontend lud, aber der Backend-Badge zeigte HTTP 404. Ursache: Der Client-Code machte `${API_BASE_URL}${path}` = `"prisma-backend-7ai7.onrender.com/health"`. Der Browser interpretiert eine schemelose URL als *relativen Pfad* → Request ging an `https://prisma-frontend-jrto.onrender.com/prisma-backend-7ai7.onrender.com/health` → 404. Render bietet keine "scheme prepend"-Option für `fromService`. **Fix**: Backend-URL hardcoden (`value: https://prisma-backend-7ai7.onrender.com`). Einmalig ungünstig, aber semantisch klar — und `NEXT_PUBLIC_*` wird bei Next.js sowieso Build-Time in das Bundle gebacken, d.h. dynamische Service-Refs helfen hier architektonisch nichts.
+- **Nachbearbeitung nötig bei**:
+  - `render.yaml` (3 × iteriert)
+  - neues `scripts/backend-start.sh` als einziger Start-Sequence-Ort
+  - `Dockerfile.backend` auf `CMD ["/app/backend-start.sh"]`
+- **Lektion (wichtig für die 40%-Achse)**:
+  **PaaS-Plattformen haben viele implizite Einschränkungen, die der Agent aus seinem Trainings-Wissen nicht alle kennt.** Tier-Limits, Argv-Parsing-Quirks, Primitives die nur Teile einer URL liefern — diese sind dokumentiert, aber nicht in "einen typischen `render.yaml`"-Beispielen im Trainingscorpus. **Heuristik**: Bei jedem Deploy-Config-Feld mental fragen "was passiert wenn Render das wörtlich so interpretiert?" und "welche Tier-Stufe brauche ich dafür?". Gerade Shell-Semantik-Illusion in YAML-Strings (`dockerCommand: "sh -c '...'"`) ist ein wiederkehrender Fallstrick — **immer als Array-Form oder Script-Datei schreiben, nie als inline-Shell-String**.
+- **Methodisches Mini-Learning**: Bei undurchsichtigen PaaS-Bugs ist die schnellste Diagnose-Frage nicht "was ist falsch?" sondern "was genau reicht Render hier ins Child-Process weiter?". Im Zweifel stdout/stderr direkt lesen statt Hypothesen bauen — die Render-Logs haben in allen drei Fällen den korrekten Hint direkt ausgegeben.
+- **Autor**: Sheyla Sampietro (mit Claude Code)
+
 ## 2026-04-21 · CI stabilisieren — 5 Commits bis grün (Commits `74c558a` bis `78ee56d`)
 - **Agent**: Claude Code (Opus 4.7) mit Sub-Agent-Unterstützung beim initialen Scaffold
 - **Scope**: Nach dem Foundation-Commit fiel die GitHub-Actions-CI mehrfach um. Ich arbeitete mich durch 5 aufeinanderfolgende Fix-Commits (Backend-Lint → Backend-Format → Frontend-Pfad-Alias → Mypy-Ignore-Komm. → **eigentliche Root-Cause**: fehlende Files im Git).

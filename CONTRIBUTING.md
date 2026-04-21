@@ -49,7 +49,7 @@ Jeder PR muss:
 - [ ] alle CI-Checks grün (Lint, Typecheck, Unit, Integration)
 - [ ] Coverage nicht verschlechtern (ideal: verbessern)
 - [ ] mindestens 1 Review von einem anderen Teammitglied
-- [ ] Eintrag in `docs/AI-USAGE.md` (wenn Agent-assistiert)
+- [ ] **`docs/AI-USAGE.md`-Eintrag im gleichen PR** (wenn Agent-assistiert) — siehe "AI-Usage-Dokumentation" unten
 - [ ] ADR bei architekturrelevanten Entscheidungen
 
 ### PR-Template
@@ -92,6 +92,23 @@ Die wichtigste Team-Regel: **Code nur nach Spec**.
 5. Implementation-PR verlinkt die Spec
 
 Ausnahme: Trivial-Fixes (Typos, offensichtliche Bugs) dürfen direkt als PR ohne Spec.
+
+## AI-Usage-Dokumentation
+
+Jeder substantiell AI-assistierte PR bekommt einen Eintrag in `docs/AI-USAGE.md`. **Der Eintrag gehört in denselben PR wie die Feature-Arbeit** — nicht als separater Nachläufer-PR.
+
+Warum gebündelt:
+- Die Reflexion ist unmittelbar nach der Arbeit am präzisesten (nach 2 Tagen vergisst man die Detail-Stolpersteine)
+- Ein PR = eine abgeschlossene Einheit: Code + Tests + Doku + Reflexion
+- Weniger PR-Overhead als separate Reflexions-PRs
+- Reviewer sieht Feature und Reflexion im Kontext und kann beide inhaltlich querprüfen
+
+Wann du trotzdem einen **separaten** AI-USAGE-PR machen darfst:
+- Rückblickende Erkenntnisse, die Wochen später kommen (z.B. "was wir aus Phase 2 gelernt haben")
+- Meta-Einträge über den Team-Workflow, die nicht an einen spezifischen Feature-PR koppeln
+- Korrekturen/Ergänzungen an bestehenden Einträgen
+
+Für den Eintrag selber: das Format in `docs/AI-USAGE.md` einhalten (Datum, PR-Titel, Agent, Scope, Was gut lief, Was nicht, Nachbearbeitung, Autor). Pflicht-Lehre aus jedem Eintrag: **eine klare Lektion**, nicht nur "lief ok".
 
 ## Architecture Decision Records (ADR)
 

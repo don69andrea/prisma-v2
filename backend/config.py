@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     environment: str = "development"
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def ensure_asyncpg_scheme(cls, value: object) -> object:
+        """Render stellt DATABASE_URL als 'postgresql://...' bereit, unser
+        async SQLAlchemy-Engine braucht aber 'postgresql+asyncpg://...'.
+        Dieser Validator normalisiert das transparent."""
+        if isinstance(value, str) and value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return value
+
     # NoDecode prevents pydantic-settings from JSON-decoding the raw env string;
     # the validator below accepts either comma-separated strings or real lists.
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]

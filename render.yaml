@@ -13,6 +13,7 @@ services:
     plan: free
     healthCheckPath: /health
     autoDeploy: true
+    preDeployCommand: "alembic upgrade head"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -24,6 +25,8 @@ services:
         value: production
       - key: CORS_ORIGINS
         sync: false
+      - key: PYTHONPATH
+        value: /app
 
   - type: web
     name: prisma-frontend
@@ -33,7 +36,10 @@ services:
     autoDeploy: true
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        sync: false
+        fromService:
+          type: web
+          name: prisma-backend
+          property: host
     buildFilter:
       paths:
         - frontend/**

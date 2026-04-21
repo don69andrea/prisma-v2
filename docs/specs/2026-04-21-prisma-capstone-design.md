@@ -1,6 +1,6 @@
 # PRISMA — Design-Spec & Capstone-Referenzdokument
 
-**Status: Draft v1.0 — 2026-04-21**
+**Status: Draft v1.1 — 2026-04-21**
 
 Modul: AI-assisted Software Development | BSc Business Artificial Intelligence | FHNW FS 2026
 Team: 4 Personen | Laufzeit: 12 Wochen | Zielnote: 5.5
@@ -37,9 +37,9 @@ Team: 4 Personen | Laufzeit: 12 Wochen | Zielnote: 5.5
 
 PRISMA ist das Capstone-Projekt im Modul "AI-assisted Software Development" des BSc Business Artificial Intelligence an der FHNW Hochschule für Wirtschaft (FS 2026). Das Capstone macht 100% der Modulnote aus.
 
-Das Projekt ist angelehnt an eine reale Lösung der Vireos AG (Schweizer Asset-Manager) und wird von einem 4-Personen-Studententeam in ca. 12 Wochen nebenberuflich entwickelt.
+Das Projekt ist angelehnt an eine reale Lösung der Vireos AG (Schweizer Asset-Manager) und wird von einem 4-Personen-Studententeam in ca. 12 Wochen neben dem Studium entwickelt.
 
-**Ziel**: Nota 5.5 durch solide, nachweisbare Exzellenz über alle Bewertungsachsen — keine Weltrevolution, aber saubere Ausführung auf jeder Ebene.
+**Ziel**: Note 5.5 durch solide, nachweisbare Exzellenz über alle Bewertungsachsen — keine Weltrevolution, aber saubere Ausführung auf jeder Ebene.
 
 ---
 
@@ -177,7 +177,6 @@ Alle Repository-Interfaces werden per Constructor Injection in Services übergeb
 |---|---|---|
 | `Stock` | ticker, name, isin, sector, country, currency | Basiseinheit; ein reales Unternehmen |
 | `Universe` | id, name, description | Benannte Aktien-Menge (SMI, Custom, etc.) |
-| `UniverseStock` | universe_id, stock_id | M:N-Brücke zwischen Universe und Stock |
 | `ModelRun` | id, universe_id, timestamp, config_json, version | Versionierter Ausführungskontext aller Modelle |
 | `ModelRanking` | id, stock_id, model_run_id, model_name, score, rank | Einzelergebnis eines Modells für eine Aktie |
 | `TotalRank` | id, stock_id, model_run_id, total_rank, weights_json | Aggregierter Rang mit gespeicherten Gewichten |
@@ -621,7 +620,7 @@ MVP: API-Key-Header (`X-API-Key`). Key wird als Umgebungsvariable konfiguriert. 
 ### 14.1 Unit Tests
 
 - Jedes der 5 Quant-Modelle erhält ein deterministisches Golden-Dataset (CSV-Fixture) mit vorberechnetem erwartetem Ranking
-- Pydantic-Schema-Tests für alle LLM-Output-Schemas: synthetischer Input → Validierung muss grünsein
+- Pydantic-Schema-Tests für alle LLM-Output-Schemas: synthetischer Input → Validierung muss grün sein
 - Value-Object-Tests: Score-Normalisierung, Rang-Berechnung, Gewichtungslogik
 - Service-Tests mit gemockten Repositories
 
@@ -770,7 +769,7 @@ services:
 | LLM-Output nicht deterministisch / nicht testbar | Mittel | Mittel | Fixture-Mode für CI; Pydantic-Validierung; weekly Smoke-Tests gegen echte API |
 | Render Free Tier zu langsam für Demo | Mittel | Mittel | Fallback auf Starter Plan (ca. $7/Monat, teilbar im Team) |
 | yfinance Rate-Limits / Daten-Lücken | Hoch | Mittel | Aggressives Caching in PostgreSQL; Retry mit Exponential Backoff; FinancialModelingPrep als Backup |
-| Finnhub Free-Tier-Limit erschöpft | Mittel | Niedrig | Caching; Sentiment-Agent läuft nur für Top-10, nicht für ganzes Universum |
+| Finnhub Free-Tier-Limit erschöpft | Mittel | Niedrig | Caching; Sentiment-Agent läuft nur für Top-10, nicht für das ganze Universum |
 | Team-Merge-Konflikte bei Clean-Arch-Boundaries | Mittel | Mittel | Klar getrennte Layer-Ownership; Interface-First-Development; tägliche Syncs in heissen Phasen |
 | pgvector / RAG-Index aufwendiger als geplant | Mittel | Mittel | 10-K-Ingest als Late-Feature: erst Wo 7; Minimum: 3 PDFs für Demo ausreichend |
 | Anthropic API-Kosten überschreiten Budget | Niedrig | Mittel | Prompt-Caching reduziert Kosten ~90% für System-Prompt; Batch-Memos nur auf Anfrage, nicht automatisch |
@@ -829,3 +828,4 @@ Zu prüfen am Ende von Woche 10 — alle Punkte müssen abgehakt sein für Zieln
 | Version | Datum | Autor | Änderung |
 |---|---|---|---|
 | Draft v1.0 | 2026-04-21 | Documentation Engineer | Initiales Dokument erstellt; alle Sektionen vollständig ausgearbeitet |
+| Draft v1.1 | 2026-04-21 | Sheyla / Claude Code | Tippfehler-Review: "Nota" → "Note", "grünsein" → "grün sein", "nebenberuflich" → "neben dem Studium", fehlender Artikel in Risiko-Mitigation. `UniverseStock` aus Entitäten-Tabelle entfernt (Bridge-Entity, bleibt im ER-Diagramm). |

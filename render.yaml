@@ -36,11 +36,12 @@ services:
     plan: free
     autoDeploy: true
     envVars:
+      # Render's fromService.property: host liefert nur den Hostname ohne
+      # Scheme — der Client-Code braucht aber eine voll-qualifizierte URL
+      # (sonst interpretiert der Browser den Wert als relativen Pfad und
+      # bekommt 404). Deshalb hardcoded auf den bekannten Backend-Host.
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: prisma-backend
-          property: host
+        value: https://prisma-backend-7ai7.onrender.com
     buildFilter:
       paths:
         - frontend/**

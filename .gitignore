@@ -1,0 +1,119 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+*.egg
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Alembic
+# keep alembic/versions, only ignore cache
+backend/alembic/__pycache__/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm
+.eslintcache
+.next/
+out/
+.nuxt/
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment / Secrets
+.env
+.env.local
+.env.*.local
+.env.production
+*.pem
+*.key
+secrets/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+!.vscode/settings.json.example
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS — macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# OS — Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Docker
+# keep compose + Dockerfile, ignore volumes
+docker-data/
+postgres-data/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Claude / Cursor
+.claude/
+.cursor/
+
+# LLM fixtures that are huge
+tests/fixtures/llm/*.large.json
+
+# Build artifacts
+*.whl
+*.tar.gz

@@ -30,7 +30,9 @@ class Settings(BaseSettings):
         or an actual Python list (the latter is used in tests)."""
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
-        return list(value)  # type: ignore[arg-type]
+        if isinstance(value, list):
+            return [str(item) for item in value]
+        raise TypeError(f"cannot parse cors_origins from {type(value).__name__}")
 
 
 @lru_cache

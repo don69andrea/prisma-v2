@@ -32,7 +32,9 @@ def _get_engine(settings: Settings | None = None) -> AsyncEngine:
     return _engine
 
 
-def _get_session_factory(settings: Settings | None = None) -> async_sessionmaker[AsyncSession]:
+def _get_session_factory(
+    settings: Settings | None = None,
+) -> async_sessionmaker[AsyncSession]:
     global _session_factory
     if _session_factory is None:
         _session_factory = async_sessionmaker(

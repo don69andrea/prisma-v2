@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.stock_service import StockService
 from backend.domain.repositories.stock_repository import StockRepository
-from backend.infrastructure.persistence.repositories.stock_repository import SQLAStockRepository
+from backend.infrastructure.persistence.repositories.stock_repository import (
+    SQLAStockRepository,
+)
 from backend.infrastructure.persistence.session import get_async_session
 
 

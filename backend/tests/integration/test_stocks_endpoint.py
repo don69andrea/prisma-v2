@@ -49,7 +49,9 @@ async def test_stocks_limit_query_param(http_client: AsyncClient) -> None:
 
 async def test_stocks_offset_query_param(http_client: AsyncClient) -> None:
     # Sample data has 3 stocks (AAPL, NESN, NOVN sorted); offset=2 returns last one
-    response = await http_client.get("/api/v1/stocks", params={"limit": 10, "offset": 2})
+    response = await http_client.get(
+        "/api/v1/stocks", params={"limit": 10, "offset": 2}
+    )
     body = response.json()
     assert len(body["items"]) == 1
 

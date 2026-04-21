@@ -32,7 +32,9 @@ class StockService:
             ValueError: Wenn limit oder offset ausserhalb des erlaubten Bereichs.
         """
         if limit < 1 or limit > _MAX_LIMIT:
-            raise ValueError(f"limit muss zwischen 1 und {_MAX_LIMIT} liegen, erhalten: {limit}")
+            raise ValueError(
+                f"limit muss zwischen 1 und {_MAX_LIMIT} liegen, erhalten: {limit}"
+            )
         if offset < 0:
             raise ValueError(f"offset muss >= 0 sein, erhalten: {offset}")
 

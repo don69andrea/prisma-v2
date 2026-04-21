@@ -39,7 +39,12 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+# B008: FastAPI's canonical pattern uses Depends() in default args;
+# we accept this convention repo-wide.
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend"]
 
 [tool.mypy]
 python_version = "3.12"

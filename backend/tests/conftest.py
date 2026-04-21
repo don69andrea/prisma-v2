@@ -17,6 +17,7 @@ from backend.interfaces.rest.dependencies import get_stock_repository
 # In-Memory StockRepository für Integration-Tests ohne Datenbankverbindung
 # ---------------------------------------------------------------------------
 
+
 class InMemoryStockRepository(StockRepository):
     """Leichtgewichtige Test-Implementierung des StockRepository-Ports.
 
@@ -43,6 +44,7 @@ class InMemoryStockRepository(StockRepository):
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 def _make_sample_stocks() -> list[Stock]:
     return [

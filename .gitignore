@@ -10,8 +10,9 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+# Scoped to repo root — do NOT also ignore frontend/lib/
+/lib/
+/lib64/
 parts/
 sdist/
 var/

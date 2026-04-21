@@ -40,7 +40,7 @@ class TestStockConstruction:
     def test_stock_is_immutable(self) -> None:
         stock = _valid_stock()
         with pytest.raises((ValidationError, TypeError)):
-            stock.ticker = "MSFT"  # type: ignore[misc]
+            stock.ticker = "MSFT"
 
 
 class TestTickerValidation:

@@ -100,6 +100,6 @@ async def http_client(
     # Dependency-Override: ersetzt SQLAlchemy-Adapter durch In-Memory-Variante
     app.dependency_overrides[get_stock_repository] = lambda: in_memory_repo
 
-    transport = ASGITransport(app=app)  # type: ignore[arg-type]
+    transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client

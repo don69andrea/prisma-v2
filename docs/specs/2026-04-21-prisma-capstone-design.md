@@ -3,7 +3,7 @@
 **Status: Draft v1.1 — 2026-04-21**
 
 Modul: AI-assisted Software Development | BSc Business Artificial Intelligence | FHNW FS 2026
-Team: 4 Personen | Laufzeit: 12 Wochen | Zielnote: 5.5
+Team: Sheyla, Fabia, Nicolas, Andrea
 
 ---
 

@@ -18,6 +18,20 @@ Pro PR mit substantieller Agent-Beteiligung ein Eintrag:
 
 ## Einträge
 
+## 2026-04-22 · ADR-0005 — Datenquelle für Quant-Fundamentaldaten (PR #23, Closes #22)
+- **Agents**: Claude Code (Opus 4.7) im Haupt-Context für Brainstorming, Verifikation und Git-Flow; 1 Sub-Agent (Sonnet 4.6) für die reine ADR-Schreibarbeit.
+- **Scope**: Entscheidungsprozess für die Fundamentaldaten-Quelle der 8 Quality-Classic-Metriken. Brainstorming von 4 Optionen (yfinance-live / CSV-only / Hybrid / Alpha-Vantage-oder-Finnhub), Wahl des Hybrid-Ansatzes (committed CSV-Snapshot als Wahrheit + yfinance-Adapter nur für manuellen Pre-Presentation-Refresh). Schreiben von `docs/adr/0005-data-source-quant-fundamentals.md` im bestehenden ADR-Stil, minimale Klarstellung in §13 des Haupt-Design-Dokuments, PR mit Fabia + Andrea als Reviewer. Begleitet von Wechsel von direct-to-main auf PR-Flow (Phase-1-Infra-Firefighting-Modus ist vorbei, jetzt hat das Team Review-Verantwortung).
+- **Was gut lief**:
+  - **Model-Routing bewusst gesetzt**: Opus 4.7 führte die Trade-off-Analyse und das Spec-Navigieren (Kontext aus 681-Zeilen-Haupt-Spec + Issue-Rationale synthetisieren). Die reine Template-gehorsame Schreibarbeit — ein ADR nach dem exakten Muster von 0001/0002 verfassen — wurde an einen Sonnet-Subagent delegiert. Das senkte den Token-Footprint im Haupt-Context merklich und hielt die Aufmerksamkeit für die Review-Entscheidung frei.
+  - **Trust-but-Verify nach Subagent-Run**: Vor dem Commit wurden das generierte ADR und der Diff der §13-Änderung gelesen. Keine Halluzinationen, Format exakt an den Vorbildern, Paragraph-Insertion minimal-invasiv.
+  - **Brainstorming-Disziplin**: 4 Optionen wurden mit +/- bewertet bevor eine empfohlen wurde — Benutzerin konnte A/B/C einfach abwägen und C auswählen, kein "hier ist meine Einzellösung, nimm oder lass"-Fallstrick.
+- **Was nicht klappte**:
+  - **Verdeckte Spec-Inkonsistenz wurde erst beim Lesen sichtbar**: §13 des Haupt-Design-Dokuments setzte `yfinance` als primäre Laufzeit-Quelle voraus, Issue #22 empfahl aber explizit einen CSV-Snapshot. Diese Spannung hätte schon bei der Issue-Erstellung auffallen können. Retroaktive §13-Klarstellung war die Konsequenz — nicht tragisch, aber ein Hinweis, dass Specs und Issues konsistent-gehalten werden müssen, wenn beide Design-Aussagen treffen.
+- **Lektion (für die 40%-Achse)**:
+  **Model-Routing ist eine reale AI-Engineering-Disziplin.** Reasoning-dichte Arbeit (Options-Abwägung, Risiko-Analyse, Kontext-Synthese) bleibt beim grösseren Modell. Template-gehorsame Schreibarbeit nach bestehendem Muster wird an ein kleineres Modell delegiert. Der Punkt ist nicht primär Kostenersparnis, sondern **Kontext-Hygiene**: der Haupt-Context behält Platz für die Entscheidungen, die wirklich Urteil brauchen. Dieselbe Split-Logik spiegelt PRISMAs eigenes Narrative-Layer-Design wider (AnalystAgent vs. SynthesizerAgent aus dem Multi-Agent-Spec) — das Werkzeug-Muster matched das Produkt-Muster.
+- **Methodisches Mini-Learning**: Beim Wechsel von direct-to-main auf PR-Flow den Trigger-Punkt explizit machen. Hier: sobald das Team zugewiesene Issues hat und der Code-/Design-Change ihre Arbeit beeinflusst, ist der PR-Review-Loop nicht nur Hygiene sondern Team-Dependency-Management. Die Grenze sauber zu benennen schützt davor, aus Bequemlichkeit weiter direkt auf `main` zu schieben.
+- **Autor**: Sheyla Sampietro (mit Claude Code + Sonnet-Subagent)
+
 ## 2026-04-21 · Render-Deployment Phase 1 — 4 Commits bis End-to-End-grün (Commits `7b2de04` bis `87e2407`)
 - **Agent**: Claude Code (Opus 4.7)
 - **Scope**: Blueprint-basiertes Deployment (DB + Backend + Frontend) auf Render's Free-Tier. Vier aufeinanderfolgende Produktions-Deploy-Versuche, drei davon an Details der Render-Plattform gescheitert bevor der Fourth Green wurde.

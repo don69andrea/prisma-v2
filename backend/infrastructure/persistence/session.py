@@ -32,9 +32,15 @@ def _get_engine(settings: Settings | None = None) -> AsyncEngine:
     return _engine
 
 
-def _get_session_factory(
+def get_session_factory(
     settings: Settings | None = None,
 ) -> async_sessionmaker[AsyncSession]:
+    """Liefert die Module-singleton Session-Factory.
+
+    Wird benutzt von Repos, die eigene Sessions pro Operation öffnen müssen
+    (z.B. Audit-Log-Inserts, die nicht an Request-Sessions gekoppelt sein
+    dürfen, um nicht laufende Business-Operationen mit-zu-committen).
+    """
     global _session_factory
     if _session_factory is None:
         _session_factory = async_sessionmaker(
@@ -55,6 +61,6 @@ async def get_async_session(
     Wird via FastAPI Depends() genutzt — jeder Request erhält eine eigene
     Session; Rollback bei Exception ist Verantwortung der aufrufenden Schicht.
     """
-    factory = _get_session_factory(settings)
+    factory = get_session_factory(settings)
     async with factory() as session:
         yield session

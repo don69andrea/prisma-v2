@@ -78,10 +78,20 @@ def _make_sample_stocks() -> list[Stock]:
 
 
 @pytest.fixture
-def in_memory_repo() -> InMemoryStockRepository:
+def sample_stocks() -> list[Stock]:
+    """Drei beispielhaft befüllte Stock-Entities (AAPL, NESN, NOVN).
+
+    Public Fixture-Wrapper um den privaten `_make_sample_stocks`-Builder —
+    Tests nutzen diese Fixture statt die private Funktion direkt zu importieren.
+    """
+    return _make_sample_stocks()
+
+
+@pytest.fixture
+def in_memory_repo(sample_stocks: list[Stock]) -> InMemoryStockRepository:
     """Ein InMemoryStockRepository mit drei vorgeladenen Sample-Stocks."""
     repo = InMemoryStockRepository()
-    for stock in _make_sample_stocks():
+    for stock in sample_stocks:
         repo.add(stock)
     return repo
 

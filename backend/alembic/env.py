@@ -11,7 +11,7 @@ from backend.config import get_settings
 # Importiere alle ORM-Modelle damit Alembic ihre Metadaten kennt.
 # Neue Modelle hier ergänzen, sonst generiert autogenerate keine Migrationen.
 from backend.infrastructure.persistence.base import Base
-from backend.infrastructure.persistence.models import stock  # noqa: F401
+from backend.infrastructure.persistence.models import llm_call_log, stock  # noqa: F401
 
 # Alembic Config-Objekt, gibt Zugriff auf alembic.ini
 config = context.config

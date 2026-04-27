@@ -296,14 +296,15 @@ Gleichgewichtete Kombination aus 8 Fundamentalkennzahlen:
 
 Vorgehen: Z-Score-Normalisierung je Kennzahl → gleiche Gewichtung → Quality-Score → Rang aufsteigend (1 = bester Score).
 
-### 6.2 Quality AI (Kategorie: Quality)
+### 6.2 Trend Momentum (Kategorie: Trend)
 
-Lasso-Regression mit rollendem 2-Jahres-Fenster. Ziel-Variable: Forward-Return über 6 Monate. Feature-Matrix: dieselben 8 Kennzahlen wie Quality Classic.
+EWMA der relativen Returns gegen ein equal-weighted Universum. Vollständige Spec mit Formeln in `docs/specs/2026-04-27-quant-models-redesign.md` §3.1.
 
-- Lasso penalisiert irrelevante Faktoren auf 0 — das Modell adaptiert automatisch an Marktregime (z.B. Zinsphase vs. Wachstumsphase)
-- Fenster rollt monatlich; keine Look-Ahead-Bias durch sauberes Datums-Splitting
-- Einziges echtes ML-Modell im MVP; scikit-learn `LassoCV` mit 5-Fold-CV zur Alpha-Selektion
-- Bei instabiler Regression (zu wenig Datenpunkte, z.B. <10 Titel) Fallback auf Quality Classic
+- Benchmark = `prices.mean(axis=1)` (Equal-Weighted, nicht ^SSMI — dominiert von Nestlé/Roche)
+- EWMA mit `halflife=63` Tagen (3 Monate); jüngere Tage höher gewichtet
+- Score = letzter EWMA-Wert pro Ticker, höchster Score = Rang 1
+- Kein Volatility-Adjustment, keine Sektor-Neutralisierung — bewusst einfach gehalten
+- Fundament: Jegadeesh-Titman 1993, Carhart 1997 (Momentum-Persistenz 3–12 Monate)
 
 ### 6.3 Alpha (Kategorie: Trend)
 
@@ -319,14 +320,16 @@ Relative Performance einer Aktie gegen den Benchmark-Index über 5 Zeithorizonte
 
 Zusätzlich: Sharpe-Ratio der Outperformance-Reihe als Qualitätsmass. Gewichteter Alpha-Score → Rang.
 
-### 6.4 Anti-Cyclical (Kategorie: Value)
+### 6.4 Value Alpha Potential (Kategorie: Value)
 
-Prüft zwei Bedingungen gleichzeitig:
+Mean-Reversion gegen das eigene Outperformance-Hoch. Vollständige Spec in `docs/specs/2026-04-27-quant-models-redesign.md` §3.2.
 
-1. Aktuelle Bewertung (P/E, P/B) liegt unter dem eigenen 3-Jahres-Median
-2. Kursperformance der letzten 6 Monate liegt unter der Index-Performance
-
-Beide Bedingungen erfüllt = antizyklisch attraktiv. Score: gewichtete Distanz unter beide Schwellen. Rang aufsteigend nach Score.
+- Schritt 1: rollendes 63-Tage-Alpha (Stock-Return − Benchmark-Return)
+- Schritt 2: Rolling-Maximum dieser Alpha-Reihe über 252 Tage (1 Jahr)
+- Schritt 3: `potential = rolling_max_alpha − current_alpha`
+- Höchstes `potential` = Rang 1 (grösstes Snap-Back-Setup)
+- Fundament: De Bondt-Thaler 1985, Lo-MacKinlay 1990 (Mean-Reversion)
+- **Achtung**: kein Quality-Gate — kann Junk-Stocks ranken, die zu Recht gefallen sind. Master-Rank-Aggregation balanciert das durch Quality + Diversification.
 
 ### 6.5 Diversification (Kategorie: Risk)
 
@@ -344,7 +347,7 @@ Score = harmonisches Mittel aus (1/Volatilität) und (1/mittlere Korrelation). R
 ### 7.1 Standard-Aggregation
 
 ```
-TotalRank = Ø(Quality-Classic-Rang, Quality-AI-Rang, Alpha-Rang, Anti-Cyclical-Rang, Diversification-Rang)
+TotalRank = Ø(Quality-Classic-Rang, Alpha-Rang, Trend-Momentum-Rang, Value-Alpha-Potential-Rang, Diversification-Rang)
 ```
 
 Aufsteigende Sortierung: Aktie mit kleinstem Durchschnitts-Rang = Total Rank 1.
@@ -355,11 +358,11 @@ Nutzer kann Kategorie-Gewichte über API oder UI überschreiben:
 
 ```json
 {
-  "quality_classic": 0.25,
-  "quality_ai": 0.25,
+  "quality_classic": 0.20,
   "alpha": 0.20,
-  "anti_cyclical": 0.15,
-  "diversification": 0.15
+  "trend_momentum": 0.20,
+  "value_alpha_potential": 0.20,
+  "diversification": 0.20
 }
 ```
 
@@ -406,7 +409,9 @@ class ResearchMemoSchema(BaseModel):
 
 **Prompt-Caching**: System-Prompt mit Modell-Logik und Interpretationsregeln wird gecacht (Anthropic Prompt Caching). Nur der stock-spezifische Context-Block variiert pro Aufruf.
 
-**Widerspruchs-Erkennung**: Automatische Regel: wenn Quality-Rang < 20 aber Diversification-Rang > 80% des Universums → Contradiction "Top Quality, aber hohes Klumpenrisiko".
+**Widerspruchs-Erkennung**: Zwei automatische Regeln:
+- wenn Quality-Classic-Rang < 20% aber Diversification-Rang > 80% → "Top Quality, aber hohes Klumpenrisiko"
+- wenn Trend-Momentum-Rang < 20% aber Value-Alpha-Potential-Rang < 20% → "Stock outperformt aktuell stark, ist aber gleichzeitig weit unter seinem Alpha-Peak"
 
 ### 8.2 Layer 2: Multi-Agent Deep-Dive
 
@@ -605,10 +610,10 @@ MVP: API-Key-Header (`X-API-Key`). Key wird als Umgebungsvariable konfiguriert. 
 
 | Quelle | Nutzung | Limit / Hinweis |
 |---|---|---|
-| yfinance | Preise (täglich), Fundamentaldaten | Kein offizielles Limit; Caching Pflicht |
-| Finnhub Free Tier | News, Earnings-Dates | 60 Calls/min; Rate-Limit-Handling nötig |
+| yfinance | Tagespreise (Models 2–5), Fundamentaldaten-Snapshot (Model 1 primär) | Kein offizielles Limit; Caching Pflicht; CH-Tickers (.SW) bei Fundamentals lückenhaft |
+| FinancialModelingPrep Free | Fundamentaldaten-Snapshot für Quality Classic, CH-Ticker-Lücken-Fallback | **250 Calls/Tag**; **kein Historical** verfügbar — daher Quality AI / Anti-Cyclical nicht implementierbar (siehe ADR 0005). Env-Variable: `FMP_API_KEY` |
+| Finnhub Free Tier | News, Earnings-Dates für Layer-2 Sentiment-Agent | 60 Calls/min; Rate-Limit-Handling nötig |
 | SEC EDGAR | 10-K / 10-Q PDFs für RAG | Öffentlich, kein Rate-Limit bei moderatem Zugriff |
-| FinancialModelingPrep Free | Fundamentaldaten-Backup | 250 Calls/Tag |
 | Synthetische Daten | Unit-Tests, Golden-Datasets | Reproduzierbar, kein Netzwerkzugriff |
 
 > **Phase-2-MVP-Demo (ADR-0005):** Die 8 Quality-Classic-Fundamentalkennzahlen (P/E, P/B, FCF Yield, Operating Margin, Dividendenrendite, D/E, EPS-Wachstum 3J, Sales-Wachstum 3J) werden nicht zur Laufzeit per yfinance-API abgerufen, sondern aus einem committed CSV-Snapshot (`backend/data/fundamentals_demo_2026Q1.csv`) in Postgres geladen. Ein `YFinanceAdapter` hinter einem `FundamentalsPort` existiert im Codebase, wird jedoch ausschliesslich durch `scripts/refresh_fundamentals.py` (manueller Pre-Presentation-Refresh) aufgerufen — nie durch Application-Services. Die obige Tabelle beschreibt den mittelfristigen Zielzustand.
@@ -709,7 +714,8 @@ Kritische User Journeys:
 ```
 DATABASE_URL          # Render Postgres Connection String
 ANTHROPIC_API_KEY     # Claude API
-FINNHUB_API_KEY       # Finnhub Free Tier
+FMP_API_KEY           # FinancialModelingPrep Free Tier (250 calls/day)
+FINNHUB_API_KEY       # Finnhub Free Tier (Layer-2 Sentiment-Agent)
 API_KEY               # Interner API-Key für MCP-Server
 ENVIRONMENT           # "production" | "staging"
 ```
@@ -767,7 +773,7 @@ services:
 | Risiko | Wahrscheinlichkeit | Impact | Mitigation |
 |---|---|---|---|
 | Scope-Explosion Quant-Modelle | Mittel | Hoch | Hartes MVP-Commitment auf 5 Modelle; weitere nur als Stretch dokumentiert |
-| Lasso auf kleinen Datensets instabil | Hoch | Mittel | Synthetische Trainingsdaten; Fallback auf Quality Classic wenn CV-Score unter Schwellwert |
+| EWMA halflife=63 / Rolling-Max-Window=252 sind Hyperparameter — Performance auf SMI evtl. enttäuschend | Mittel | Mittel | Im Backtest mit alternativen Werten (halflife=21/126, window=126/365) vergleichen; Default dokumentiert in Spec 2026-04-27 §3 |
 | LLM-Output nicht deterministisch / nicht testbar | Mittel | Mittel | Fixture-Mode für CI; Pydantic-Validierung; weekly Smoke-Tests gegen echte API |
 | Render Free Tier zu langsam für Demo | Mittel | Mittel | Fallback auf Starter Plan (ca. $7/Monat, teilbar im Team) |
 | yfinance Rate-Limits / Daten-Lücken | Hoch | Mittel | Aggressives Caching in PostgreSQL; Retry mit Exponential Backoff; FinancialModelingPrep als Backup |
@@ -786,8 +792,10 @@ Diese Features sind explizit **nicht im MVP-Scope** und werden erst nach Woche 1
 |---|---|---|
 | Statistical Arbitrage (PCA + Ornstein-Uhlenbeck) | Quant | Hohe mathematische Komplexität; braucht sauberes Pairs-Trading-Framework |
 | Earnings Cycle (Hampel-Filter) | Quant | Datenqualität der Earnings-Reihen variabel |
-| Relative Momentum (EWMA) | Quant | Ähnlich zu Alpha; geringer Mehrwert im MVP |
-| Alpha Potential | Quant | Datenintensiv; braucht Analysten-Konsens-Daten |
+| Quality AI (Lasso) | Quant | Braucht point-in-time Fundamentals — FMP Free liefert keine, FMP Starter ohne Restatement-Flag = Look-Ahead-Bias. Bezahl-Quelle (Bloomberg/SIX) ausserhalb Capstone-Budget. Siehe ADR 0005. |
+| Anti-Cyclical (3J-Median P/E) | Quant | Braucht historische P/E-Reihen; FMP Free liefert keine. Siehe ADR 0005. |
+| Multi-Horizon Momentum (gewichteter Mix halflife 21/63/126) | Quant | Erweiterung von Trend Momentum, nicht im MVP-Scope |
+| Sektor-neutrales Trend Momentum | Quant | Spannend für Demo, aber Kategorie-Mapping pro Ticker erhöht Komplexität |
 | Walk-Forward-Analyse | Backtest | Komplexität vs. Nutzen für Demo |
 | Transaktionskosten-Modell | Backtest | Scope-Erweiterung ohne direkten Bewertungsnutzen |
 | Multi-Faktor-Risiko-Modell | Quant | Barra-ähnlich; eigenes Projekt |
@@ -831,3 +839,4 @@ Zu prüfen am Ende von Woche 10 — alle Punkte müssen abgehakt sein für Zieln
 |---|---|---|---|
 | Draft v1.0 | 2026-04-21 | Documentation Engineer | Initiales Dokument erstellt; alle Sektionen vollständig ausgearbeitet |
 | Draft v1.1 | 2026-04-21 | Sheyla / Claude Code | Tippfehler-Review: "Nota" → "Note", "grünsein" → "grün sein", "nebenberuflich" → "neben dem Studium", fehlender Artikel in Risiko-Mitigation. `UniverseStock` aus Entitäten-Tabelle entfernt (Bridge-Entity, bleibt im ER-Diagramm). |
+| Draft v1.2 | 2026-04-27 | Fabia / Claude Code | Quant-Modelle-Redesign (PR #26, ADR 0005, Spec 2026-04-27): Quality AI + Anti-Cyclical raus (PIT-Daten / Historicals nicht im Free-Tier verfügbar), Trend Momentum + Value Alpha Potential rein. §6.2/§6.4 ersetzt, §7.1/§7.2 Default-Weights gleichgewichtet 0.20, §8.1 zweite Widerspruchs-Regel, §13 Datenquellen + FMP-Key, §15.3 env-Liste, §18 Risiko-Tabelle, §19 Stretch-Goals erweitert. |

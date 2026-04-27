@@ -16,7 +16,7 @@ const features = [
     icon: BarChart3,
     title: 'Ranking-Engine',
     description:
-      'Funf quantitative Modelle (Quality Classic, Quality AI, Alpha, Anti-Cyclical, Diversification) berechnen je Aktie einen Rang. Aggregiert zum Total Rank mit konfigurierbaren Gewichten.',
+      'Funf quantitative Modelle (Quality Classic, Alpha, Trend Momentum, Value Alpha Potential, Diversification) berechnen je Aktie einen Rang. Aggregiert zum Total Rank mit konfigurierbaren Gewichten.',
   },
   {
     icon: Bot,

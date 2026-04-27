@@ -174,9 +174,9 @@ Top-20%-Schwelle: ≤ {{top20_threshold}}
 
 RANKINGS (1 = bester)
 - Quality Classic: Rang {{r_qc}}/{{n_stocks}}, Score {{s_qc}}
-- Quality AI: Rang {{r_qa}}/{{n_stocks}}, Score {{s_qa}}
 - Alpha: Rang {{r_alpha}}/{{n_stocks}}, Score {{s_alpha}}
-- Anti-Cyclical: Rang {{r_ac}}/{{n_stocks}}, Score {{s_ac}}
+- Trend Momentum: Rang {{r_tm}}/{{n_stocks}}, Score {{s_tm}}
+- Value Alpha Potential: Rang {{r_vap}}/{{n_stocks}}, Score {{s_vap}}
 - Diversification: Rang {{r_div}}/{{n_stocks}}, Score {{s_div}}
 
 AGGREGATION
@@ -335,7 +335,8 @@ class NarrativeService:
 
 - 3–5 **Golden-Fixtures** in `backend/tests/fixtures/llm/narrative/`:
   - `top_quality_stock.json` (klarer Sweet Spot, alle grün)
-  - `contradictory_stock.json` (Quality top, Diversification bottom)
+  - `contradictory_quality_risk.json` (Quality Classic top, Diversification bottom)
+  - `contradictory_trend_value.json` (Trend Momentum top, Value Alpha Potential auch top — selten, interpretationsbedürftig)
   - `ambiguous_stock.json` (alle Modelle im Mittelfeld)
   - `malformed_response.json` (Response ohne Pflichtfeld — prüft Fehlerpfad)
 - Service läuft gegen Fixtures, prüft: DB-Persistenz, Schema-Validation, Error-Handling

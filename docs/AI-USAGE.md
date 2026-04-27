@@ -18,6 +18,24 @@ Pro PR mit substantieller Agent-Beteiligung ein Eintrag:
 
 ## Einträge
 
+## 2026-04-27 · Quant-Models-Redesign (PR #26, Commits `7f93095` bis `d62e719`)
+- **Agent**: Claude Code (Opus 4.7) + 1 Recherche-Sub-Agent (claude-code-guide) für Daten-Feasibility-Check
+- **Scope**: Quality AI + Anti-Cyclical aus dem MVP entfernen, Trend Momentum + Value Alpha Potential rein. Spec geschrieben (`2026-04-27-quant-models-redesign.md`, 237 Z.), ADR 0005 (90 Z.), Design-Spec/README/Frontend/Narrative-Engine/MCP-Spec konsistent durchpatcht (5 Files, 45 +/− 34), Skeleton-Domain-Code für 5 Modelle + 22 grüne / 7 skipped Tests, env-Migration `FINNHUB_API_KEY` → `FMP_API_KEY` im `.env.example`. Alles auf Feature-Branch, PR #26 für Review offen.
+- **Was gut lief**:
+  - Spec-First-Disziplin gehalten: nach erstem Plan-Vorschlag mehrfach iteriert (5→4→5 Modelle, FMP-Free vs. Starter, Diversification rein/raus), bevor erste Codezeile geschrieben wurde. Vier Iterationen Daten-Feasibility hatten direkten Einfluss auf den finalen Modell-Mix — Schreiben wäre ohne diese Vorarbeit Nacharbeit gewesen.
+  - Sub-Agent für Recherche zu Yahoo/FMP-Tier-Limits, statt Trainingswissen zu erraten — die "FMP Free liefert kein Historical"-Erkenntnis war der entscheidende Punkt, der Quality AI gekippt hat.
+  - mypy-strict + ruff im Skeleton ohne Workarounds clean — beim ersten Versuch flaggte mypy ein `# type: ignore[arg-type]`, das durch ein `model_validate({...})` ersetzt wurde (saubere Lösung statt Stummschaltung).
+  - PR-Disziplin: nach Initial-Commit auf `main` korrigiert, alles auf Feature-Branch verlagert, PR mit Test-Plan und To-Do-Liste angelegt — User behielt jederzeit Review-Kontrolle.
+- **Was nicht klappte**:
+  1. **Erster Commit ging direkt auf `main`.** AGENTS.md §4 verlangt PR-only — Verstoss innerhalb 5 Min nach Spec-Commit. User hat's gemerkt, ich habe per `git reset --soft HEAD~1` den Commit aus `main` entfernt und auf `feat/quant-models-redesign` verschoben. Lehre: **Branch-Strategie vor erstem Commit aktiv prüfen, nicht nach gut Glück auf Default-Branch arbeiten.** AGENTS.md beim Session-Start nicht nur einlesen, sondern beim ersten `git commit` aktiv gegenchecken.
+  2. **PowerShell-PATH-Falle nach `winget install gh`.** `gh.exe` lag installiert da, aber die laufende PowerShell-Session kannte den PATH-Eintrag nicht — drei Iterationen mit User, bis ich die Diagnose `Get-ChildItem "C:\Program Files\GitHub CLI"` machte und den Workaround `$env:Path += ...` für die Session lieferte. Lehre: **bei "command not found" auf Windows direkt zuerst nach Disk suchen, statt PATH-Annahmen zu machen**.
+  3. **Daten-Feasibility-Check kam zu spät.** Die ersten zwei Konversations-Runden hätten direkt klären müssen, dass Quality AI mit FMP Free nicht geht — stattdessen wurde mehrfach um Modell-Listen iteriert, die jedes Mal an einer Daten-Lücke scheiterten. Hätte ich den Sub-Agent früher (vor der ersten Modell-Liste) für die Feasibility-Recherche genutzt, wären 3 Konversations-Runden gespart gewesen.
+  4. **`.env`-Editier-Konflikt.** Beim Migrieren der lokalen `.env` (`FINNHUB_API_KEY` → `FMP_API_KEY`) hatte der User das File parallel selbst editiert. Mein Edit failed mit "File modified since read" — sauberer Fail, aber zeigt: bei Files, die der User aktiv bearbeitet, lieber expliziten Hinweis "ich edit jetzt deine `.env`" statt zu unterstellen, sie wäre statisch.
+- **Nachbearbeitung**: keine bisher; PR ist offen, hängt an menschlichem Review. Folge-Commits (Implementation der 5 Modelle mit pandas + Golden-Datasets) gehen in separate PRs nach Spec-Approval.
+- **Methodisches Mini-Learning**: **Spec-First spart eindeutig — aber Spec-First UND Branch-First muss als gemeinsamer Reflex sitzen.** "Spec ist commited" ≠ "darf auf main pushen". Dass ich den Reset-Move ohne Datenverlust hinkriegte (weil noch nichts gepusht war) ist Glück, nicht Methode.
+- **Token-Kosten**: ~120k Tokens (Opus 4.7 + 1 Sub-Agent-Call à ~12k); etwa 4 USD bei Standard-Ratecards. Für 4 Commits (Spec, ADR, Doku-Sweep, Skeleton) plus PR vertretbar.
+- **Autor**: Fabia Holzer (mit Claude Code)
+
 ## 2026-04-25 · Spec für Issue #19 — Budget-Cap & Cost-Tracking (PR #24)
 - **Agents**: Claude Code (Opus 4.7) im Haupt-Context für strukturiertes Brainstorming + Verifikation + Git-Flow; 1 Sub-Agent (Sonnet 4.6) für die 643-zeilige Spec-Schreibarbeit. Gleiches Routing-Pattern wie bei ADR-0005, bewährt.
 - **Scope**: Implementations-Spec für das Budget-Cap-Feature aus ADR-0004 §7. Q-by-Q-Brainstorming durch fünf Architektur-Entscheidungen: (1) Wrapper-Client vs. expliziter Guard-Block, (2) Audit-Log vs. aggregierter Counter, (3) chars/4-Estimation vs. SDK-`count_tokens`, (4) Kalender-Monat UTC vs. Rolling-30-Days, (5) HTTP-503 vs. 402/429. Pro Frage: Optionen mit +/- gegenübergestellt, Empfehlung markiert, Sheyla wählte. Spec dann an Sonnet-Subagent delegiert mit kompletter Vorab-Spezifikation aller fünf Entscheidungen + Section-Outline + Style-Referenzen.

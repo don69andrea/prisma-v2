@@ -114,9 +114,10 @@ async def run_ranking(
     Args:
         universe_id: UUID des zu rankenden Universums (z.B. SMI, S&P 500-Subset,
                      Custom-Tickerliste). Über `list_universes` (future) auffindbar.
-        weights: Optional. Gewichte pro Kategorie — z.B.
-                 {"quality_classic": 0.3, "quality_ai": 0.3, "alpha": 0.2,
-                  "anti_cyclical": 0.1, "diversification": 0.1}.
+        weights: Optional. Gewichte pro Modell — z.B.
+                 {"quality_classic": 0.20, "alpha": 0.20,
+                  "trend_momentum": 0.20, "value_alpha_potential": 0.20,
+                  "diversification": 0.20}.
                  Muss zu 1.0 summieren. Fehlt: Gleichgewichtung.
 
     Returns:
@@ -190,7 +191,7 @@ async def compare_stocks(
         model_run_id: Optional. Wenn fehlt: neuester Run für das gemeinsame
                       Universum wird genommen.
         dimensions: Optional. Liste der Modell-Namen zum Filtern — z.B.
-                   ['quality_classic', 'alpha', 'diversification'].
+                   ['quality_classic', 'trend_momentum', 'diversification'].
                    Fehlt: alle 5 Dimensionen.
 
     Returns:

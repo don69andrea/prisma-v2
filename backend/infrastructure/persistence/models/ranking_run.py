@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -21,3 +22,5 @@ class RankingRunORM(Base):
     # WeightConfig als JSONB: {"quality_classic": 0.20, "alpha": 0.20, ...}
     weight_config: Mapped[dict[str, float]] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    # Berechnungsergebnisse als JSONB-Array, nullable bis run completed
+    results: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True, default=None)

@@ -1,5 +1,6 @@
 """SQLAlchemy-Implementierung des RankingRunRepository-Ports."""
 
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -42,6 +43,15 @@ class SQLARankingRunRepository(RankingRunRepository):
         )
         result = await self._session.execute(stmt)
         return [self._to_domain(row) for row in result.scalars().all()]
+
+    async def save_results(self, run_id: UUID, results: list[dict[str, Any]]) -> None:
+        row = await self._session.get(RankingRunORM, run_id)
+        if row is not None:
+            row.results = results
+
+    async def get_results(self, run_id: UUID) -> list[dict[str, Any]] | None:
+        row = await self._session.get(RankingRunORM, run_id)
+        return row.results if row else None
 
     @staticmethod
     def _to_domain(orm: RankingRunORM) -> RankingRun:

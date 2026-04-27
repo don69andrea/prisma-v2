@@ -7,20 +7,31 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.cost_tracker import CostTracker
+from backend.application.services.ranking_run_service import RankingRunService
 from backend.application.services.stock_service import StockService
 from backend.config import Settings, get_settings
+from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.repositories.cost_log_repository import CostLogRepository
+from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.stock_repository import StockRepository
+from backend.domain.repositories.universe_repository import UniverseRepository
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
 )
+from backend.infrastructure.persistence.repositories.ranking_run_repository import (
+    SQLARankingRunRepository,
+)
 from backend.infrastructure.persistence.repositories.stock_repository import (
     SQLAStockRepository,
+)
+from backend.infrastructure.persistence.repositories.universe_repository import (
+    SQLAUniverseRepository,
 )
 from backend.infrastructure.persistence.session import (
     get_async_session,
     get_session_factory,
 )
+from backend.infrastructure.providers.stub_fundamentals import StubFundamentalsProvider
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
@@ -63,6 +74,34 @@ async def get_cost_tracker(
         repository=repository,
         cap_usd=settings.budget_cap_usd,
         threshold=settings.budget_cap_threshold,
+    )
+
+
+async def get_universe_repository(
+    session: AsyncSession = Depends(get_session),
+) -> UniverseRepository:
+    return SQLAUniverseRepository(session=session)
+
+
+async def get_ranking_run_repository(
+    session: AsyncSession = Depends(get_session),
+) -> RankingRunRepository:
+    return SQLARankingRunRepository(session=session)
+
+
+async def get_fundamentals_provider() -> FundamentalsProvider:
+    return StubFundamentalsProvider()
+
+
+async def get_ranking_run_service(
+    universe_repo: UniverseRepository = Depends(get_universe_repository),
+    run_repo: RankingRunRepository = Depends(get_ranking_run_repository),
+    fundamentals_provider: FundamentalsProvider = Depends(get_fundamentals_provider),
+) -> RankingRunService:
+    return RankingRunService(
+        universe_repo=universe_repo,
+        run_repo=run_repo,
+        fundamentals_provider=fundamentals_provider,
     )
 
 

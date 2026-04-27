@@ -63,6 +63,14 @@ npm run dev
 
 Ausführliche Setup-Anleitung + Troubleshooting: **[docs/getting-started.md](./docs/getting-started.md)**
 
+## Demo-Daten
+
+```bash
+python scripts/seed_demo_universe.py   # legt "Demo-US-5" mit AAPL/MSFT/GOOGL/NVDA/JPM an
+```
+
+Idempotent — mehrfaches Ausführen erzeugt keine Duplikate.
+
 ## Testen
 
 ```bash

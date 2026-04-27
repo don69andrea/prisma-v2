@@ -61,7 +61,7 @@ npm install
 npm run dev
 ```
 
-Ausführliche Setup-Anleitung + Troubleshooting in [`docs/getting-started.md`](./docs/getting-started.md) (folgt in Woche 2).
+Ausführliche Setup-Anleitung + Troubleshooting: **[docs/getting-started.md](./docs/getting-started.md)**
 
 ## Testen
 

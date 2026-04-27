@@ -1,0 +1,17 @@
+"""Abstraktes Repository-Interface für RankingRun-Aggregate."""
+
+from abc import ABC, abstractmethod
+from uuid import UUID
+
+from backend.domain.entities.ranking_run import RankingRun
+
+
+class RankingRunRepository(ABC):
+    @abstractmethod
+    async def get(self, run_id: UUID) -> RankingRun | None: ...
+
+    @abstractmethod
+    async def save(self, run: RankingRun) -> None: ...
+
+    @abstractmethod
+    async def list_by_universe(self, universe_id: UUID) -> list[RankingRun]: ...

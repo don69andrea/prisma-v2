@@ -31,6 +31,7 @@ ENV PYTHONPATH=/app \
 
 # Only the packages installed in stage 1 — no build tools in the image
 COPY --from=builder /install /usr/local
+COPY pyproject.toml pyproject.toml 
 
 # Copy application source
 COPY backend/ backend/

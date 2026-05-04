@@ -1,6 +1,6 @@
 # PRISMA — Design-Spec & Capstone-Referenzdokument
 
-**Status: Draft v1.1 — 2026-04-21**
+**Status: Draft v1.3 — 2026-04-30**
 
 Modul: AI-assisted Software Development | BSc Business Artificial Intelligence | FHNW FS 2026
 Team: Sheyla, Fabia, Nicolas, Andrea
@@ -736,10 +736,10 @@ services:
 
 | Rolle | Person | Primärer Scope |
 |---|---|---|
-| A — Quant Core | TBD | 5 Quant-Modelle, Daten-Adapter (yfinance/Finnhub/EDGAR), Golden-Datasets, BacktestService |
-| B — AI Engineer | TBD | NarrativeService, Multi-Agent-Pipeline (Layer 2), MCP-Server (Layer 3), Prompt-Caching |
-| C — Platform | TBD | Clean-Arch-Skelett, FastAPI, Alembic-Migrationen, Docker, GitHub Actions, Render-Deploy |
-| D — Frontend & Demo | TBD | Next.js-App, shadcn/ui-Komponenten, Playwright-E2E-Tests, README, ADRs, Präsentation |
+| A — Quant Core | Fabia (`itsFabia`) | 5 Quant-Modelle, Daten-Adapter (yfinance/Finnhub/EDGAR), Golden-Datasets, BacktestService |
+| B — AI Engineer | Sheyla (`SheylaSam`) | NarrativeService, Multi-Agent-Pipeline (Layer 2), MCP-Server (Layer 3), Prompt-Caching |
+| C — Platform | Andrea (`don69andrea`) | Clean-Arch-Skelett, FastAPI, Alembic-Migrationen, Docker, GitHub Actions, Render-Deploy |
+| D — Frontend & Demo | Nicolas (`NicolasLardinois`) | Next.js-App, shadcn/ui-Komponenten, Playwright-E2E-Tests, README, ADRs, Präsentation |
 
 **Querschnittsaufgaben (alle 4 Personen)**:
 
@@ -840,3 +840,4 @@ Zu prüfen am Ende von Woche 10 — alle Punkte müssen abgehakt sein für Zieln
 | Draft v1.0 | 2026-04-21 | Documentation Engineer | Initiales Dokument erstellt; alle Sektionen vollständig ausgearbeitet |
 | Draft v1.1 | 2026-04-21 | Sheyla / Claude Code | Tippfehler-Review: "Nota" → "Note", "grünsein" → "grün sein", "nebenberuflich" → "neben dem Studium", fehlender Artikel in Risiko-Mitigation. `UniverseStock` aus Entitäten-Tabelle entfernt (Bridge-Entity, bleibt im ER-Diagramm). |
 | Draft v1.2 | 2026-04-27 | Fabia / Claude Code | Quant-Modelle-Redesign (PR #26, ADR 0005, Spec 2026-04-27): Quality AI + Anti-Cyclical raus (PIT-Daten / Historicals nicht im Free-Tier verfügbar), Trend Momentum + Value Alpha Potential rein. §6.2/§6.4 ersetzt, §7.1/§7.2 Default-Weights gleichgewichtet 0.20, §8.1 zweite Widerspruchs-Regel, §13 Datenquellen + FMP-Key, §15.3 env-Liste, §18 Risiko-Tabelle, §19 Stretch-Goals erweitert. |
+| Draft v1.3 | 2026-04-30 | Sheyla / Claude Code | §16 Team-Rollen mit echten Personen befüllt (TBD → Fabia / Sheyla / Andrea / Nicolas inkl. GitHub-Handles). Quelle: Capstone-Briefing-PDF. |

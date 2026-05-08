@@ -18,6 +18,20 @@ Pro PR mit substantieller Agent-Beteiligung ein Eintrag:
 
 ## Einträge
 
+## 2026-05-02 · Diversification-Modell — TDD-Implementation (Branch `feat/diversification-impl`)
+- **Agent**: Claude Code (Opus 4.7), reine Main-Context-Arbeit (kein Subagent — klassischer Tight-Loop-TDD-Cycle).
+- **Scope**: Erstes der 4 noch ausstehenden Quant-Modelle aus dem Redesign-PR #26 vollständig implementiert. `DiversificationModel` ersetzt das `NotImplementedError`-Skeleton in `backend/domain/models/diversification.py` durch die in der Spec festgelegte Ledoit-Wolf-Shrinkage-Kovarianz-Berechnung mit `score = 2 / (annualisierte_vola + avg_korrelation)`. 6 Tests (Golden-Dataset 3-Ticker, Determinismus, leeres Universum, Single-Ticker, < 30 Datenpunkte, Zero-Variance-Ticker), alle grün. Pandas + numpy + scikit-learn neu in `pyproject.toml`-Deps aufgenommen. Volle Suite: 153 passed / 5 skipped, mypy strict + ruff clean.
+- **Was gut lief**:
+  - **TDD-Disziplin echt eingehalten**: Test-File komplett geschrieben, RED gesehen (6/6 fail mit `NotImplementedError`), erst dann Implementation — und die Implementation hatte beim ersten Run 5/6 grün, der eine Fehler war ein **echter Spec-Insight**: Ledoit-Wolf-Shrinkage glättet die Diagonale, also kann man Zero-Variance-Ticker nicht aus der geshrinkten Cov-Matrix erkennen. Pre-Check auf Roh-Returns-Std hinzugefügt. **Hätte bei "Tests after" niemals gefunden**, weil das Verhalten plausibel aussieht.
+  - **Spec-Treue**: Formel exakt aus `2026-04-28-quant-mvp-models.md §5` übernommen, nicht aus dem Gedächtnis rekonstruiert (CLAUDE.md-Anti-Pattern bewusst gemieden).
+  - **PR-Workflow korrekt von Anfang an**: Diesmal sofort `git checkout -b feat/diversification-impl` von aktuellem `main`, kein Direkt-Commit-auf-Main-Faux-Pas wie bei PR #26.
+- **Was nicht klappte**:
+  - **Pandas/numpy/sklearn waren nicht in `pyproject.toml`**, obwohl lokal installiert. Erst beim Schreiben der Tests aufgefallen. Lehre: bei neuer Domain-Library zuerst `pyproject.toml`-Eintrag prüfen, sonst CI grün lokal aber rot in GitHub Actions.
+  - **Pythonkonvertierung von numpy-Skalaren zu `float`** an mehreren Stellen nötig, damit mypy strict happy ist. Mini-Friction, aber lehrreich: numpy-Typen leaken sonst in den Domain-Layer.
+- **Methodisches Mini-Learning**: **Der Wert des "Verify RED"-Steps ist real.** Hätte ich die Tests nach der Implementation geschrieben, hätte der Zero-Variance-Edge-Case "passend zur Implementation" ausgesehen und das Bug wäre durchgerutscht. Test-First zwingt zur unabhängigen Spec-Prüfung.
+- **Token-Kosten**: ~25k Tokens Opus 4.7; ~0.50 USD.
+- **Autor**: Fabia Holzer (mit Claude Code)
+
 ## 2026-04-30 · Narrative-Engine Foundation Implementation (Issue #17, PR-Commits `e9c14b6` bis `efab277`)
 - **Agents**: Claude Code (Opus 4.7, 1M-Kontext) als Controller mit `superpowers:subagent-driven-development` Skill. **9 dispatchte Subagents (Sonnet 4.6)**: 7 Implementer (1 pro Build-Step) + Spec-Compliance- + Code-Quality-Reviewer pro Task (= 14 Reviews) + 2 Fix-Subagents (Build-Step-1-Style + Build-Step-5-Constraint-Naming) + 1 Cleanup-Subagent. Plus `superpowers:brainstorming` und `superpowers:writing-plans` als Spec/Plan-Phasen davor.
 - **Scope**: Foundation für Issue #17 (Narrative-Engine Layer 1) implementiert in 12 Commits: Spec (393 Z.) → Plan (1405 Z.) → 7 Build-Steps + 2 Reviewer-driven-Fixes + 1 finaler Cleanup. Persistenz-Schicht komplett: Pydantic-Klassen (`ContradictionItem`, `ResearchMemoSchema`, `ResearchMemo` Entity mit Constraint-Asymmetrie zum Schema), SQLAlchemy-ORM mit 14 Spalten + UNIQUE/CHECK/FK-CASCADE, Alembic-Migration 0005 (upgrade+downgrade-Roundtrip verifiziert), Repository-Port + SQLAlchemy-Adapter mit `pg_insert.on_conflict_do_update` UPSERT-Semantik (`created_at` als Lifecycle-Marker explizit ausgenommen). **39 neue Tests** (5 ContradictionItem + 11 Schema + 6 Entity + 12 ORM + 5 Integration), **187/6 gesamt grün**, mypy strict + ruff durchgehend clean. NarrativeService, REST-Endpoints, Prompt-Templates, LLMClient-Erweiterung explizit out-of-scope für Folge-PRs.

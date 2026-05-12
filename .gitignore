@@ -118,3 +118,9 @@ tests/fixtures/llm/*.large.json
 # Build artifacts
 *.whl
 *.tar.gz
+
+# Accidentally created at repo-root (npm/clone-Slips):
+# - frontend/package-lock.json wird tracked, aber root-level nicht
+# - prisma-capstone/-Subordner ist eine Repo-Copy von einem versehentlichen Clone
+/package-lock.json
+/prisma-capstone/

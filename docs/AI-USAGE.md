@@ -16,6 +16,120 @@ Pro PR mit substantieller Agent-Beteiligung ein Eintrag:
 - **Autor**: <Teammitglied>
 ```
 
+## Patterns (extrahiert aus 14 Einträgen, Stand 2026-05-10)
+
+Diese Sektion kondensiert wiederkehrende Lehren aus den Einträgen unten. Jeder Pattern verlinkt auf die Einträge mit konkreter Evidenz, damit der Pattern-Claim verifizierbar bleibt — nicht aus dem Bauch, sondern aus tatsächlich gemachten Erfahrungen.
+
+**Lesehinweis**: P = Positives (gezielt einsetzen), A = Anti-Patterns (aktiv vermeiden), Q = Quer-Patterns (übergreifende Heuristiken für die 40%-AI-Achse).
+
+### Positives — was wiederholt funktioniert hat
+
+#### P1. Q-by-Q-Brainstorming vor Spec
+**Eine Architektur-Frage pro Turn, Optionen + Empfehlung, User entscheidet.** Brainstorming-Skill explizit nutzen; nicht „Wall of Decisions" auf einmal.
+- **Evidenz**: PR #24 (5 Architektur-Entscheidungen Budget-Cap einzeln), PR #54 (4 Foundation-Decisions: Scope, UNIQUE-Constraint, Sprach-Spalte, Schema-vs-Entity), PR #26 (4 Iterationen Daten-Feasibility vor Modell-Mix-Entscheidung).
+- **Wirkung**: In PR #54 musste **kein einziger** der 7 Build-Steps mid-flight architektonisch neu gedacht werden.
+- **How to apply**: Vor `superpowers:writing-plans` 3-6 Architektur-Entscheidungen identifizieren, einzeln durchspielen, dann erst schreiben. Wenn man dem Subagent keinen klaren Auftrag formulieren kann, ist das eigene Denken noch nicht fertig.
+
+#### P2. Reality-Check vor Plan-Schreiben
+**Spec gegen reale Codebase grep'en bevor der Plan steht** — referenzierte Repo-Methoden, Tabellen, Pfade müssen tatsächlich existieren.
+- **Evidenz**: PR #54 (3 nicht-existente Repo-Methoden in Spec v1.0 → v1.1-Korrektur: `stock_repo.get`, `ranking_repo.get_for_stock`, `ranking_repo.get_universe_context`). Issue #60 (Master-Spec referenzierte `ClaudeLLMClient`/`llm_usage_log`/`/admin/llm-usage`, alle drei heissen im Code anders). PR #34 (Subagent claimte stale Facts).
+- **How to apply**: Vor jedem Plan-Schreiben jeden Class-/Method-/Tabellen-Namen via `grep -r` verifizieren. Nicht-existente Referenzen ersetzen oder als TBD markieren.
+
+#### P3. Two-Stage Review (Spec-Compliance + Code-Quality)
+**Spec-Reviewer prüft *was* gebaut wurde, Code-Quality-Reviewer prüft *wie*.** Fängt unterschiedliche Bug-Klassen.
+- **Evidenz**: PR #54 (Spec-Reviewer fand `Constraint-Naming-Bug` via psql gegen Live-DB, Code-Reviewer fand model_config-Style-Drifts). 7 Build-Steps × 2 Reviewer = 14 Review-Runs → 1 Production-Bug abgefangen, der einer einzelnen Mega-Review entgangen wäre.
+- **How to apply**: Ab ≥30 Zeilen Code-Änderung. Bei trivialen 1-Zeilen-Fixes reicht Spec-Re-Review.
+
+#### P4. Plan-as-Contract zwischen Subagents
+**1000-1500-Zeilen-Plan mit verbatim Test-Code, Bash-Commands und Commit-Messages pro Step erlaubt sequentielle Subagents ohne Controller-Roundtrips.**
+- **Evidenz**: PR #54 (1405-Zeilen-Plan → 7 Subagents in ~30 min Wallclock, jeder Task ~3 min Implementation + ~3 min Review-Loop). PR #70 (12 Build-Steps mit gleicher Disziplin).
+- **ROI**: ~60 min Plan-Schreiben → ~3× Implementations-Speed + ~10 Bugs durch Two-Stage-Review früh gefangen.
+- **How to apply**: Plan ist nicht „Vorschlag", sondern Vertrag. Jeder Build-Step muss ohne Rückfragen ausführbar sein.
+
+#### P5. Per-Task + Final-Review (kombiniert, nicht entweder-oder)
+**Per-Task-Reviews fangen Detail-Bugs, Final-Review fängt System-Bugs.** Bei 8+ Build-Steps nicht skip-bar.
+- **Evidenz**: PR #70 (12 Build-Steps mit Per-Task-Reviews — alles grün — plus Final-Review der **3 weitere Critical-Bugs** fand: `r["stock_id"]` KeyError, `asyncio.create_task` GC-Risk, `BudgetCapExceeded` mid-batch uncaught).
+- **How to apply**: Nach allen Build-Steps + vor PR-Erstellung einen separaten Final-Review-Pass machen, der das ganze Bild sieht — nicht nur die einzelnen Diffs.
+
+#### P6. Strict-Scope-Reviews (B addressen, W als Folge-Issues)
+**B-Findings im PR fixen, W-Findings als Folge-Issues.** Schützt vor Scope-Creep im Review-Loop.
+- **Evidenz**: PR #64 (3 Blocker fixed im Strict-Scope-Bundle, W1/W3/W4/W6 → Issues #66-#69). PR #62-Review (W1/W2/W3 als Folge-PR markiert, Approve trotzdem gegeben).
+- **Wirkung**: PR-Diff bleibt fokussiert, Review-Iteration kürzer, Reviewer-Vertrauen steigt.
+- **How to apply**: Nach Review-Eingang sofort Findings als B / W / N taggen. Nur B im selben PR fixen, W in `gh issue create`.
+
+#### P7. Subagent-Deviations transparent fordern
+**Trust-but-Verify**: Subagent muss Deviations vom Prompt mit Begründung melden. Stille Deviations sind gefährlicher als Failures.
+- **Evidenz**: PR #25 Wave 8 (Subagent meldete 2 defensive Deviations selbst: `Header(default=None)` für 401-statt-422, Python-side-Sortierung für Test-Robustheit). PR #54 Build-Step 7 (4 Plan-Deviations transparent dokumentiert). PR #70 (7 Drift-Einträge in Spec §11.1).
+- **How to apply**: Jeder Subagent-Prompt endet mit „Any deviations from this prompt? List with reasoning."
+
+#### P8. Routing — Main-Context vs Subagent
+**Main-Context für TDD-Tight-Loops** (iterative Entwicklung mit Run-Feedback). **Subagent für Multi-File-Bauarbeit nach klarer Vorgabe** (≥9 Files, kein Mid-Step-Run-Feedback nötig).
+- **Evidenz**: PR #25 (Wave 6-7 Main-Context für TDD-Tight-Loop, Wave 8 Subagent für 9-Files-Admin-Endpoint). PR #54 (7 sequentielle Subagents nach 1400-Zeilen-Plan). PR #70 (Voltagent-Implementer + Code-Reviewer-Subagents pro Build-Step).
+- **Heuristik**: Wenn der nächste Schritt von einem Run-Output abhängt (Test-, Mypy-, Browser-Output) → Main-Context. Wenn gut-definierte File-Änderungen die zusammen committed werden → Subagent.
+
+#### P9. Model-Routing (Opus vs Sonnet vs Haiku)
+**Reasoning-dichte Arbeit → Opus. Template-gehorsame Schreibarbeit → Sonnet/Haiku.** Nicht primär Kosten — Kontext-Hygiene.
+- **Evidenz**: ADR-0005 (Opus für Trade-off-Analyse, Sonnet-Subagent für ADR-Schreibarbeit nach Vorbild). PR #24 (Opus-Brainstorming, Sonnet-Subagent für 643-Zeilen-Spec-Schreibarbeit).
+- **Wirkung**: Opus-Hauptkontext bleibt frei für Entscheidungen, die Urteil brauchen. Spiegelt PRISMAs eigenes Multi-Agent-Pattern (AnalystAgent vs SynthesizerAgent).
+
+---
+
+### Anti-Patterns — was wiederholt schiefging
+
+#### A1. Plan-Code-Drift: Plan-Templates sind Vorschlag, nicht Ground-Truth
+**Plans extrapolieren oft falsch aus der Spec.** Class-Names, Method-Signatures, Imports müssen gegen die Codebase verifiziert werden.
+- **Evidenz**: PR #54 (5 echte Plan-Bugs: `model_config = ConfigDict(...)` vs `{...}`-Konvention, `dict` vs `dict[str, Any]`, `Base`-Import-Pfad falsch, Constraint-Naming-Doubling, `async_session_factory` existiert nicht). PR #64 (3 Blocker durch Plan-Code-Drift: `asyncio.gather` mit shared Session, EN-Template-Token-Verbrauch, ID-Drift). PR #70 (7 Drift-Einträge in Spec §11.1).
+- **Mitigation**: P2 (Reality-Check vor Plan).
+
+#### A2. AI-generierte Config-Files sind kontextblind für Subdirectories
+**`.gitignore`/`.dockerignore`-Regeln werden generisch generiert.** Bei Multi-Language-Repos können sie unbeabsichtigt matchen.
+- **Evidenz**: CI-Stabilisierung 2026-04-21 (`lib/`-Regel matched silent `frontend/lib/utils.ts` etc. → 3 Files fehlten in Git, lokal grün, CI rot, ~30 min Fehldiagnose).
+- **Mitigation**: Bei Multi-Language-Repos `.gitignore`-Regeln explizit scopen (`/lib/` für Root-only, oder mit explizitem Pfadpräfix).
+
+#### A3. PaaS-Plattform-Quirks aus Trainingswissen falsch
+**Render/Vercel/Cloudflare-Specifics** (Tier-Limits, argv-parsing, primitive-typed bindings) sind nicht zuverlässig in Training-Daten.
+- **Evidenz**: Render-Deployment 2026-04-21 (3 Stolpersteine: `preDeployCommand` Paid-only; `dockerCommand: "sh -c '...'"` exit 127 weil YAML-String als single-argv; `fromService.host` liefert URL ohne `https://`-Scheme).
+- **Mitigation**: Bei jedem Deploy-Config-Field aktiv prüfen „was passiert wenn die Plattform das wörtlich interpretiert?" und „welche Tier-Stufe brauche ich?". Inline-Shell-Strings in YAML immer als Array oder Script-Datei.
+
+#### A4. Constants aus Erinnerung (Pricing, Limits, API-Schemas)
+**Pricing-Werte, Token-Limits, API-Quotas aus Trainings-Daten** stimmen oft nicht mehr — müssen gegen Live-Quelle verifiziert werden.
+- **Evidenz**: PR #25 (Sonnet 4.6/Haiku 4.5/Voyage-3-large Pricing als Best-Estimate, Verifikation pflichtig vor Production-Deploy). PR #64 (Schema `max_length=600` aus Spec geraten, Sonnet schreibt 700-1000 Zeichen → Bonus-Fix nach W5-Smoke).
+- **Mitigation**: Jeden numerischen Constant in Code/Spec mit „verifiziert gegen [Quelle, Datum]" annotieren — oder als TBD markieren. Schema-Constraints für LLM-Output empirisch kalibrieren (siehe A7).
+
+#### A5. Subagent-Reports sind Snapshots, keine Live-Wahrheit
+**Subagent-Findings können bei Eintreffen schon stale sein** — gegenchecken vor Weitergabe an User oder Folge-Subagents.
+- **Evidenz**: PR #34 (Roadmap-Subagent claimte „pytest-asyncio fehlt" — war 30 min vorher via PR #34 selbst gefixt — und „PR #25/#26 wartend" — beide gemerged).
+- **Mitigation**: Vor dem Weitergeben jedes Subagent-Output kritische Claims schnell gegen Live-State verifizieren (`gh pr view`, `git log`, Tool-Output).
+
+#### A6. Branch-Strategie nach gut Glück
+**„Spec-First UND Branch-First"** muss als gemeinsamer Reflex sitzen.
+- **Evidenz**: PR #26 (erster Spec-Commit auf `main` — Verstoss gegen AGENTS.md §4 PR-only innerhalb 5 min nach Spec-Commit, dann `git reset --soft HEAD~1` + Verlagerung auf Feature-Branch).
+- **Mitigation**: Vor jedem ersten Commit aktiv `git status && git branch --show-current` prüfen.
+
+#### A7. Schema-Constraints aus dem Spec geraten
+**LLM-Output-Constraints (`max_length`, `min_length`, Pattern)** müssen empirisch gegen das Production-Modell kalibriert werden, nicht aus dem Spec geraten.
+- **Evidenz**: PR #64 (Pydantic `string_too_long` auf `ranking_interpretation` mit `max_length=600`, Sonnet schreibt typisch 700-1000 Zeichen für 5-Modell-Interpretation. In Production wäre alles in Error-Memo-Pfad gewandert).
+- **Mitigation**: Vor dem ersten Production-Smoke einmal mit echten Inputs gegen das Modell laufen lassen, dann Schema-Constraints kalibrieren. Real-API-Smoke ist Acceptance, nicht Polish (Q4).
+
+---
+
+### Quer-Patterns für die 40%-AI-Achse
+
+#### Q1. Spec-Qualität bestimmt Implementations-Tempo nicht-linear
+~60 min Plan-Schreiben → ~3× Implementations-Speed (PR #54). Wenn die Spec den nächsten Wave nicht in 3 Sätzen klar macht, ist die Spec **nicht fertig** — schreib sie zuerst zu Ende, sonst zahlst du den Preis 5× während der Implementation.
+
+#### Q2. Memory-Hygiene zählt
+Stale Memories kosten 5 min pro Session × n Sessions; Memory-Updates kosten einmalig 30 Sekunden. Memory-Updates sind eine 40%-Praxis (PR #34: alte Memory „Nicolas-Handle pending" hätte zu Best-Guess-Fehlern geführt).
+
+#### Q3. AI-USAGE-Reflexion in Echtzeit, nicht retroaktiv
+AI-USAGE.md-Einträge **während** der Arbeit pflegen, nicht „nach dem PR". Lerner-Schleife wirkt sofort (CI-Stabilisierung-Eintrag entstand parallel zum Debug, nicht danach — und half bei der nächsten Iteration).
+
+#### Q4. Real-API-Smoke ist Acceptance, nicht Polish
+LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte API laufen lassen vor Merge.
+- **Evidenz**: PR #64 W5 (Real-API-Smoke fand Schema-Calibration-Bug, der in Production silent in Error-Memo-Pfad gewandert wäre — kein Test hätte ihn lokal gefangen). Cache-Hit-Rate verifiziert: Call 1 cache_create=3259 / cache_read=0 → Call 2 cache_create=676 / cache_read=3259, 42% Kostenersparnis ab Call 2.
+
+---
+
 ## Einträge
 
 ## 2026-05-09 · RankingService Multi-Model-Wiring (Branch `feat/ranking-service-multi-model`, stacked auf `feat/alpha-impl`)

@@ -8,6 +8,7 @@ import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
 
+import pandas as pd
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
@@ -16,11 +17,14 @@ from backend.domain.entities.ranking_run import RankingRun
 from backend.domain.entities.universe import Universe
 from backend.domain.models.quality_classic import UniverseData
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
+from backend.domain.ports.market_data_provider import MarketDataProvider
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
+from backend.infrastructure.providers.stub_market_data import StubMarketDataProvider
 from backend.interfaces.rest.app import create_app
 from backend.interfaces.rest.dependencies import (
     get_fundamentals_provider,
+    get_market_data_provider,
     get_ranking_run_repository,
     get_universe_repository,
 )
@@ -83,6 +87,16 @@ class StubFundamentalsProvider(FundamentalsProvider):
         return {t: dict(_GOOD) for t in tickers}
 
 
+class FixedDateStubMarketDataProvider(MarketDataProvider):
+    """Wrapper um StubMarketDataProvider mit fixed end_date für reproduzierbare Tests."""
+
+    def __init__(self) -> None:
+        self._inner = StubMarketDataProvider(end_date=pd.Timestamp("2026-05-09", tz="UTC"))
+
+    async def get_prices(self, tickers: list[str]) -> pd.DataFrame:
+        return await self._inner.get_prices(tickers)
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -103,11 +117,13 @@ async def http_client() -> AsyncGenerator[AsyncClient, None]:
 
     run_repo = InMemoryRankingRunRepository()
     fundamentals_provider = StubFundamentalsProvider()
+    market_data_provider = FixedDateStubMarketDataProvider()
 
     app = create_app()
     app.dependency_overrides[get_universe_repository] = lambda: universe_repo
     app.dependency_overrides[get_ranking_run_repository] = lambda: run_repo
     app.dependency_overrides[get_fundamentals_provider] = lambda: fundamentals_provider
+    app.dependency_overrides[get_market_data_provider] = lambda: market_data_provider
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:

@@ -63,6 +63,12 @@ class TestStringLengthConstraints:
         with pytest.raises(ValidationError):
             ResearchMemoSchema(**payload)
 
+    def test_ranking_interpretation_too_long(self) -> None:
+        payload = _valid_payload()
+        payload["ranking_interpretation"] = "x" * 1001  # max=1000
+        with pytest.raises(ValidationError):
+            ResearchMemoSchema(**payload)
+
     def test_sweet_spot_explanation_too_long(self) -> None:
         payload = _valid_payload()
         payload["sweet_spot_explanation"] = "x" * 301

@@ -1,6 +1,7 @@
 """Abstraktes Repository-Interface für Stock-Entitäten (Port, nicht Adapter)."""
 
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 from backend.domain.entities.stock import Stock
 
@@ -19,6 +20,14 @@ class StockRepository(ABC):
     @abstractmethod
     async def get_by_ticker(self, ticker: str) -> Stock | None:
         """Sucht eine Stock-Entity anhand des Ticker-Symbols.
+
+        Gibt None zurück wenn kein Treffer gefunden wurde (kein Exception-Missbrauch).
+        """
+        ...
+
+    @abstractmethod
+    async def get(self, stock_id: UUID) -> Stock | None:
+        """Sucht eine Stock-Entity anhand ihrer UUID.
 
         Gibt None zurück wenn kein Treffer gefunden wurde (kein Exception-Missbrauch).
         """

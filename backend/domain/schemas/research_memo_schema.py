@@ -19,7 +19,7 @@ class ResearchMemoSchema(BaseModel):
     total_rank: int = Field(..., ge=1)
 
     one_liner: str = Field(..., min_length=10, max_length=150)
-    ranking_interpretation: str = Field(..., min_length=100, max_length=600)
+    ranking_interpretation: str = Field(..., min_length=100, max_length=1000)
     sweet_spot: bool
     sweet_spot_explanation: str | None = Field(None, max_length=300)
     contradictions: list[ContradictionItem] = Field(default_factory=list, max_length=3)

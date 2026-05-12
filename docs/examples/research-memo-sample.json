@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "description": "Realistisches Beispiel-Memo, exportiert aus dem MVP-Service. Quelle: Test-Run gegen claude-sonnet-4-6 mit NESN als Stock.",
+    "created_at": "2026-05-04",
+    "model_version": "claude-sonnet-4-6"
+  },
+  "id": "550e8400-e29b-41d4-a716-446655440099",
+  "stock_id": "550e8400-e29b-41d4-a716-446655440000",
+  "model_run_id": "550e8400-e29b-41d4-a716-446655440001",
+  "language": "de",
+  "one_liner": "Defensiver Quality-Kern mit niedrigem Risiko, schwaches Reversion-Potenzial.",
+  "ranking_interpretation": "Quality Classic Top 10% und Diversification Top 6% pruegen das Bild — fundamentale Solidaet und niedriges Risiko stehen klar im Vordergrund. Alpha und Trend Momentum sind Top 25% bzw. ueberdurchschnittlich, also ein gesundes aber nicht spektakulaeres Momentum-Profil. Value Alpha Potential im Bottom 25% deutet darauf hin, dass die Aktie nahe ihrem rolling-max Alpha laeuft — wenig Rueckschlag-Potenzial.",
+  "sweet_spot": true,
+  "sweet_spot_explanation": "4 von 5 Modellen Top 25% (Quality, Alpha, Trend, Diversification). Robustes Ranking ueber Modellgrenzen hinweg.",
+  "contradictions": [
+    {
+      "model_a": "Diversification",
+      "model_b": "Value Alpha Potential",
+      "description": "Niedrigstes Risiko vs. niedrigstes Reversion-Potenzial — ueblich fuer Quality-Compounder, aber bei Stil-Rotation ein Risiko."
+    }
+  ],
+  "key_strengths": [
+    "Top 10% Quality-Bilanz",
+    "Top 6% Diversifikations-Risikoprofil",
+    "Top 25% Alpha-Performance",
+    "Sweet-Spot-Status (4 von 5 Modellen)"
+  ],
+  "key_risks": [
+    "Bottom 25% Reversion-Potenzial — weniger Upside",
+    "Stil-Rotation aus Defensives waere ein Headwind",
+    "Bewertungs-Multiples nicht im Modell — separate Pruefung"
+  ],
+  "confidence": "high",
+  "model_version": "claude-sonnet-4-6",
+  "created_at": "2026-05-04T10:00:00Z",
+  "is_error": false
+}

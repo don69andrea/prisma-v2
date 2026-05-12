@@ -1,0 +1,42 @@
+{
+  "id": "msg_contradictory",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-4-6",
+  "stop_reason": "tool_use",
+  "usage": {"input_tokens": 280, "output_tokens": 510, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 2000},
+  "content": [
+    {
+      "type": "tool_use",
+      "id": "tool_2",
+      "name": "submit_memo",
+      "input": {
+        "ticker": "ROG",
+        "total_rank": 12,
+        "one_liner": "Solide Quality-Bilanz, aber Risiko-Profil weicht stark ab.",
+        "ranking_interpretation": "Quality Classic Top 10% steht im starken Kontrast zu Diversification Bottom 25% — typisch fuer hoch-konzentrierte Geschaeftsmodelle. Trend und Value im Mittelfeld. Confidence reduziert wegen klarer Modell-Diskrepanz.",
+        "sweet_spot": false,
+        "sweet_spot_explanation": null,
+        "contradictions": [
+          {
+            "model_a": "Quality Classic",
+            "model_b": "Diversification",
+            "description": "Top 10% Quality vs. Bottom 25% Risiko-/Diversifikations-Profil — 65 Perzentile auseinander."
+          }
+        ],
+        "key_strengths": [
+          "Top 10% Quality-Bilanz",
+          "Solide Trend-Signale"
+        ],
+        "key_risks": [
+          "Bottom 25% Risiko-Profil — hoch konzentriert",
+          "Sektor-Klumpen-Risiko",
+          "Liquiditaets-Risiko nicht modelliert"
+        ],
+        "confidence": "medium",
+        "generated_at": "2026-05-04T10:00:00Z",
+        "model_version": "claude-sonnet-4-6"
+      }
+    }
+  ]
+}

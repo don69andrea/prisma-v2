@@ -2,6 +2,7 @@
 
 import uuid
 from collections.abc import AsyncGenerator
+from uuid import UUID
 
 import pytest
 import pytest_asyncio
@@ -36,6 +37,12 @@ class InMemoryStockRepository(StockRepository):
     async def get_by_ticker(self, ticker: str) -> Stock | None:
         for stock in self._stocks:
             if stock.ticker == ticker.upper():
+                return stock
+        return None
+
+    async def get(self, stock_id: UUID) -> Stock | None:
+        for stock in self._stocks:
+            if stock.id == stock_id:
                 return stock
         return None
 

@@ -34,11 +34,11 @@ class LLMClient:
         self,
         *,
         anthropic: Any,
-        voyage: Any,
+        voyage: Any | None,
         cost_tracker: CostTracker,
     ) -> None:
         self._anthropic = anthropic
-        self._voyage = voyage
+        self._voyage: Any | None = voyage
         self._cost_tracker = cost_tracker
 
     async def messages_create(
@@ -48,7 +48,7 @@ class LLMClient:
         messages: list[dict[str, Any]],
         max_tokens: int,
         feature: str,
-        system: str | None = None,
+        system: str | list[dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> Any:
         """Wrapper um `anthropic.messages.create` mit Cap-Check + Audit-Logging.
@@ -97,6 +97,11 @@ class LLMClient:
         Voyage-SDK ist sync — Aufruf läuft in einem Thread-Pool, damit der
         Event-Loop nicht blockiert wird.
         """
+        if self._voyage is None:
+            raise RuntimeError(
+                "LLMClient was constructed without a Voyage client (voyage=None). "
+                "embed() requires a Voyage client. Wire one via dependencies.get_voyage_client."
+            )
         try:
             pricing = PRICING[model]
         except KeyError as exc:
@@ -129,7 +134,7 @@ class LLMClient:
         model: str,
         messages: list[dict[str, Any]],
         max_tokens: int,
-        system: str | None,
+        system: str | list[dict[str, Any]] | None,
     ) -> Decimal:
         """chars/3 für Input (konservativ, siehe Modul-Konstante) + max_tokens
         als worst-case Output."""
@@ -140,8 +145,13 @@ class LLMClient:
         if pricing.input_per_mtok is None or pricing.output_per_mtok is None:
             raise UnknownModelError(model, reason="kein Chat-Pricing — verwende embed")
         chars = sum(len(m.get("content", "")) for m in messages)
-        if system:
+        if isinstance(system, str):
             chars += len(system)
+        elif isinstance(system, list):
+            for block in system:
+                text = block.get("text") if isinstance(block, dict) else None
+                if isinstance(text, str):
+                    chars += len(text)
         input_tokens_est = chars // _CHARS_PER_TOKEN_ESTIMATE
         return (
             Decimal(input_tokens_est) * pricing.input_per_mtok / _ONE_MILLION

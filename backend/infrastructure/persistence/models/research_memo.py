@@ -51,7 +51,7 @@ class ResearchMemoORM(Base):
     )
 
     one_liner: Mapped[str] = mapped_column(String(150), nullable=False)
-    ranking_interpretation: Mapped[str] = mapped_column(String(600), nullable=False)
+    ranking_interpretation: Mapped[str] = mapped_column(String(1000), nullable=False)
     sweet_spot: Mapped[bool] = mapped_column(Boolean, nullable=False)
     sweet_spot_explanation: Mapped[str | None] = mapped_column(String(300), nullable=True)
     contradictions: Mapped[list[object]] = mapped_column(JSONB, nullable=False, default=list)

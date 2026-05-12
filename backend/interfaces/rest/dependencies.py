@@ -2,24 +2,34 @@
 
 import hmac
 from collections.abc import AsyncGenerator
+from functools import lru_cache
+from typing import Any
 
+import anthropic
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.cost_tracker import CostTracker
+from backend.application.services.narrative_service import NarrativeService
 from backend.application.services.ranking_run_service import RankingRunService
 from backend.application.services.stock_service import StockService
 from backend.config import Settings, get_settings
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.repositories.cost_log_repository import CostLogRepository
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
+from backend.domain.repositories.research_memo_repository import ResearchMemoRepository
 from backend.domain.repositories.stock_repository import StockRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
+from backend.infrastructure.llm.client import LLMClient
+from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
 )
 from backend.infrastructure.persistence.repositories.ranking_run_repository import (
     SQLARankingRunRepository,
+)
+from backend.infrastructure.persistence.repositories.research_memo_repository import (
+    SQLAResearchMemoRepository,
 )
 from backend.infrastructure.persistence.repositories.stock_repository import (
     SQLAStockRepository,
@@ -123,3 +133,65 @@ async def require_admin_api_key(
         raise HTTPException(status_code=401, detail="Invalid API key")
     if x_api_key is None or not hmac.compare_digest(x_api_key, settings.api_key):
         raise HTTPException(status_code=401, detail="Invalid API key")
+
+
+# ---------------------------------------------------------------------------
+# NarrativeService DI-Chain
+# ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=1)
+def get_prompt_loader() -> PromptTemplateLoader:
+    """Singleton — Templates werden einmal beim ersten Aufruf geladen."""
+    return PromptTemplateLoader()
+
+
+async def get_anthropic_client(
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    """Instanziiert den Anthropic AsyncAnthropic-Client mit Spec-konformen Timeouts.
+
+    Spec §7 (Single-Memo-Slice): `timeout=30.0`, `max_retries=3`. SDK-Defaults
+    sind 10-Minuten-Timeout / 2 Retries — bei langsam-antwortender API blockiert
+    ein FastAPI-Worker sonst 10 Minuten pro Call.
+    """
+    return anthropic.AsyncAnthropic(
+        api_key=settings.anthropic_api_key,
+        timeout=30.0,
+        max_retries=3,
+    )
+
+
+async def get_llm_client(
+    anthropic_client: Any = Depends(get_anthropic_client),
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+) -> LLMClient:
+    """Erstellt den LLMClient-Wrapper. Voyage-Client ist None — wird nur für embed() benötigt,
+    das von der Narrative-Engine nicht verwendet wird."""
+    return LLMClient(anthropic=anthropic_client, voyage=None, cost_tracker=cost_tracker)
+
+
+async def get_research_memo_repository() -> ResearchMemoRepository:
+    """Instanziiert den SQLAlchemy-Adapter fuer ResearchMemo.
+
+    SQLAResearchMemoRepository verwaltet seine eigene Session-Factory
+    (wie SQLACostLogRepository), daher kein Depends(get_session) noetig.
+    """
+    return SQLAResearchMemoRepository(session_factory=get_session_factory())
+
+
+async def get_narrative_service(
+    memo_repo: ResearchMemoRepository = Depends(get_research_memo_repository),
+    run_repo: RankingRunRepository = Depends(get_ranking_run_repository),
+    stock_repo: StockRepository = Depends(get_stock_repository),
+    llm: LLMClient = Depends(get_llm_client),
+    prompt_loader: PromptTemplateLoader = Depends(get_prompt_loader),
+) -> NarrativeService:
+    """Erstellt den NarrativeService mit vollstaendiger DI-Chain."""
+    return NarrativeService(
+        memo_repository=memo_repo,
+        run_repository=run_repo,
+        stock_repository=stock_repo,
+        llm_client=llm,
+        prompt_loader=prompt_loader,
+    )

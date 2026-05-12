@@ -1,0 +1,21 @@
+AKTIE
+Ticker: {{ ticker }}
+Name: {{ name }}
+Sektor: {{ sector | default("nicht angegeben") }}
+Land: {{ country | default("nicht angegeben") }}
+
+MODEL RUN
+Run-ID: {{ run_id }}
+Universum: {{ universe_name | default("Unbekannt") }} (N={{ n_stocks }} Aktien)
+Benchmark-Median-Rang: {{ median_rank }}
+Top-20%-Schwelle: ≤ {{ top20_threshold }}
+
+RANKINGS (1 = bester)
+{% for model_name, ranking in rankings.items() %}- {{ model_name }}: Rang {{ ranking.rank }}/{{ n_stocks }}, Score {{ "%.4f"|format(ranking.score) }}
+{% endfor %}
+AGGREGATION
+Total Rank: {{ total_rank }}/{{ n_stocks }}
+Quant Sweet Spot: {{ sweet_spot }}
+Verwendete Gewichte: {{ weights }}
+
+Produziere das strukturierte JSON-Memo via `submit_memo`-Tool gemaess Systemanweisungen.

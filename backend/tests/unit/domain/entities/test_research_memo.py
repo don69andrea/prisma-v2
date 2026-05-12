@@ -92,3 +92,15 @@ class TestResearchMemoEntity:
     def test_one_liner_max_length_still_enforced(self) -> None:
         with pytest.raises(ValidationError):
             ResearchMemo(**_valid_entity_payload(one_liner="x" * 151))
+
+    def test_ranking_interpretation_accepts_1000_chars(self) -> None:
+        # Schema (LLM-Output) erlaubt bis 1000 Zeichen (commit cabef60,
+        # empirisch gegen Sonnet-4-6 kalibriert). Entity muss mindestens
+        # gleich permissiv sein, sonst crasht generate_memo Schritt 6 mit
+        # ValidationError fuer reale LLM-Outputs zwischen 601-1000 chars.
+        memo = ResearchMemo(**_valid_entity_payload(ranking_interpretation="x" * 1000))
+        assert len(memo.ranking_interpretation) == 1000
+
+    def test_ranking_interpretation_max_length_1001_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            ResearchMemo(**_valid_entity_payload(ranking_interpretation="x" * 1001))

@@ -1,5 +1,7 @@
 """SQLAlchemy-Implementierung des StockRepository-Ports."""
 
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +29,11 @@ class SQLAStockRepository(StockRepository):
         result = await self._session.execute(stmt)
         row = result.scalar_one_or_none()
         return self._to_domain(row) if row is not None else None
+
+    async def get(self, stock_id: UUID) -> Stock | None:
+        """Sucht einen Stock anhand seiner UUID."""
+        orm = await self._session.get(StockORM, stock_id)
+        return self._to_domain(orm) if orm else None
 
     @staticmethod
     def _to_domain(orm: StockORM) -> Stock:

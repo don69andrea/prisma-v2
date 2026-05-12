@@ -261,7 +261,7 @@ class NarrativeService:
         self,
         memo_repository: ResearchMemoRepository,
         ranking_repository: RankingRepository,
-        llm_client: ClaudeLLMClient,
+        llm_client: LLMClient,
         prompt_template_loader: PromptTemplateLoader,
     ) -> None: ...
 
@@ -329,7 +329,7 @@ class NarrativeService:
 
 - **Pydantic-Schema-Tests**: synthetische Inputs → Validator muss Edge-Cases fangen (leere Strings, zu lange Texte, ungültiges Confidence-Level, usw.). Ziel-Coverage: 100% Branches im Schema.
 - **Prompt-Building-Tests**: Snapshot-Tests, um sicherzustellen, dass User-Prompt aus gegebenen Inputs exakt gleich bleibt. Erkennt unabsichtliche Prompt-Drifts sofort.
-- **Service-Logik mit Mock-LLM**: `ClaudeLLMClient` wird durch ein `StubClient` ersetzt, der aufgenommene Responses aus Fixtures liefert. Testet Error-Handling-Pfade.
+- **Service-Logik mit Mock-LLM**: `LLMClient` wird durch ein `StubClient` ersetzt, der aufgenommene Responses aus Fixtures liefert. Testet Error-Handling-Pfade.
 
 ### 10.2 Integration (Fixture-Mode, in CI)
 
@@ -380,13 +380,13 @@ class NarrativeService:
 
 ### Metriken (in PostgreSQL, einfache Tabelle)
 
-Eigene `llm_usage_log`-Tabelle für Budget-Tracking und Reflexion:
+Eigene `llm_call_log`-Tabelle für Budget-Tracking und Reflexion (eingeführt in PR #25, Migration `0003_create_llm_call_log.py`):
 
 | Feld |
 |---|
 | `id, timestamp, model, input_tokens_cached, input_tokens_uncached, output_tokens, cost_usd, service, latency_ms, status` |
 
-Ein Read-Only-Endpunkt `GET /admin/llm-usage` zeigt Aggregate für die Präsentation ("wir haben 18 USD verbraucht").
+Ein Read-Only-Endpunkt `GET /api/v1/admin/costs` zeigt Aggregate für die Präsentation ("wir haben 18 USD verbraucht"). Implementation in `backend/interfaces/rest/routers/admin.py` mit Pydantic-Response-Schema (`backend/interfaces/rest/schemas/cost_summary.py`).
 
 ---
 
@@ -454,13 +454,13 @@ Implementation dieser Spec ist komplett, wenn:
 - [ ] `ResearchMemo`-Entity + SQLAlchemy-Modell + Alembic-Migration
 - [ ] `ResearchMemoRepository` Interface + `SQLAResearchMemoRepository`-Implementierung
 - [ ] `NarrativeService` mit allen 3 Methoden aus §8
-- [ ] `ClaudeLLMClient` in `backend/infrastructure/llm/` mit Prompt-Caching
+- [ ] `LLMClient` in `backend/infrastructure/llm/client.py` mit Prompt-Caching (handled Anthropic + Voyage, eingeführt in PR #25)
 - [ ] Prompt-Templates in `backend/infrastructure/llm/prompts/*.j2`
 - [ ] 4 REST-Endpunkte aus §8 live, in Swagger-UI sichtbar
 - [ ] Unit-Tests grün, Coverage ≥90% auf Service+Schema
 - [ ] Integration-Tests mit Fixture-Mode grün, Coverage ≥80%
 - [ ] Golden-Prompt-Workflow konfiguriert, mind. 1 manueller Testlauf erfolgreich
-- [ ] `llm_usage_log`-Tabelle + `/admin/llm-usage`-Endpunkt
+- [x] `llm_call_log`-Tabelle + `/api/v1/admin/costs`-Endpunkt (geliefert via PR #25)
 - [ ] Beispiel-Memo als JSON unter `docs/examples/research-memo-sample.json`
 - [ ] AI-USAGE.md-Eintrag zu Implementation (inkl. beobachteter Cache-Hit-Rate bei realem Test)
 
@@ -471,3 +471,4 @@ Implementation dieser Spec ist komplett, wenn:
 | Version | Datum | Autor | Änderung |
 |---|---|---|---|
 | Draft v1.0 | 2026-04-21 | Claude Code für Sheyla | Initiale Spec |
+| Draft v1.1 | 2026-05-10 | Sheyla / Claude Code Opus 4.7 | Code-Realität synchronisiert (Issue #60): `ClaudeLLMClient` → `LLMClient` (§8, §10.1, §14), `llm_usage_log` → `llm_call_log` (§11, §14), `/admin/llm-usage` → `/api/v1/admin/costs` (§11, §14). Beide Tabellen-/Endpoint-Namen wurden in PR #25 (Budget-Cap) abweichend von dieser Spec implementiert; Spec zieht jetzt nach. Akzeptanz-Punkt für `llm_call_log` + `/admin/costs` als ✅ markiert (geliefert via PR #25). Parameter-Naming `lang` (§8) bewusst behalten — Code-Realität ist `language`, harmonisierung in Folge-Slice (siehe `2026-05-04-narrative-engine-single-memo.md` §11). |

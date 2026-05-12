@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import Link from 'next/link';
 
 import { Providers } from '@/app/providers';
+import { ROUTES } from '@/lib/routes';
 import '@/app/globals.css';
 
 const inter = Inter({
@@ -21,9 +22,9 @@ export const metadata: Metadata = {
 };
 
 const navLinks = [
-  { href: '/', label: 'Dashboard' },
-  { href: '/universes', label: 'Universen' },
-  { href: '/universes', label: 'Rankings' },
+  { href: ROUTES.dashboard, label: 'Dashboard' },
+  { href: ROUTES.universes, label: 'Universen' },
+  { href: ROUTES.rankings,  label: 'Rankings' },
 ] as const;
 
 interface RootLayoutProps {

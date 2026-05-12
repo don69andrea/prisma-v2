@@ -54,6 +54,33 @@ Pro PR mit substantieller Agent-Beteiligung ein Eintrag:
 - **Token-Kosten**: Geschätzt ~350-400k Tokens insgesamt (Opus 4.7 Hauptkontext für Orchestrierung + Reality-Check + Plan + Review-Synthese, ~130k; 10-11 Sonnet-4.6-Subagent-Dispatches à ~15-30k = ~200-250k; Haiku-4.5 für schnelle Fix-Iterationen ~20k). Kein echter CostTracker-Wert verfügbar (Smoke-Test nicht ausgeführt). Etwa 12-15 USD geschätzt.
 - **Autor**: Sheyla Sampietro (mit Claude Code Opus 4.7 als Controller + Sonnet-4.6/Haiku-4.5-Subagents)
 
+## 2026-05-03 · Value-Alpha-Potential-Modell — TDD-Implementation (Branch `feat/value-alpha-potential-impl`, stacked auf #62)
+- **Agent**: Claude Code (Opus 4.7), Main-Context.
+- **Scope**: Drittes von 4 ausstehenden Quant-Modellen aus PR #26-Redesign. `ValueAlphaPotentialModel` ersetzt `NotImplementedError`-Skeleton durch Rolling-Max-Alpha-Mean-Reversion: `alpha = pct_change(63) - benchmark.pct_change(63)`, `rolling_max = alpha.rolling(252, min_periods=68).max()`, `potential = rolling_max - alpha`. 7 Tests (Constants, Past-Star vs. Constant, At-Peak-Today/Negative-Potential-Edge-Case, Determinismus, Empty, Insufficient, Single-Ticker), **alle 7/7 grün beim ersten Run**. Volle Suite: 164 passed / 1 skipped, mypy strict + ruff format/check clean.
+- **PR-Strategie**: PR #63 stacked auf `feat/trend-momentum-impl` (PR #62), das wiederum auf #61 stacked. Drei-Stufen-Stack. Plan: nach #61-Merge → `gh pr edit 62 --base main`; nach #62-Merge → `gh pr edit 63 --base main`.
+- **Was gut lief**:
+  - **3. Modell, 3. mal beim ersten Run grün** (Diversification: 5/6, dann 6/6 nach Zero-Variance-Fix; Trend Momentum: 8/8; Value Alpha Potential: 7/7). Spec-First-Disziplin zahlt sich aus — die `2026-04-28-quant-mvp-models.md`-Spec macht alle Edge-Cases explizit, sodass Tests + Impl in der gleichen Mental-Model-Stunde fertig sind.
+  - **At-Peak-Test als Spec-Edge-Case-Anchor**: Die Spec sagt explizit „Negativer potential: Aktuelles Alpha über Rolling-Max → gültiger Score, wird normal gerankt." `test_at_peak_today_yields_negative_potential` testet genau das — keine Ranking-Regression bei Edge-Score-Werten. Würde bei „Tests-after" wahrscheinlich vergessen werden.
+- **Was nicht klappte**: 
+  - **Nichts (zum ersten Mal in der Wave)** — kein Format-Trap, kein Edge-Case-Bug, keine ruff/mypy-Iteration. Der Reflex `ruff format` + `ruff check` als CI-Mirror vor Push ist jetzt eingebaut.
+- **Methodisches Mini-Learning**: **Stacked-PRs sind kein Drama, wenn der Diff sauber bleibt.** Drei Branches in der Pipeline (`feat/diversification` → `feat/trend-momentum` → `feat/value-alpha-potential`) bedeuten dreimal `gh pr edit --base main` nach den jeweiligen Merges. Das ist Buchhaltungsaufwand, kein Coding-Aufwand. Der Trade-off lohnt sich gegenüber „warten bis #61 merged, dann erst #62 starten" — wir produzieren 3× so schnell, der Reviewer entscheidet die Reihenfolge.
+- **Token-Kosten**: ~12k Tokens Opus 4.7; ~0.25 USD.
+- **Autor**: Fabia Holzer (mit Claude Code)
+
+## 2026-05-02 · Trend-Momentum-Modell — TDD-Implementation (Branch `feat/trend-momentum-impl`, stacked auf #61)
+- **Agent**: Claude Code (Opus 4.7), reine Main-Context-Arbeit (kein Subagent — kompakter TDD-Cycle).
+- **Scope**: Zweites von 4 ausstehenden Quant-Modellen aus PR #26-Redesign. `TrendMomentumModel` ersetzt `NotImplementedError`-Skeleton durch EWMA-basierte Implementation: `prices.pct_change().sub(benchmark.pct_change()).ewm(halflife=63, min_periods=32).mean()` → höchster Score = Rang 1. 8 Tests (Constants, Outperformer-Golden, Identical-Prices-Tie, Recent-Outperformance-EWMA-Halflife-Verifikation, Determinismus, Empty, Insufficient, Single-Ticker), alle grün **beim ersten Run**. Volle Suite: 159 passed / 3 skipped, mypy strict + ruff format/check clean.
+- **PR-Strategie**: PR #62 stacked auf `feat/diversification-impl` (Base = #61's Branch), weil pyproject.toml-Deps (pandas/numpy/sklearn) noch nicht in main. Plan: nach #61-Merge `gh pr edit 62 --base main` für sauberen Basiswechsel.
+- **Was gut lief**:
+  - **TDD-Disziplin: 8/8 grün beim ersten Run**, kein Edge-Case-Bug. Spec war detailliert genug (`docs/specs/2026-04-28-quant-mvp-models.md §3` + Redesign-Spec), dass keine Design-Entscheidungen mid-flight nötig waren.
+  - **EWMA-Halflife-Verifikations-Test als spezifischer Behavior-Anchor**: `test_recent_outperformance_weighted_higher` konstruiert zwei Ticker mit *gleicher* Gesamt-Outperformance, aber unterschiedlicher Recency. EWMA mit halflife=63 muss B (recent) höher ranken als A (uniform). Das ist nicht „ein Test der Formel", sondern ein Test der **Spec-Behauptung** „Heute = volles Gewicht, vor 63d = 50%". Genau die Kategorie Test, die bei Tests-after meist fehlt, weil sie nicht aus dem Code abgelesen werden kann.
+  - **Lokal CI-Mirror als Reflex**: Diesmal vor Push `ruff format --check` zusätzlich zu `ruff check` gelaufen — Format-Issue im Test-File gefunden + behoben **vor** dem Push. PR #61 hatte das nicht und CI war rot — Lehre direkt umgesetzt.
+- **Was nicht klappte**: 
+  - **Anfangs Format-Trap erneut**: erster `ruff format --check`-Run (vor Push) zeigte `test_trend_momentum.py` als unformatiert — pandas-DataFrame-Konstruktor multi-line-Style. Reformat-Run + Re-verify innerhalb 30s. **Lehre verfestigt: `ruff format` ≠ `ruff check`, immer beide.**
+- **Methodisches Mini-Learning**: **Behavior-Tests > Formel-Tests.** Der EWMA-Halflife-Test prüft *was die Spec verspricht* (Gewichtung), nicht *was der Code tut* (`.ewm(halflife=63)`). Das ist Spec-vs-Code-Asymmetrie als Test-Pattern: wenn der Code irgendwann auf andere Halflife-Werte umgestellt würde, würde der Test die Spec-Verletzung fangen. Dieselbe Idee wie Sheylas Schema-vs-Entity-Asymmetrie in PR #54.
+- **Token-Kosten**: ~15k Tokens Opus 4.7; ~0.30 USD.
+- **Autor**: Fabia Holzer (mit Claude Code)
+
 ## 2026-05-02 · Diversification-Modell — TDD-Implementation (Branch `feat/diversification-impl`)
 - **Agent**: Claude Code (Opus 4.7), reine Main-Context-Arbeit (kein Subagent — klassischer Tight-Loop-TDD-Cycle).
 - **Scope**: Erstes der 4 noch ausstehenden Quant-Modelle aus dem Redesign-PR #26 vollständig implementiert. `DiversificationModel` ersetzt das `NotImplementedError`-Skeleton in `backend/domain/models/diversification.py` durch die in der Spec festgelegte Ledoit-Wolf-Shrinkage-Kovarianz-Berechnung mit `score = 2 / (annualisierte_vola + avg_korrelation)`. 6 Tests (Golden-Dataset 3-Ticker, Determinismus, leeres Universum, Single-Ticker, < 30 Datenpunkte, Zero-Variance-Ticker), alle grün. Pandas + numpy + scikit-learn neu in `pyproject.toml`-Deps aufgenommen. Volle Suite: 153 passed / 5 skipped, mypy strict + ruff clean.

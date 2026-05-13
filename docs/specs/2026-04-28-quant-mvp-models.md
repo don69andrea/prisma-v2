@@ -243,9 +243,11 @@ corr_matrix = cov_matrix / np.outer(std_devs, std_devs)
 volatility       = std_devs * np.sqrt(252)             # annualisiert
 avg_correlation  = (corr_matrix.sum(axis=1) - 1) / (n - 1)  # ohne Selbstkorrelation
 
-# Score (harmonisches Mittel aus Kehrwerten)
-score = 2 / (volatility + avg_correlation)             # harmonisches Mittel
-# (äquivalent: hoch = niedrige Vola + niedrige Korrelation = Rang 1)
+# Score: monoton fallend in (volatility + avg_correlation)
+# → niedrige Vola + niedrige Korrelation ergibt höheren Score → Rang 1
+# (Faktor 2 ist nur Skalierung, hat keinen Effekt aufs Ranking;
+#  die Formel ist NICHT das harmonische Mittel — HM(a,b) = 2ab/(a+b).)
+score = 2 / (volatility + avg_correlation)
 
 rank = pd.Series(score).rank(ascending=False, method="min").astype(int)
 ```

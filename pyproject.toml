@@ -67,3 +67,26 @@ markers = [
     "unit: fast unit tests, no I/O",
     "integration: requires database or HTTP",
 ]
+
+[tool.coverage.run]
+source = ["backend"]
+omit = [
+    "backend/tests/*",
+    "backend/alembic/*",
+    "backend/__init__.py",
+]
+branch = false
+
+[tool.coverage.report]
+# Spec 2026-04-21-prisma-capstone-design.md §14.5 (Z. 660) + §17 Wo 11 (Z. 764):
+# "Coverage ≥80% in CI sichtbar" — als CI-Gate gegen Regressions.
+fail_under = 80
+show_missing = true
+skip_covered = false
+precision = 1
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
+    "if __name__ == .__main__.:",
+]

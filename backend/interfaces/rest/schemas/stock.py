@@ -24,3 +24,19 @@ class StockListResponse(BaseModel):
 
     items: list[StockRead]
     total: int
+
+
+class LatestRankingSnapshot(BaseModel):
+    """Ranking-Ergebnis eines Tickers aus dem neuesten abgeschlossenen Run."""
+
+    total_rank: int | None
+    weighted_avg: float | None
+    is_sweet_spot: bool
+    per_model_ranks: dict[str, int | None]
+
+
+class StockFactsheet(BaseModel):
+    """Kombiniertes Factsheet: Stock-Stammdaten + neueste Ranking-Momentaufnahme."""
+
+    stock: StockRead
+    latest_ranking: LatestRankingSnapshot | None

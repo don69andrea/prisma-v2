@@ -10,6 +10,7 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.cost_tracker import CostTracker
+from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.narrative_service import NarrativeService
 from backend.application.services.ranking_run_service import RankingRunService
 from backend.application.services.stock_service import StockService
@@ -112,6 +113,13 @@ async def get_ranking_run_repository(
     session: AsyncSession = Depends(get_session),
 ) -> RankingRunRepository:
     return SQLARankingRunRepository(session=session)
+
+
+async def get_factsheet_service(
+    stock_repo: StockRepository = Depends(get_stock_repository),
+    run_repo: RankingRunRepository = Depends(get_ranking_run_repository),
+) -> FactsheetService:
+    return FactsheetService(stock_repo=stock_repo, run_repo=run_repo)
 
 
 async def get_fundamentals_provider() -> FundamentalsProvider:

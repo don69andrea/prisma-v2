@@ -22,3 +22,11 @@ class RankingRunRepository(ABC):
 
     @abstractmethod
     async def get_results(self, run_id: UUID) -> list[dict[str, Any]] | None: ...
+
+    @abstractmethod
+    async def get_latest_ticker_result(self, ticker: str) -> dict[str, Any] | None:
+        """Gibt das Ranking-Ergebnis für einen Ticker aus dem neuesten abgeschlossenen Run zurück.
+
+        Gibt None zurück wenn kein completed Run mit diesem Ticker existiert.
+        """
+        ...

@@ -3,7 +3,7 @@
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain.entities.ranking_run import RankingRun
@@ -60,6 +60,23 @@ class SQLARankingRunRepository(RankingRunRepository):
     async def get_results(self, run_id: UUID) -> list[dict[str, Any]] | None:
         row = await self._session.get(RankingRunORM, run_id)
         return row.results if row else None
+
+    async def get_latest_ticker_result(self, ticker: str) -> dict[str, Any] | None:
+        # JSONB-Array-Expansion: jsonb_array_elements liefert je einen Row pro Element.
+        # Wir filtern auf completed Runs + passenden Ticker und nehmen den neuesten.
+        stmt = text("""
+            SELECT elem
+            FROM ranking_runs,
+                 jsonb_array_elements(results) AS elem
+            WHERE status = 'completed'
+              AND results IS NOT NULL
+              AND elem->>'ticker' = :ticker
+            ORDER BY created_at DESC
+            LIMIT 1
+        """)
+        result = await self._session.execute(stmt, {"ticker": ticker.upper()})
+        row = result.scalar_one_or_none()
+        return dict(row) if row is not None else None
 
     @staticmethod
     def _to_domain(orm: RankingRunORM) -> RankingRun:

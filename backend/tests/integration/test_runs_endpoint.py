@@ -81,6 +81,13 @@ class InMemoryRankingRunRepository(RankingRunRepository):
     async def get_results(self, run_id: uuid.UUID) -> list[dict[str, Any]] | None:
         return self._results.get(run_id)
 
+    async def get_latest_ticker_result(self, ticker: str) -> dict[str, Any] | None:
+        for results in self._results.values():
+            for item in results:
+                if item.get("ticker") == ticker.upper():
+                    return item
+        return None
+
 
 class StubFundamentalsProvider(FundamentalsProvider):
     async def get_fundamentals(self, tickers: list[str]) -> UniverseData:

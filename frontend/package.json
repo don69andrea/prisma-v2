@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "next": "^14.2.0",
@@ -34,6 +36,10 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "prettier": "^3.2.0",
-    "prettier-plugin-tailwindcss": "^0.5.14"
+    "prettier-plugin-tailwindcss": "^0.5.14",
+    "vitest": "^1.6.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/jest-dom": "^6.4.0",
+    "jsdom": "^24.1.0"
   }
 }

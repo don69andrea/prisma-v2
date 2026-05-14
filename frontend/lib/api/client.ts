@@ -24,9 +24,11 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   if (!response.ok) {
     let message = `HTTP ${response.status}: ${response.statusText}`;
     try {
-      const body = (await response.json()) as { error?: { message?: string } };
-      if (body?.error?.message) {
-        message = body.error.message;
+      const body = (await response.json()) as { detail?: string | Array<{ msg: string }> };
+      if (typeof body?.detail === 'string') {
+        message = body.detail;
+      } else if (Array.isArray(body?.detail)) {
+        message = body.detail.map((e) => e.msg).join(', ');
       }
     } catch {
       // ignore JSON parse failures — use default message

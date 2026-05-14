@@ -13,6 +13,7 @@ from backend.application.services.cost_tracker import CostTracker
 from backend.application.services.narrative_service import NarrativeService
 from backend.application.services.ranking_run_service import RankingRunService
 from backend.application.services.stock_service import StockService
+from backend.application.services.universe_service import UniverseService
 from backend.config import Settings, get_settings
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
@@ -99,6 +100,12 @@ async def get_universe_repository(
     session: AsyncSession = Depends(get_session),
 ) -> UniverseRepository:
     return SQLAUniverseRepository(session=session)
+
+
+async def get_universe_service(
+    repository: UniverseRepository = Depends(get_universe_repository),
+) -> UniverseService:
+    return UniverseService(repository=repository)
 
 
 async def get_ranking_run_repository(

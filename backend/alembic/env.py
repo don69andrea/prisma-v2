@@ -12,6 +12,10 @@ from backend.config import get_settings
 # Neue Modelle hier ergänzen, sonst generiert autogenerate keine Migrationen.
 from backend.infrastructure.persistence.base import Base
 from backend.infrastructure.persistence.models import llm_call_log, stock  # noqa: F401
+from backend.infrastructure.persistence.models.embedding import (  # noqa: F401
+    DocumentORM,
+    EmbeddingChunkORM,
+)
 from backend.infrastructure.persistence.models.memo_batch_job import (  # noqa: F401
     MemoBatchJobORM,
 )

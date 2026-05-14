@@ -22,6 +22,12 @@ services:
           property: connectionString
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Admin-API-Key (X-API-Key-Header) für /admin-Endpoints.
+      # Production-Validator in backend/config.py:71 erzwingt einen Wert —
+      # ohne diesen bricht der Container-Boot mit ValidationError ab.
+      # sync: false → manuell im Dashboard setzen (openssl rand -hex 32).
+      - key: API_KEY
+        sync: false
       - key: ENVIRONMENT
         value: production
       - key: CORS_ORIGINS

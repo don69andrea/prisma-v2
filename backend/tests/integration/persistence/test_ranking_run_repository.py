@@ -78,15 +78,17 @@ async def test_save_twice_updates_instead_of_insert(
 
     Bug: bei autoflush=False findet session.get() die noch-pending Row vom ersten
     save() nicht → zweiter save() trifft den add-Pfad → INSERT mit Duplicate-PK.
+    Prüft auch weight_config-Update (latent-bug #93: else-Branch schrieb nur status).
     """
     run = _new_run(seeded_universe, status="running")
+    new_weights = WeightConfig(weights={"quality_classic": 0.5, "alpha": 0.5})
 
     async with session_factory() as session:
         repo = SQLARankingRunRepository(session)
         await repo.save(run)
 
-        completed = run.model_copy(update={"status": "completed"})
-        await repo.save(completed)
+        updated = run.model_copy(update={"status": "completed", "weight_config": new_weights})
+        await repo.save(updated)
 
         await session.commit()
 
@@ -95,6 +97,7 @@ async def test_save_twice_updates_instead_of_insert(
         row = await SQLARankingRunRepository(session).get(run.id)
         assert row is not None
         assert row.status == "completed"
+        assert row.weight_config == new_weights
 
 
 async def test_save_then_save_results_then_save_persists_all(

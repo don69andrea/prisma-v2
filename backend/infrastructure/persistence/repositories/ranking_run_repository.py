@@ -38,6 +38,7 @@ class SQLARankingRunRepository(RankingRunRepository):
             )
         else:
             row.status = run.status
+            row.weight_config = run.weight_config.weights
 
     async def list_by_universe(self, universe_id: UUID) -> list[RankingRun]:
         stmt = (

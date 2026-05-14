@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     # wenn API_KEY nicht gesetzt ist.
     api_key: str = ""
 
+    # MCP-Tool-API-Key für X-API-Key auf /api/v1/runs. Getrennt vom Admin-Key
+    # (api_key), damit Tool-Auth unabhängig rotiert werden kann.
+    # Leer = opt-in disabled, kein Auth-Enforcement.
+    tool_api_key: str = ""
+
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 

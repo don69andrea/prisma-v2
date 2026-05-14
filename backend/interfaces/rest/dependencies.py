@@ -156,6 +156,22 @@ async def require_admin_api_key(
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 
+async def require_api_key(
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Opt-in X-API-Key-Guard für MCP-Tool-Endpoints (z.B. POST /api/v1/runs).
+
+    Wenn tool_api_key leer ist (default), kein Enforcement — bestehende Aufrufer
+    ohne Header werden nicht gebrochen. Sobald TOOL_API_KEY gesetzt ist,
+    muss der Header exakt übereinstimmen.
+    """
+    if not settings.tool_api_key:
+        return
+    if x_api_key is None or not hmac.compare_digest(x_api_key, settings.tool_api_key):
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+
 # ---------------------------------------------------------------------------
 # NarrativeService DI-Chain
 # ---------------------------------------------------------------------------

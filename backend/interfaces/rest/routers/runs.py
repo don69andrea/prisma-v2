@@ -9,7 +9,7 @@ from backend.application.services.ranking_run_service import (
     RankingRunService,
     UniverseNotFound,
 )
-from backend.interfaces.rest.dependencies import get_ranking_run_service
+from backend.interfaces.rest.dependencies import get_ranking_run_service, require_api_key
 from backend.interfaces.rest.schemas.runs import PostRunRequest, RankingItem, RunResponse
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
@@ -19,6 +19,7 @@ router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
 async def post_run(
     request: PostRunRequest,
     service: RankingRunService = Depends(get_ranking_run_service),
+    _auth: None = Depends(require_api_key),
 ) -> RunResponse:
     try:
         run = await service.create_and_execute_run(

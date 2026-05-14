@@ -109,6 +109,41 @@ class TestDiversificationFormula:
         assert ranks["WIDE"] == 3
 
 
+class TestDiversificationPerformance:
+    def test_500_tickers_252_days_under_2s(self) -> None:
+        """Spec §5 Performance-Ziel: Diversification für 500 Ticker × 252 Tage
+        unter 500ms ohne Coverage-Instrumentierung. CI läuft mit ``--cov=backend``,
+        was numpy-Pfade 3-5× verlangsamt — daher Test-Threshold 2.0s.
+
+        Der ursprüngliche Python-Loop in ``_compute_scores`` brauchte bei n=500
+        ~12s ohne und ~40s mit Coverage. 2.0s diskriminiert daher klar zwischen
+        Vektorisierung (typ. 0.05-1.5s mit Coverage) und Loop-Regression.
+        """
+        import time
+
+        rng = np.random.default_rng(2026)
+        n_tickers = 500
+        n_days = 252
+        index = pd.date_range("2024-01-01", periods=n_days, freq="B")
+        returns = pd.DataFrame(
+            rng.normal(0.0005, 0.015, size=(n_days, n_tickers)),
+            index=index,
+            columns=[f"T{i:03d}" for i in range(n_tickers)],
+        )
+        prices = _make_prices(returns)
+
+        start = time.perf_counter()
+        results = DiversificationModel().run(prices=prices)
+        elapsed = time.perf_counter() - start
+
+        assert len(results) == n_tickers
+        assert all(r.rank is not None for r in results)
+        assert elapsed < 2.0, (
+            f"500 Ticker × 252 Tage dauerte {elapsed:.3f}s — Threshold 2.0s "
+            f"(siehe Docstring zu Coverage-Overhead). Python-Loop reaktiviert?"
+        )
+
+
 class TestDiversificationEdgeCases:
     def test_empty_universe_returns_empty(self) -> None:
         prices = pd.DataFrame()

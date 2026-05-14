@@ -67,50 +67,47 @@ class DiversificationModel:
 
 
 def _compute_scores(returns: pd.DataFrame, tickers: list[str]) -> dict[str, float | None]:
-    """Berechnet Diversification-Score je Ticker. None für Ticker mit Roh-Std=0."""
+    """Berechnet Diversification-Score je Ticker. None für Ticker mit Roh-Std=0.
+
+    Vektorisierte NumPy-Implementation: Korrelationen via Matrix-Operationen
+    statt Python-Loop. Spec §5 Performance-Ziel: <500ms für 500 Ticker.
+    """
     # Erkennt Zero-Variance-Ticker an Roh-Returns, BEVOR Ledoit-Wolf shrinking
     # die Diagonale glättet und die Detektion verschleiert.
-    raw_std = returns.std(axis=0)
-    flat_tickers = {t for t in tickers if raw_std.get(t, 0.0) == 0.0}
+    raw_std = returns.std(axis=0).to_numpy()
+    flat_mask = raw_std == 0.0
 
     lw = LedoitWolf().fit(returns.to_numpy())
-    cov_matrix = pd.DataFrame(lw.covariance_, index=tickers, columns=tickers)
+    cov = lw.covariance_
+    std_devs = np.sqrt(np.diag(cov))
 
-    std_devs = np.sqrt(np.diag(cov_matrix.to_numpy()))
+    # safe_std: 1.0 statt 0.0 in der Division, um Division-by-Zero-Warnings zu
+    # vermeiden — betroffene Einträge werden später durch `invalid` maskiert.
+    safe_std = np.where(std_devs == 0.0, 1.0, std_devs)
+    corr_matrix = cov / np.outer(safe_std, safe_std)
 
-    scores: dict[str, float | None] = {}
-    for i, ticker in enumerate(tickers):
-        if ticker in flat_tickers:
-            scores[ticker] = None
-            continue
+    # weights[i, j] = 1 wenn j ein valider Korrelationspartner für i ist:
+    # j != i, j nicht flat, std_devs[j] > 0.
+    valid_partner = (~flat_mask) & (std_devs > 0)
+    n = len(tickers)
+    weights = np.broadcast_to(valid_partner.astype(float), (n, n)).copy()
+    np.fill_diagonal(weights, 0.0)
 
-        std_i = float(std_devs[i])
-        if std_i == 0.0:
-            scores[ticker] = None
-            continue
+    sum_corr = (corr_matrix * weights).sum(axis=1)
+    count_corr = weights.sum(axis=1)
+    safe_count = np.where(count_corr == 0.0, 1.0, count_corr)
+    avg_corr = sum_corr / safe_count
 
-        # Korrelationen mit allen anderen Tickern (ohne Selbst, ohne Flat-Ticker)
-        correlations: list[float] = []
-        for j, other in enumerate(tickers):
-            if i == j or other in flat_tickers or std_devs[j] == 0.0:
-                continue
-            corr = float(cov_matrix.iat[i, j]) / (std_i * float(std_devs[j]))
-            correlations.append(corr)
+    volatility = std_devs * np.sqrt(_TRADING_DAYS_PER_YEAR)
+    denom = volatility + avg_corr
+    safe_denom = np.where(denom == 0.0, 1.0, denom)
+    raw_scores = 2.0 / safe_denom
 
-        if not correlations:
-            scores[ticker] = None
-            continue
-
-        avg_corr = sum(correlations) / len(correlations)
-        volatility = std_i * np.sqrt(_TRADING_DAYS_PER_YEAR)
-        denom = volatility + avg_corr
-        if denom == 0.0:
-            scores[ticker] = None
-            continue
-        scores[ticker] = float(2.0 / denom)
-
-    # Bewahre Reihenfolge der Ticker
-    return {t: scores.get(t) for t in tickers}
+    invalid = flat_mask | (std_devs == 0.0) | (count_corr == 0.0) | (denom == 0.0)
+    return {
+        ticker: (None if invalid[i] else float(raw_scores[i]))
+        for i, ticker in enumerate(tickers)
+    }
 
 
 def _rank(scores: dict[str, float | None]) -> list[ModelRankingResult]:

@@ -119,16 +119,36 @@ class TestStartBatch:
         assert job.language == "de"
         batch_repo.save.assert_awaited_once()
 
-    async def test_start_batch_raises_for_en_language(self) -> None:
-        session_factory, run_repo_factory, mock_run_repo = _make_validation_mocks([{"ticker": "X"}])
+    async def test_start_batch_accepts_en_language(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """EN-Slice: start_batch akzeptiert language='en' und erstellt Job mit
+        language='en' im Status 'pending'. Ersetzt den alten Guard-Test, weil
+        EN-Templates jetzt produktiv sind."""
+        session_factory, run_repo_factory, _ = _make_validation_mocks([{"ticker": "X"}])
+        batch_repo = AsyncMock()
+        cost_tracker = AsyncMock()
+        cost_tracker.check_cap = AsyncMock()
+
+        def _fake_create_task(coro: Any, **_kwargs: Any) -> Any:
+            coro.close()
+            fake_task = Mock()
+            fake_task.add_done_callback = Mock()
+            return fake_task
+
+        monkeypatch.setattr("asyncio.create_task", _fake_create_task)
+
         service = _make_service(
+            batch_repository=batch_repo,
+            cost_tracker=cost_tracker,
             session_factory=session_factory,
             run_repo_factory=run_repo_factory,
         )
-        with pytest.raises(NotImplementedError, match="en"):
-            await service.start_batch(uuid4(), language="en")
-        # EN-Guard schlaegt VOR Run-Validation zu
-        mock_run_repo.get_results.assert_not_awaited()
+        run_id = uuid4()
+
+        job = await service.start_batch(run_id, top_n=20, language="en")
+
+        assert job.status == "pending"
+        assert job.language == "en"
+        batch_repo.save.assert_awaited_once()
 
     async def test_start_batch_raises_404_when_run_missing(self) -> None:
         session_factory, run_repo_factory, _ = _make_validation_mocks(None)

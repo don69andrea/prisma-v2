@@ -131,8 +131,6 @@ async def post_batch(
         )
     except LookupError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except NotImplementedError as exc:
-        raise HTTPException(status_code=501, detail=str(exc)) from exc
     except ValueError as exc:
         # F4: start_batch wirft ValueError bei ungültigem top_n (z.B. top_n=0).
         # Pydantic-Schema filtert das normalerweise, aber bei direktem Service-

@@ -75,23 +75,6 @@ def test_post_batch_returns_404_run_missing(app_with_mock_service: Any) -> None:
     assert resp.status_code == 404
 
 
-def test_post_batch_returns_501_language_en(app_with_mock_service: Any) -> None:
-    app, service = app_with_mock_service
-    service.start_batch = AsyncMock(side_effect=NotImplementedError("EN not yet implemented"))
-
-    with TestClient(app) as client:
-        resp = client.post(
-            "/api/v1/memos/batch",
-            json={
-                "model_run_id": str(uuid4()),
-                "top_n": 5,
-                "language": "en",
-            },
-        )
-
-    assert resp.status_code == 501
-
-
 def test_post_batch_returns_402_budget_exceeded(app_with_mock_service: Any) -> None:
     """W2 (PR #70): BudgetCapExceeded propagiert NICHT mehr per-route, sondern
     durch den globalen Handler — der liefert 402 plus strukturierten Body und

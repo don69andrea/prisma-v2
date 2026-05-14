@@ -141,12 +141,13 @@ def _sample_memo(
     one_liner: str = "Kurzfassung des Memos.",
     confidence: Literal["low", "medium", "high"] = "high",
     model_version: str = "claude-sonnet-4-6",
+    language: Literal["de", "en"] = "de",
 ) -> ResearchMemo:
     return ResearchMemo(
         id=uuid4(),
         stock_id=stock_id or uuid4(),
         model_run_id=run_id or uuid4(),
-        language="de",
+        language=language,
         created_at=datetime.now(tz=UTC),
         one_liner=one_liner,
         ranking_interpretation="x" * 120,
@@ -421,25 +422,64 @@ async def test_generate_memo_404_when_stock_not_in_run() -> None:
         await service.generate_memo(uuid4(), uuid4())
 
 
-async def test_generate_memo_raises_not_implemented_for_en_language() -> None:
-    """B2 (PR #64 review): EN-Template ist Stub. Service muss frueh failen,
-    bevor DB-Read oder LLM-Call passieren — sonst landet
-    'TODO_EN_TEMPLATE_NOT_IMPLEMENTED' bei Anthropic und kostet Tokens.
+async def test_generate_memo_renders_en_templates() -> None:
+    """EN-Slice: bei language='en' werden narrative_system.en.md.j2 und
+    narrative_user.en.md.j2 geladen — Spy auf prompt_loader.render verifiziert das.
+    Ersetzt den B2-Guard-Test (PR #64) nach EN-Template-Aktivierung.
     """
+    stock_id, run_id = uuid4(), uuid4()
+    persisted = _sample_memo(stock_id=stock_id, run_id=run_id, language="en")
+
     memo_repo = AsyncMock()
+    memo_repo.get = AsyncMock(side_effect=[None, persisted])
+    memo_repo.save = AsyncMock()
+
+    stock_repo = AsyncMock()
+    stock_repo.get = AsyncMock(return_value=_stock(stock_id=stock_id))
+
+    run_repo = AsyncMock()
+    run_repo.get_results = AsyncMock(return_value=_sample_results())
+
+    payload = {
+        "ticker": "NESN",
+        "total_rank": 1,
+        "one_liner": "Defensive quality core.",
+        "ranking_interpretation": "x" * 120,
+        "sweet_spot": True,
+        "sweet_spot_explanation": "Top 25% in 4 models.",
+        "contradictions": [],
+        "key_strengths": ["Top 10% quality"],
+        "key_risks": ["Valuation multiples"],
+        "confidence": "high",
+        "generated_at": "2026-05-04T10:00:00Z",
+        "model_version": "claude-sonnet-4-6",
+    }
     llm = AsyncMock()
+    llm.messages_create = AsyncMock(return_value=_tool_use_response(payload))
+
+    render_calls: list[str] = []
+
+    def _track_render(name: str, ctx: dict[str, Any]) -> str:
+        render_calls.append(name)
+        return f"<rendered-{name}>"
+
+    prompt_loader = SimpleNamespace(render=Mock(side_effect=_track_render))
 
     service = _make_service(
         memo_repository=memo_repo,
+        run_repository=run_repo,
+        stock_repository=stock_repo,
         llm_client=llm,
+        prompt_loader=prompt_loader,
     )
 
-    with pytest.raises(NotImplementedError, match="en"):
-        await service.generate_memo(uuid4(), uuid4(), language="en")
+    await service.generate_memo(stock_id, run_id, language="en")
 
-    # Guard greift *vor* allen Side-Effects.
-    memo_repo.get.assert_not_awaited()
-    llm.messages_create.assert_not_awaited()
+    assert "narrative_system.en.md.j2" in render_calls
+    assert "narrative_user.en.md.j2" in render_calls
+    # DE-Templates wurden NICHT geladen
+    assert "narrative_system.de.md.j2" not in render_calls
+    assert "narrative_user.de.md.j2" not in render_calls
 
 
 # ---------------------------------------------------------------------------

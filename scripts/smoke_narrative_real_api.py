@@ -12,13 +12,15 @@ gerendert. Geht durch denselben `LLMClient`-Wrapper wie Production
 
 Ausführung:
     source .venv/bin/activate
-    python scripts/smoke_narrative_real_api.py
+    python scripts/smoke_narrative_real_api.py             # default: --lang=de
+    python scripts/smoke_narrative_real_api.py --lang=en   # EN-Variante
 
 Erwartete Kosten: ~5-7 cents (2 Calls Sonnet 4.6 mit ~3k input, ~1k output).
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import time
 from decimal import Decimal
@@ -109,13 +111,23 @@ def _cost_usd(usage: dict[str, int]) -> Decimal:
 
 
 async def main() -> None:
+    parser = argparse.ArgumentParser(description="Narrative-Engine Real-API Smoke")
+    parser.add_argument(
+        "--lang",
+        choices=["de", "en"],
+        default="de",
+        help="Memo language (default: de — backwards-compat with PR #64 W5)",
+    )
+    args = parser.parse_args()
+    language: str = args.lang
+
     settings = get_settings()
     if not settings.anthropic_api_key:
         raise SystemExit("ANTHROPIC_API_KEY in .env nicht gesetzt — Abbruch.")
 
     loader = PromptTemplateLoader()
-    system_prompt = loader.render("narrative_system.de.md.j2", {})
-    user_prompt = loader.render("narrative_user.md.j2", USER_PROMPT_CONTEXT)
+    system_prompt = loader.render(f"narrative_system.{language}.md.j2", {})
+    user_prompt = loader.render(f"narrative_user.{language}.md.j2", USER_PROMPT_CONTEXT)
 
     cost_tracker = AsyncMock()
     cost_tracker.check_cap = AsyncMock()
@@ -124,7 +136,7 @@ async def main() -> None:
     llm = LLMClient(anthropic=anthropic_client, voyage=None, cost_tracker=cost_tracker)
 
     print("=" * 64)
-    print("PRISMA Narrative-Engine — Real-API-Smoke (PR #64 W5)")
+    print(f"PRISMA Narrative-Engine — Real-API-Smoke (lang={language})")
     print("=" * 64)
     print(f"Model: {MODEL}")
     print(f"System-Prompt: {len(system_prompt)} chars (~{len(system_prompt) // 3} tokens estimate)")
@@ -194,7 +206,7 @@ async def main() -> None:
     print("=" * 64)
     print(
         f"""
-### Real-API-Smoke verifiziert ({time.strftime("%Y-%m-%d")})
+### Real-API-Smoke verifiziert ({time.strftime("%Y-%m-%d")}, lang={language})
 
 Model: `{MODEL}`. 2 Calls hintereinander mit identischem System-Prompt + `cache_control=ephemeral`.
 
@@ -203,7 +215,7 @@ Model: `{MODEL}`. 2 Calls hintereinander mit identischem System-Prompt + `cache_
 | Call 1 | {u1["input_tokens"]} | {u1["output_tokens"]} | {u1["cache_creation_input_tokens"]} | {u1["cache_read_input_tokens"]} | {lat1:.2f}s | ${cost1:.4f} |
 | Call 2 | {u2["input_tokens"]} | {u2["output_tokens"]} | {u2["cache_creation_input_tokens"]} | {u2["cache_read_input_tokens"]} | {lat2:.2f}s | ${cost2:.4f} |
 
-Cache-Read auf Call 2: ✓ ({u2["cache_read_input_tokens"]} Tokens). `cache_control: ephemeral` wird korrekt vom `LLMClient` zur SDK durchgereicht; Anthropic cached den DE-System-Block.
+Cache-Read auf Call 2: ✓ ({u2["cache_read_input_tokens"]} Tokens). `cache_control: ephemeral` wird korrekt vom `LLMClient` zur SDK durchgereicht; Anthropic cached den {language.upper()}-System-Block.
 
 Tool-Use-Output beider Calls validiert gegen `ResearchMemoSchema` — OK.
 """

@@ -204,6 +204,57 @@ async def test_full_pipeline_top_quality_fixture(
     assert memo.model_version == "claude-sonnet-4-6"
 
 
+async def test_full_pipeline_en(
+    seeded_run_with_stock: tuple[async_sessionmaker[AsyncSession], dict[str, UUID]],
+) -> None:
+    """EN-Slice End-to-End: language='en' Memo persisted, abrufbar; DE-Pfad bleibt leer.
+
+    Verifiziert die bilinguale Cache-Trennung: ein EN-Memo darf nicht beim
+    DE-Lookup zurueckkommen (separate cache keys per language).
+    """
+    session_factory, ids = seeded_run_with_stock
+
+    stub = StubAnthropicClient([FIXTURES / "top_quality_stock_en.json"])
+    cost_tracker = CostTracker(
+        repository=SQLACostLogRepository(session_factory),
+        pricing=PRICING,
+        cap_usd=Decimal("20"),
+    )
+    async with session_factory() as session:
+        service = NarrativeService(
+            memo_repository=SQLAResearchMemoRepository(session_factory),
+            run_repository=SQLARankingRunRepository(session),
+            stock_repository=SQLAStockRepository(session),
+            batch_repository=SQLAMemoBatchJobRepository(session_factory),
+            llm_client=LLMClient(
+                anthropic=stub,
+                voyage=None,
+                cost_tracker=cost_tracker,
+            ),
+            prompt_loader=PromptTemplateLoader(),
+            cost_tracker=cost_tracker,
+            session_factory=session_factory,
+            stock_repo_factory=lambda s: SQLAStockRepository(session=s),
+            run_repo_factory=lambda s: SQLARankingRunRepository(session=s),
+        )
+
+        memo = await service.generate_memo(ids["stock_id"], ids["run_id"], language="en")
+
+        assert memo.language == "en"
+        assert memo.confidence == "high"
+        assert memo.one_liner == ("Defensive quality core with low risk, weak reversion potential.")
+        assert memo.model_version == "claude-sonnet-4-6"
+
+        # Cache-Hit: EN-Memo wird beim get_memo(language="en") zurueckgegeben
+        en_lookup = await service.get_memo(ids["stock_id"], ids["run_id"], language="en")
+        assert en_lookup is not None
+        assert en_lookup.id == memo.id
+
+        # Cache-Trennung: DE-Pfad ist leer (kein EN-Memo durch DE-Lookup)
+        de_lookup = await service.get_memo(ids["stock_id"], ids["run_id"], language="de")
+        assert de_lookup is None
+
+
 async def test_pydantic_fail_persists_error_memo(
     seeded_run_with_stock: tuple[async_sessionmaker[AsyncSession], dict[str, UUID]],
 ) -> None:

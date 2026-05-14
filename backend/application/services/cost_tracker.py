@@ -18,16 +18,17 @@ beide `record`). Bei Capstone-Volumen (max ~30 Calls/Batch) absorbiert die
 5%-Schwelle das. Der echte **Backstop** ist das Anthropic-Console Spend-Limit.
 """
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from decimal import Decimal
 
 from backend.domain.cost_summary import CostSummary
 from backend.domain.errors import BudgetCapExceeded, UnknownModelError
+from backend.domain.llm_pricing import ModelPricing
 from backend.domain.repositories.cost_log_repository import (
     CostLogEntry,
     CostLogRepository,
 )
-from backend.infrastructure.llm.pricing import PRICING
 
 
 class CostTracker:
@@ -35,10 +36,12 @@ class CostTracker:
         self,
         *,
         repository: CostLogRepository,
+        pricing: Mapping[str, ModelPricing],
         cap_usd: Decimal,
         threshold: Decimal = Decimal("0.95"),
     ) -> None:
         self._repository = repository
+        self._pricing = pricing
         self._cap_usd = cap_usd
         self._threshold = threshold
 
@@ -99,9 +102,8 @@ class CostTracker:
             last_calls=breakdown.last_calls,
         )
 
-    @staticmethod
-    def _compute_cost_usd(model: str, input_tokens: int, output_tokens: int) -> Decimal:
-        """Token-Counts → Kosten in USD via PRICING-Registry.
+    def _compute_cost_usd(self, model: str, input_tokens: int, output_tokens: int) -> Decimal:
+        """Token-Counts -> Kosten in USD via injizierter Pricing-Registry.
 
         Embedding-Modelle (embed_per_mtok ist gesetzt) verwenden nur
         input_tokens; Chat-Modelle verwenden input + output. Wirft
@@ -109,7 +111,7 @@ class CostTracker:
         Modellen — kein blanker `KeyError`.
         """
         try:
-            pricing = PRICING[model]
+            pricing = self._pricing[model]
         except KeyError as exc:
             raise UnknownModelError(model, reason="nicht in PRICING-Registry") from exc
 

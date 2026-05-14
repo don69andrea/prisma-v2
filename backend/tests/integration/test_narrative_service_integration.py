@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from backend.application.services.cost_tracker import CostTracker
 from backend.application.services.narrative_service import NarrativeService
 from backend.infrastructure.llm.client import LLMClient
+from backend.infrastructure.llm.pricing import PRICING
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
@@ -174,6 +175,7 @@ async def test_full_pipeline_top_quality_fixture(
     stub = StubAnthropicClient([FIXTURES / "top_quality_stock.json"])
     cost_tracker = CostTracker(
         repository=SQLACostLogRepository(session_factory),
+        pricing=PRICING,
         cap_usd=Decimal("20"),
     )
     async with session_factory() as session:
@@ -210,6 +212,7 @@ async def test_pydantic_fail_persists_error_memo(
     stub = StubAnthropicClient([FIXTURES / "malformed_response.json"])
     cost_tracker = CostTracker(
         repository=SQLACostLogRepository(session_factory),
+        pricing=PRICING,
         cap_usd=Decimal("20"),
     )
     async with session_factory() as session:
@@ -251,6 +254,7 @@ async def test_cache_hit_smoke_two_sequential_calls(
     )
     cost_tracker = CostTracker(
         repository=SQLACostLogRepository(session_factory),
+        pricing=PRICING,
         cap_usd=Decimal("20"),
     )
     async with session_factory() as session:

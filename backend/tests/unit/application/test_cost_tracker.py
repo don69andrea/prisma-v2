@@ -21,10 +21,30 @@ from backend.domain.cost_summary import (
     ModelBreakdown,
 )
 from backend.domain.errors import BudgetCapExceeded
+from backend.domain.llm_pricing import ModelPricing
 from backend.domain.repositories.cost_log_repository import (
     CostLogEntry,
     CostLogRepository,
 )
+
+# Domain-Test-Pricing — entkoppelt vom Infrastructure-Vendor-Katalog.
+_TEST_PRICING: dict[str, ModelPricing] = {
+    "claude-sonnet-4-6": ModelPricing(
+        input_per_mtok=Decimal("3.00"),
+        output_per_mtok=Decimal("15.00"),
+        embed_per_mtok=None,
+    ),
+    "claude-haiku-4-5": ModelPricing(
+        input_per_mtok=Decimal("1.00"),
+        output_per_mtok=Decimal("5.00"),
+        embed_per_mtok=None,
+    ),
+    "voyage-3-large": ModelPricing(
+        input_per_mtok=None,
+        output_per_mtok=None,
+        embed_per_mtok=Decimal("0.18"),
+    ),
+}
 
 pytestmark = pytest.mark.unit
 
@@ -47,11 +67,13 @@ def _make_repository(
 def _make_tracker(
     *,
     repository: AsyncMock | None = None,
+    pricing: dict[str, ModelPricing] | None = None,
     cap: str = "100.00",
     threshold: str = "0.95",
 ) -> CostTracker:
     return CostTracker(
         repository=repository or _make_repository(),
+        pricing=pricing if pricing is not None else _TEST_PRICING,
         cap_usd=Decimal(cap),
         threshold=Decimal(threshold),
     )
@@ -152,6 +174,31 @@ class TestRecord:
         )
         entry: CostLogEntry = repo.record.call_args.args[0]
         assert entry.request_id is None
+
+    async def test_uses_injected_pricing_not_global_registry(self) -> None:
+        """DI-Sanity-Check: Custom-Pricing wirkt durch — beweist dass keine
+        versteckte Kopplung zur Infrastructure-PRICING-Konstante besteht.
+        """
+        custom_pricing = {
+            "fictional-model": ModelPricing(
+                input_per_mtok=Decimal("100.00"),
+                output_per_mtok=Decimal("200.00"),
+                embed_per_mtok=None,
+            ),
+        }
+        repo = _make_repository()
+        tracker = _make_tracker(repository=repo, pricing=custom_pricing)
+        await tracker.record(
+            provider="fictional",
+            model="fictional-model",
+            feature="test",
+            input_tokens=1_000_000,
+            output_tokens=1_000_000,
+        )
+        entry: CostLogEntry = repo.record.call_args.args[0]
+        # 1M @ $100 + 1M @ $200 = 300.00 — nur moeglich, wenn Custom-Pricing
+        # tatsaechlich verwendet wurde.
+        assert entry.cost_usd == Decimal("300.00")
 
 
 class TestSummary:

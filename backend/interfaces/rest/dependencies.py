@@ -23,6 +23,7 @@ from backend.domain.repositories.research_memo_repository import ResearchMemoRep
 from backend.domain.repositories.stock_repository import StockRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
 from backend.infrastructure.llm.client import LLMClient
+from backend.infrastructure.llm.pricing import PRICING
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
@@ -88,6 +89,7 @@ async def get_cost_tracker(
     """Konstruiert einen CostTracker mit Settings-gespeisten Cap-Werten."""
     return CostTracker(
         repository=repository,
+        pricing=PRICING,
         cap_usd=settings.budget_cap_usd,
         threshold=settings.budget_cap_threshold,
     )

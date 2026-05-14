@@ -1,7 +1,12 @@
-"""Pricing-Konstanten für LLM- und Embedding-Modelle.
+"""Pricing-Konstanten fuer LLM- und Embedding-Modelle (Vendor-Werte).
 
-Single-Source-of-Truth für Token-Preise. Gespeist aus offiziellen
-Pricing-Pages — bei Änderung: PR mit Quelle + Datum (Audit-Trail).
+Single-Source-of-Truth fuer Token-Preise. Gespeist aus offiziellen
+Pricing-Pages — bei Aenderung: PR mit Quelle + Datum (Audit-Trail).
+
+Der `ModelPricing`-Type lebt im Domain-Layer (`backend.domain.llm_pricing`),
+weil token-basierte Cost-Calc Bestandteil der Budget-Cap-Business-Rule ist.
+Die konkreten Vendor-Werte (Anthropic/Voyage) bleiben hier in Infrastructure
+und werden via DI in `CostTracker` injiziert.
 
 Quellen (Stand 2026-04-26 — vor Production-Deploy gegen Live-Pages
 verifizieren):
@@ -11,24 +16,11 @@ verifizieren):
 Spezifiziert in `docs/specs/2026-04-25-budget-cap.md` §6.
 """
 
-from dataclasses import dataclass
 from decimal import Decimal
 
+from backend.domain.llm_pricing import ModelPricing
 
-@dataclass(frozen=True)
-class ModelPricing:
-    """Token-Preise pro 1 Mio Tokens für ein einzelnes Modell.
-
-    `None` bedeutet **"trifft auf dieses Modell nicht zu"**, nicht
-    "kostenlos" — bei reinen Embedding-Modellen sind `input_per_mtok`
-    und `output_per_mtok` daher None, nicht 0. Andersrum ist
-    `embed_per_mtok` bei Chat-Modellen None. Aufrufer prüfen `is None`
-    und werfen `UnknownModelError`, wenn der Preistyp nicht passt.
-    """
-
-    input_per_mtok: Decimal | None
-    output_per_mtok: Decimal | None
-    embed_per_mtok: Decimal | None
+__all__ = ["ModelPricing", "PRICING"]
 
 
 PRICING: dict[str, ModelPricing] = {

@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from backend.application.services.cost_tracker import CostTracker
 from backend.application.services.narrative_service import NarrativeService
 from backend.infrastructure.llm.client import LLMClient
+from backend.infrastructure.llm.pricing import PRICING
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
@@ -174,6 +175,7 @@ async def test_batch_top_n_full_flow(
     )
     cost_tracker = CostTracker(
         repository=SQLACostLogRepository(session_factory),
+        pricing=PRICING,
         cap_usd=Decimal("50"),
     )
     # Request-scoped run/stock-Repos sind hier Stubs (__new__) — start_batch

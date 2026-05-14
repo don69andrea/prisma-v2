@@ -52,3 +52,18 @@ async def truncate_research_memos(
     async with session_factory() as session:
         await session.execute(truncate_sql)
         await session.commit()
+
+
+@pytest_asyncio.fixture
+async def truncate_memo_batch_jobs(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> AsyncGenerator[None, None]:
+    """Per-Test-Cleanup fuer memo_batch_jobs + abhaengige Parent-Tabellen."""
+    truncate_sql = text("TRUNCATE memo_batch_jobs, ranking_runs, universes CASCADE")
+    async with session_factory() as session:
+        await session.execute(truncate_sql)
+        await session.commit()
+    yield
+    async with session_factory() as session:
+        await session.execute(truncate_sql)
+        await session.commit()

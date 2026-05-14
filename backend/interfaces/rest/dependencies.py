@@ -17,6 +17,7 @@ from backend.config import Settings, get_settings
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
 from backend.domain.repositories.cost_log_repository import CostLogRepository
+from backend.domain.repositories.memo_batch_job_repository import MemoBatchJobRepository
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.research_memo_repository import ResearchMemoRepository
 from backend.domain.repositories.stock_repository import StockRepository
@@ -25,6 +26,9 @@ from backend.infrastructure.llm.client import LLMClient
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
+)
+from backend.infrastructure.persistence.repositories.memo_batch_job_repository import (
+    SQLAMemoBatchJobRepository,
 )
 from backend.infrastructure.persistence.repositories.ranking_run_repository import (
     SQLARankingRunRepository,
@@ -188,18 +192,39 @@ async def get_research_memo_repository() -> ResearchMemoRepository:
     return SQLAResearchMemoRepository(session_factory=get_session_factory())
 
 
+async def get_memo_batch_job_repository() -> MemoBatchJobRepository:
+    """Instanziiert den SQLAlchemy-Adapter fuer MemoBatchJob.
+
+    Eigene Session-Factory analog SQLAResearchMemoRepository — Background-
+    Worker persistieren ausserhalb des Request-Scopes.
+    """
+    return SQLAMemoBatchJobRepository(session_factory=get_session_factory())
+
+
 async def get_narrative_service(
     memo_repo: ResearchMemoRepository = Depends(get_research_memo_repository),
     run_repo: RankingRunRepository = Depends(get_ranking_run_repository),
     stock_repo: StockRepository = Depends(get_stock_repository),
+    batch_repo: MemoBatchJobRepository = Depends(get_memo_batch_job_repository),
     llm: LLMClient = Depends(get_llm_client),
     prompt_loader: PromptTemplateLoader = Depends(get_prompt_loader),
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+    settings: Settings = Depends(get_settings),
 ) -> NarrativeService:
     """Erstellt den NarrativeService mit vollstaendiger DI-Chain."""
     return NarrativeService(
         memo_repository=memo_repo,
         run_repository=run_repo,
         stock_repository=stock_repo,
+        batch_repository=batch_repo,
         llm_client=llm,
         prompt_loader=prompt_loader,
+        cost_tracker=cost_tracker,
+        session_factory=get_session_factory(),
+        # Factories fuer Background-Worker-Repos: keine konkreten Infrastructure-
+        # Klassen im Application-Layer (Hexagonal — PR #70 W4-Fix).
+        stock_repo_factory=lambda s: SQLAStockRepository(session=s),
+        run_repo_factory=lambda s: SQLARankingRunRepository(session=s),
+        max_concurrent_batch_workers=settings.max_concurrent_batch_workers,
+        stale_batch_timeout_seconds=settings.stale_batch_timeout_seconds,
     )

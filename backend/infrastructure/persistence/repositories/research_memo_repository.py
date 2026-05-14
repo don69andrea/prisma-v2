@@ -79,6 +79,25 @@ class SQLAResearchMemoRepository(ResearchMemoRepository):
             row = (await session.execute(stmt)).scalar_one_or_none()
             return _orm_to_entity(row) if row else None
 
+    async def list_by_run(
+        self,
+        model_run_id: UUID,
+        *,
+        language: Literal["de", "en"] = "de",
+    ) -> list[ResearchMemo]:
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(ResearchMemoORM)
+                .where(ResearchMemoORM.model_run_id == model_run_id)
+                .where(ResearchMemoORM.language == language)
+                # F6: Sekundär-Sort nach id für Determinismus bei gleicher created_at.
+                # Möglich bei Parallel-Batch-Inserts mit Semaphore(3): mehrere Memos
+                # können denselben Timestamp bekommen → ohne id-Sort non-deterministisch.
+                .order_by(ResearchMemoORM.created_at.asc(), ResearchMemoORM.id.asc())
+            )
+            rows = result.scalars().all()
+            return [_orm_to_entity(row) for row in rows]
+
 
 def _orm_to_entity(row: ResearchMemoORM) -> ResearchMemo:
     """Mapping ORM-Row → Domain-Entity. JSONB-Listen → Pydantic-Klassen."""

@@ -22,6 +22,24 @@ from backend.domain.entities.stock import Stock
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
 
 
+def _make_service(**overrides: Any) -> NarrativeService:
+    """Helper: NarrativeService mit AsyncMock-Defaults bauen (inkl. neuer Batch-Params)."""
+    defaults: dict[str, Any] = {
+        "memo_repository": AsyncMock(),
+        "run_repository": AsyncMock(),
+        "stock_repository": AsyncMock(),
+        "batch_repository": AsyncMock(),
+        "llm_client": AsyncMock(),
+        "prompt_loader": AsyncMock(),
+        "cost_tracker": AsyncMock(),
+        "session_factory": Mock(),
+        "stock_repo_factory": Mock(return_value=AsyncMock()),
+        "run_repo_factory": Mock(return_value=AsyncMock()),
+    }
+    defaults.update(overrides)
+    return NarrativeService(**defaults)
+
+
 def _sample_results() -> list[dict[str, Any]]:
     """3-Stock-Mini-Universe."""
     return [
@@ -149,13 +167,7 @@ async def test_get_memo_returns_existing() -> None:
     memo_repo = AsyncMock()
     memo_repo.get = AsyncMock(return_value=expected)
 
-    service = NarrativeService(
-        memo_repository=memo_repo,
-        run_repository=AsyncMock(),
-        stock_repository=AsyncMock(),
-        llm_client=AsyncMock(),
-        prompt_loader=AsyncMock(),
-    )
+    service = _make_service(memo_repository=memo_repo)
     result = await service.get_memo(stock_id, run_id)
 
     assert result is expected
@@ -166,13 +178,7 @@ async def test_get_memo_returns_none_when_missing() -> None:
     memo_repo = AsyncMock()
     memo_repo.get = AsyncMock(return_value=None)
 
-    service = NarrativeService(
-        memo_repository=memo_repo,
-        run_repository=AsyncMock(),
-        stock_repository=AsyncMock(),
-        llm_client=AsyncMock(),
-        prompt_loader=AsyncMock(),
-    )
+    service = _make_service(memo_repository=memo_repo)
     result = await service.get_memo(uuid4(), uuid4())
 
     assert result is None
@@ -214,12 +220,9 @@ async def test_generate_memo_returns_cached_when_exists_and_no_force() -> None:
     memo_repo.save = AsyncMock()
 
     llm = AsyncMock()
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
-        run_repository=AsyncMock(),
-        stock_repository=AsyncMock(),
         llm_client=llm,
-        prompt_loader=AsyncMock(),
     )
 
     result = await service.generate_memo(stock_id, run_id, force_regenerate=False)
@@ -265,12 +268,12 @@ async def test_generate_memo_happy_path() -> None:
 
     prompt_loader = SimpleNamespace(render=Mock(side_effect=lambda name, ctx: f"<rendered-{name}>"))
 
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
         run_repository=run_repo,
         stock_repository=stock_repo,
         llm_client=llm,
-        prompt_loader=prompt_loader,  # type: ignore[arg-type]
+        prompt_loader=prompt_loader,
     )
 
     result = await service.generate_memo(stock_id, run_id)
@@ -341,12 +344,12 @@ async def test_generate_memo_force_regenerate_returns_persisted_not_inmemory() -
     llm.messages_create = AsyncMock(return_value=_tool_use_response(payload))
     prompt_loader = SimpleNamespace(render=Mock(side_effect=lambda name, ctx: f"<rendered-{name}>"))
 
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
         run_repository=run_repo,
         stock_repository=stock_repo,
         llm_client=llm,
-        prompt_loader=prompt_loader,  # type: ignore[arg-type]
+        prompt_loader=prompt_loader,
     )
 
     result = await service.generate_memo(stock_id, run_id, force_regenerate=True)
@@ -373,12 +376,9 @@ async def test_generate_memo_404_when_stock_missing() -> None:
     stock_repo = AsyncMock()
     stock_repo.get = AsyncMock(return_value=None)
 
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
-        run_repository=AsyncMock(),
         stock_repository=stock_repo,
-        llm_client=AsyncMock(),
-        prompt_loader=AsyncMock(),
     )
 
     with pytest.raises(LookupError, match="Stock"):
@@ -393,12 +393,10 @@ async def test_generate_memo_404_when_run_missing() -> None:
     run_repo = AsyncMock()
     run_repo.get_results = AsyncMock(return_value=None)
 
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
         run_repository=run_repo,
         stock_repository=stock_repo,
-        llm_client=AsyncMock(),
-        prompt_loader=AsyncMock(),
     )
 
     with pytest.raises(LookupError, match="Run"):
@@ -413,12 +411,10 @@ async def test_generate_memo_404_when_stock_not_in_run() -> None:
     run_repo = AsyncMock()
     run_repo.get_results = AsyncMock(return_value=_sample_results())  # nur NESN/ROG/ABBN
 
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
         run_repository=run_repo,
         stock_repository=stock_repo,
-        llm_client=AsyncMock(),
-        prompt_loader=AsyncMock(),
     )
 
     with pytest.raises(LookupError, match="UNKNOWN"):
@@ -433,12 +429,9 @@ async def test_generate_memo_raises_not_implemented_for_en_language() -> None:
     memo_repo = AsyncMock()
     llm = AsyncMock()
 
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
-        run_repository=AsyncMock(),
-        stock_repository=AsyncMock(),
         llm_client=llm,
-        prompt_loader=AsyncMock(),
     )
 
     with pytest.raises(NotImplementedError, match="en"):
@@ -489,12 +482,12 @@ async def test_generate_memo_persists_error_memo_when_no_tool_use_block(
     llm.messages_create = AsyncMock(return_value=bad_response)
     prompt_loader = SimpleNamespace(render=Mock(side_effect=lambda name, ctx: "<rendered>"))
 
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
         run_repository=run_repo,
         stock_repository=stock_repo,
         llm_client=llm,
-        prompt_loader=prompt_loader,  # type: ignore[arg-type]
+        prompt_loader=prompt_loader,
     )
 
     result = await service.generate_memo(stock_id, run_id)
@@ -557,12 +550,12 @@ async def test_generate_memo_persists_error_memo_on_pydantic_fail(
     llm.messages_create = AsyncMock(return_value=_tool_use_response(invalid_payload))
     prompt_loader = SimpleNamespace(render=Mock(side_effect=lambda name, ctx: "<rendered>"))
 
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
         run_repository=run_repo,
         stock_repository=stock_repo,
         llm_client=llm,
-        prompt_loader=prompt_loader,  # type: ignore[arg-type]
+        prompt_loader=prompt_loader,
     )
 
     result = await service.generate_memo(stock_id, run_id)
@@ -617,12 +610,12 @@ async def test_generate_memo_force_regenerate_bypasses_cache() -> None:
     llm.messages_create = AsyncMock(return_value=_tool_use_response(payload))
     prompt_loader = SimpleNamespace(render=Mock(side_effect=lambda name, ctx: f"<rendered-{name}>"))
 
-    service = NarrativeService(
+    service = _make_service(
         memo_repository=memo_repo,
         run_repository=run_repo,
         stock_repository=stock_repo,
         llm_client=llm,
-        prompt_loader=prompt_loader,  # type: ignore[arg-type]
+        prompt_loader=prompt_loader,
     )
 
     result = await service.generate_memo(stock_id, run_id, force_regenerate=True)
@@ -700,8 +693,13 @@ async def test_generate_memo_persists_error_memo_on_entity_validation_error(
         memo_repository=memo_repo,
         run_repository=run_repo,
         stock_repository=stock_repo,
+        batch_repository=AsyncMock(),
         llm_client=llm,
         prompt_loader=prompt_loader,  # type: ignore[arg-type]
+        cost_tracker=AsyncMock(),
+        session_factory=Mock(),
+        stock_repo_factory=Mock(return_value=AsyncMock()),
+        run_repo_factory=Mock(return_value=AsyncMock()),
     )
 
     result = await service.generate_memo(stock_id, run_id)

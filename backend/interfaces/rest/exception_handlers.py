@@ -48,14 +48,16 @@ async def handle_budget_cap_exceeded(
     request: Request,  # noqa: ARG001 — FastAPI-Handler-Signatur erfordert request
     exc: BudgetCapExceeded,
 ) -> JSONResponse:
-    """`BudgetCapExceeded` → HTTP 503 mit strukturiertem JSON-Body.
+    """`BudgetCapExceeded` → HTTP 402 mit strukturiertem JSON-Body.
 
-    Status 503 (Service Unavailable) signalisiert temporäre Nicht-Verfügbarkeit
-    der AI-Funktion ohne den User zu sofortigem Retry zu verleiten — das
-    `Retry-After`-Header gibt den genauen Reset-Zeitpunkt.
+    Status 402 (Payment Required) ist semantisch eng, signalisiert aber
+    konsistent ueber alle AI-Endpoints (POST /memos/generate, POST /memos/batch)
+    dieselbe Quota-Erschoepfung. `Retry-After`-Header gibt den Reset-Zeitpunkt.
+    Vorher: 503 (Service Unavailable) — inkonsistent mit /memos/batch das
+    bereits 402 lieferte; Diskussion siehe PR #70 W2.
     """
     return JSONResponse(
-        status_code=503,
+        status_code=402,
         headers={"Retry-After": str(_seconds_until_next_month_utc())},
         content={
             "error": "budget_cap_exceeded",

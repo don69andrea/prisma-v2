@@ -150,6 +150,107 @@ class TestRoundtripAndUpsert:
         assert got_en is not None and got_en.one_liner == "English memo"
 
 
+class TestListByRun:
+    @pytest.mark.usefixtures("truncate_research_memos")
+    async def test_list_by_run_returns_memos(
+        self,
+        seed_stock_and_run: tuple[uuid.UUID, uuid.UUID],
+        db_session: AsyncSession,
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
+        _, run_id = seed_stock_and_run
+        repo = SQLAResearchMemoRepository(session_factory)
+
+        # Seed 3 stocks (FK target for memos) to avoid FK-Violation on research_memos.stock_id
+        stock_ids = [uuid.uuid4() for _ in range(3)]
+        for i, sid in enumerate(stock_ids):
+            await db_session.execute(
+                text(
+                    "INSERT INTO stocks (id, ticker, name, currency) VALUES (:id, :t, :name, 'CHF')"
+                ),
+                {"id": sid, "t": f"TST{i}", "name": f"Test Stock {i}"},
+            )
+        await db_session.commit()
+
+        memos = [_new_memo(sid, run_id, language="de") for sid in stock_ids]
+        for m in memos:
+            await repo.save(m)
+
+        loaded = await repo.list_by_run(run_id, language="de")
+        assert len(loaded) == 3
+        assert {m.id for m in loaded} == {m.id for m in memos}
+
+    @pytest.mark.usefixtures("truncate_research_memos")
+    async def test_list_by_run_filters_language(
+        self,
+        seed_stock_and_run: tuple[uuid.UUID, uuid.UUID],
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
+        stock_id, run_id = seed_stock_and_run
+        repo = SQLAResearchMemoRepository(session_factory)
+
+        de_memo = _new_memo(stock_id, run_id, language="de")
+        en_memo = _new_memo(stock_id, run_id, language="en")
+        await repo.save(de_memo)
+        await repo.save(en_memo)
+
+        de_only = await repo.list_by_run(run_id, language="de")
+        assert len(de_only) == 1
+        assert de_only[0].id == de_memo.id
+
+    @pytest.mark.usefixtures("truncate_research_memos")
+    async def test_list_by_run_empty_when_no_memos(
+        self,
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
+        repo = SQLAResearchMemoRepository(session_factory)
+        loaded = await repo.list_by_run(uuid.uuid4(), language="de")
+        assert loaded == []
+
+    @pytest.mark.usefixtures("truncate_research_memos")
+    async def test_list_by_run_stable_order_by_id_when_same_timestamp(
+        self,
+        seed_stock_and_run: tuple[uuid.UUID, uuid.UUID],
+        db_session: AsyncSession,
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
+        """F6: Bei identischem created_at wird id als Tie-Breaker verwendet.
+
+        Ist relevant bei Parallel-Batch-Inserts (Semaphore(3)) wo mehrere
+        Memos denselben Timestamp bekommen können.
+        """
+        _, run_id = seed_stock_and_run
+        repo = SQLAResearchMemoRepository(session_factory)
+
+        # 3 Stocks seeden (FK-Target)
+        stock_ids = [uuid.uuid4() for _ in range(3)]
+        for i, sid in enumerate(stock_ids):
+            await db_session.execute(
+                text(
+                    "INSERT INTO stocks (id, ticker, name, currency) VALUES (:id, :t, :name, 'CHF')"
+                ),
+                {"id": sid, "t": f"SRT{i}", "name": f"Sort Stock {i}"},
+            )
+        await db_session.commit()
+
+        # Alle Memos mit identischem Timestamp speichern
+        fixed_ts = datetime.now(UTC)
+        memos = [_new_memo(sid, run_id, language="de") for sid in stock_ids]
+        for m in memos:
+            await repo.save(m.model_copy(update={"created_at": fixed_ts}))
+
+        # Zwei aufeinanderfolgende Reads müssen dieselbe Reihenfolge liefern
+        result_a = await repo.list_by_run(run_id, language="de")
+        result_b = await repo.list_by_run(run_id, language="de")
+
+        assert len(result_a) == 3
+        # Reihenfolge muss deterministisch sein (id als Tie-Breaker)
+        assert [m.id for m in result_a] == [m.id for m in result_b]
+        # UUIDs werden lexikographisch sortiert — sortiert nach id.asc()
+        sorted_ids = sorted(m.id for m in result_a)
+        assert [m.id for m in result_a] == sorted_ids
+
+
 class TestCascade:
     @pytest.mark.usefixtures("truncate_research_memos")
     async def test_delete_stock_cascades_to_memo(

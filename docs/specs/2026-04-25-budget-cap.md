@@ -94,7 +94,7 @@ sequenceDiagram
     CT->>CT: (current + X) > cap * threshold → True
     CT-->>LC: raises BudgetCapExceeded(current_usd, attempted_usd, cap_usd)
     LC-->>Caller: raises BudgetCapExceeded (unverändert durchgereicht)
-    note over Caller: FastAPI-Handler fängt → HTTP 503<br/>MCP-Layer fängt → Tool-Error-Response
+    note over Caller: FastAPI-Handler fängt → HTTP 402<br/>MCP-Layer fängt → Tool-Error-Response
 ```
 
 ---
@@ -423,7 +423,7 @@ async def handle_budget_cap_exceeded(
 ) -> JSONResponse:
     retry_after = _seconds_until_next_month_utc()
     return JSONResponse(
-        status_code=503,
+        status_code=402,  # Payment Required — konsistent ueber alle AI-Endpoints (PR #70 W2)
         headers={"Retry-After": str(retry_after)},
         content={
             "error": "budget_cap_exceeded",
@@ -591,7 +591,7 @@ Abhängigkeiten bestimmen die Reihenfolge — jeder Schritt setzt den vorherigen
 4. **Alembic-Migration** `<timestamp>_create_llm_call_log.py` — erstellt Tabelle + Index. Mit `alembic upgrade head` testen.
 5. **`backend/application/services/cost_tracker.py`** — `CostTracker`-Klasse mit `check_cap` und `record`. Hängt ab von: `BudgetCapExceeded` (Schritt 1), `pricing.py` (Schritt 2), `LLMCallLog`-Model (Schritt 3).
 6. **`backend/infrastructure/llm/client.py`** — `LLMClient`-Wrapper. Hängt ab von: `CostTracker` (Schritt 5), `pricing.py` (Schritt 2). Injiziert Anthropic-SDK + Voyage-SDK intern.
-7. **`backend/interfaces/rest/exception_handlers.py`** — FastAPI-Handler für `BudgetCapExceeded` ergänzen (Status 503 + `Retry-After`-Header).
+7. **`backend/interfaces/rest/exception_handlers.py`** — FastAPI-Handler für `BudgetCapExceeded` ergänzen (Status 402 + `Retry-After`-Header). _Update PR #70: 503 → 402 fuer API-Konsistenz._
 8. **`backend/interfaces/rest/routers/admin.py`** — neuer Router mit `GET /api/v1/admin/costs`. Hängt ab von: `CostTracker` (Schritt 5).
 9. **Tests in TDD-Reihenfolge** — für jeden der obigen Schritte: erst Test schreiben (rot), dann implementieren (grün). CLAUDE.md-Pflicht.
 10. **`.env.example` ergänzen**: `BUDGET_CAP_USD=20.00` und `BUDGET_CAP_THRESHOLD=0.95`.

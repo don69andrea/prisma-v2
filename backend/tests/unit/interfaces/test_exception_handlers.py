@@ -32,9 +32,11 @@ def _make_exc(
 
 
 class TestBudgetCapExceededHandler:
-    async def test_status_code_is_503(self) -> None:
+    async def test_status_code_is_402(self) -> None:
+        # 402 (Payment Required) — konsistent mit POST /memos/batch.
+        # Vorher 503; siehe PR #70 W2 Diskussion.
         response = await handle_budget_cap_exceeded(Mock(), _make_exc())
-        assert response.status_code == 503
+        assert response.status_code == 402
 
     async def test_body_contains_structured_error(self) -> None:
         response = await handle_budget_cap_exceeded(Mock(), _make_exc())

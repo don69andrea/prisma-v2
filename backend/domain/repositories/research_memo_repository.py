@@ -32,3 +32,13 @@ class ResearchMemoRepository(ABC):
     ) -> ResearchMemo | None:
         """Lade existierendes Memo oder None."""
         ...
+
+    @abstractmethod
+    async def list_by_run(
+        self,
+        model_run_id: UUID,
+        *,
+        language: Literal["de", "en"] = "de",
+    ) -> list[ResearchMemo]:
+        """Liefert alle Memos fuer einen Run + Sprache, leere Liste wenn keine."""
+        ...

@@ -1,5 +1,7 @@
 """Gemeinsame pytest-Fixtures für alle Test-Ebenen."""
 
+from __future__ import annotations
+
 import uuid
 from collections.abc import AsyncGenerator
 from uuid import UUID
@@ -30,10 +32,6 @@ class InMemoryStockRepository(StockRepository):
     def add(self, stock: Stock) -> None:
         self._stocks.append(stock)
 
-    async def list(self, limit: int, offset: int) -> list[Stock]:
-        sorted_stocks = sorted(self._stocks, key=lambda s: s.ticker)
-        return sorted_stocks[offset : offset + limit]
-
     async def get_by_ticker(self, ticker: str) -> Stock | None:
         for stock in self._stocks:
             if stock.ticker == ticker.upper():
@@ -45,6 +43,19 @@ class InMemoryStockRepository(StockRepository):
             if stock.id == stock_id:
                 return stock
         return None
+
+    async def list_by_ids(self, stock_ids: list[UUID]) -> list[Stock]:
+        wanted: set[UUID] = set(stock_ids)
+        return [s for s in self._stocks if s.id in wanted]
+
+    async def list_by_tickers(self, tickers: list[str]) -> list[Stock]:
+        wanted: set[str] = {t.upper() for t in tickers}
+        return [s for s in self._stocks if s.ticker in wanted]
+
+    # `list` am Ende — siehe Hinweis im Port.
+    async def list(self, limit: int, offset: int) -> list[Stock]:
+        sorted_stocks = sorted(self._stocks, key=lambda s: s.ticker)
+        return sorted_stocks[offset : offset + limit]
 
 
 # ---------------------------------------------------------------------------

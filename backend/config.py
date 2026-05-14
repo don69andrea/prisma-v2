@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 
+    max_concurrent_batch_workers: int = 3
+    stale_batch_timeout_seconds: int = 600
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: object) -> list[str]:

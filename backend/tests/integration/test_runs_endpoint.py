@@ -241,6 +241,23 @@ async def test_get_rankings_items_have_expected_fields(http_client: AsyncClient)
     assert "per_model_ranks" in item
 
 
+async def test_get_rankings_per_model_ranks_has_all_five_models(
+    http_client: AsyncClient,
+) -> None:
+    post = await http_client.post("/api/v1/runs", json={"universe_id": str(_DEMO_UNIVERSE_ID)})
+    run_id = post.json()["id"]
+    rankings = (await http_client.get(f"/api/v1/runs/{run_id}/rankings")).json()
+    expected_models = {
+        "quality_classic",
+        "diversification",
+        "trend_momentum",
+        "value_alpha_potential",
+        "alpha",
+    }
+    for item in rankings:
+        assert set(item["per_model_ranks"].keys()) == expected_models
+
+
 async def test_get_rankings_sorted_by_total_rank(http_client: AsyncClient) -> None:
     post = await http_client.post("/api/v1/runs", json={"universe_id": str(_DEMO_UNIVERSE_ID)})
     run_id = post.json()["id"]

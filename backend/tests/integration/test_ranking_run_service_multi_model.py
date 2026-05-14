@@ -179,3 +179,18 @@ async def test_run_with_empty_prices_falls_back_to_quality_only(
     for entry in rankings:
         for m in other_models:
             assert entry["per_model_ranks"][m] is None
+
+
+async def test_sweet_spot_triggers_with_five_models(
+    service_setup: tuple[RankingRunService, InMemoryUniverseRepository, uuid.UUID],
+) -> None:
+    """Mit 5 deterministischen Random-Walk-Tickers ergibt sich echte Varianz
+    zwischen Modellen — mindestens ein Ticker landet in Top-25% von ≥3 Modellen
+    (is_sweet_spot=True).
+    """
+    service, _, universe_id = service_setup
+    run = await service.create_and_execute_run(universe_id=universe_id)
+    rankings = await service.get_rankings(run.id)
+    # StubMarketDataProvider erzeugt pro Ticker deterministischen, unterschiedlichen
+    # Random-Walk → echte Rang-Varianz zwischen Modellen → Sweet Spot erreichbar
+    assert any(r["is_sweet_spot"] for r in rankings)

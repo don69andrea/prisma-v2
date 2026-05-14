@@ -23,6 +23,10 @@ class SQLAUniverseRepository(UniverseRepository):
         return [self._to_domain(row) for row in result.scalars().all()]
 
     async def save(self, universe: Universe) -> None:
+        # Flush pending adds bevor get() — autoflush=False sonst findet
+        # session.get() einen vorher in derselben Session via add() gestaged'ten
+        # Row nicht (Identity-Map deckt pending Rows mit explicit PK nicht ab).
+        await self._session.flush()
         row = await self._session.get(UniverseORM, universe.id)
         if row is None:
             self._session.add(

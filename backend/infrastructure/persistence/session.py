@@ -59,8 +59,14 @@ async def get_async_session(
     """Async-Generator der eine AsyncSession liefert und am Ende schliesst.
 
     Wird via FastAPI Depends() genutzt — jeder Request erhält eine eigene
-    Session; Rollback bei Exception ist Verantwortung der aufrufenden Schicht.
+    Session. Bei erfolgreichem Request-Handler-Return wird committet,
+    bei Exception rollback'd.
     """
     factory = get_session_factory(settings)
     async with factory() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise

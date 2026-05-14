@@ -105,8 +105,7 @@ def _compute_scores(returns: pd.DataFrame, tickers: list[str]) -> dict[str, floa
 
     invalid = flat_mask | (std_devs == 0.0) | (count_corr == 0.0) | (denom == 0.0)
     return {
-        ticker: (None if invalid[i] else float(raw_scores[i]))
-        for i, ticker in enumerate(tickers)
+        ticker: (None if invalid[i] else float(raw_scores[i])) for i, ticker in enumerate(tickers)
     }
 
 

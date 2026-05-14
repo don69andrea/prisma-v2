@@ -7,6 +7,7 @@ FastAPI-Worker 10 Minuten (SDK-Default).
 """
 
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 
@@ -16,10 +17,12 @@ from backend.interfaces.rest.dependencies import get_anthropic_client
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.asyncio
-async def test_get_anthropic_client_uses_timeout_30s_and_max_retries_3(
+def test_get_anthropic_client_uses_timeout_30s_and_max_retries_3(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    # get_anthropic_client is @lru_cache — clear before and after to avoid
+    # cross-test contamination.
+    get_anthropic_client.cache_clear()
     captured: dict[str, Any] = {}
 
     class FakeAsyncAnthropic:
@@ -30,9 +33,13 @@ async def test_get_anthropic_client_uses_timeout_30s_and_max_retries_3(
         "backend.interfaces.rest.dependencies.anthropic.AsyncAnthropic",
         FakeAsyncAnthropic,
     )
+    with patch(
+        "backend.interfaces.rest.dependencies.get_settings",
+        return_value=Settings(anthropic_api_key="test-key"),
+    ):
+        get_anthropic_client()
 
-    settings = Settings(anthropic_api_key="test-key")
-    await get_anthropic_client(settings=settings)
+    get_anthropic_client.cache_clear()
 
     assert captured["api_key"] == "test-key"
     assert captured["timeout"] == 30.0

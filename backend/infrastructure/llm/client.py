@@ -12,12 +12,13 @@ Token-Counts und Kosten.
 """
 
 import asyncio
+from collections.abc import Mapping
 from decimal import Decimal
 from typing import Any
 
 from backend.application.services.cost_tracker import CostTracker
 from backend.domain.errors import UnknownModelError
-from backend.infrastructure.llm.pricing import PRICING
+from backend.domain.llm_pricing import ModelPricing
 
 _ONE_MILLION = Decimal("1_000_000")
 
@@ -36,10 +37,12 @@ class LLMClient:
         anthropic: Any,
         voyage: Any | None,
         cost_tracker: CostTracker,
+        pricing: Mapping[str, ModelPricing],
     ) -> None:
         self._anthropic = anthropic
         self._voyage: Any | None = voyage
         self._cost_tracker = cost_tracker
+        self._pricing = pricing
 
     async def messages_create(
         self,
@@ -103,7 +106,7 @@ class LLMClient:
                 "embed() requires a Voyage client. Wire one via dependencies.get_voyage_client."
             )
         try:
-            pricing = PRICING[model]
+            pricing = self._pricing[model]
         except KeyError as exc:
             raise UnknownModelError(model, reason="nicht in PRICING-Registry") from exc
         if pricing.embed_per_mtok is None:
@@ -128,8 +131,8 @@ class LLMClient:
         )
         return list(response.embeddings)
 
-    @staticmethod
     def _estimate_messages_cost(
+        self,
         *,
         model: str,
         messages: list[dict[str, Any]],
@@ -139,7 +142,7 @@ class LLMClient:
         """chars/3 für Input (konservativ, siehe Modul-Konstante) + max_tokens
         als worst-case Output."""
         try:
-            pricing = PRICING[model]
+            pricing = self._pricing[model]
         except KeyError as exc:
             raise UnknownModelError(model, reason="nicht in PRICING-Registry") from exc
         if pricing.input_per_mtok is None or pricing.output_per_mtok is None:

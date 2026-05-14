@@ -187,7 +187,9 @@ async def test_batch_top_n_full_flow(
         run_repository=SQLARankingRunRepository.__new__(SQLARankingRunRepository),
         stock_repository=SQLAStockRepository.__new__(SQLAStockRepository),
         batch_repository=SQLAMemoBatchJobRepository(session_factory),
-        llm_client=LLMClient(anthropic=stub, voyage=None, cost_tracker=cost_tracker),
+        llm_client=LLMClient(
+            anthropic=stub, voyage=None, cost_tracker=cost_tracker, pricing=PRICING
+        ),
         prompt_loader=PromptTemplateLoader(),
         cost_tracker=cost_tracker,
         session_factory=session_factory,

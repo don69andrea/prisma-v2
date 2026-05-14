@@ -13,6 +13,13 @@ from backend.infrastructure.persistence.models.ranking_run import RankingRunORM
 
 
 class SQLARankingRunRepository(RankingRunRepository):
+    """SQLAlchemy-Implementierung des RankingRunRepository-Ports.
+
+    Identity-Map-Workaround: autoflush=False bedeutet, dass session.get()
+    pending Rows mit explizitem PK nicht sieht — daher flush() vor jedem
+    get() in save() und save_results() (eingeführt in PR #88).
+    """
+
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
@@ -21,10 +28,7 @@ class SQLARankingRunRepository(RankingRunRepository):
         return self._to_domain(row) if row else None
 
     async def save(self, run: RankingRun) -> None:
-        # Flush pending adds bevor get() — autoflush=False sonst findet
-        # session.get() einen vorher in derselben Session via add() gestaged'ten
-        # Row nicht (Identity-Map deckt pending Rows mit explicit PK nicht ab).
-        await self._session.flush()
+        await self._session.flush()  # Identity-Map-Workaround, siehe Klassen-Docstring
         row = await self._session.get(RankingRunORM, run.id)
         if row is None:
             self._session.add(
@@ -50,9 +54,7 @@ class SQLARankingRunRepository(RankingRunRepository):
         return [self._to_domain(row) for row in result.scalars().all()]
 
     async def save_results(self, run_id: UUID, results: list[dict[str, Any]]) -> None:
-        # Flush analog save() — ohne flush findet get() einen vorher gestaged'ten
-        # add() nicht und save_results wird stillschweigend zum No-Op.
-        await self._session.flush()
+        await self._session.flush()  # Identity-Map-Workaround, siehe Klassen-Docstring
         row = await self._session.get(RankingRunORM, run_id)
         if row is not None:
             row.results = results

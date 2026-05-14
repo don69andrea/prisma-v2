@@ -102,6 +102,16 @@ npx eslint frontend/ --fix
 3. `claude_desktop_config.json`-Snippet im `docs/` ergänzen.
 4. Manuell in Claude Desktop getestet + Screenshot in PR.
 
+## Persistence-Konventionen
+
+### Session-Lifecycle — zwei Patterns
+
+**1. Request-Session** (Normalfall): `get_async_session()` in `infrastructure/persistence/session.py` öffnet eine Session pro Request, committet am Ende automatisch und rollt bei Exception zurück. Router-Handler und ihre Services nutzen dieses Pattern via `Depends(get_session)`.
+
+**2. Self-managed Side-Channel-Session** (Audit/Logging): Repos, deren Schreiboperationen *unabhängig* von der laufenden Business-Transaktion persistiert werden müssen, erhalten eine `session_factory` im Konstruktor und managen Commit/Rollback selbst. Beispiele: `SQLACostLogRepository`, `SQLAResearchMemoRepository`. Begründung: ein Audit-Insert soll nicht mit einer fehlgeschlagenen Business-Operation zurückgerollt werden.
+
+**Regel für Agents**: Neue Repos bekommen `Depends(get_session)`, es sei denn, sie sind explizit Audit-/Logging-Repos — dann `session_factory` (analog `SQLACostLogRepository`). Den `async for`-Wrapper in `get_session()` nicht anfassen; er durchreicht die Generator-Cleanup-Semantik von `get_async_session()` (PR #88).
+
 ## Was Agents NICHT tun sollen
 
 - Keine Geheimnisse (.env, API-Keys) committen.

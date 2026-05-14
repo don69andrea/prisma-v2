@@ -15,6 +15,7 @@ import pytest
 
 from backend.domain.errors import BudgetCapExceeded
 from backend.infrastructure.llm.client import LLMClient
+from backend.infrastructure.llm.pricing import PRICING
 
 pytestmark = pytest.mark.unit
 
@@ -78,6 +79,7 @@ def _build_client(
         anthropic=anthropic,
         voyage=voyage,
         cost_tracker=tracker,
+        pricing=PRICING,
     )
     return client, anthropic, voyage, tracker
 
@@ -261,7 +263,9 @@ async def test_messages_create_accepts_system_as_content_block_list() -> None:
     fake_tracker.check_cap = AsyncMock(return_value=None)
     fake_tracker.record = AsyncMock(return_value=None)
 
-    client = LLMClient(anthropic=fake_anthropic, voyage=fake_voyage, cost_tracker=fake_tracker)
+    client = LLMClient(
+        anthropic=fake_anthropic, voyage=fake_voyage, cost_tracker=fake_tracker, pricing=PRICING
+    )
 
     system_blocks = [
         {
@@ -286,7 +290,8 @@ async def test_messages_create_accepts_system_as_content_block_list() -> None:
 
 async def test_estimate_messages_cost_handles_system_as_list() -> None:
     """Cost-Estimator iteriert ueber alle text-blocks im system-list-Fall."""
-    cost = LLMClient._estimate_messages_cost(
+    client, *_ = _build_client()
+    cost = client._estimate_messages_cost(
         model="claude-sonnet-4-6",
         messages=[{"role": "user", "content": "abc" * 100}],
         max_tokens=200,

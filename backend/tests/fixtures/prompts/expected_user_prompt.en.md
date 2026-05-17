@@ -11,11 +11,11 @@ Benchmark median rank: 40
 Top-20% threshold: ≤ 16
 
 RANKINGS (1 = best)
-- Quality Classic: rank 8/80, score 0.8700
-- Alpha: rank 12/80, score 0.7400
-- Trend Momentum: rank 25/80, score 0.6200
-- Value Alpha Potential: rank 60/80, score 0.3100
-- Diversification: rank 5/80, score 0.9100
+- Quality Classic: rank 8/80
+- Alpha: rank 12/80
+- Trend Momentum: rank 25/80
+- Value Alpha Potential: rank 60/80
+- Diversification: rank 5/80
 
 AGGREGATION
 Total Rank: 11/80

@@ -11,11 +11,11 @@ Benchmark-Median-Rang: 40
 Top-20%-Schwelle: ≤ 16
 
 RANKINGS (1 = bester)
-- Quality Classic: Rang 8/80, Score 0.8700
-- Alpha: Rang 12/80, Score 0.7400
-- Trend Momentum: Rang 25/80, Score 0.6200
-- Value Alpha Potential: Rang 60/80, Score 0.3100
-- Diversification: Rang 5/80, Score 0.9100
+- Quality Classic: Rang 8/80
+- Alpha: Rang 12/80
+- Trend Momentum: Rang 25/80
+- Value Alpha Potential: Rang 60/80
+- Diversification: Rang 5/80
 
 AGGREGATION
 Total Rank: 11/80

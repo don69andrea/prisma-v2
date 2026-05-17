@@ -50,3 +50,4 @@ class ResearchMemo(BaseModel):
     key_risks: list[str]
     confidence: Literal["low", "medium", "high"]
     model_version: str = Field(..., max_length=64)
+    is_error: bool = Field(default=False)

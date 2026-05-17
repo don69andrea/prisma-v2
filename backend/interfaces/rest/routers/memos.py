@@ -19,7 +19,6 @@ from pydantic import BaseModel
 
 from backend.application.services.narrative_service import NarrativeService
 from backend.domain.entities.research_memo import (
-    ERROR_FALLBACK_MODEL_VERSION,
     ContradictionItem,
     ResearchMemo,
 )
@@ -60,9 +59,6 @@ class MemoResponse(BaseModel):
 
     @classmethod
     def from_entity(cls, memo: ResearchMemo) -> "MemoResponse":
-        is_error = memo.model_version == ERROR_FALLBACK_MODEL_VERSION or memo.one_liner.startswith(
-            "Memo-Generierung fehlgeschlagen"
-        )
         return cls(
             id=memo.id,
             stock_id=memo.stock_id,
@@ -78,7 +74,7 @@ class MemoResponse(BaseModel):
             confidence=memo.confidence,
             model_version=memo.model_version,
             created_at=memo.created_at,
-            is_error=is_error,
+            is_error=memo.is_error,
         )
 
 
@@ -180,7 +176,7 @@ async def get_job(
             stock_id=m.stock_id,
             ticker=ticker_map.get(m.stock_id),  # None falls Stock geloescht (CASCADE-edge)
             one_liner=m.one_liner,
-            is_error=(m.model_version == ERROR_FALLBACK_MODEL_VERSION),
+            is_error=m.is_error,
         )
         for m in memos
     ]

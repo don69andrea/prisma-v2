@@ -230,6 +230,7 @@ async def test_full_pipeline_en(
                 anthropic=stub,
                 voyage=None,
                 cost_tracker=cost_tracker,
+                pricing=PRICING,
             ),
             prompt_loader=PromptTemplateLoader(),
             cost_tracker=cost_tracker,

@@ -129,6 +129,40 @@ class TestRoundtripAndUpsert:
         assert got_v2.created_at == original_created_at  # NICHT überschrieben
 
     @pytest.mark.usefixtures("truncate_research_memos")
+    async def test_save_and_load_preserves_is_error(
+        self,
+        seed_stock_and_run: tuple[uuid.UUID, uuid.UUID],
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
+        """is_error wird persistiert und beim Load wieder gesetzt (#67)."""
+        stock_id, run_id = seed_stock_and_run
+        repo = SQLAResearchMemoRepository(session_factory)
+        memo = _new_memo(stock_id, run_id).model_copy(update={"is_error": True})
+
+        await repo.save(memo)
+        got = await repo.get(stock_id, run_id)
+
+        assert got is not None
+        assert got.is_error is True
+
+    @pytest.mark.usefixtures("truncate_research_memos")
+    async def test_default_is_error_is_false_after_roundtrip(
+        self,
+        seed_stock_and_run: tuple[uuid.UUID, uuid.UUID],
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
+        """Default-Path: is_error=False persistiert und liest sich als False zurück."""
+        stock_id, run_id = seed_stock_and_run
+        repo = SQLAResearchMemoRepository(session_factory)
+        memo = _new_memo(stock_id, run_id)  # default is_error=False
+
+        await repo.save(memo)
+        got = await repo.get(stock_id, run_id)
+
+        assert got is not None
+        assert got.is_error is False
+
+    @pytest.mark.usefixtures("truncate_research_memos")
     async def test_multi_language_coexists(
         self,
         seed_stock_and_run: tuple[uuid.UUID, uuid.UUID],

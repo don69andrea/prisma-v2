@@ -3,6 +3,7 @@
 import uuid
 from datetime import datetime
 
+import sqlalchemy as sa
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -59,6 +60,11 @@ class ResearchMemoORM(Base):
     key_risks: Mapped[list[object]] = mapped_column(JSONB, nullable=False)
     confidence: Mapped[str] = mapped_column(String(10), nullable=False)
     model_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    is_error: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=sa.text("false"),
+    )
 
     __table_args__ = (
         UniqueConstraint(

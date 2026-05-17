@@ -101,13 +101,15 @@ def _stringify(obj: Any) -> dict[str, Any]:
     return {"_repr": repr(obj)}
 
 
-def _rankings_for_template(ranking: dict[str, Any]) -> dict[str, dict[str, float | int]]:
-    """Wandelt das per_model_ranks-Dict + weighted_avg in ein
-    Template-freundliches dict[name, {rank, score}]-Format um.
+def _rankings_for_template(ranking: dict[str, Any]) -> dict[str, dict[str, int]]:
+    """Wandelt das per_model_ranks-Dict in ein Template-freundliches
+    dict[name, {rank}]-Format um.
 
-    Score-Daten sind zu diesem Zeitpunkt nicht alle in den Run-Results,
-    daher Score = 1 / rank als grobe Visualisierung. Spec sagt nichts
-    Strenges dazu, das Template zeigt nur eine Sichtbarmachung.
+    Score-Werte werden bewusst NICHT mitgeführt: vor Issue #66 wurde
+    score = 1 / rank als Proxy berechnet, was die LLM als echte
+    quantitative Aussage interpretiert hat (Hallucination-Quelle).
+    Sobald echte per-Modell-Scores in Run-Results landen, kann der
+    Slot reaktiviert werden.
     """
     model_label = {
         "quality_classic": "Quality Classic",
@@ -116,12 +118,12 @@ def _rankings_for_template(ranking: dict[str, Any]) -> dict[str, dict[str, float
         "value_alpha_potential": "Value Alpha Potential",
         "diversification": "Diversification",
     }
-    out: dict[str, dict[str, float | int]] = {}
+    out: dict[str, dict[str, int]] = {}
     per_model = ranking.get("per_model_ranks") or {}
     for key, label in model_label.items():
         rank = per_model.get(key)
         if rank is not None:
-            out[label] = {"rank": int(rank), "score": round(1.0 / max(int(rank), 1), 4)}
+            out[label] = {"rank": int(rank)}
     return out
 
 
@@ -646,6 +648,7 @@ class NarrativeService:
             key_risks=list(schema.key_risks),
             confidence=schema.confidence,
             model_version=schema.model_version,
+            is_error=(schema.model_version == ERROR_FALLBACK_MODEL_VERSION),
         )
 
     def _try_validate_tool_response(self, response: Any) -> ResearchMemoSchema | None:

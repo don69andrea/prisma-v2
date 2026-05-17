@@ -44,6 +44,7 @@ class SQLAResearchMemoRepository(ResearchMemoRepository):
                     key_risks=memo.key_risks,
                     confidence=memo.confidence,
                     model_version=memo.model_version,
+                    is_error=memo.is_error,
                 )
                 .on_conflict_do_update(
                     constraint="uq_research_memos_stock_run_lang",
@@ -57,6 +58,7 @@ class SQLAResearchMemoRepository(ResearchMemoRepository):
                         "key_risks": memo.key_risks,
                         "confidence": memo.confidence,
                         "model_version": memo.model_version,
+                        "is_error": memo.is_error,
                         # created_at bewusst NICHT im Set — Lifecycle-Marker bleibt
                     },
                 )
@@ -116,4 +118,5 @@ def _orm_to_entity(row: ResearchMemoORM) -> ResearchMemo:
         key_risks=[str(s) for s in row.key_risks],
         confidence=row.confidence,  # type: ignore[arg-type]
         model_version=row.model_version,
+        is_error=row.is_error,
     )

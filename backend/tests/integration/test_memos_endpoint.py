@@ -170,6 +170,7 @@ def test_post_generate_sets_is_error_when_fallback_memo(
             "model_version": "error-fallback",
             "one_liner": "Memo-Generierung fehlgeschlagen — bitte Run regenerieren",
             "confidence": "low",
+            "is_error": True,  # Router liest is_error direkt (#67)
         }
     )
     mock_service.generate_memo = AsyncMock(return_value=memo)
@@ -183,3 +184,29 @@ def test_post_generate_sets_is_error_when_fallback_memo(
     assert resp.status_code == 200
     body = resp.json()
     assert body["is_error"] is True
+
+
+def test_get_memo_is_error_true_for_explicit_flag_without_sentinel(
+    app_with_mock_service: tuple[Any, AsyncMock],
+) -> None:
+    """Router liest memo.is_error direkt — kein String-Match, kein
+    model_version-Inferieren (#67).
+
+    Edge-Case: memo mit normalem model_version aber is_error=True muss
+    von der API als is_error=True zurueckkommen.
+    """
+    app, mock_service = app_with_mock_service
+    memo = _sample_memo().model_copy(
+        update={
+            "model_version": "claude-sonnet-4-6",  # NICHT der Sentinel
+            "one_liner": "Ein normaler Memo-Titel ohne Error-Wording",
+            "is_error": True,  # nur das Flag gesetzt
+        }
+    )
+    mock_service.get_memo = AsyncMock(return_value=memo)
+
+    with TestClient(app) as client:
+        resp = client.get(f"/api/v1/memos/{memo.stock_id}/{memo.model_run_id}")
+
+    assert resp.status_code == 200
+    assert resp.json()["is_error"] is True

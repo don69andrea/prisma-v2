@@ -11,7 +11,7 @@ Benchmark median rank: {{ median_rank }}
 Top-20% threshold: ≤ {{ top20_threshold }}
 
 RANKINGS (1 = best)
-{% for model_name, ranking in rankings.items() %}- {{ model_name }}: rank {{ ranking.rank }}/{{ n_stocks }}, score {{ "%.4f"|format(ranking.score) }}
+{% for model_name, ranking in rankings.items() %}- {{ model_name }}: rank {{ ranking.rank }}/{{ n_stocks }}
 {% endfor %}
 AGGREGATION
 Total Rank: {{ total_rank }}/{{ n_stocks }}

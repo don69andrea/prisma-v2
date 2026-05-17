@@ -32,6 +32,7 @@ import anthropic
 from backend.config import get_settings
 from backend.domain.schemas.research_memo_schema import ResearchMemoSchema
 from backend.infrastructure.llm.client import LLMClient
+from backend.infrastructure.llm.pricing import PRICING
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 
 # Synthetic sample matching the structure NarrativeService passes to the user template.
@@ -133,7 +134,12 @@ async def main() -> None:
     cost_tracker.check_cap = AsyncMock()
     cost_tracker.record = AsyncMock()
     anthropic_client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-    llm = LLMClient(anthropic=anthropic_client, voyage=None, cost_tracker=cost_tracker)
+    llm = LLMClient(
+        anthropic=anthropic_client,
+        voyage=None,
+        cost_tracker=cost_tracker,
+        pricing=PRICING,
+    )
 
     print("=" * 64)
     print(f"PRISMA Narrative-Engine — Real-API-Smoke (lang={language})")

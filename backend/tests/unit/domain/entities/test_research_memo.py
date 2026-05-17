@@ -104,3 +104,15 @@ class TestResearchMemoEntity:
     def test_ranking_interpretation_max_length_1001_rejected(self) -> None:
         with pytest.raises(ValidationError):
             ResearchMemo(**_valid_entity_payload(ranking_interpretation="x" * 1001))
+
+
+class TestResearchMemoIsError:
+    """is_error-Feld: persistierte Markierung statt Router-String-Match (Issue #67)."""
+
+    def test_default_is_error_is_false(self) -> None:
+        memo = ResearchMemo(**_valid_entity_payload())
+        assert memo.is_error is False
+
+    def test_explicit_is_error_true(self) -> None:
+        memo = ResearchMemo(**_valid_entity_payload(is_error=True))
+        assert memo.is_error is True

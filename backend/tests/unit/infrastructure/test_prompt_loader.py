@@ -23,11 +23,11 @@ _SNAPSHOT_CONTEXT = {
     "median_rank": 40,
     "top20_threshold": 16,
     "rankings": {
-        "Quality Classic": {"rank": 8, "score": 0.87},
-        "Alpha": {"rank": 12, "score": 0.74},
-        "Trend Momentum": {"rank": 25, "score": 0.62},
-        "Value Alpha Potential": {"rank": 60, "score": 0.31},
-        "Diversification": {"rank": 5, "score": 0.91},
+        "Quality Classic": {"rank": 8},
+        "Alpha": {"rank": 12},
+        "Trend Momentum": {"rank": 25},
+        "Value Alpha Potential": {"rank": 60},
+        "Diversification": {"rank": 5},
     },
     "total_rank": 11,
     "sweet_spot": True,
@@ -75,3 +75,35 @@ def test_render_de_system_template_succeeds() -> None:
     assert "quantitativer Research-Analyst" in rendered
     assert "submit_memo" in rendered
     assert "Sweet Spot" in rendered
+
+
+def test_de_system_prompt_few_shot_has_no_score_values() -> None:
+    """Issue #66: Few-Shot-Beispiel im System-Prompt darf keine erfundenen
+    Score-Werte enthalten — sonst trainiert die LLM auf Score-Wording."""
+    loader = PromptTemplateLoader()
+    rendered = loader.render("narrative_system.de.md.j2", {})
+    for forbidden in [
+        "Score 0.87",
+        "Score 0.74",
+        "Score 0.62",
+        "Score 0.31",
+        "Score 0.91",
+    ]:
+        assert forbidden not in rendered, f"System-Prompt enthält noch {forbidden!r}"
+    assert "Quality Classic" in rendered
+    assert "Rang" in rendered
+
+
+def test_en_system_prompt_few_shot_has_no_score_values() -> None:
+    """Issue #66 EN-Symmetrie: kein erfundener Score im EN-System-Prompt."""
+    loader = PromptTemplateLoader()
+    rendered = loader.render("narrative_system.en.md.j2", {})
+    for forbidden in [
+        "score 0.87",
+        "score 0.74",
+        "score 0.62",
+        "score 0.31",
+        "score 0.91",
+    ]:
+        assert forbidden not in rendered, f"EN-System-Prompt enthält noch {forbidden!r}"
+    assert "Quality Classic" in rendered

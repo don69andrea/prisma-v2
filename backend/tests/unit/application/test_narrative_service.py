@@ -757,3 +757,76 @@ async def test_generate_memo_persists_error_memo_on_entity_validation_error(
     log_dir = tmp_path / "logs" / "malformed_memos"
     assert log_dir.exists()
     assert len(list(log_dir.glob("*.json"))) == 1
+
+
+def test_rankings_for_template_returns_only_rank_no_score() -> None:
+    """Issue #66: erfundener Score (1/rank) entfernt — nur reale Rank-Daten."""
+    from backend.application.services.narrative_service import _rankings_for_template
+
+    out = _rankings_for_template(
+        {
+            "per_model_ranks": {
+                "quality_classic": 8,
+                "alpha": 12,
+                "trend_momentum": 25,
+                "value_alpha_potential": 60,
+                "diversification": 5,
+            }
+        }
+    )
+
+    assert out == {
+        "Quality Classic": {"rank": 8},
+        "Alpha": {"rank": 12},
+        "Trend Momentum": {"rank": 25},
+        "Value Alpha Potential": {"rank": 60},
+        "Diversification": {"rank": 5},
+    }
+    for model_data in out.values():
+        assert "score" not in model_data
+
+
+class TestBuildMemoEntityIsError:
+    """_build_memo_entity setzt is_error aus schema.model_version (#67)."""
+
+    def _make_schema(self, *, model_version: str) -> Any:
+        from backend.domain.schemas.research_memo_schema import ResearchMemoSchema
+
+        return ResearchMemoSchema(
+            ticker="NESN",
+            total_rank=1,
+            one_liner="Test-Memo fuer Unit-Test",
+            ranking_interpretation="x" * 100,
+            sweet_spot=False,
+            sweet_spot_explanation=None,
+            contradictions=[],
+            key_strengths=["s1"],
+            key_risks=["r1"],
+            confidence="low",
+            generated_at=datetime.now(tz=UTC),
+            model_version=model_version,
+        )
+
+    def test_error_fallback_model_version_marks_is_error_true(self) -> None:
+        from backend.domain.entities.research_memo import ERROR_FALLBACK_MODEL_VERSION
+
+        schema = self._make_schema(model_version=ERROR_FALLBACK_MODEL_VERSION)
+        entity = NarrativeService._build_memo_entity(
+            None,  # type: ignore[arg-type]
+            schema,
+            stock_id=uuid4(),
+            model_run_id=uuid4(),
+            language="de",
+        )
+        assert entity.is_error is True
+
+    def test_normal_model_version_keeps_is_error_false(self) -> None:
+        schema = self._make_schema(model_version="claude-sonnet-4-6")
+        entity = NarrativeService._build_memo_entity(
+            None,  # type: ignore[arg-type]
+            schema,
+            stock_id=uuid4(),
+            model_run_id=uuid4(),
+            language="de",
+        )
+        assert entity.is_error is False

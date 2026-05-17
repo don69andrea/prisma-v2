@@ -1,14 +1,30 @@
 import type { Metadata } from 'next';
 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RankingsForm } from './rankings-form';
+
 export const metadata: Metadata = {
   title: 'Rankings',
 };
 
 export default function RankingsPage() {
   return (
-    <div className="flex flex-col items-center justify-center py-32 text-center">
-      <h1 className="text-2xl font-bold">Rankings</h1>
-      <p className="mt-2 text-muted-foreground">Kommt bald.</p>
+    <div className="space-y-6 max-w-lg">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Ranking starten</h1>
+        <p className="text-muted-foreground text-sm">
+          Wähle ein Universum und starte einen Ranking-Run über alle 5 Modelle.
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-medium">Neuer Run</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RankingsForm />
+        </CardContent>
+      </Card>
     </div>
   );
 }

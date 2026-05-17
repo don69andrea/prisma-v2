@@ -1,0 +1,129 @@
+'use client';
+
+import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { XCircle, ArrowLeft } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { getRun, getRankings } from '@/lib/api/runs';
+import { getUniverse } from '@/lib/api/universes';
+import { ApiError } from '@/lib/api/client';
+
+import { RankingsTable } from './rankings-table';
+
+function TableSkeleton() {
+  return (
+    <div className="space-y-2">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="h-10 rounded-md bg-muted animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
+export default function RankingDetailPage({ params }: { params: { runId: string } }) {
+  const runQuery = useQuery({
+    queryKey: ['run', params.runId],
+    queryFn: () => getRun(params.runId),
+    refetchInterval: (q) => {
+      const status = q.state.data?.status;
+      return status === 'pending' || status === 'running' ? 5000 : false;
+    },
+    retry: (failureCount, error) => {
+      if (error instanceof ApiError && error.status === 404) return false;
+      return failureCount < 2;
+    },
+  });
+
+  const isCompleted = runQuery.data?.status === 'completed';
+
+  const rankingsQuery = useQuery({
+    queryKey: ['rankings', params.runId],
+    queryFn: () => getRankings(params.runId),
+    enabled: isCompleted,
+  });
+
+  const universeQuery = useQuery({
+    queryKey: ['universe', runQuery.data?.universe_id ?? null],
+    queryFn: () => getUniverse(runQuery.data!.universe_id),
+    enabled: !!runQuery.data?.universe_id,
+  });
+
+  const is404 = runQuery.error instanceof ApiError && runQuery.error.status === 404;
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Link href="/rankings" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Neuer Run
+        </Link>
+        <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis</h1>
+      </div>
+
+      {is404 && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-lg font-medium">Run nicht gefunden</p>
+            <p className="text-sm text-muted-foreground mt-1">Run-ID: {params.runId}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!is404 && runQuery.data && (
+        <Card>
+          <CardContent className="py-4 flex items-center gap-4 text-sm">
+            <span>
+              <span className="text-muted-foreground">Universe:</span>{' '}
+              <span className="font-medium">{universeQuery.data?.name ?? runQuery.data.universe_id}</span>
+            </span>
+            <Badge
+              variant={
+                runQuery.data.status === 'completed'
+                  ? 'default'
+                  : runQuery.data.status === 'failed'
+                    ? 'destructive'
+                    : 'secondary'
+              }
+            >
+              {runQuery.data.status}
+            </Badge>
+            <span className="text-muted-foreground">
+              {new Date(runQuery.data.created_at).toLocaleString('de-CH')}
+            </span>
+          </CardContent>
+        </Card>
+      )}
+
+      {(runQuery.data?.status === 'pending' || runQuery.data?.status === 'running') && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
+          <span>Run läuft noch. Seite aktualisiert sich alle 5s.</span>
+        </div>
+      )}
+
+      {runQuery.data?.status === 'failed' && (
+        <Card>
+          <CardContent className="py-8 flex items-center gap-2 text-destructive">
+            <XCircle className="h-5 w-5 shrink-0" />
+            <span>Run fehlgeschlagen. Prüfe Backend-Logs.</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {!is404 && (runQuery.isLoading || (isCompleted && rankingsQuery.isLoading)) && <TableSkeleton />}
+
+      {isCompleted && rankingsQuery.data && <RankingsTable items={rankingsQuery.data} />}
+
+      {isCompleted && rankingsQuery.isError && (
+        <div className="flex items-center gap-2 text-destructive text-sm" role="alert">
+          <XCircle className="h-4 w-4 shrink-0" />
+          <span>
+            Rankings konnten nicht geladen werden:{' '}
+            {rankingsQuery.error instanceof Error ? rankingsQuery.error.message : 'Unbekannter Fehler'}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}

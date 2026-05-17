@@ -1,0 +1,16 @@
+# Next.js
+.next/
+out/
+build/
+
+# Node
+node_modules/
+
+# Misc
+.DS_Store
+*.log
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/

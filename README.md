@@ -6,6 +6,33 @@ PRISMA zerlegt Aktien in analytische Dimensionen — wie ein optisches Prisma we
 
 **Capstone-Projekt** im Modul *AI-assisted Software Development*, BSc Business Artificial Intelligence, FHNW Hochschule für Wirtschaft, FS 2026. Referenz: PRISMA der Vireos AG.
 
+## Abgabe-Status
+
+Sichtbare Nachweise gegen das Capstone-Bewertungsraster (Stand: 2026-05-17).
+
+| Kriterium | Status | Nachweis |
+|---|---|---|
+| **Architektur** | Clean Architecture (4 Schichten: Domain / Application / Interfaces / Infrastructure) | [`docs/specs/2026-04-21-prisma-capstone-design.md`](./docs/specs/2026-04-21-prisma-capstone-design.md) · siehe Architektur-Sektion unten |
+| **Tests** | Backend Unit + Integration · Frontend Vitest · Playwright E2E | [`backend/tests/`](./backend/tests) · [`frontend/app/**/__tests__/`](./frontend/app) · [`frontend/e2e/`](./frontend/e2e) |
+| **Test-Coverage** | ~89.8% Backend lokal verifiziert | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) — Coverage-Gate-Eintrag |
+| **CI** | GitHub Actions: Backend Lint+Tests, Frontend Lint+Build, Frontend E2E (Playwright) | [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) · [Actions-Tab](https://github.com/SheylaSam/prisma-capstone/actions) |
+| **Release-Workflow** | Tag `v*` → Docker-Images auf GHCR + GitHub Release mit Auto-Notes | [`.github/workflows/release.yml`](./.github/workflows/release.yml) |
+| **CD-Workflow** | `workflow_dispatch` → Render Deploy Hook (Backend / Frontend / beide) | [`.github/workflows/cd-render.yml`](./.github/workflows/cd-render.yml) |
+| **Deployment** | Auto-Deploy via Render (Backend + Frontend + Postgres) | [`render.yaml`](./render.yaml) |
+| **API-Docs** | OpenAPI/Swagger automatisch generiert (FastAPI) | `<DEPLOYMENT_URL>/docs` nach Deploy-Run |
+| **AI-Usage-Log** | Reflexion pro PR mit Agent / Patterns / Lehren — 40%-Bewertungsachse | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) (>15 Einträge, Pattern-Sektion mit Evidenz-Links) |
+
+### Demo-Flow
+
+End-to-End mit der ausgelieferten UI:
+
+1. **Health-Check** — `/` zeigt API-Health-Badge (Backend-Connectivity).
+2. **Neues Universum anlegen** — `/universes/new` → Name, Region, Ticker → Eintrag erscheint in `/universes`.
+3. **Ranking starten** — `/rankings` → Universe wählen → "Run starten" (~5-60s je nach Universe-Grösse).
+4. **Ergebnis lesen** — `/rankings/[runId]` zeigt 9-Spalten-Tabelle: Rank · Ticker · Avg · Sweet-Spot · 5 Modell-Ranks. Sweet-Spot-Aktien markiert per Badge.
+
+Selber Flow läuft als Playwright-Test in CI (`frontend/e2e/rankings.spec.ts`, Tests 1-3).
+
 ## Features
 
 - **Quant Core**: 5 Modelle (Quality Classic, Alpha, Trend Momentum / EWMA, Value Alpha Potential, Diversification / Ledoit-Wolf)

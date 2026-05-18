@@ -35,6 +35,7 @@ class SQLAMemoBatchJobRepository(MemoBatchJobRepository):
                 language=job.language,
                 status=job.status,
                 failed_stock_ids=[str(uid) for uid in job.failed_stock_ids],
+                expected_stock_ids=[str(uid) for uid in job.expected_stock_ids],
                 error_message=job.error_message,
                 created_at=job.created_at,
                 started_at=job.started_at,
@@ -45,6 +46,7 @@ class SQLAMemoBatchJobRepository(MemoBatchJobRepository):
                 set_={
                     "status": insert_stmt.excluded.status,
                     "failed_stock_ids": insert_stmt.excluded.failed_stock_ids,
+                    "expected_stock_ids": insert_stmt.excluded.expected_stock_ids,
                     "error_message": insert_stmt.excluded.error_message,
                     "started_at": insert_stmt.excluded.started_at,
                     "completed_at": insert_stmt.excluded.completed_at,
@@ -71,6 +73,7 @@ def _orm_to_entity(row: MemoBatchJobORM) -> MemoBatchJob:
         language=row.language,  # type: ignore[arg-type]
         status=row.status,  # type: ignore[arg-type]
         failed_stock_ids=[UUID(str(s)) for s in row.failed_stock_ids],
+        expected_stock_ids=[UUID(str(s)) for s in row.expected_stock_ids],
         error_message=row.error_message,
         created_at=row.created_at,
         started_at=row.started_at,

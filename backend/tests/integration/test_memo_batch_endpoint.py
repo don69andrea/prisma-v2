@@ -23,7 +23,10 @@ from backend.interfaces.rest.dependencies import get_narrative_service
 pytestmark = pytest.mark.integration
 
 
-def _make_pending_job(run_id: UUID | None = None) -> MemoBatchJob:
+def _make_pending_job(
+    run_id: UUID | None = None,
+    expected_stock_ids: list[UUID] | None = None,
+) -> MemoBatchJob:
     return MemoBatchJob(
         id=uuid4(),
         model_run_id=run_id or uuid4(),
@@ -31,6 +34,7 @@ def _make_pending_job(run_id: UUID | None = None) -> MemoBatchJob:
         language="de",
         status="pending",
         failed_stock_ids=[],
+        expected_stock_ids=expected_stock_ids or [],
         error_message=None,
         created_at=datetime.now(UTC),
     )
@@ -255,3 +259,42 @@ def test_get_job_progress_partial_uses_successes(app_with_mock_service: Any) -> 
     body = resp.json()
     assert body["progress"]["completed"] == 3  # top_n(5) - failed(2)
     assert body["progress"]["failed"] == 2
+
+
+def test_get_job_passes_expected_stock_ids_as_filter(app_with_mock_service: Any) -> None:
+    """Issue #86: Router muss expected_stock_ids als stock_ids-Filter an
+    list_memos_for_run uebergeben, damit job-fremde Memos ausgefiltert werden.
+    """
+    app, service = app_with_mock_service
+    stock_a, stock_b, stock_c = uuid4(), uuid4(), uuid4()
+    job = MemoBatchJob(
+        id=uuid4(),
+        model_run_id=uuid4(),
+        top_n=3,
+        language="de",
+        status="running",
+        failed_stock_ids=[],
+        expected_stock_ids=[stock_a, stock_b, stock_c],
+        error_message=None,
+        created_at=datetime.now(UTC),
+        started_at=datetime.now(UTC),
+    )
+    service.get_batch_job = AsyncMock(return_value=job)
+    filtered_memos = [
+        AsyncMock(stock_id=sid, one_liner=f"memo {i}", model_version="claude-sonnet-4-6")
+        for i, sid in enumerate([stock_a, stock_b, stock_c])
+    ]
+    service.list_memos_for_run = AsyncMock(return_value=filtered_memos)
+    service.get_stock_ticker_map = AsyncMock(return_value={})
+
+    with TestClient(app) as client:
+        resp = client.get(f"/api/v1/memos/jobs/{job.id}")
+
+    assert resp.status_code == 200
+    # Router muss stock_ids=[stock_a, stock_b, stock_c] uebergeben haben
+    call_kwargs = service.list_memos_for_run.call_args.kwargs
+    assert set(call_kwargs.get("stock_ids", [])) == {stock_a, stock_b, stock_c}
+    # Response zeigt nur die 3 gefilterten Memos
+    body = resp.json()
+    assert body["progress"]["completed"] == 3
+    assert len(body["memos"]) == 3

@@ -26,6 +26,7 @@ class MemoBatchJob(BaseModel):
     language: Literal["de", "en"]
     status: Literal["pending", "running", "complete", "partial", "failed"]
     failed_stock_ids: list[UUID] = Field(default_factory=list)
+    expected_stock_ids: list[UUID] = Field(default_factory=list)
     error_message: str | None = Field(None, max_length=1000)
     created_at: datetime
     started_at: datetime | None = None

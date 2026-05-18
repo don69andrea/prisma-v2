@@ -128,6 +128,25 @@ class TestRoundtripAndUpsert:
         # Full entity equality — verifies the complete roundtrip, not just failed_stock_ids
         assert loaded == job
 
+    @pytest.mark.usefixtures("truncate_memo_batch_jobs")
+    async def test_expected_stock_ids_jsonb_roundtrip(
+        self,
+        seed_run: uuid.UUID,
+        session_factory: async_sessionmaker[AsyncSession],
+    ) -> None:
+        """Issue #86: expected_stock_ids muss als UUID-Liste gespeichert und
+        geladen werden koennen (JSONB-Roundtrip analog failed_stock_ids).
+        """
+        repo = SQLAMemoBatchJobRepository(session_factory)
+        expected_ids = [uuid.uuid4(), uuid.uuid4()]
+        job = _make_job(seed_run, expected_stock_ids=expected_ids, status="pending")
+        await repo.save(job)
+
+        loaded = await repo.get(job.id)
+        assert loaded is not None
+        assert loaded.expected_stock_ids == expected_ids
+        assert all(isinstance(sid, uuid.UUID) for sid in loaded.expected_stock_ids)
+
 
 class TestMigrationConstraintNames:
     """Verifiziert dass die Live-DB-Constraints nicht doppelt-praefixiert sind.

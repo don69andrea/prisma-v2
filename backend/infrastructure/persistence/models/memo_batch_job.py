@@ -38,6 +38,7 @@ class MemoBatchJobORM(Base):
     language: Mapped[str] = mapped_column(String(2), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     failed_stock_ids: Mapped[list[object]] = mapped_column(JSONB, nullable=False, default=list)
+    expected_stock_ids: Mapped[list[object]] = mapped_column(JSONB, nullable=False, default=list)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

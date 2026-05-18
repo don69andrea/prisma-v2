@@ -165,7 +165,11 @@ async def get_job(
             detail=f"Job {job_id} not found",
         )
 
-    memos = await service.list_memos_for_run(job.model_run_id, language=job.language)
+    memos = await service.list_memos_for_run(
+        job.model_run_id,
+        language=job.language,
+        stock_ids=job.expected_stock_ids or None,
+    )
 
     # Get-Stock-Ticker-Map fuer das Frontend
     stock_ids = [m.stock_id for m in memos]

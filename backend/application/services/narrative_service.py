@@ -209,11 +209,17 @@ class NarrativeService:
         # Run existiert? Via Factory + frische Session (nicht self._run_repo) —
         # start_batch ist Background-Setup und darf nicht von der Request-
         # Session abhaengen (die ist nach 202-Response moeglicherweise schon zu).
+        # Im selben Kontext: Top-N Tickers → Stock-IDs vorab auflösen (Issue #86).
         async with self._session_factory() as session:
             validation_run_repo = self._run_repo_factory(session)
             results = await validation_run_repo.get_results(model_run_id)
-        if results is None:
-            raise LookupError(f"Run {model_run_id} not found")
+            if results is None:
+                raise LookupError(f"Run {model_run_id} not found")
+            sorted_results = sorted(results, key=lambda r: int(r["total_rank"]))
+            top_tickers = [row["ticker"] for row in sorted_results[:top_n]]
+            lookup_stock_repo = self._stock_repo_factory(session)
+            stocks = await lookup_stock_repo.list_by_tickers(top_tickers)
+            expected_stock_ids = [s.id for s in stocks]
 
         # Cost-Pre-Check (konservativ ~$0.025/Memo).
         # Note: CostTracker.check_cap ist ein Soft-Limit ohne DB-Lock (Spec §5
@@ -232,6 +238,7 @@ class NarrativeService:
             language=language,
             status="pending",
             failed_stock_ids=[],
+            expected_stock_ids=expected_stock_ids,
             error_message=None,
             created_at=datetime.now(tz=UTC),
         )
@@ -293,47 +300,20 @@ class NarrativeService:
         running = job.model_copy(update={"status": "running", "started_at": datetime.now(tz=UTC)})
         await self._batch_repo.save(running)
 
-        # Top-N stocks aus Run-Results bestimmen (eine eigene Session fuer den Lookup)
-        async with self._session_factory() as session:
-            run_repo_init = self._run_repo_factory(session)
-            results = await run_repo_init.get_results(running.model_run_id)
-
-        if results is None:
-            # Sollte nicht passieren (start_batch hat schon validiert), aber defensiv
-            failed = running.model_copy(
-                update={
-                    "status": "failed",
-                    "completed_at": datetime.now(tz=UTC),
-                    "error_message": "Run results disappeared mid-batch",
-                }
-            )
-            await self._batch_repo.save(failed)
-            return
-
-        # Sort by total_rank ASC, take top_n entries.
-        # Bug 1 fix: RankingRunService stores ticker/total_rank/etc. — no stock_id.
-        # Resolve tickers to stock_ids via Bulk-Query (1 Roundtrip statt N).
-        sorted_results = sorted(results, key=lambda r: int(r["total_rank"]))
-        top_stocks = sorted_results[: running.top_n]
-        top_tickers = [row["ticker"] for row in top_stocks]
-
-        async with self._session_factory() as lookup_session:
-            lookup_stock_repo = self._stock_repo_factory(lookup_session)
-            stocks_by_ticker = {
-                s.ticker: s for s in await lookup_stock_repo.list_by_tickers(top_tickers)
-            }
-
-        stock_ids: list[UUID] = []
-        for ticker in top_tickers:
-            stock = stocks_by_ticker.get(ticker)
-            if stock is None:
-                self._logger.warning(
-                    "Batch %s: ticker %s not found in DB, skipping",
-                    job_id,
-                    ticker,
+        # Stock-IDs wurden bereits in start_batch aufgelöst und im Job gespeichert
+        # (Issue #86 — vormals wurde die Resolution hier dupliziert).
+        stock_ids = list(running.expected_stock_ids)
+        if not stock_ids:
+            await self._batch_repo.save(
+                running.model_copy(
+                    update={
+                        "status": "failed",
+                        "completed_at": datetime.now(tz=UTC),
+                        "error_message": "expected_stock_ids leer — Run hatte keine rankbaren Stocks",
+                    }
                 )
-                continue
-            stock_ids.append(stock.id)
+            )
+            return
 
         self._logger.info(
             "Batch %s running: %d stocks",
@@ -482,9 +462,18 @@ class NarrativeService:
         model_run_id: UUID,
         *,
         language: Literal["de", "en"] = "de",
+        stock_ids: list[UUID] | None = None,
     ) -> list[ResearchMemo]:
-        """Helper fuer GET /jobs/{id}-Response: alle Memos fuer den Run + Sprache."""
-        return await self._memo_repo.list_by_run(model_run_id, language=language)
+        """Helper fuer GET /jobs/{id}-Response: Memos fuer den Run + Sprache.
+
+        stock_ids: wenn gesetzt, werden nur Memos dieser Stocks zurueckgegeben
+        (Issue #86 — filtert job-fremde Memos aus).
+        """
+        memos = await self._memo_repo.list_by_run(model_run_id, language=language)
+        if stock_ids:
+            expected_set = set(stock_ids)
+            memos = [m for m in memos if m.stock_id in expected_set]
+        return memos
 
     async def get_stock_ticker_map(self, stock_ids: list[UUID]) -> dict[UUID, str]:
         """Lookup-Map stock_id -> ticker, fuer GET /jobs/{id}-Response.

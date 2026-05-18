@@ -1,4 +1,9 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+
+if (!API_KEY && process.env.NODE_ENV === 'development') {
+  console.warn('[prisma] NEXT_PUBLIC_API_KEY is not set — authenticated endpoints will return 401.');
+}
 
 export class ApiError extends Error {
   constructor(
@@ -13,10 +18,13 @@ export class ApiError extends Error {
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
 
+  const authHeaders: Record<string, string> = API_KEY ? { 'X-API-Key': API_KEY } : {};
+
   const response = await fetch(url, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...init?.headers,
     },
   });

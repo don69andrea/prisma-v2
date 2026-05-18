@@ -121,6 +121,21 @@ npx eslint frontend/ --fix
 - Kein `--no-verify` bei Commits (Husky/pre-commit-Hooks sind Pflicht).
 - Keine Financial-Advice-Sprache im User-Facing-Text ("Kauf Aktie X") — alles ist Educational/Research.
 
+## Anti-Pattern: Subagent-Pfad-Ambiguität bei Worktrees
+
+**Problem (aufgetreten 2026-05-17, PR #120):** Ein Subagent schrieb Dateien ins Haupt-Repo-Verzeichnis statt in den aktiven Worktree, weil der Worktree-Pfad im Prompt fehlte.
+
+**Regel:** Jeder Subagent-Prompt bei aktiver Worktree-Session muss enthalten:
+1. Den absoluten Worktree-Pfad (z.B. `/path/to/repo/.claude/worktrees/<branch>/`)
+2. Die Anweisung, nach jedem Commit `git show --stat HEAD` auszuführen und den Output zu melden
+
+**Keine hardcoded Datumsgrenzen in Tests gegen `StubMarketDataProvider`:** Der Provider liefert ~504 Handelstage ab `today`. Tests mit fixen Jahreszahlen (z.B. `2025-01-01`) werden Zeitbomben. Stattdessen relative Daten verwenden:
+```python
+_today = date.today()
+_START = date(_today.year - 1, 1, 1)
+_END = date(_today.year - 1, 12, 31)
+```
+
 ## Reflexions-Pflicht
 
 Jede PR, die substantiell mit einem Coding-Agent entstanden ist, bekommt in `docs/AI-USAGE.md` einen Eintrag:

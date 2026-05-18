@@ -23,6 +23,11 @@ from backend.infrastructure.providers.stub_market_data import StubMarketDataProv
 
 pytestmark = pytest.mark.unit
 
+# Relative Daten: immer im gültigen Fenster von StubMarketDataProvider (~2 Jahre).
+_today = date.today()
+_BACKTEST_START = date(_today.year - 1, 1, 1)
+_BACKTEST_END = date(_today.year - 1, 12, 31)
+
 
 # ── In-memory fake repository ──────────────────────────────────────────────
 
@@ -99,8 +104,8 @@ def service(
 async def test_run_backtest_returns_result(service: BacktestService) -> None:
     result = await service.run_backtest(
         model_run_id=RUN_ID,
-        start_date=date(2025, 1, 1),
-        end_date=date(2025, 12, 31),
+        start_date=_BACKTEST_START,
+        end_date=_BACKTEST_END,
         top_n=3,
         benchmark_ticker="AAPL",
     )
@@ -113,8 +118,8 @@ async def test_run_backtest_returns_result(service: BacktestService) -> None:
 async def test_series_has_data_points(service: BacktestService) -> None:
     result = await service.run_backtest(
         model_run_id=RUN_ID,
-        start_date=date(2025, 1, 1),
-        end_date=date(2025, 12, 31),
+        start_date=_BACKTEST_START,
+        end_date=_BACKTEST_END,
         top_n=3,
         benchmark_ticker="AAPL",
     )
@@ -128,8 +133,8 @@ async def test_series_has_data_points(service: BacktestService) -> None:
 async def test_metrics_are_non_trivial(service: BacktestService) -> None:
     result = await service.run_backtest(
         model_run_id=RUN_ID,
-        start_date=date(2025, 1, 1),
-        end_date=date(2025, 12, 31),
+        start_date=_BACKTEST_START,
+        end_date=_BACKTEST_END,
         top_n=3,
         benchmark_ticker="AAPL",
     )
@@ -142,8 +147,8 @@ async def test_metrics_are_non_trivial(service: BacktestService) -> None:
 async def test_result_is_persisted(service: BacktestService) -> None:
     result = await service.run_backtest(
         model_run_id=RUN_ID,
-        start_date=date(2025, 1, 1),
-        end_date=date(2025, 12, 31),
+        start_date=_BACKTEST_START,
+        end_date=_BACKTEST_END,
         top_n=3,
         benchmark_ticker="AAPL",
     )
@@ -158,8 +163,8 @@ async def test_run_not_found_raises(service: BacktestService) -> None:
     with pytest.raises(RunNotFound):
         await service.run_backtest(
             model_run_id=uuid4(),
-            start_date=date(2025, 1, 1),
-            end_date=date(2025, 12, 31),
+            start_date=_BACKTEST_START,
+            end_date=_BACKTEST_END,
             top_n=3,
             benchmark_ticker="AAPL",
         )
@@ -171,8 +176,8 @@ async def test_no_results_raises(service: BacktestService) -> None:
     with pytest.raises(NoResultsFound):
         await service.run_backtest(
             model_run_id=RUN_ID,
-            start_date=date(2025, 1, 1),
-            end_date=date(2025, 12, 31),
+            start_date=_BACKTEST_START,
+            end_date=_BACKTEST_END,
             top_n=3,
             benchmark_ticker="AAPL",
         )

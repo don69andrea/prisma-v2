@@ -18,8 +18,8 @@ Sichtbare Nachweise gegen das Capstone-Bewertungsraster (Stand: 2026-05-17).
 | **CI** | GitHub Actions: Backend Lint+Tests, Frontend Lint+Build, Frontend E2E (Playwright) | [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) · [Actions-Tab](https://github.com/SheylaSam/prisma-capstone/actions) |
 | **Release-Workflow** | Tag `v*` → Docker-Images auf GHCR + GitHub Release mit Auto-Notes | [`.github/workflows/release.yml`](./.github/workflows/release.yml) |
 | **CD-Workflow** | `workflow_dispatch` → Render Deploy Hook (Backend / Frontend / beide) | [`.github/workflows/cd-render.yml`](./.github/workflows/cd-render.yml) |
-| **Deployment** | Auto-Deploy via Render (Backend + Frontend + Postgres) | [`render.yaml`](./render.yaml) |
-| **API-Docs** | OpenAPI/Swagger automatisch generiert (FastAPI) | `<DEPLOYMENT_URL>/docs` nach Deploy-Run |
+| **Deployment** | Live auf Render (Free-Plan) | Frontend: [prisma-frontend-jrto.onrender.com](https://prisma-frontend-jrto.onrender.com) · Backend: [prisma-backend-7ai7.onrender.com/health](https://prisma-backend-7ai7.onrender.com/health) · Config: [`render.yaml`](./render.yaml) |
+| **API-Docs** | OpenAPI/Swagger automatisch generiert (FastAPI) | [prisma-backend-7ai7.onrender.com/docs](https://prisma-backend-7ai7.onrender.com/docs) |
 | **AI-Usage-Log** | Reflexion pro PR mit Agent / Patterns / Lehren — 40%-Bewertungsachse | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) (>15 Einträge, Pattern-Sektion mit Evidenz-Links) |
 
 ### Demo-Flow
@@ -32,6 +32,8 @@ End-to-End mit der ausgelieferten UI:
 4. **Ergebnis lesen** — `/rankings/[runId]` zeigt 9-Spalten-Tabelle: Rank · Ticker · Avg · Sweet-Spot · 5 Modell-Ranks. Sweet-Spot-Aktien markiert per Badge.
 
 Selber Flow läuft als Playwright-Test in CI (`frontend/e2e/rankings.spec.ts`, Tests 1-3).
+
+> **Hinweis Free-Tier**: Der Render-Free-Plan schläft Services nach 15 min Inaktivität ein. Erster Request nach Pause kann 30-60s dauern (Cold-Start). Aggressive Browser-Adblocker (uBlock Origin, Brave Shields o.ä.) können Requests zu `*.onrender.com` blocken — Test in Inkognito empfohlen.
 
 ## Features
 

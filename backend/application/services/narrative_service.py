@@ -429,14 +429,12 @@ class NarrativeService:
         # dazwischen) — für Capstone-Volumen akzeptabel.
         # Echte Lösung: optimistic locking mit version-column oder DB-CAS.
         current = await self._batch_repo.get(job_id)
-        if current is not None and current.status == "failed" and current.started_at is not None:
-            elapsed = (datetime.now(tz=UTC) - current.started_at).total_seconds()
-            if elapsed > self._stale_batch_timeout_seconds:
-                self._logger.info(
-                    "Batch %s stale-cleanup intervened during run; preserving failed status",
-                    job_id,
-                )
-                return
+        if current is not None and current.status == "failed":
+            self._logger.info(
+                "Batch %s stale-cleanup intervened during run; preserving failed status",
+                job_id,
+            )
+            return
 
         # error_message: erstes Budget-Cap-Vorkommnis spiegelt sich im Job.
         # Spec §8: bei BudgetCapExceeded mid-batch -> error_message="Budget-Cap erreicht".

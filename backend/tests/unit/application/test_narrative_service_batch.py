@@ -473,7 +473,7 @@ class TestExecuteBatchStaleCleanupRace:
     den Cleanup-Status.
     """
 
-    async def test_worker_skips_save_when_cleanup_intervened(self) -> None:
+    def _make_cleanup_scenario(self, elapsed_seconds: int) -> tuple[AsyncMock, Any, Any]:
         from datetime import timedelta
 
         from backend.domain.entities.memo_batch_job import MemoBatchJob
@@ -481,7 +481,7 @@ class TestExecuteBatchStaleCleanupRace:
         run_id = uuid4()
         job_id = uuid4()
         stock_ids = [uuid4()]
-        old_start = datetime.now(UTC) - timedelta(seconds=700)  # > 600s timeout
+        start = datetime.now(UTC) - timedelta(seconds=elapsed_seconds)
 
         existing_job = MemoBatchJob(
             id=job_id,
@@ -491,19 +491,17 @@ class TestExecuteBatchStaleCleanupRace:
             status="pending",
             failed_stock_ids=[],
             error_message=None,
-            created_at=old_start,
+            created_at=start,
         )
-        # Cleanup-intervened state — naechster batch_repo.get liefert das
         cleanup_intervened = existing_job.model_copy(
             update={
                 "status": "failed",
-                "started_at": old_start,
+                "started_at": start,
                 "completed_at": datetime.now(UTC),
                 "error_message": "Job stale — Server-Restart oder Crash waehrend Ausfuehrung",
             }
         )
         batch_repo = AsyncMock()
-        # Sequence: get(initial) -> save(running) -> get(after-worker, finds cleanup)
         batch_repo.get = AsyncMock(side_effect=[existing_job, cleanup_intervened])
         batch_repo.save = AsyncMock()
 
@@ -511,7 +509,6 @@ class TestExecuteBatchStaleCleanupRace:
             run_results=[{"ticker": "A", "total_rank": 1}],
             stocks=[(stock_ids[0], "A")],
         )
-
         service = _make_service(
             batch_repository=batch_repo,
             session_factory=session_factory,
@@ -519,13 +516,27 @@ class TestExecuteBatchStaleCleanupRace:
             stock_repo_factory=stock_repo_factory,
         )
         service._generate_memo_isolated = AsyncMock()  # type: ignore[method-assign]
+        return batch_repo, service, job_id
 
+    async def test_worker_skips_save_when_cleanup_intervened(self) -> None:
+        """elapsed > timeout: klassischer Stale-Fall."""
+        batch_repo, service, job_id = self._make_cleanup_scenario(elapsed_seconds=700)
         await service._execute_batch(job_id)
 
-        # Worker hat save() genau 1x gerufen (status=running am Start).
-        # Final-Save wurde geskippt weil Cleanup intervenierte.
         assert batch_repo.save.await_count == 1
-        running_save: MemoBatchJob = batch_repo.save.await_args_list[0].args[0]
+        running_save = batch_repo.save.await_args_list[0].args[0]
+        assert running_save.status == "running"
+
+    async def test_worker_skips_save_when_cleanup_intervened_toctou(self) -> None:
+        """elapsed < timeout (TOCTOU-Fenster aus Issue #97): GET setzt failed bei
+        elapsed=599s, Worker re-read sieht elapsed=599 < 600 — alter Code würde
+        trotzdem final-save schreiben. Neuer Code: jedes failed vom Cleanup
+        wird respektiert, unabhängig von elapsed."""
+        batch_repo, service, job_id = self._make_cleanup_scenario(elapsed_seconds=599)
+        await service._execute_batch(job_id)
+
+        assert batch_repo.save.await_count == 1
+        running_save = batch_repo.save.await_args_list[0].args[0]
         assert running_save.status == "running"
 
 

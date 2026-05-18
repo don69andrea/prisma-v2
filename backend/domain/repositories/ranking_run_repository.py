@@ -18,6 +18,9 @@ class RankingRunRepository(ABC):
     async def list_by_universe(self, universe_id: UUID) -> list[RankingRun]: ...
 
     @abstractmethod
+    async def list_all(self, limit: int = 50, offset: int = 0) -> list[RankingRun]: ...
+
+    @abstractmethod
     async def save_results(self, run_id: UUID, results: list[dict[str, Any]]) -> None: ...
 
     @abstractmethod

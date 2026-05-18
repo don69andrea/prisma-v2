@@ -24,6 +24,14 @@ test.describe('PRISMA E2E', () => {
     await expect(page.getByText(`e2e-flow-${suffix}`)).toBeVisible({ timeout: 10_000 });
   });
 
+  test('4. Dashboard: Seite lädt und Tabelle/Empty-State rendert', async ({ page }) => {
+    await page.goto('/dashboard');
+    await expect(page).toHaveTitle(/Dashboard/);
+    const table = page.getByRole('table');
+    const emptyState = page.getByText(/Noch keine Runs/i);
+    await expect(table.or(emptyState)).toBeVisible({ timeout: 10_000 });
+  });
+
   test('4. Rankings: Sortierung + CSV-Export', async ({ page }) => {
     const universe = await createTestUniverse(`sort-${Date.now()}`);
 

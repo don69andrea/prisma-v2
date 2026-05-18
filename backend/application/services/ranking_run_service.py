@@ -124,3 +124,6 @@ class RankingRunService:
         if run is None:
             raise RankingRunNotFound(run_id)
         return await self._run_repo.get_results(run_id) or []
+
+    async def list_runs(self, limit: int = 50, offset: int = 0) -> list[RankingRun]:
+        return await self._run_repo.list_all(limit=limit, offset=offset)

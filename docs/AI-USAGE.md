@@ -132,6 +132,18 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-05-17 · Dashboard-Seite mit Run-Liste (Issue #20, PR #124)
+- **Agent**: Claude Code (Sonnet 4.6) als Controller mit `superpowers:subagent-driven-development`; 1 Backend-Subagent (Haiku), 1 Frontend-Subagent direkt im Main-Context wegen fehlendem `npx` in der Umgebung.
+- **Scope**: Issue #20 geschlossen. (1) **Backend**: `list_all()` in Abstract-Repo-Interface + SQLAlchemy-Implementierung, `list_runs()` im Service, neuer `GET /api/v1/runs`-Endpoint mit `limit`/`offset`-Pagination. (2) **Frontend**: `/dashboard`-Route, shadcn `Table` mit Run-ID, Datum, Universum-Name (per Lookup-Map aus `GET /api/v1/universes`), Status-`Badge`; Loading- (Skeleton), Error- und Empty-State; Nav-Link „Dashboard" umgebogen von `/` auf `/dashboard`. (3) **E2E**: Playwright Smoke-Test 4 (Seite lädt, Tabelle oder Empty-State sichtbar).
+- **Was gut lief**:
+  - **Plan-as-Contract**: 7-stufiger Plan mit verbatim Code pro Schritt — keine BLOCKED-Reports, Backend-Chain ohne Rückfragen durchgelaufen.
+  - **Merge-Konflikt-Auflösung direkt im Worktree**: Conflict in `docs/AI-USAGE.md` (zwei parallele Einträge selber Tag) direkt resolved + beide Einträge behalten.
+- **Was nicht klappte**:
+  - **`npx` / Node.js nicht verfügbar im Terminal-Kontext**: `npx shadcn@latest add skeleton` schlug fehl. Lösung: Skeleton-Komponente manuell nach shadcn-Muster erstellt (`animate-pulse rounded-md bg-muted`). CI bleibt das Frontend-Build-Gate.
+  - **Rate-Limit mid-Subagent**: Erster Backend-Subagent wurde durch Rate-Limit unterbrochen — Änderungen waren unstaged vorhanden, wurden nach Reset manuell verifiziert und committed. **Lehre**: Bei Rate-Limit-Unterbrechung immer zuerst `git diff` prüfen bevor neu gestartet wird.
+- **Token-Kosten**: ~30k Tokens Sonnet 4.6 (Controller + Frontend); ~15k Tokens Haiku (Backend-Subagent); geschätzt ~$0.15 total.
+- **Autor**: Nicolas Lardinois (mit Claude Code Sonnet 4.6)
+
 ## 2026-05-17 · Rankings Detail-Page: Sortierung, Filter, CSV-Export (Issue #21, PR #126)
 - **Agent**: Claude Code (Sonnet 4.6) im Plan-Modus (Worktree `clever-goldstine-1f332b`): Explore-Subagents für Codebase-Erkundung → Plan-Subagent für Implementierungsplan → direkte Umsetzung im Main-Context.
 - **Scope**: Issue #21 — Drei interaktive Features auf der bestehenden `/rankings/[runId]`-Detail-Page: (1) **Sortierung** — click-to-sort auf allen 7 numerischen Spalten (`#`, `Avg`, 5 Modell-Ranks) mit `aria-sort`-Attribut und `null`-am-Ende-Invariante; (2) **Ticker-Filter** — case-insensitiver Textfilter via `useMemo`; (3) **CSV-Export** — client-seitiger Blob-Download via `URL.createObjectURL`. Dazu: Spec `docs/specs/2026-05-17-rankings-enhancements.md` (CLAUDE.md-Pflicht), 3 neue Unit-Tests, Playwright-E2E-Test 4 (Sortierung + CSV-Download). Nebenher 4 weitere CI-Fixes: Merge-Konflikt in `AI-USAGE.md`, Ruff B017 (`pytest.raises(Exception)` → `pytest.raises(ValidationError)`), doppelte Alembic-Migration 0009 → 0010, mypy `unused-ignore`.

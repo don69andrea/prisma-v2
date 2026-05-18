@@ -78,6 +78,9 @@ class _FakeRunRepo(RankingRunRepository):
     async def list_by_universe(self, universe_id: UUID) -> list[RankingRun]:
         raise NotImplementedError
 
+    async def list_all(self, limit: int = 50, offset: int = 0) -> list[RankingRun]:
+        raise NotImplementedError
+
     async def save_results(self, run_id: UUID, results: list[dict[str, Any]]) -> None:
         raise NotImplementedError
 

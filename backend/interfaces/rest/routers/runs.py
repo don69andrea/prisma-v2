@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.application.services.ranking_run_service import (
     RankingRunNotFound,
@@ -13,6 +13,16 @@ from backend.interfaces.rest.dependencies import get_ranking_run_service, requir
 from backend.interfaces.rest.schemas.runs import PostRunRequest, RankingItem, RunResponse
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])
+
+
+@router.get("", response_model=list[RunResponse])
+async def list_runs(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    service: RankingRunService = Depends(get_ranking_run_service),
+) -> list[RunResponse]:
+    runs = await service.list_runs(limit=limit, offset=offset)
+    return [RunResponse.from_domain(r) for r in runs]
 
 
 @router.post("", status_code=201, response_model=RunResponse)

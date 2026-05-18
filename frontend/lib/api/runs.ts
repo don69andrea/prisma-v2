@@ -31,3 +31,7 @@ export async function getRun(runId: string): Promise<RunResponse> {
 export async function getRankings(runId: string): Promise<RankingItem[]> {
   return apiFetch<RankingItem[]>(`/api/v1/runs/${runId}/rankings`);
 }
+
+export async function listRuns(limit = 50, offset = 0): Promise<RunResponse[]> {
+  return apiFetch<RunResponse[]>(`/api/v1/runs?limit=${limit}&offset=${offset}`);
+}

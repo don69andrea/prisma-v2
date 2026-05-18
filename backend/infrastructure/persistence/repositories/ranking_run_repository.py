@@ -53,6 +53,16 @@ class SQLARankingRunRepository(RankingRunRepository):
         result = await self._session.execute(stmt)
         return [self._to_domain(row) for row in result.scalars().all()]
 
+    async def list_all(self, limit: int = 50, offset: int = 0) -> list[RankingRun]:
+        stmt = (
+            select(RankingRunORM)
+            .order_by(RankingRunORM.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self._session.execute(stmt)
+        return [self._to_domain(row) for row in result.scalars().all()]
+
     async def save_results(self, run_id: UUID, results: list[dict[str, Any]]) -> None:
         await self._session.flush()  # Identity-Map-Workaround, siehe Klassen-Docstring
         row = await self._session.get(RankingRunORM, run_id)

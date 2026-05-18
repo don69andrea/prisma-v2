@@ -75,6 +75,9 @@ class InMemoryRankingRunRepository(RankingRunRepository):
     async def list_by_universe(self, universe_id: uuid.UUID) -> list[RankingRun]:
         return [r for r in self._runs.values() if r.universe_id == universe_id]
 
+    async def list_all(self, limit: int = 50, offset: int = 0) -> list[RankingRun]:
+        return list(self._runs.values())[offset : offset + limit]
+
     async def save_results(self, run_id: uuid.UUID, results: list[dict[str, Any]]) -> None:
         self._results[run_id] = results
 

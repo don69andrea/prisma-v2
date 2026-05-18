@@ -17,6 +17,17 @@ class StockService:
     def __init__(self, repository: StockRepository) -> None:
         self._repository = repository
 
+    async def get_by_ticker(self, ticker: str) -> Stock | None:
+        """Sucht eine Stock-Entity anhand des Ticker-Symbols (case-insensitive).
+
+        Args:
+            ticker: Ticker-Symbol (wird intern zu Uppercase normalisiert).
+
+        Returns:
+            Stock-Entity oder None wenn kein Treffer gefunden.
+        """
+        return await self._repository.get_by_ticker(ticker.upper())
+
     async def list_stocks(
         self,
         limit: int = _DEFAULT_LIMIT,

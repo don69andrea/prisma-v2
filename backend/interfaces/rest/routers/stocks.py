@@ -16,6 +16,24 @@ router = APIRouter(prefix="/api/v1", tags=["stocks"])
 
 
 @router.get(
+    "/stocks/{ticker}",
+    response_model=StockRead,
+    summary="Stock per Ticker abrufen",
+    description="Gibt einen einzelnen Stock anhand des Ticker-Symbols zurück (case-insensitive).",
+)
+async def get_stock_by_ticker(
+    ticker: str,
+    service: StockService = Depends(get_stock_service),
+) -> StockRead:
+    stock = await service.get_by_ticker(ticker)
+    if stock is None:
+        raise HTTPException(
+            status_code=404, detail=f"Stock '{ticker.upper()}' nicht gefunden"
+        ) from None
+    return StockRead.model_validate(stock)
+
+
+@router.get(
     "/stocks",
     response_model=StockListResponse,
     summary="Alle Stocks auflisten",

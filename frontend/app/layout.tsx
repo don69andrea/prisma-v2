@@ -25,6 +25,7 @@ const navLinks = [
   { href: ROUTES.dashboard, label: 'Dashboard' },
   { href: ROUTES.universes, label: 'Universen' },
   { href: ROUTES.rankings,  label: 'Rankings' },
+  { href: ROUTES.backtest,  label: 'Backtest' },
 ] as const;
 
 interface RootLayoutProps {

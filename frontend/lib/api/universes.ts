@@ -18,6 +18,9 @@ export interface UniverseCreateRequest {
   tickers: string[];
 }
 
+/** Alias used in pages that pre-date the typed request object. */
+export type Universe = UniverseRead;
+
 export async function listUniverses(): Promise<UniverseListResponse> {
   return apiFetch<UniverseListResponse>('/api/v1/universes');
 }
@@ -26,9 +29,17 @@ export async function getUniverse(id: string): Promise<UniverseRead> {
   return apiFetch<UniverseRead>(`/api/v1/universes/${id}`);
 }
 
-export async function createUniverse(data: UniverseCreateRequest): Promise<UniverseRead> {
+export async function createUniverse(
+  nameOrRequest: string | UniverseCreateRequest,
+  tickers?: string[],
+  region = 'US',
+): Promise<UniverseRead> {
+  const body: UniverseCreateRequest =
+    typeof nameOrRequest === 'string'
+      ? { name: nameOrRequest, tickers: tickers ?? [], region }
+      : nameOrRequest;
   return apiFetch<UniverseRead>('/api/v1/universes', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(body),
   });
 }

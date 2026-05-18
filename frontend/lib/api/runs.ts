@@ -17,6 +17,9 @@ export interface RankingItem {
   per_model_ranks: Record<string, number | null>;
 }
 
+/** Alias used in pages that were built before RunResponse was typed. */
+export type Run = RunResponse;
+
 export async function createRun(universeId: string): Promise<RunResponse> {
   return apiFetch<RunResponse>('/api/v1/runs', {
     method: 'POST',

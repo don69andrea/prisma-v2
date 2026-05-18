@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.config import get_settings
 from backend.domain.errors import BudgetCapExceeded
 from backend.interfaces.rest.exception_handlers import handle_budget_cap_exceeded
-from backend.interfaces.rest.routers import admin, health, memos, runs, stocks, universes
+from backend.interfaces.rest.routers import admin, backtests, health, memos, runs, stocks, universes
 
 
 def create_app() -> FastAPI:
@@ -51,5 +51,6 @@ def create_app() -> FastAPI:
     app.include_router(admin.router)
     app.include_router(runs.router)
     app.include_router(memos.router, prefix="/api/v1")
+    app.include_router(backtests.router)
 
     return app

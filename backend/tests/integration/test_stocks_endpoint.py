@@ -63,3 +63,53 @@ async def test_stocks_limit_exceeds_max_returns_422(http_client: AsyncClient) ->
 async def test_stocks_negative_offset_returns_422(http_client: AsyncClient) -> None:
     response = await http_client.get("/api/v1/stocks", params={"offset": -1})
     assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/stocks/{ticker}
+# ---------------------------------------------------------------------------
+
+
+async def test_get_stock_by_ticker_returns_200(http_client: AsyncClient) -> None:
+    response = await http_client.get("/api/v1/stocks/AAPL")
+    assert response.status_code == 200
+
+
+async def test_get_stock_by_ticker_returns_correct_stock(http_client: AsyncClient) -> None:
+    response = await http_client.get("/api/v1/stocks/AAPL")
+    body = response.json()
+    assert body["ticker"] == "AAPL"
+    assert body["name"] == "Apple Inc."
+    assert body["currency"] == "USD"
+
+
+async def test_get_stock_by_ticker_has_id_field(http_client: AsyncClient) -> None:
+    response = await http_client.get("/api/v1/stocks/AAPL")
+    body = response.json()
+    assert "id" in body
+
+
+async def test_get_stock_by_ticker_case_insensitive(http_client: AsyncClient) -> None:
+    """Ticker-Lookup soll case-insensitive sein (aapl == AAPL)."""
+    response = await http_client.get("/api/v1/stocks/aapl")
+    assert response.status_code == 200
+    assert response.json()["ticker"] == "AAPL"
+
+
+async def test_get_stock_by_ticker_unknown_returns_404(http_client: AsyncClient) -> None:
+    response = await http_client.get("/api/v1/stocks/UNKNOWN")
+    assert response.status_code == 404
+
+
+async def test_get_stock_by_ticker_404_detail(http_client: AsyncClient) -> None:
+    response = await http_client.get("/api/v1/stocks/XYZ")
+    assert response.status_code == 404
+    assert "XYZ" in response.json()["detail"]
+
+
+async def test_get_stock_by_ticker_nesn(http_client: AsyncClient) -> None:
+    response = await http_client.get("/api/v1/stocks/NESN")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ticker"] == "NESN"
+    assert body["currency"] == "CHF"

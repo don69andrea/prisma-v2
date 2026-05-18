@@ -262,6 +262,25 @@ async def get_memo_batch_job_repository() -> MemoBatchJobRepository:
     return SQLAMemoBatchJobRepository(session_factory=get_session_factory())
 
 
+async def get_backtest_service(
+    run_repo: RankingRunRepository = Depends(get_ranking_run_repository),
+    universe_repo: UniverseRepository = Depends(get_universe_repository),
+    market_data: MarketDataProvider = Depends(get_market_data_provider),
+    session: AsyncSession = Depends(get_session),
+) -> Any:
+    from backend.application.services.backtest_service import BacktestService
+    from backend.infrastructure.persistence.repositories.backtest_result_repository import (
+        SQLABacktestResultRepository,
+    )
+
+    return BacktestService(
+        run_repo=run_repo,
+        universe_repo=universe_repo,
+        market_data=market_data,
+        result_repo=SQLABacktestResultRepository(session=session),
+    )
+
+
 async def get_narrative_service(
     memo_repo: ResearchMemoRepository = Depends(get_research_memo_repository),
     run_repo: RankingRunRepository = Depends(get_ranking_run_repository),

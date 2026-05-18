@@ -2,11 +2,13 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from backend.application.services.factsheet_service import FactsheetService, StockNotFound
-from backend.application.services.stock_service import StockService
+from backend.application.services.factsheet_service import FactsheetService
+from backend.application.services.stock_service import StockNotFound, StockService
 from backend.interfaces.rest.dependencies import get_factsheet_service, get_stock_service
 from backend.interfaces.rest.schemas.stock import (
     LatestRankingSnapshot,
+    PricePoint,
+    PriceSeriesResponse,
     StockFactsheet,
     StockListResponse,
     StockRead,
@@ -65,3 +67,24 @@ async def get_factsheet(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     snapshot = LatestRankingSnapshot.model_validate(raw) if raw is not None else None
     return StockFactsheet(stock=StockRead.model_validate(stock), latest_ranking=snapshot)
+
+
+@router.get(
+    "/stocks/{ticker}/prices",
+    response_model=PriceSeriesResponse,
+    summary="Preiszeitreihe abrufen",
+    description="Gibt die letzten `days` Handelstage als Preiszeitreihe zurück (Stub-Daten).",
+)
+async def get_prices(
+    ticker: str,
+    days: int = Query(default=252, ge=1, le=504, description="Anzahl Handelstage, 1–504"),
+    service: StockService = Depends(get_stock_service),
+) -> PriceSeriesResponse:
+    try:
+        ticker_upper, prices = await service.get_price_series(ticker, days)
+    except StockNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return PriceSeriesResponse(
+        ticker=ticker_upper,
+        prices=[PricePoint(date=str(p["date"]), close=float(p["close"])) for p in prices],
+    )

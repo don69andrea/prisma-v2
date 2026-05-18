@@ -113,7 +113,9 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
 
       {!is404 && (runQuery.isLoading || (isCompleted && rankingsQuery.isLoading)) && <TableSkeleton />}
 
-      {isCompleted && rankingsQuery.data && <RankingsTable items={rankingsQuery.data} />}
+      {isCompleted && rankingsQuery.data && (
+        <RankingsTable items={rankingsQuery.data} runId={params.runId} />
+      )}
 
       {isCompleted && rankingsQuery.isError && (
         <div className="flex items-center gap-2 text-destructive text-sm" role="alert">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { ArrowUp, ArrowDown, ArrowUpDown, Download } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ROUTES } from '@/lib/routes';
 import type { RankingItem } from '@/lib/api/runs';
 
 const MODEL_COLUMNS: Array<{ key: string; label: string }> = [
@@ -93,7 +95,7 @@ function SortableHead({ sortKey, activeSortKey, sortDir, onSort, children }: Sor
   );
 }
 
-export function RankingsTable({ items }: { items: RankingItem[] }) {
+export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: string }) {
   const [sortKey, setSortKey] = useState<SortKey>('total_rank');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [filter, setFilter] = useState('');
@@ -182,9 +184,17 @@ export function RankingsTable({ items }: { items: RankingItem[] }) {
           </TableHeader>
           <TableBody>
             {displayItems.map((item) => (
-              <TableRow key={item.ticker}>
-                <TableCell>{formatNumber(item.total_rank)}</TableCell>
-                <TableCell className="font-mono">{item.ticker}</TableCell>
+              <TableRow key={item.ticker} className="cursor-pointer hover:bg-muted/50">
+                <TableCell>
+                  <Link href={ROUTES.factsheet(runId, item.ticker)} className="block w-full">
+                    {formatNumber(item.total_rank)}
+                  </Link>
+                </TableCell>
+                <TableCell className="font-mono">
+                  <Link href={ROUTES.factsheet(runId, item.ticker)} className="block w-full">
+                    {item.ticker}
+                  </Link>
+                </TableCell>
                 <TableCell>{formatNumber(item.weighted_avg, 2)}</TableCell>
                 <TableCell>
                   {item.is_sweet_spot ? <Badge variant="default">★</Badge> : null}

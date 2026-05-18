@@ -7,6 +7,7 @@ import pytest
 
 from backend.application.services.stock_service import StockService
 from backend.domain.entities.stock import Stock
+from backend.infrastructure.providers.stub_market_data import StubMarketDataProvider
 
 pytestmark = pytest.mark.unit
 
@@ -24,7 +25,7 @@ def _make_service(stocks: list[Stock] | None = None) -> tuple[StockService, Asyn
     """Hilfsfunktion: erzeugt StockService + gemocktes Repository."""
     mock_repo = MagicMock()
     mock_repo.list = AsyncMock(return_value=stocks or [])
-    service = StockService(repository=mock_repo)
+    service = StockService(repository=mock_repo, market_data_provider=StubMarketDataProvider())
     return service, mock_repo
 
 

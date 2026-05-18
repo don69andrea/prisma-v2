@@ -40,3 +40,17 @@ class StockFactsheet(BaseModel):
 
     stock: StockRead
     latest_ranking: LatestRankingSnapshot | None
+
+
+class PricePoint(BaseModel):
+    """Ein Datenpunkt in einer Preiszeitreihe."""
+
+    date: str  # ISO-8601, z.B. "2025-05-18"
+    close: float
+
+
+class PriceSeriesResponse(BaseModel):
+    """Preiszeitreihe für einen einzelnen Ticker."""
+
+    ticker: str
+    prices: list[PricePoint]

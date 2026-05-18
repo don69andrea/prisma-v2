@@ -35,25 +35,25 @@ const sampleItems: RankingItem[] = [
 
 describe('RankingsTable', () => {
   it('rendert eine Zeile pro Item', () => {
-    render(<RankingsTable items={sampleItems} />);
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
     expect(screen.getByText('AAPL')).toBeInTheDocument();
     expect(screen.getByText('MSFT')).toBeInTheDocument();
   });
 
   it('zeigt Sweet-Spot-Badge nur wenn is_sweet_spot=true', () => {
-    render(<RankingsTable items={sampleItems} />);
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
     const badges = screen.queryAllByText('★');
     expect(badges).toHaveLength(1);
   });
 
   it('zeigt em-dash für null-Werte', () => {
-    render(<RankingsTable items={sampleItems} />);
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
     const dashes = screen.queryAllByText('—');
     expect(dashes.length).toBeGreaterThanOrEqual(1);
   });
 
   it('rendert Modell-Spalten in fixer Reihenfolge', () => {
-    render(<RankingsTable items={sampleItems} />);
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
     const headers = screen
       .getAllByRole('columnheader')
       .map((h) => h.textContent?.replace(/\s/g, '') ?? '');
@@ -72,14 +72,14 @@ describe('RankingsTable', () => {
   });
 
   it('zeigt Empty-State wenn items leer', () => {
-    render(<RankingsTable items={[]} />);
+    render(<RankingsTable items={[]} runId="test-run-id" />);
     expect(screen.getByText(/Keine Ergebnisse/)).toBeInTheDocument();
   });
 
   // --- Sortierung ---
 
   it('klick auf #-Header wechselt aria-sort: none → ascending → descending', () => {
-    render(<RankingsTable items={sampleItems} />);
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
     const rankHeader = screen.getByRole('columnheader', { name: /#/ });
 
     // Default: sorted by total_rank ascending (active)
@@ -95,7 +95,7 @@ describe('RankingsTable', () => {
   });
 
   it('klick auf Avg-Header sortiert nach weighted_avg', () => {
-    render(<RankingsTable items={sampleItems} />);
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
     const avgHeader = screen.getByRole('columnheader', { name: /Avg/ });
 
     // Initially inactive (sorted by total_rank)
@@ -108,7 +108,7 @@ describe('RankingsTable', () => {
   // --- Filter ---
 
   it('filter nach AAPL verbirgt MSFT-Zeile', () => {
-    render(<RankingsTable items={sampleItems} />);
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
     const input = screen.getByRole('textbox', { name: /Ticker suchen/i });
 
     fireEvent.change(input, { target: { value: 'AAPL' } });
@@ -118,7 +118,7 @@ describe('RankingsTable', () => {
   });
 
   it('leerer Filter zeigt alle Zeilen', () => {
-    render(<RankingsTable items={sampleItems} />);
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
     const input = screen.getByRole('textbox', { name: /Ticker suchen/i });
 
     fireEvent.change(input, { target: { value: 'AAPL' } });
@@ -147,7 +147,7 @@ describe('RankingsTable', () => {
       return originalCreateElement(tag as keyof HTMLElementTagNameMap);
     });
 
-    render(<RankingsTable items={sampleItems} />);
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
     fireEvent.click(screen.getByRole('button', { name: /CSV exportieren/i }));
 
     expect(mockAnchor.download).toBe('rankings.csv');

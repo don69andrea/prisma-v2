@@ -2,18 +2,15 @@
 
 from typing import Any
 
+from backend.application.services.stock_service import StockNotFound
 from backend.domain.entities.stock import Stock
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.stock_repository import StockRepository
 
 
-class StockNotFound(Exception):
-    def __init__(self, ticker: str) -> None:
-        super().__init__(f"Stock '{ticker.upper()}' not found")
-        self.ticker = ticker
-
-
 class FactsheetService:
+    """Kombiniert Stock-Stammdaten mit dem neuesten Ranking-Snapshot eines Tickers."""
+
     def __init__(
         self,
         stock_repo: StockRepository,

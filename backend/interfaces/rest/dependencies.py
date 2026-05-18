@@ -76,11 +76,34 @@ async def get_stock_repository(
     return SQLAStockRepository(session=session)
 
 
+async def get_fundamentals_provider(
+    settings: Settings = Depends(get_settings),
+) -> FundamentalsProvider:
+    if settings.environment == "production":
+        _logger.warning(
+            "StubFundamentalsProvider active in production — serving synthetic data. "
+            "Wire a real FundamentalsProvider before going live (Issue #41)."
+        )
+    return StubFundamentalsProvider()
+
+
+async def get_market_data_provider(
+    settings: Settings = Depends(get_settings),
+) -> MarketDataProvider:
+    if settings.environment == "production":
+        _logger.warning(
+            "StubMarketDataProvider active in production — serving synthetic data. "
+            "Wire a real MarketDataProvider before going live (Issue #41)."
+        )
+    return StubMarketDataProvider()
+
+
 async def get_stock_service(
     repository: StockRepository = Depends(get_stock_repository),
+    market_data_provider: MarketDataProvider = Depends(get_market_data_provider),
 ) -> StockService:
-    """Erstellt einen StockService mit dem injizierten Repository."""
-    return StockService(repository=repository)
+    """Erstellt einen StockService mit dem injizierten Repository und MarketDataProvider."""
+    return StockService(repository=repository, market_data_provider=market_data_provider)
 
 
 async def get_cost_log_repository() -> CostLogRepository:
@@ -130,28 +153,6 @@ async def get_factsheet_service(
     run_repo: RankingRunRepository = Depends(get_ranking_run_repository),
 ) -> FactsheetService:
     return FactsheetService(stock_repo=stock_repo, run_repo=run_repo)
-
-
-async def get_fundamentals_provider(
-    settings: Settings = Depends(get_settings),
-) -> FundamentalsProvider:
-    if settings.environment == "production":
-        _logger.warning(
-            "StubFundamentalsProvider active in production — serving synthetic data. "
-            "Wire a real FundamentalsProvider before going live (Issue #41)."
-        )
-    return StubFundamentalsProvider()
-
-
-async def get_market_data_provider(
-    settings: Settings = Depends(get_settings),
-) -> MarketDataProvider:
-    if settings.environment == "production":
-        _logger.warning(
-            "StubMarketDataProvider active in production — serving synthetic data. "
-            "Wire a real MarketDataProvider before going live (Issue #41)."
-        )
-    return StubMarketDataProvider()
 
 
 async def get_ranking_run_service(

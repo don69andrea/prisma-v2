@@ -24,6 +24,39 @@ test.describe('PRISMA E2E', () => {
     await expect(page.getByText(`e2e-flow-${suffix}`)).toBeVisible({ timeout: 10_000 });
   });
 
+  test('4. Rankings: Sortierung + CSV-Export', async ({ page }) => {
+    const universe = await createTestUniverse(`sort-${Date.now()}`);
+
+    await page.goto('/rankings');
+    await page.getByLabel('Universe').selectOption(universe.id);
+    await page.getByRole('button', { name: /Run starten/i }).click();
+
+    await expect(page).toHaveURL(/\/rankings\/[0-9a-f-]+$/, { timeout: 90_000 });
+
+    // Wait for table to render
+    const rows = page.locator('tbody tr');
+    await expect(rows.first()).toBeVisible({ timeout: 60_000 });
+
+    // Avg header starts without active sort
+    const avgHeader = page.getByRole('columnheader', { name: /Avg/ });
+    await expect(avgHeader).toHaveAttribute('aria-sort', 'none');
+
+    // First click → ascending
+    await avgHeader.click();
+    await expect(avgHeader).toHaveAttribute('aria-sort', 'ascending');
+
+    // Second click → descending
+    await avgHeader.click();
+    await expect(avgHeader).toHaveAttribute('aria-sort', 'descending');
+
+    // CSV export triggers download
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: /CSV exportieren/i }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe('rankings.csv');
+  });
+
   test('3. Ranking-Flow: Run starten und Ergebnis-Tabelle sehen', async ({ page }) => {
     const universe = await createTestUniverse(`run-${Date.now()}`);
 

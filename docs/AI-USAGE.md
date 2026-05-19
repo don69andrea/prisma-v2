@@ -132,6 +132,68 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-05-19 · RAG-Pipeline Retrieval — Tests + Bug-Fix (Issue #18, PR #136)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: Nacharbeit zu PR #136: Missing-`feature`-kwarg-Bug in `RetrievalService.retrieve()` gefixt, 6 Unit-Tests (`test_retrieval_service.py`) + 9 Integrationstests (`test_rag_endpoint.py`) hinzugefügt.
+- **Was gut lief**: Ruff identifizierte sofort den unbenutzten `patch`-Import; der fehlende `feature`-Parameter wurde durch Lesen der `LLMClient.embed()`-Signatur entdeckt, bevor CI lief — klassischer Read-before-commit.
+- **Was nicht klappte**: 207 Projektdateien fehlten lokal in `/tmp` (Partial-Restore nach Temp-Cleanup). Keine lokale pytest-Ausführung möglich → nur Syntax-Check + Ruff, CI ist Acceptance-Gate.
+- **Nachbearbeitung nötig bei**: CI-Ergebnis von PR #136 abwarten; falls Mypy den `feature`-Parameter auf anderen Aufruf-Stellen vermisst, dort nachnachrüsten.
+- **Lektion**: `LLMClient.embed()` hat `feature: str` als Required-kwarg ohne Default — jeder neue Aufrufer muss ihn setzen. Grep-Pattern für künftige Reviews: `llm.embed(texts=` ohne `feature=` als Suchstring.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-18 · Fixture-Mode + Golden-Prompt + LLM-Smoke (Issue #59, PR #135)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `FixtureLLMClient`-Hilfsklasse (bündelt `StubAnthropicClient` + `LLMClient` + `_NullCostLogRepository`), 2 neue Fixture-JSONs (`contradictory_trend_value`, `ambiguous_stock`), 2 Integrationstests in `test_narrative_service_integration.py`, wöchentliches `llm_smoke_judge.py`-Skript mit LLM-as-Judge-Pattern + GitHub-Actions-Workflow.
+- **Was gut lief**: `_NullCostLogRepository`-Pattern — `CostTracker` braucht ein Repository-Interface, das im Test-Kontext nichts schreiben soll. Null-Objekt-Pattern (Schnittstelle implementieren, alle Operationen als No-Op) war sauberer als Mocking, weil er keine `AsyncMock`-Konfiguration für jeden Methodenaufruf braucht.
+- **Was nicht klappte**: Nichts Kritisches; `FixtureLLMClient` ist als Public-API noch nicht typisiert (kein `py.typed`-Marker in `tests/`).
+- **Nachbearbeitung nötig bei**: Nichts unmittelbar Blockierendes.
+- **Lektion**: LLM-as-Judge-Muster (zweites Modell bewertet Output des ersten) ist am günstigsten mit `claude-haiku-4-5-20251001` als Judge — Geschwindigkeit + Kosten-Trade-off bei einfachen PASS/FAIL-Fragen günstiger als Sonnet.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-18 · RAG-Pipeline Slice 2+3 — Ingestion + Retrieval-Endpoint (Issue #18, PR #136)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `find_nearest()` im `EmbeddingRepository`-Port + `SQLAEmbeddingRepository`-Implementierung via Raw-SQL mit `halfvec(2048)`-Cast für HNSW-Index, `RetrievalService`, `POST /api/v1/rag/retrieve`-Endpoint, DI-Kette in `dependencies.py`, `VOYAGE_API_KEY` in `config.py`, `scripts/ingest_filings.py` (SEC-EDGAR → 5 Ticker × 2 Filings → Voyage-Embedding → pgvector UPSERT), README-Sektion.
+- **Was gut lief**: HNSW-Index-Nutzung erfordert explizites `halfvec(2048)`-Cast in der Query — das steht in der pgvector-Doku, wurde korrekt umgesetzt. SEC-EDGAR `submissions`-API ist stabil und braucht keine API-Key.
+- **Was nicht klappte**: `LLMClient.embed()` hat `feature` als required kwarg ohne Default — wurde in `RetrievalService` vergessen (silent TypeError zur Laufzeit). Entdeckt beim Schreiben der Unit-Tests am nächsten Tag.
+- **Nachbearbeitung nötig bei**: `scripts/ingest_filings.py` einmalig auf Render Shell-Tab ausführen sobald `VOYAGE_API_KEY` gesetzt (DoD-Item 1 für #18).
+- **Lektion (A7-Instanz)**: Required kwargs ohne Default in internen Hilfsklassen (`LLMClient.embed(feature=)`) sind eine Fehlerquelle, die statische Analyse (mypy) sofort fängt — aber nur wenn alle Aufrufer im gleichen Typisierungsumfang sind. Hier war `retrieval_service.py` nicht mit mypy verifiziert worden.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-18 · CI-Checkliste für wiederkehrende Fallstricke (Issue #128, PR #134)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: Neuer Abschnitt „Häufige CI-Fallstricke" in `AGENTS.md` mit 3 konkreten Checklisten: jsdom `URL.createObjectURL`, Alembic Multiple Heads, `type: ignore` → `unused-ignore`-Drift.
+- **Was gut lief**: Alle 3 Checklisten direkt aus echten CI-Fehlern der vergangenen Wochen destilliert — keine generischen Best-Practices, sondern projektspezifische Erfahrungswerte.
+- **Was nicht klappte**: Nichts — reiner Doku-PR, kein Code.
+- **Nachbearbeitung nötig bei**: Nichts.
+- **Lektion (Q3-Instanz)**: Docs-PRs haben den höchsten ROI wenn sie unmittelbar nach dem dritten Auftreten desselben Fehlers entstehen — nicht als „irgendwann schreiben wir das auf".
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-18 · Universe-Sync-Endpoint POST /{id}/sync (Issue #114, PR #133)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `UniverseSyncResult`-Dataclass + `sync_universe()`-Methode in `UniverseService`, `UniverseSyncResponse`-Schema, `POST /api/v1/universes/{universe_id}/sync`-Endpoint, 5 Integrationstests.
+- **Was gut lief**: `InMemoryUniverseRepository`-Pattern aus bestehenden Tests direkt übernehmen — keine neuen Mocking-Infrastruktur nötig.
+- **Was nicht klappte**: `Edit`-Tool-Collision bei `universes.py` (zwei identische `return UniverseRead(...)`-Blöcke → Mehrdeutigkeit). Gelöst durch mehr Kontext im `old_string`.
+- **Nachbearbeitung nötig bei**: Nichts.
+- **Lektion**: Bei Edit-Tool-Collisions ist mehr `old_string`-Kontext immer der richtige Weg — nie auf Replace-All zurückgreifen wenn nur ein Block gemeint ist.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-18 · SIGTERM Graceful Shutdown für Batch-Jobs (Issue #87, PR #132)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `list_by_status()`-Methode im `MemoBatchJobRepository`-Port + SQLAlchemy-Implementierung, FastAPI-`lifespan`-Context-Manager in `app.py` der beim Shutdown alle `running`/`pending`-Jobs als `failed` markiert.
+- **Was gut lief**: FastAPI `lifespan` ist der korrekte Mechanismus für Startup/Shutdown-Hooks — sauberer als deprecated `on_event`.
+- **Was nicht klappte**: Ruff-UP035 (`from typing import AsyncGenerator` → `from collections.abc import`) — automatisch mit `--fix` behoben.
+- **Nachbearbeitung nötig bei**: Echte SIGTERM-Integration-Tests würden einen laufenden Prozess brauchen — aktuell nur Unit-Coverage. Accepted trade-off.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-18 · session.merge() Refactor (Issues #91 #92, PR #131)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `RankingRunRepository.save()` und `UniverseRepository.save()` von `flush()+get()+add/update`-Pattern auf `session.merge()` umgestellt.
+- **Was gut lief**: `session.merge()` ist die kanonische SQLAlchemy-Lösung für Upsert-by-PK — lädt aus Identity-Map oder SELECT, plant INSERT/UPDATE. Kein vorheriger `flush()` nötig.
+- **Was nicht klappte**: Nichts — reines Refactoring mit eindeutigem Endstate.
+- **Nachbearbeitung nötig bei**: Nichts.
+- **Lektion**: `session.merge()` vs `flush()+add()`: Bei Entities mit bekanntem PK ist `merge()` immer besser — es ist idempotent, braucht kein vorheriges GET, und der Session-Lifecycle bleibt konsistent.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
 ## 2026-05-17 · Dashboard-Seite mit Run-Liste (Issue #20, PR #124)
 - **Agent**: Claude Code (Sonnet 4.6) als Controller mit `superpowers:subagent-driven-development`; 1 Backend-Subagent (Haiku), 1 Frontend-Subagent direkt im Main-Context wegen fehlendem `npx` in der Umgebung.
 - **Scope**: Issue #20 geschlossen. (1) **Backend**: `list_all()` in Abstract-Repo-Interface + SQLAlchemy-Implementierung, `list_runs()` im Service, neuer `GET /api/v1/runs`-Endpoint mit `limit`/`offset`-Pagination. (2) **Frontend**: `/dashboard`-Route, shadcn `Table` mit Run-ID, Datum, Universum-Name (per Lookup-Map aus `GET /api/v1/universes`), Status-`Badge`; Loading- (Skeleton), Error- und Empty-State; Nav-Link „Dashboard" umgebogen von `/` auf `/dashboard`. (3) **E2E**: Playwright Smoke-Test 4 (Seite lädt, Tabelle oder Empty-State sichtbar).

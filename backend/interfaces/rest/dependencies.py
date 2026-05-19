@@ -14,6 +14,7 @@ from backend.application.services.cost_tracker import CostTracker
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.narrative_service import NarrativeService
 from backend.application.services.ranking_run_service import RankingRunService
+from backend.application.services.retrieval_service import RetrievalService
 from backend.application.services.stock_service import StockService
 from backend.application.services.universe_service import UniverseService
 from backend.config import Settings, get_settings
@@ -280,6 +281,43 @@ async def get_backtest_service(
         market_data=market_data,
         result_repo=SQLABacktestResultRepository(session=session),
     )
+
+
+async def get_embedding_repository() -> Any:
+    from backend.infrastructure.persistence.repositories.embedding_repository import (
+        SQLAEmbeddingRepository,
+    )
+
+    return SQLAEmbeddingRepository(session_factory=get_session_factory())
+
+
+@lru_cache(maxsize=1)
+def get_voyage_client() -> Any:
+    """Singleton-Voyage-Client analog get_anthropic_client().
+
+    Sync + lru_cache verhindert, dass im Memo-Batch (N Stocks) N neue
+    Client-Instanzen gebaut werden.
+    """
+    settings = get_settings()
+    if not settings.voyage_api_key:
+        return None
+    import voyageai
+
+    return voyageai.Client(api_key=settings.voyage_api_key)  # type: ignore[attr-defined]
+
+
+async def get_retrieval_service(
+    embedding_repo: Any = Depends(get_embedding_repository),
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+) -> RetrievalService:
+    voyage = get_voyage_client()
+    llm = LLMClient(
+        anthropic=get_anthropic_client(),
+        voyage=voyage,
+        cost_tracker=cost_tracker,
+        pricing=PRICING,
+    )
+    return RetrievalService(embedding_repo=embedding_repo, llm_client=llm)
 
 
 async def get_narrative_service(

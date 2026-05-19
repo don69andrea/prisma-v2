@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://prisma:prisma@db:5432/prisma"
     anthropic_api_key: str = ""
+    voyage_api_key: str = ""
     environment: str = "development"
 
     @field_validator("database_url", mode="before")

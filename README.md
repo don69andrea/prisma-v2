@@ -100,6 +100,28 @@ python scripts/seed_demo_universe.py   # legt "Demo-US-5" mit AAPL/MSFT/GOOGL/NV
 
 Idempotent — mehrfaches Ausführen erzeugt keine Duplikate.
 
+## RAG-Ingestion (einmalig)
+
+Der RAG-Corpus (SEC-EDGAR 10-K/10-Q → ~4 000 Chunks in pgvector) wird **einmalig** über ein Skript befüllt.
+Auf dem Live-System (Render) läuft das im **Shell-Tab** des Backend-Service:
+
+```bash
+# Voraussetzung: VOYAGE_API_KEY muss als Environment Variable gesetzt sein (Render → Backend → Environment)
+source .venv/bin/activate
+python scripts/ingest_filings.py
+```
+
+Das Skript ist **idempotent** — mehrfaches Ausführen ist sicher (bereits bekannte URLs werden übersprungen).
+Kosten: ca. $0.24 Voyage-Embedding (ADR-0004 §7).
+
+Nach der Ingestion ist `POST /api/v1/rag/retrieve` einsatzbereit:
+
+```bash
+curl -X POST https://<backend>/api/v1/rag/retrieve \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Apple revenue growth", "k": 5, "ticker": "AAPL"}'
+```
+
 ## Testen
 
 ```bash

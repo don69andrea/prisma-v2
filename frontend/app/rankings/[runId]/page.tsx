@@ -11,6 +11,7 @@ import { getUniverse } from '@/lib/api/universes';
 import { ApiError } from '@/lib/api/client';
 
 import { RankingsTable } from './rankings-table';
+import { TopTenLeaderboard } from '@/components/rankings/TopTenLeaderboard';
 
 function TableSkeleton() {
   return (
@@ -114,7 +115,10 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
       {!is404 && (runQuery.isLoading || (isCompleted && rankingsQuery.isLoading)) && <TableSkeleton />}
 
       {isCompleted && rankingsQuery.data && (
-        <RankingsTable items={rankingsQuery.data} runId={params.runId} />
+        <>
+          <TopTenLeaderboard items={rankingsQuery.data} runId={params.runId} />
+          <RankingsTable items={rankingsQuery.data} runId={params.runId} />
+        </>
       )}
 
       {isCompleted && rankingsQuery.isError && (

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 import { ModelRankCards } from '../ModelRankCards';
 
@@ -14,10 +14,10 @@ const perModelRanks: Record<string, number | null> = {
 describe('ModelRankCards', () => {
   it('renders all 5 model cards', () => {
     render(<ModelRankCards perModelRanks={perModelRanks} />);
-    expect(screen.getByText('Quality Classic')).toBeDefined();
+    expect(screen.getByText('Quality')).toBeDefined();
     expect(screen.getByText('Alpha')).toBeDefined();
-    expect(screen.getByText('Trend Momentum')).toBeDefined();
-    expect(screen.getByText('Value Alpha Potential')).toBeDefined();
+    expect(screen.getByText('Trend')).toBeDefined();
+    expect(screen.getByText('Value')).toBeDefined();
     expect(screen.getByText('Diversification')).toBeDefined();
   });
 
@@ -30,5 +30,20 @@ describe('ModelRankCards', () => {
   it('shows dash for null rank', () => {
     render(<ModelRankCards perModelRanks={perModelRanks} />);
     expect(screen.getByText('—')).toBeDefined();
+  });
+
+  it('jede Card hat ein Info-Icon mit aria-label', () => {
+    render(<ModelRankCards perModelRanks={perModelRanks} />);
+    expect(screen.getByRole('button', { name: 'Info zu Quality' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Info zu Alpha' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Info zu Trend' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Info zu Value' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Info zu Diversification' })).toBeDefined();
+  });
+
+  it('Klick auf Quality-Info zeigt 8-Kennzahlen-Tooltip', () => {
+    render(<ModelRankCards perModelRanks={perModelRanks} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Info zu Quality' }));
+    expect(screen.getByText(/8 klassische Kennzahlen/)).toBeDefined();
   });
 });

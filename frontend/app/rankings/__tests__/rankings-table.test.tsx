@@ -42,8 +42,10 @@ describe('RankingsTable', () => {
 
   it('zeigt Sweet-Spot-Badge nur wenn is_sweet_spot=true', () => {
     render(<RankingsTable items={sampleItems} runId="test-run-id" />);
-    const badges = screen.queryAllByText('★');
+    // Sweet-Spot wird als klickbares Info-Icon mit aria-label "Sweet-Spot-Begründung für …" dargestellt
+    const badges = screen.queryAllByRole('button', { name: /Sweet-Spot-Begründung für/ });
     expect(badges).toHaveLength(1);
+    expect(badges[0]).toHaveAccessibleName('Sweet-Spot-Begründung für AAPL');
   });
 
   it('zeigt em-dash für null-Werte', () => {
@@ -157,5 +159,55 @@ describe('RankingsTable', () => {
     vi.restoreAllMocks();
     Reflect.deleteProperty(global.URL, 'createObjectURL');
     Reflect.deleteProperty(global.URL, 'revokeObjectURL');
+  });
+
+  it('rendert Info-Icon im Quality-Header', () => {
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
+    expect(screen.getByRole('button', { name: 'Info zu Quality' })).toBeInTheDocument();
+  });
+
+  it('Klick auf Header-Info-Icon sortiert nicht', () => {
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
+    // Initial: sortiert nach total_rank asc → AAPL=1, MSFT=2
+    const rowsBefore = screen.getAllByRole('row').slice(1).map((r) => r.textContent);
+    fireEvent.click(screen.getByRole('button', { name: 'Info zu Quality' }));
+    const rowsAfter = screen.getAllByRole('row').slice(1).map((r) => r.textContent);
+    expect(rowsAfter).toEqual(rowsBefore);
+  });
+
+  it('rendert Info-Icon im Sweet-Spot-Header mit generischer Definition', () => {
+    render(<RankingsTable items={sampleItems} runId="test-run-id" />);
+    const trigger = screen.getByRole('button', { name: 'Sweet-Spot-Definition' });
+    fireEvent.click(trigger);
+    expect(screen.getByText(/Top-25 ?% in mindestens 3 von 5/)).toBeInTheDocument();
+  });
+
+  it('Klick auf Sweet-Spot-Badge zeigt ticker-spezifische Modell-Liste', () => {
+    const sweetSpotSample: RankingItem[] = Array.from({ length: 20 }, (_, i) => ({
+      ticker: `T${i + 1}`,
+      total_rank: i + 1,
+      weighted_avg: i + 1,
+      is_sweet_spot: i === 0, // nur T1 ist sweet spot
+      per_model_ranks: {
+        quality_classic: i + 1,
+        alpha: i + 1,
+        trend_momentum: i + 1,
+        value_alpha_potential: i + 1,
+        diversification: i + 1,
+      },
+    }));
+    render(<RankingsTable items={sweetSpotSample} runId="test-run-id" />);
+    const badge = screen.getByRole('button', { name: 'Sweet-Spot-Begründung für T1' });
+    fireEvent.click(badge);
+    // Schwelle: ceil(20*0.25)=5 → T1 (rank=1 überall) erfüllt in allen 5
+    // Mit <strong>{ticker}</strong> sind T1 und der Rest separate Text-Nodes,
+    // daher per textContent über das Eltern-Element matchen.
+    const matches = screen.getAllByText((_, el) =>
+      el?.textContent?.startsWith('T1 ist Top-25') ?? false,
+    );
+    expect(matches.length).toBeGreaterThan(0);
+    const content = matches[0].textContent ?? '';
+    expect(content).toMatch(/T1 ist Top-25 ?% in/);
+    expect(content).toMatch(/5\/5/);
   });
 });

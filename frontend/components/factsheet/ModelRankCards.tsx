@@ -1,16 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ModelInfoIcon } from '@/components/ModelInfoIcon';
+import { MODEL_INFO, MODEL_KEYS } from '@/lib/model-info';
 
 interface Props {
   perModelRanks: Record<string, number | null>;
 }
-
-const MODELS: Array<{ key: string; label: string }> = [
-  { key: 'quality_classic', label: 'Quality Classic' },
-  { key: 'alpha', label: 'Alpha' },
-  { key: 'trend_momentum', label: 'Trend Momentum' },
-  { key: 'value_alpha_potential', label: 'Value Alpha Potential' },
-  { key: 'diversification', label: 'Diversification' },
-];
 
 const TOTAL_STOCKS = 20; // MVP: assume universe of 20 stocks
 
@@ -36,7 +30,8 @@ const QUARTILE_LABELS: Record<1 | 2 | 3 | 4, string> = {
 export function ModelRankCards({ perModelRanks }: Props) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-      {MODELS.map(({ key, label }) => {
+      {MODEL_KEYS.map((key) => {
+        const { label } = MODEL_INFO[key];
         const rank = perModelRanks[key] ?? null;
         const quartile = rank !== null ? getQuartile(rank) : null;
 
@@ -44,7 +39,10 @@ export function ModelRankCards({ perModelRanks }: Props) {
           <Card key={key}>
             <CardHeader className="pb-1 pt-4 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">
-                {label}
+                <span className="inline-flex items-center gap-1">
+                  {label}
+                  <ModelInfoIcon modelKey={key} />
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent className="px-4 pb-4">

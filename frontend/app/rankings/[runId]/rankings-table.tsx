@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowUp, ArrowDown, ArrowUpDown, Download } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,8 +16,11 @@ import {
 } from '@/components/ui/table';
 import { ROUTES } from '@/lib/routes';
 import type { RankingItem } from '@/lib/api/runs';
+import { InfoPopover } from '@/components/InfoPopover';
+import { ModelInfoIcon } from '@/components/ModelInfoIcon';
+import { MODEL_INFO, SWEET_SPOT_DEFINITION, getSweetSpotModels, type ModelKey } from '@/lib/model-info';
 
-const MODEL_COLUMNS: Array<{ key: string; label: string }> = [
+const MODEL_COLUMNS: Array<{ key: ModelKey; label: string }> = [
   { key: 'quality_classic', label: 'Quality' },
   { key: 'diversification', label: 'Diversification' },
   { key: 'trend_momentum', label: 'Trend' },
@@ -73,10 +75,11 @@ interface SortableHeadProps {
   activeSortKey: SortKey;
   sortDir: SortDir;
   onSort: (key: SortKey) => void;
+  infoIcon?: React.ReactNode;
   children: React.ReactNode;
 }
 
-function SortableHead({ sortKey, activeSortKey, sortDir, onSort, children }: SortableHeadProps) {
+function SortableHead({ sortKey, activeSortKey, sortDir, onSort, infoIcon, children }: SortableHeadProps) {
   const isActive = activeSortKey === sortKey;
   const ariaSort = isActive ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
   const Icon = isActive ? (sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
@@ -89,9 +92,32 @@ function SortableHead({ sortKey, activeSortKey, sortDir, onSort, children }: Sor
     >
       <span className="inline-flex items-center gap-1">
         {children}
+        {infoIcon}
         <Icon className={`h-3 w-3 ${isActive ? '' : 'opacity-30'}`} />
       </span>
     </TableHead>
+  );
+}
+
+function SweetSpotBadge({
+  ticker,
+  perModelRanks,
+  totalStocks,
+}: {
+  ticker: string;
+  perModelRanks: Record<string, number | null>;
+  totalStocks: number;
+}) {
+  const sweetSpotKeys = getSweetSpotModels(perModelRanks, totalStocks);
+  const labels = sweetSpotKeys.map((k) => MODEL_INFO[k].label).join(', ');
+  const count = sweetSpotKeys.length;
+
+  return (
+    <InfoPopover ariaLabel={`Sweet-Spot-Begründung für ${ticker}`}>
+      <p>
+        <strong>{ticker}</strong> ist Top-25 % in {labels} ({count}/5 Modellen).
+      </p>
+    </InfoPopover>
   );
 }
 
@@ -168,7 +194,14 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
               >
                 Avg
               </SortableHead>
-              <TableHead>Sweet-Spot</TableHead>
+              <TableHead>
+                <span className="inline-flex items-center gap-1">
+                  Sweet-Spot
+                  <InfoPopover ariaLabel="Sweet-Spot-Definition">
+                    <p>{SWEET_SPOT_DEFINITION}</p>
+                  </InfoPopover>
+                </span>
+              </TableHead>
               {MODEL_COLUMNS.map((col) => (
                 <SortableHead
                   key={col.key}
@@ -176,6 +209,7 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
                   activeSortKey={sortKey}
                   sortDir={sortDir}
                   onSort={handleSort}
+                  infoIcon={<ModelInfoIcon modelKey={col.key} />}
                 >
                   {col.label}
                 </SortableHead>
@@ -197,7 +231,9 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
                 </TableCell>
                 <TableCell>{formatNumber(item.weighted_avg, 2)}</TableCell>
                 <TableCell>
-                  {item.is_sweet_spot ? <Badge variant="default">★</Badge> : null}
+                  {item.is_sweet_spot ? (
+                    <SweetSpotBadge ticker={item.ticker} perModelRanks={item.per_model_ranks} totalStocks={items.length} />
+                  ) : null}
                 </TableCell>
                 {MODEL_COLUMNS.map((col) => (
                   <TableCell key={col.key}>

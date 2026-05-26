@@ -17,5 +17,8 @@ AGGREGATION
 Total Rank: {{ total_rank }}/{{ n_stocks }}
 Quant Sweet Spot: {{ sweet_spot }}
 Verwendete Gewichte: {{ weights }}
-
+{% if rag_context %}
+SEC-FILING-AUSZUEGE (10-K / 10-Q — als faktische Grundlage verwenden, nicht wortwoertlich kopieren)
+{{ rag_context }}
+{% endif %}
 Produziere das strukturierte JSON-Memo via `submit_memo`-Tool gemaess Systemanweisungen.

@@ -32,6 +32,7 @@ _SNAPSHOT_CONTEXT = {
     "total_rank": 11,
     "sweet_spot": True,
     "weights": "equal-weighted (0.20 each)",
+    "rag_context": "",
 }
 
 

@@ -17,5 +17,8 @@ AGGREGATION
 Total Rank: {{ total_rank }}/{{ n_stocks }}
 Quant Sweet Spot: {{ sweet_spot }}
 Used weights: {{ weights }}
-
+{% if rag_context %}
+SEC FILING EXCERPTS (10-K / 10-Q — use as factual grounding, do not copy verbatim)
+{{ rag_context }}
+{% endif %}
 Produce the structured JSON memo via the `submit_memo` tool per system instructions.

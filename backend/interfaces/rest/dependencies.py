@@ -328,6 +328,7 @@ async def get_narrative_service(
     llm: LLMClient = Depends(get_llm_client),
     prompt_loader: PromptTemplateLoader = Depends(get_prompt_loader),
     cost_tracker: CostTracker = Depends(get_cost_tracker),
+    retrieval: RetrievalService = Depends(get_retrieval_service),
     settings: Settings = Depends(get_settings),
 ) -> NarrativeService:
     """Erstellt den NarrativeService mit vollstaendiger DI-Chain."""
@@ -339,6 +340,7 @@ async def get_narrative_service(
         llm_client=llm,
         prompt_loader=prompt_loader,
         cost_tracker=cost_tracker,
+        retrieval_service=retrieval,
         session_factory=get_session_factory(),
         # Factories fuer Background-Worker-Repos: keine konkreten Infrastructure-
         # Klassen im Application-Layer (Hexagonal — PR #70 W4-Fix).

@@ -830,3 +830,199 @@ class TestBuildMemoEntityIsError:
             language="de",
         )
         assert entity.is_error is False
+
+
+# ---------------------------------------------------------------------------
+# RAG-Kontext Integration (Issue #138)
+# ---------------------------------------------------------------------------
+
+
+def _make_retrieval_result(content: str = "Apple revenue grew 12%.") -> object:
+    """Minimales RetrievalResult-Objekt fuer Tests."""
+    from uuid import uuid4
+
+    from backend.domain.repositories.embedding_repository import RetrievalResult
+
+    return RetrievalResult(
+        chunk_id=uuid4(),
+        document_id=uuid4(),
+        chunk_idx=0,
+        content=content,
+        similarity=0.92,
+        ticker="AAPL",
+        doc_type="10-K",
+    )
+
+
+def _make_full_service_with_retrieval(retrieval_mock: AsyncMock) -> NarrativeService:
+    """Baut einen NarrativeService mit vollstaendiger Mock-Infrastruktur + RAG."""
+
+    # retrieval_mock ist ein AsyncMock der RetrievalService — wrap in spec
+    return _make_service(retrieval_service=retrieval_mock)
+
+
+async def test_rag_chunks_appear_in_rendered_prompt() -> None:
+    """Wenn RetrievalService konfiguriert ist, sollen Chunks im User-Prompt landen."""
+    stock_id, run_id = uuid4(), uuid4()
+    persisted = _sample_memo(stock_id=stock_id, run_id=run_id)
+
+    memo_repo = AsyncMock()
+    memo_repo.get = AsyncMock(side_effect=[None, persisted])
+    memo_repo.save = AsyncMock()
+
+    stock_repo = AsyncMock()
+    stock_repo.get = AsyncMock(return_value=_stock(stock_id=stock_id))
+    run_repo = AsyncMock()
+    run_repo.get_results = AsyncMock(return_value=_sample_results())
+
+    payload = {
+        "ticker": "NESN",
+        "total_rank": 1,
+        "one_liner": "Defensiver Quality-Kern.",
+        "ranking_interpretation": "x" * 120,
+        "sweet_spot": True,
+        "sweet_spot_explanation": "4 Modelle.",
+        "contradictions": [],
+        "key_strengths": ["Top Quality"],
+        "key_risks": ["Multiples"],
+        "confidence": "high",
+        "generated_at": "2026-05-04T10:00:00Z",
+        "model_version": "claude-sonnet-4-6",
+    }
+    llm = AsyncMock()
+    llm.messages_create = AsyncMock(return_value=_tool_use_response(payload))
+
+    captured_ctx: dict[str, Any] = {}
+
+    def capturing_render(name: str, ctx: dict[str, Any]) -> str:
+        captured_ctx.update(ctx)
+        return f"<rendered-{name}>"
+
+    prompt_loader = SimpleNamespace(render=Mock(side_effect=capturing_render))
+
+    chunk_content = "NESN reported CHF 89.5B revenue in FY2024."
+    retrieval_mock = AsyncMock()
+    retrieval_mock.retrieve = AsyncMock(return_value=[_make_retrieval_result(chunk_content)])
+
+    service = _make_service(
+        memo_repository=memo_repo,
+        run_repository=run_repo,
+        stock_repository=stock_repo,
+        llm_client=llm,
+        prompt_loader=prompt_loader,
+        retrieval_service=retrieval_mock,
+    )
+
+    await service.generate_memo(stock_id, run_id)
+
+    retrieval_mock.retrieve.assert_awaited_once()
+    call_kwargs = retrieval_mock.retrieve.await_args.kwargs
+    assert call_kwargs["ticker"] == "NESN"
+    assert call_kwargs["k"] == 5
+
+    assert "rag_context" in captured_ctx
+    assert chunk_content in captured_ctx["rag_context"]
+
+
+async def test_generate_memo_without_retrieval_service_works() -> None:
+    """Backward-Compat: ohne RetrievalService laeuft generate_memo normal durch."""
+    stock_id, run_id = uuid4(), uuid4()
+    persisted = _sample_memo(stock_id=stock_id, run_id=run_id)
+
+    memo_repo = AsyncMock()
+    memo_repo.get = AsyncMock(side_effect=[None, persisted])
+    memo_repo.save = AsyncMock()
+
+    stock_repo = AsyncMock()
+    stock_repo.get = AsyncMock(return_value=_stock(stock_id=stock_id))
+    run_repo = AsyncMock()
+    run_repo.get_results = AsyncMock(return_value=_sample_results())
+
+    payload = {
+        "ticker": "NESN",
+        "total_rank": 1,
+        "one_liner": "Defensiver Quality-Kern.",
+        "ranking_interpretation": "x" * 120,
+        "sweet_spot": True,
+        "sweet_spot_explanation": "4 Modelle.",
+        "contradictions": [],
+        "key_strengths": ["Top Quality"],
+        "key_risks": ["Multiples"],
+        "confidence": "high",
+        "generated_at": "2026-05-04T10:00:00Z",
+        "model_version": "claude-sonnet-4-6",
+    }
+    llm = AsyncMock()
+    llm.messages_create = AsyncMock(return_value=_tool_use_response(payload))
+
+    captured_ctx: dict[str, Any] = {}
+
+    def capturing_render(name: str, ctx: dict[str, Any]) -> str:
+        captured_ctx.update(ctx)
+        return f"<rendered-{name}>"
+
+    prompt_loader = SimpleNamespace(render=Mock(side_effect=capturing_render))
+
+    service = _make_service(
+        memo_repository=memo_repo,
+        run_repository=run_repo,
+        stock_repository=stock_repo,
+        llm_client=llm,
+        prompt_loader=prompt_loader,
+        retrieval_service=None,
+    )
+
+    result = await service.generate_memo(stock_id, run_id)
+
+    assert result is persisted
+    assert captured_ctx.get("rag_context") == ""
+
+
+async def test_rag_failure_does_not_block_memo_generation() -> None:
+    """Wenn RAG-Retrieval wirft, wird das Memo trotzdem generiert (graceful degradation)."""
+    stock_id, run_id = uuid4(), uuid4()
+    persisted = _sample_memo(stock_id=stock_id, run_id=run_id)
+
+    memo_repo = AsyncMock()
+    memo_repo.get = AsyncMock(side_effect=[None, persisted])
+    memo_repo.save = AsyncMock()
+
+    stock_repo = AsyncMock()
+    stock_repo.get = AsyncMock(return_value=_stock(stock_id=stock_id))
+    run_repo = AsyncMock()
+    run_repo.get_results = AsyncMock(return_value=_sample_results())
+
+    payload = {
+        "ticker": "NESN",
+        "total_rank": 1,
+        "one_liner": "Defensiver Quality-Kern.",
+        "ranking_interpretation": "x" * 120,
+        "sweet_spot": True,
+        "sweet_spot_explanation": "4 Modelle.",
+        "contradictions": [],
+        "key_strengths": ["Top Quality"],
+        "key_risks": ["Multiples"],
+        "confidence": "high",
+        "generated_at": "2026-05-04T10:00:00Z",
+        "model_version": "claude-sonnet-4-6",
+    }
+    llm = AsyncMock()
+    llm.messages_create = AsyncMock(return_value=_tool_use_response(payload))
+    prompt_loader = SimpleNamespace(render=Mock(side_effect=lambda name, ctx: f"<rendered-{name}>"))
+
+    failing_retrieval = AsyncMock()
+    failing_retrieval.retrieve = AsyncMock(side_effect=RuntimeError("Voyage API down"))
+
+    service = _make_service(
+        memo_repository=memo_repo,
+        run_repository=run_repo,
+        stock_repository=stock_repo,
+        llm_client=llm,
+        prompt_loader=prompt_loader,
+        retrieval_service=failing_retrieval,
+    )
+
+    result = await service.generate_memo(stock_id, run_id)
+
+    assert result is persisted
+    llm.messages_create.assert_awaited_once()

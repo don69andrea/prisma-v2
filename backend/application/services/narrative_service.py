@@ -28,6 +28,7 @@ from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.cost_tracker import CostTracker
+from backend.application.services.retrieval_service import RetrievalService
 from backend.domain.entities.memo_batch_job import MemoBatchJob
 from backend.domain.entities.research_memo import ERROR_FALLBACK_MODEL_VERSION, ResearchMemo
 from backend.domain.entities.stock import Stock
@@ -143,10 +144,12 @@ class NarrativeService:
         session_factory: Callable[[], AbstractAsyncContextManager[AsyncSession]],
         stock_repo_factory: Callable[[AsyncSession], StockRepository],
         run_repo_factory: Callable[[AsyncSession], RankingRunRepository],
+        retrieval_service: RetrievalService | None = None,
         model: str = "claude-sonnet-4-6",
         max_concurrent_batch_workers: int = 3,
         stale_batch_timeout_seconds: int = 600,
     ) -> None:
+        self._retrieval = retrieval_service
         self._memo_repo = memo_repository
         self._run_repo = run_repository
         self._stock_repo = stock_repository
@@ -533,7 +536,24 @@ class NarrativeService:
 
         universe_context = _build_universe_context(results)
 
-        # 3. Prompts rendern
+        # 3a. RAG-Kontext abrufen (optional — graceful degradation wenn nicht konfiguriert)
+        rag_context = ""
+        if self._retrieval is not None:
+            try:
+                chunks = await self._retrieval.retrieve(
+                    query=f"{stock.ticker} revenue earnings outlook risk factors",
+                    k=5,
+                    ticker=stock.ticker,
+                )
+                rag_context = "\n\n---\n\n".join(c.content for c in chunks)
+            except Exception:
+                self._logger.warning(
+                    "RAG retrieval fuer %s fehlgeschlagen — Memo ohne SEC-Kontext",
+                    stock.ticker,
+                    exc_info=True,
+                )
+
+        # 3b. Prompts rendern
         system_prompt = self._prompts.render(f"narrative_system.{language}.md.j2", {})
         user_prompt = self._prompts.render(
             f"narrative_user.{language}.md.j2",
@@ -551,6 +571,7 @@ class NarrativeService:
                 "total_rank": ranking["total_rank"],
                 "sweet_spot": ranking["is_sweet_spot"],
                 "weights": "equal-weighted (0.20 each)",
+                "rag_context": rag_context,
             },
         )
 

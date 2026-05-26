@@ -132,6 +132,15 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-05-19 · Backtest `_simulate_portfolio` mit Drift + Monthly-Reset (Issue #140)
+- **Agent**: Claude Code (Opus 4.7)
+- **Scope**: `_simulate_portfolio` an Backtest-Light-Spec v1.1 §5 angeglichen. Bestehende Impl (`returns.mean(axis=1)`) war mathematisch ein taeglich-rebalanciertes Equal-Weight-Portfolio — entsprach NICHT der Spec (Drift + monatlicher Reset). Neuer Helper `_monthly_rebalance_dates` per `pd.Grouper(freq="ME")`. TDD-Workflow: 8 Unit-Tests in neuer Datei `test_backtest_portfolio_simulation.py` (Drift-, Reset-, Edge-Case- und Sanity-Tests), erst rot, dann Rewrite.
+- **Was gut lief**: Der erste Reset-Test war versehentlich grün mit der naiven Impl (weil daily-rebalance auch 50/50 ergibt). Test-driven-Skill hat darauf hingewiesen, dass das ein Anti-Pattern ist — Test wurde verstaerkt, um Drift VOR dem Monatsende UND Reset DANACH zu pruefen. Coverage 96.8%, ruff + mypy strict clean.
+- **Was nicht klappte**: Spec-Code-Differenz wurde erst durch das Code-Review der Spec entdeckt — das urspruengliche Backtest-Bundle (PR #120) ist VOR der finalisierten Spec v1.1 gemerged worden, daher die Diskrepanz. Lehre: Spec-First-Konvention konsequent durchziehen, auch wenn die Spec mid-flight noch finalisiert wird.
+- **Nachbearbeitung nötig bei**: Integration-Tests (Postgres-Container) lokal nicht ausfuehrbar, CI ist Acceptance-Gate fuer `test_backtests_endpoint.py`.
+- **Lektion**: TDD-Skill hat einen falsch-positiven Test sofort gefangen. Der vorgeschlagene "test passes immediately → fix test"-Regel-Trigger hat den Reset-Test von einem schwachen ("Feb-1 = 50/50") zu einem starken ("Drift im Januar + Reset am 31.01.") gemacht. Faengt zukuenftige Vectorize-Regressionen.
+- **Autor**: Fabia Holzer (mit Claude Code)
+
 ## 2026-05-19 · RAG-Pipeline Retrieval — Tests + Bug-Fix (Issue #18, PR #136)
 - **Agent**: Claude Code (Sonnet 4.6)
 - **Scope**: Nacharbeit zu PR #136: Missing-`feature`-kwarg-Bug in `RetrievalService.retrieve()` gefixt, 6 Unit-Tests (`test_retrieval_service.py`) + 9 Integrationstests (`test_rag_endpoint.py`) hinzugefügt.

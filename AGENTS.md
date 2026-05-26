@@ -151,6 +151,38 @@ Jede PR, die substantiell mit einem Coding-Agent entstanden ist, bekommt in `doc
 
 Diese Reflexion ist **direkt notenrelevant** für die 40%-Achse.
 
+## Häufige CI-Fallstricke
+
+Drei wiederkehrende Probleme aus PR-History (aufgetreten in PR #126 / Issue #128). Checklisten vor dem PR-Öffnen durchgehen.
+
+### 1. jsdom implementiert `URL.createObjectURL` nicht
+
+Vitest/jsdom wirft einen Fehler bei `vi.spyOn(URL, 'createObjectURL')`, weil die Methode schlicht nicht existiert.
+
+**Checkliste:**
+- [ ] Vor `spyOn` prüfen: `typeof URL.createObjectURL !== 'undefined'`?
+- [ ] Für nicht implementierte Browser-APIs: direkte Zuweisung `global.URL.createObjectURL = vi.fn()` statt `spyOn`
+- [ ] Cleanup nach dem Test: `Reflect.deleteProperty(global.URL, 'createObjectURL')`
+
+### 2. Doppelte Alembic-Revision (Multiple Heads)
+
+Wenn `main` zwischen Branch-Abspaltung und PR-Merge eine eigene Migration mit derselben Revisionsnummer bekommt, meldet Alembic `Multiple head revisions are present` und die Backend-CI schlägt fehl.
+
+**Checkliste vor jedem PR mit Alembic-Migrationen:**
+- [ ] `git fetch origin && git log --oneline origin/main -- backend/alembic/versions/` ausführen
+- [ ] Prüfen ob die eigene Revision-ID bereits auf `main` vergeben ist
+- [ ] Bei Kollision: eigene Migration umbenennen (nächste freie ID) und `down_revision` anpassen
+- [ ] `alembic heads` lokal ausführen — genau ein Head darf erscheinen
+
+### 3. `# type: ignore` wird nach echtem Fix zu `unused-ignore`
+
+Wenn ein Ruff/mypy-Fehler durch den eigentlichen Fix verschwindet, meldet mypy die alten Suppressor-Kommentare als `[unused-ignore]` — ein zweiter Fix-Commit wird nötig.
+
+**Checkliste nach type-ignore-relevanten Fixes:**
+- [ ] Nach dem Fix `mypy` lokal laufen lassen (oder `pre-commit run mypy`)
+- [ ] Alle `# type: ignore` in der geänderten Datei auf Aktualität prüfen
+- [ ] Überflüssige Kommentare im selben Commit entfernen, nicht als Nachzügler
+
 ## Bewertungs-Kontext
 
 Das Capstone-Modul bewertet:

@@ -21,3 +21,7 @@ class MemoBatchJobRepository(ABC):
     @abstractmethod
     async def get(self, job_id: UUID) -> MemoBatchJob | None:
         """Laedt einen Job per ID, oder None wenn unknown."""
+
+    @abstractmethod
+    async def list_by_status(self, status: str) -> list[MemoBatchJob]:
+        """Gibt alle Jobs mit dem angegebenen Status zurueck."""

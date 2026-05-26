@@ -1,5 +1,10 @@
 """FastAPI Application-Factory."""
 
+import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,6 +22,39 @@ from backend.interfaces.rest.routers import (
     universes,
 )
 
+_logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    yield
+    # On shutdown: mark any jobs that are still "running" or "pending" as failed
+    # so the next restart can safely ignore them instead of treating them as active.
+    try:
+        from backend.infrastructure.persistence.repositories.memo_batch_job_repository import (
+            SQLAMemoBatchJobRepository,
+        )
+        from backend.infrastructure.persistence.session import get_session_factory
+
+        repo = SQLAMemoBatchJobRepository(session_factory=get_session_factory())
+        now = datetime.now(tz=UTC)
+        for status in ("running", "pending"):
+            jobs = await repo.list_by_status(status)
+            for job in jobs:
+                await repo.save(
+                    job.model_copy(
+                        update={
+                            "status": "failed",
+                            "completed_at": now,
+                            "error_message": "Aborted by server shutdown",
+                        }
+                    )
+                )
+            if jobs:
+                _logger.warning("Shutdown: marked %d %s job(s) as failed", len(jobs), status)
+    except Exception:
+        _logger.exception("Shutdown cleanup failed — some jobs may remain in stale state")
+
 
 def create_app() -> FastAPI:
     """Erzeugt und konfiguriert die FastAPI-Anwendung.
@@ -28,6 +66,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
+        lifespan=_lifespan,
         title="PRISMA API",
         description=(
             "Quantitatives Stock-Selection-Tool. "

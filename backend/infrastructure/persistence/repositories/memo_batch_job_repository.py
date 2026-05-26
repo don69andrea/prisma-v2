@@ -63,6 +63,19 @@ class SQLAMemoBatchJobRepository(MemoBatchJobRepository):
             ).scalar_one_or_none()
             return _orm_to_entity(row) if row else None
 
+    async def list_by_status(self, status: str) -> list[MemoBatchJob]:
+        async with self._session_factory() as session:
+            rows = (
+                (
+                    await session.execute(
+                        select(MemoBatchJobORM).where(MemoBatchJobORM.status == status)
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            return [_orm_to_entity(row) for row in rows]
+
 
 def _orm_to_entity(row: MemoBatchJobORM) -> MemoBatchJob:
     """Mapping ORM-Row -> Domain-Entity. JSONB-Liste -> UUID-Liste."""

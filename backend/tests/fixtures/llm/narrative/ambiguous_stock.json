@@ -1,0 +1,36 @@
+{
+  "id": "msg_ambiguous",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-4-6",
+  "stop_reason": "tool_use",
+  "usage": {"input_tokens": 270, "output_tokens": 440, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 2000},
+  "content": [
+    {
+      "type": "tool_use",
+      "id": "tool_5",
+      "name": "submit_memo",
+      "input": {
+        "ticker": "BAYN",
+        "total_rank": 45,
+        "one_liner": "Kein klares Signal erkennbar — alle Modelle im Mittelfeld.",
+        "ranking_interpretation": "Alle fuenf Modelle zwischen 40. und 58. Perzentile — kein Modell liefert ein differenzierendes Kauf- oder Meidesignal. Quality Classic (Rang 42) und Diversification (Rang 45) deuten auf durchschnittliche Fundamentals hin. Trend Momentum (Rang 48) und Alpha (Rang 52) zeigen weder Aufwaerts- noch Abwaertsdynamik. Value Alpha Potential (Rang 40) leicht besser, aber nicht ausreichend fuer eine klare Empfehlung. Typisch fuer Aktien in Uebergangsphasen.",
+        "sweet_spot": false,
+        "sweet_spot_explanation": null,
+        "contradictions": [],
+        "key_strengths": [
+          "Ausgewogenes Profil ohne extreme Schwaechen",
+          "Leicht ueberdurchschnittliches Value Alpha Potential"
+        ],
+        "key_risks": [
+          "Kein differenzierendes Merkmal gegenueber dem Universum",
+          "Opportunity Cost: klarer positionierte Alternativen vorhanden",
+          "Mittlerer Rang impliziert mittlere Renditeerwartung"
+        ],
+        "confidence": "low",
+        "generated_at": "2026-05-04T10:00:00Z",
+        "model_version": "claude-sonnet-4-6"
+      }
+    }
+  ]
+}

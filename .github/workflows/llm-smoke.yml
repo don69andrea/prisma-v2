@@ -1,0 +1,59 @@
+name: LLM Smoke Test (Weekly)
+
+on:
+  schedule:
+    - cron: "0 2 * * 0" # Sonntag 02:00 UTC
+  workflow_dispatch: # Manuell auslösbar für Ad-hoc-Tests
+
+jobs:
+  smoke-test:
+    name: Narrative Engine — Real-API Smoke + LLM-as-Judge
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install backend dependencies
+        run: pip install -e ".[dev]"
+        working-directory: backend
+
+      - name: Run LLM smoke test with LLM-as-Judge
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Minimale Settings ohne DB — Smoke-Script braucht keine Postgres-Verbindung
+          DATABASE_URL: "postgresql+asyncpg://dummy:dummy@localhost/dummy"
+          ENVIRONMENT: "test"
+        run: python scripts/llm_smoke_judge.py
+
+      - name: Create regression issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toISOString().split('T')[0];
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `regression(llm-smoke): Narrative Engine Qualitätsregression ${today}`,
+              body: [
+                '## LLM Smoke Test Regression',
+                '',
+                'Der wöchentliche LLM-Smoke-Test (LLM-as-Judge) ist fehlgeschlagen.',
+                '',
+                `**Workflow-Run:** ${runUrl}`,
+                '',
+                '### Nächste Schritte',
+                '- [ ] Workflow-Log prüfen: welcher Stock / welche Assertion schlägt fehl?',
+                '- [ ] Prüfen ob ein Prompt-Template geändert wurde',
+                '- [ ] Prüfen ob eine neue Anthropic-Modellversion anders antwortet',
+                '- [ ] Fixture ggf. aktualisieren oder Smoke-Threshold anpassen',
+              ].join('\n'),
+              labels: ['regression', 'llm-quality'],
+            });

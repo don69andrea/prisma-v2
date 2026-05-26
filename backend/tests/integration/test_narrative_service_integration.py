@@ -31,6 +31,7 @@ from backend.infrastructure.persistence.repositories.research_memo_repository im
 from backend.infrastructure.persistence.repositories.stock_repository import (
     SQLAStockRepository,
 )
+from backend.tests.fixtures.llm.fixture_llm_client import FixtureLLMClient
 from backend.tests.fixtures.llm.stub_anthropic_client import StubAnthropicClient
 
 pytestmark = [pytest.mark.integration, pytest.mark.asyncio]
@@ -338,3 +339,61 @@ async def test_cache_hit_smoke_two_sequential_calls(
     sys2 = stub.messages.calls[1]["system"]
     assert sys1 == sys2
     assert sys1[0]["cache_control"] == {"type": "ephemeral"}
+
+
+async def test_contradictory_trend_value_fixture(
+    seeded_run_with_stock: tuple[async_sessionmaker[AsyncSession], dict[str, UUID]],
+) -> None:
+    """Fixture-Mode via FixtureLLMClient: contradictory_trend_value → confidence=medium."""
+    session_factory, ids = seeded_run_with_stock
+
+    fixture_client = FixtureLLMClient([FIXTURES / "contradictory_trend_value.json"])
+    async with session_factory() as session:
+        service = NarrativeService(
+            memo_repository=SQLAResearchMemoRepository(session_factory),
+            run_repository=SQLARankingRunRepository(session),
+            stock_repository=SQLAStockRepository(session),
+            batch_repository=SQLAMemoBatchJobRepository(session_factory),
+            llm_client=fixture_client.llm,
+            prompt_loader=PromptTemplateLoader(),
+            cost_tracker=fixture_client.cost_tracker,
+            session_factory=session_factory,
+            stock_repo_factory=lambda s: SQLAStockRepository(session=s),
+            run_repo_factory=lambda s: SQLARankingRunRepository(session=s),
+        )
+
+        memo = await service.generate_memo(ids["stock_id"], ids["run_id"])
+
+    assert memo.confidence == "medium"
+    assert memo.sweet_spot is False
+    assert len(memo.contradictions) == 1
+    assert fixture_client.calls[0]["model"] == "claude-sonnet-4-6"
+
+
+async def test_ambiguous_stock_fixture(
+    seeded_run_with_stock: tuple[async_sessionmaker[AsyncSession], dict[str, UUID]],
+) -> None:
+    """Fixture-Mode via FixtureLLMClient: ambiguous_stock → confidence=low, keine Contradictions."""
+    session_factory, ids = seeded_run_with_stock
+
+    fixture_client = FixtureLLMClient([FIXTURES / "ambiguous_stock.json"])
+    async with session_factory() as session:
+        service = NarrativeService(
+            memo_repository=SQLAResearchMemoRepository(session_factory),
+            run_repository=SQLARankingRunRepository(session),
+            stock_repository=SQLAStockRepository(session),
+            batch_repository=SQLAMemoBatchJobRepository(session_factory),
+            llm_client=fixture_client.llm,
+            prompt_loader=PromptTemplateLoader(),
+            cost_tracker=fixture_client.cost_tracker,
+            session_factory=session_factory,
+            stock_repo_factory=lambda s: SQLAStockRepository(session=s),
+            run_repo_factory=lambda s: SQLARankingRunRepository(session=s),
+        )
+
+        memo = await service.generate_memo(ids["stock_id"], ids["run_id"])
+
+    assert memo.confidence == "low"
+    assert memo.sweet_spot is False
+    assert memo.contradictions == []
+    assert memo.model_version == "claude-sonnet-4-6"

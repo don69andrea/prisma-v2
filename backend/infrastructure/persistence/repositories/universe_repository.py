@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain.entities.universe import Universe
@@ -23,24 +24,24 @@ class SQLAUniverseRepository(UniverseRepository):
         return [self._to_domain(row) for row in result.scalars().all()]
 
     async def save(self, universe: Universe) -> None:
-        # Flush pending adds bevor get() — autoflush=False sonst findet
-        # session.get() einen vorher in derselben Session via add() gestaged'ten
-        # Row nicht (Identity-Map deckt pending Rows mit explicit PK nicht ab).
-        await self._session.flush()
-        row = await self._session.get(UniverseORM, universe.id)
-        if row is None:
-            self._session.add(
-                UniverseORM(
-                    id=universe.id,
-                    name=universe.name,
-                    region=universe.region,
-                    tickers=list(universe.tickers),
-                )
+        stmt = (
+            pg_insert(UniverseORM)
+            .values(
+                id=universe.id,
+                name=universe.name,
+                region=universe.region,
+                tickers=list(universe.tickers),
             )
-        else:
-            row.name = universe.name
-            row.region = universe.region
-            row.tickers = list(universe.tickers)
+            .on_conflict_do_update(
+                index_elements=["id"],
+                set_={
+                    "name": universe.name,
+                    "region": universe.region,
+                    "tickers": list(universe.tickers),
+                },
+            )
+        )
+        await self._session.execute(stmt)
 
     @staticmethod
     def _to_domain(orm: UniverseORM) -> Universe:

@@ -4,6 +4,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select, text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain.entities.ranking_run import RankingRun
@@ -13,12 +14,7 @@ from backend.infrastructure.persistence.models.ranking_run import RankingRunORM
 
 
 class SQLARankingRunRepository(RankingRunRepository):
-    """SQLAlchemy-Implementierung des RankingRunRepository-Ports.
-
-    Identity-Map-Workaround: autoflush=False bedeutet, dass session.get()
-    pending Rows mit explizitem PK nicht sieht — daher flush() vor jedem
-    get() in save() und save_results() (eingeführt in PR #88).
-    """
+    """SQLAlchemy-Implementierung des RankingRunRepository-Ports."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
@@ -28,21 +24,21 @@ class SQLARankingRunRepository(RankingRunRepository):
         return self._to_domain(row) if row else None
 
     async def save(self, run: RankingRun) -> None:
-        await self._session.flush()  # Identity-Map-Workaround, siehe Klassen-Docstring
-        row = await self._session.get(RankingRunORM, run.id)
-        if row is None:
-            self._session.add(
-                RankingRunORM(
-                    id=run.id,
-                    created_at=run.created_at,
-                    universe_id=run.universe_id,
-                    weight_config=run.weight_config.weights,
-                    status=run.status,
-                )
+        stmt = (
+            pg_insert(RankingRunORM)
+            .values(
+                id=run.id,
+                created_at=run.created_at,
+                universe_id=run.universe_id,
+                weight_config=run.weight_config.weights,
+                status=run.status,
             )
-        else:
-            row.status = run.status
-            row.weight_config = run.weight_config.weights
+            .on_conflict_do_update(
+                index_elements=["id"],
+                set_={"status": run.status, "weight_config": run.weight_config.weights},
+            )
+        )
+        await self._session.execute(stmt)
 
     async def list_by_universe(self, universe_id: UUID) -> list[RankingRun]:
         stmt = (
@@ -64,7 +60,6 @@ class SQLARankingRunRepository(RankingRunRepository):
         return [self._to_domain(row) for row in result.scalars().all()]
 
     async def save_results(self, run_id: UUID, results: list[dict[str, Any]]) -> None:
-        await self._session.flush()  # Identity-Map-Workaround, siehe Klassen-Docstring
         row = await self._session.get(RankingRunORM, run_id)
         if row is not None:
             row.results = results

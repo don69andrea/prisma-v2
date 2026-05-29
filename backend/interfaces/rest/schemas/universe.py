@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class UniverseCreateRequest(BaseModel):
@@ -45,3 +45,15 @@ class UniverseRead(BaseModel):
 class UniverseListResponse(BaseModel):
     items: list[UniverseRead]
     total: int
+
+
+class UniverseSuggestionRequest(BaseModel):
+    description: str = Field(..., min_length=3, max_length=500)
+
+
+class UniverseSuggestionResponse(BaseModel):
+    name: str
+    region: str
+    tickers: list[str]
+    reasoning: str
+    available_tickers: list[str]

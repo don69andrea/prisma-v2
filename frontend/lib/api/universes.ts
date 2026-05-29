@@ -43,3 +43,18 @@ export async function createUniverse(
     body: JSON.stringify(body),
   });
 }
+
+export interface UniverseSuggestion {
+  name: string;
+  region: string;
+  tickers: string[];
+  reasoning: string;
+  available_tickers: string[];
+}
+
+export function suggestUniverse(description: string): Promise<UniverseSuggestion> {
+  return apiFetch<UniverseSuggestion>('/api/v1/universes/suggest', {
+    method: 'POST',
+    body: JSON.stringify({ description }),
+  });
+}

@@ -17,6 +17,7 @@ from backend.application.services.ranking_run_service import RankingRunService
 from backend.application.services.retrieval_service import RetrievalService
 from backend.application.services.stock_service import StockService
 from backend.application.services.universe_service import UniverseService
+from backend.application.services.universe_suggestion_service import UniverseSuggestionService
 from backend.config import Settings, get_settings
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
@@ -349,3 +350,11 @@ async def get_narrative_service(
         max_concurrent_batch_workers=settings.max_concurrent_batch_workers,
         stale_batch_timeout_seconds=settings.stale_batch_timeout_seconds,
     )
+
+
+async def get_universe_suggestion_service(
+    llm: LLMClient = Depends(get_llm_client),
+    stock_service: StockService = Depends(get_stock_service),
+) -> UniverseSuggestionService:
+    """Erstellt den UniverseSuggestionService mit LLMClient und StockService."""
+    return UniverseSuggestionService(llm_client=llm, stock_service=stock_service)

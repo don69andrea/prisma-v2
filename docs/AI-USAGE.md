@@ -132,6 +132,15 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-05-28 · LLM-Universe-Wizard — Claude Haiku für Universe-Vorschläge
+- **Agent**: Claude Code (Opus 4.7 Orchestrator + Sonnet 4.6 Implementer-Subagents)
+- **Scope**: Neuer KI-Wizard zur Universe-Erstellung — User beschreibt freitext was er sucht (z.B. *"Halbleiter aus den USA"*), Claude Haiku 4.5 schlägt unter Stock-Katalog-Whitelist Tickers + Name + Region + Begründung vor. Pre-filled Form für User-Editing vor Erstellen. Tool-use-Pattern (Pydantic-Schema-Output) analog zur Narrative-Engine. 3-Task Subagent-Driven (Domain-Service, REST-Endpoint, Frontend-Page) plus Spec-First.
+- **Was gut lief**: Pattern-Reuse aus existing Narrative-Engine sparte Architektur-Aufwand komplett — `LLMClient.messages_create()` mit `tools=[{input_schema: ...}]` + `tool_choice` ist projekt-etabliert. Pre-Discovered-Context (PromptTemplateLoader-Signatur, Anthropic-Tool-use-Pattern aus narrative_service.py:579 zitiert) ließ den Implementer ohne einen einzigen "wo finde ich..."-Schritt loslegen. Stock-Katalog-Whitelist im System-Prompt + Cache-Control reduziert Latenz/Kosten ab 2. Call. Factory-Fixture-Pattern (`make_client_with_suggest`) für Integration-Tests sauber wiederverwendbar.
+- **Was nicht klappte**: Plan hatte initial schema-verletzende Mock-Daten in den Unit-Tests (zu-kurze `reasoning`-Strings, single-ticker bei Whitelist-Test). Pydantic-Validation rejected sie → Tests failed mit `InvalidLLMOutput` statt erwarteter `EmptySuggestion`. Implementer hat die Mocks pragmatisch schema-konform gemacht ohne Test-Intent zu ändern — gutes Defensive-Catching beim Implementer-Self-Review.
+- **Nachbearbeitung nötig bei**: Multi-Turn-Konversations-Variante (V2) falls Zeit. Wizard-Page könnte profitieren von shadcn `Textarea` (gibt's aktuell nicht in `frontend/components/ui/`).
+- **Lektion**: **Tool-use-Pattern mit Pydantic `input_schema` skaliert linear für neue LLM-Features.** Universe-Wizard war strukturell 80% Code-Copy aus narrative_service.py mit Wizard-spezifischem Schema + neuen Prompts. Plus: **Plan-Stub-Test-Daten sollten Schema-konform sein** — ein 30-Sekunden-Self-Check beim Plan-Schreiben spart einen Implementer-Adjustment-Loop.
+- **Autor**: Sheyla Sampietro (mit Claude Code)
+
 ## 2026-05-28 · Dashboard-Stats — 4 Karten über Runs-Tabelle (Backlog Priorität 5)
 - **Agent**: Claude Code (Opus 4.7 Orchestrator + Sonnet 4.6 Implementer-Subagents)
 - **Scope**: Frontend-only Erweiterung des `/dashboard`. Neue `StatsCards`-Komponente (Letzter Run, # Universen, # Stocks, Top-Pick mit Sweet-Spot-Pink) + DashboardClient-Integration mit 2 zusätzlichen Tanstack-Queries. 3-Task Subagent-Driven-Execution mit TDD-Pattern. Synergie mit Memo-Drilldown: Top-Pick-Klick führt direkt zum echten LLM-Memo.

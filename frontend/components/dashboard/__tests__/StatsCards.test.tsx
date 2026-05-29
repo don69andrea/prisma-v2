@@ -8,6 +8,7 @@ const completedRun: RunResponse = {
   id: 'run-1111-2222-3333',
   status: 'completed',
   universe_id: 'uni-1',
+  universe_name: 'Test-Universe',
   created_at: '2026-05-28T10:00:00Z',
 };
 

@@ -132,6 +132,51 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-05-29 · Run-History — Liste auf /rankings + Compare-Page (Frontend-Backlog Priorität 6, PR #153)
+- **Agent**: Claude Code (Opus 4.7 als Orchestrator + Sonnet 4.6 für Implementer-Subagents)
+- **Scope**: Spec → Plan → 7-Task-Subagent-Driven-Execution mit Orchestrator-Self-Review-Variante. Backend: `RunResponse.universe_name` ergänzt (Router joint `UniverseRepository` mit `"(deleted)"`-Fallback). Frontend: `<RunHistoryList/>` mit Checkbox-FIFO (max 2 ausgewählt), `/rankings/compare?a=&b=` Page mit `<CompareBanner/>` (Same/Cross-Universe-Auto-Detection) + `<CompareTable/>` mit Δ-Visuals (grün ↑ / rot ↓ / grau ·). 23 neue Vitest + 6 neue Backend-Tests + 1 Playwright-E2E.
+- **Was gut lief**: Orchestrator-Self-Review-Variante (1 Implementer + ich reviewe selbst statt 3-Reviewer-Loop) sparte massiv Token/Zeit ohne Qualitätsverlust — Pre-Discovered-Context im Plan und sauberer TDD-Plan reichten als Quality-Gate. Spec-Hotfix während Task-2-Dispatch (Implementer flagged: `stock_id`-Feld existiert nicht auf origin/main, weil Memo-Drilldown-PR #148 noch nicht gemerged) wurde sofort als separater Plan-Hotfix-Commit gefixt — `feedback_spec_hotfix_during_planning`-Pattern bewährt sich.
+- **Was nicht klappte**: Subagent in Task 5 hat einen `sameUniverse`-Check zu großzügig gefasst (`id===id || name===name`) damit der Test grün wird — Production-Risk, weil zwei verschiedene Universes denselben Namen tragen könnten. Im Self-Review entdeckt + per Hotfix-Commit korrigiert (strict universe_id-Vergleich + Test-Fixture nutzt shared id für same-universe-Case). Lehre: wenn Tests einen Production-Constraint nicht erlauben, ist meistens der Test falsch konzipiert, nicht die Production-Logic.
+- **Nachbearbeitung nötig bei**: keine — alle CI-Gates grün (ruff + mypy + pytest backend; lint + tsc + vitest + e2e frontend). PR #153 offen für Review.
+- **Lektion**: **Orchestrator-Self-Review-Variante ist optimal für mechanische Tasks mit engem Plan.** Voller 3-Reviewer-Loop ist Overhead wenn (a) der Plan verbatim Code enthält und (b) der Orchestrator Zeit hat, zwischen Tasks Output zu lesen + SHA zu verifizieren. **Sanity-Check Subagent-Deviations im Self-Review:** wenn ein Subagent von der Spec abweicht "um den Test grün zu bekommen", fast immer ist der Test der Bug, nicht die Production-Logic — separater Hotfix-Commit dokumentiert die Korrektur sauber.
+- **Autor**: Sheyla Sampietro (mit Claude Code)
+
+## 2026-05-28 · LLM-Universe-Wizard — Claude Haiku für Universe-Vorschläge (PR #152)
+- **Agent**: Claude Code (Opus 4.7 als Orchestrator + Sonnet 4.6 für Implementer-Subagents)
+- **Scope**: 4-Task-Plan. Backend: `UniverseSuggestionService` (wrapt `LLMClient.messages_create()` mit Tool-use + Pydantic-Output-Schema, analog Narrative-Engine), neuer Endpoint `POST /api/v1/universes/suggest` (422 bei Empty, 502 bei Invalid LLM Output), zwei Jinja2-Prompts. Frontend: `/universes/wizard` Single-Turn-Page mit Freitext-Eingabe → LLM-Vorschlag → pre-filled Form zum Editieren → Erstellen via existing endpoint. Killer-Feature-Story für Demo: "PRISMA hilft auch das Universum zu definieren."
+- **Was gut lief**: Tool-use-Pattern + Pydantic-Schema-Validation (analog Narrative-Engine) gab strukturierten Output ohne Freitext-Parsing-Risiko. Stock-Katalog-Whitelist im System-Prompt verhinderte LLM-Halluzination von nicht-existenten Tickers — wenn LLM erfindet, Schema-Validation catched es als 502.
+- **Was nicht klappte**: Initial-Spec hatte Multi-Turn-Dialog ("erst Region, dann Sektor, dann Anzahl") — beim Discuss-Phase-Schritt verworfen zugunsten Single-Turn-Freitext (einfacher UX, weniger State, Demo-tauglicher). Lieber später erweitern wenn Multi-Turn wirklich gebraucht wird.
+- **Nachbearbeitung nötig bei**: UX-Lücke: Wizard war nur via direkter URL erreichbar — nach Demo-Polish-Run (2026-05-29) "Mit KI generieren"-Button auf /universes-Page ergänzt.
+- **Lektion**: **Discuss-Phase fängt YAGNI-Features.** Multi-Turn-Wizard sah in Spec spannend aus, aber im Discuss-Schritt zeigte sich: Single-Turn deckt 90% der Demo-Use-Cases, Multi-Turn würde Demo-Story komplizieren. **LLM-Output-Validation via Pydantic + Whitelist** ist robusterer als Prompt-Engineering allein — Whitelist garantiert keine Halluzinationen, Schema garantiert kein Format-Drift.
+- **Autor**: Sheyla Sampietro (mit Claude Code)
+
+## 2026-05-28 · Tech-Heavy-Demo-Katalog erweitert + Tech-Big-12-Universe (PR #151)
+- **Agent**: Claude Code (Sonnet 4.6, inline ohne Subagent-Split)
+- **Scope**: 6 neue Tech-Ticker (META, NFLX, AMD, INTC, ORCL, CRM) mit plausiblen Demo-Fundamentals in `StubFundamentalsProvider`. AMZN+TSLA waren via Migration 0009b in DB, aber Provider-Fundamentals fehlten → ergänzt. Idempotentes `scripts/seed_tech_catalog.py` legt die 6 neuen Stocks + Tech-Big-12-Universe (12 Tickers) an. Demo-Pool wächst von 5 auf 12 Tech-Stocks pro Run.
+- **Was gut lief**: Idempotenz im Seed-Script (Upsert-Pattern via `merge()`-Calls) erlaubt mehrfaches Ausführen ohne UniqueConstraint-Violations — wichtig wenn DB lokal mal teilweise restored wird. Plausible Demo-Fundamentals (P/E, ROE, FCF-Yield etc.) statt Random-Zahlen damit die Rankings realistisch aussehen.
+- **Was nicht klappte**: Keine größeren Issues — kleiner mechanischer Task. Drittes Universum "Semiconductor Leaders" wurde via separates Manual-Seeding nachträglich angelegt, statt im Script.
+- **Nachbearbeitung nötig bei**: keine — Seed-Script ist optional vor Demo-Probe ausführbar.
+- **Lektion**: **Demo-Daten sind eigener Engineering-Task, kein "schnell mal einfügen".** Plausible Fundamentals + Idempotenz machen Demos reproduzierbar. Stub-Provider muss alle DB-Stocks abdecken, sonst kommt es zu silent Ranking-Lücken.
+- **Autor**: Sheyla Sampietro (mit Claude Code)
+
+## 2026-05-28 · Dashboard-Stats — 4 Karten über Runs-Tabelle (Frontend-Backlog Priorität 5, PR #150)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `/dashboard` um 4 Stats-Karten erweitert: Letzter Run (Datum + Status, Link zur Detail), # Universen (Link zu /universes), # Stocks, Top-Pick (Ticker des Rang-1 aus jüngstem completed Run, Sweet-Spot-Sparkles wenn anwendbar, Link zur Factsheet). Frontend-only — Aggregation aus existing APIs (`listRuns`, `listUniverses`, `listStocks`, `getRankings`).
+- **Was gut lief**: Mit `useQuery` + bestehende API-Clients in 6 Commits durchgezogen, keine neue Backend-Arbeit nötig. Sweet-Spot-Pink-Akzent + Lucide-Sparkles geben dem Top-Pick visuelle Prominenz.
+- **Was nicht klappte**: Bekannter Backend-Bug `GET /api/v1/stocks?total=len(items)` (Router setzt `total` auf Page-Length, nicht echten DB-Count). Im PR als "Workaround mit limit=200 + items.length" dokumentiert — Workaround war aber `listStocks(1, 0)`, was den Bug nicht umgeht (items.length=1). Beim Demo-Polish-Run am 2026-05-29 entdeckt: Stocks-Card zeigte konstant "1" statt 13 → Follow-up-Fix in Commit `8fa5971` (auf `listStocks(200, 0)` umgestellt).
+- **Nachbearbeitung nötig bei**: Backend-Fix für korrekten Stocks-Count via `count(*)` SQL-Query wäre saubererer Endstand (separate Issue).
+- **Lektion**: **PR-Body-Workaround-Behauptungen lesen, aber im Code verifizieren.** Der PR dokumentierte korrekt "limit=200 nutzen", aber der tatsächliche Code-Stand war `limit=1`. Wer das nur per PR-Body geprüft hätte, hätte den Bug nicht gefangen. Sanity-Check via Demo-Run-Through bleibt unersetzlich.
+- **Autor**: Sheyla Sampietro (mit Claude Code)
+
+## 2026-05-28 · Mobile-Nav-Header — `flex-col` auf <640px statt Cutoff (PR #149)
+- **Agent**: Claude Code (Sonnet 4.6, inline)
+- **Scope**: Pre-existing Mobile-Bug behoben: globale Nav (`Dashboard | Universen | Rankings | Backtest`) lief auf <640px horizontal über den Viewport-Rand hinaus, "Backtest" komplett unsichtbar. Fix: Header wechselt auf Mobile zu `flex-col` (Logo eigene Zeile, Links darunter), bleibt ab `sm:` horizontal. CSS-only, kein State, keine neue Logik. 2 Commits (Fix + ein winziger Cleanup).
+- **Was gut lief**: 1-File-Tailwind-Class-Swap, ~10min total inkl. visueller Verifikation per Mobile-Viewport im Browser. Kleinster Diff aller Demo-Branch-PRs.
+- **Was nicht klappte**: Nichts. Klassischer Mobile-Cutoff-Fix.
+- **Nachbearbeitung nötig bei**: keine.
+- **Lektion**: **Mobile-Viewport-Test gehört in den UAT jedes neuen Page-Layouts.** Der Bug war seit Wochen unentdeckt, weil niemand die Demo auf <640px geprüft hat. Sheylas spontaner "schau mal aufs Handy"-Test fand ihn.
+- **Autor**: Sheyla Sampietro (mit Claude Code)
+
 ## 2026-05-28 · Memo-Drilldown — Sheet von Rankings-Tabelle + MemoPanel füllen (Frontend-Backlog Priorität 1)
 - **Agent**: Claude Code (Opus 4.7 als Orchestrator + Sonnet 4.6 für Implementer/Reviewer-Subagents + Haiku 4.5 für Trivial-Tasks)
 - **Scope**: Spec → Plan → 11-Task-Subagent-Driven-Execution. Backend: `RankingItem.stock_id` (Optional, Backwards-Compat) + JSONB-Befüllung via `StockService`-Lookup mit Warning-Log auf unbekannte Tickers. Frontend: vollständiges Memo-Schema-Mirror, `useStockMemo` Tanstack-Query-Hook, `MemoContent`-Präsentation (Hero/Sweet-Spot/Stärken+Risiken/Widersprüche/Interpretation/Meta), `MemoSheet` Slide-In-Wrapper mit State-Machine, `MemoEmpty`/`MemoErrorCard` Sub-States, `RankingsTable` Row-Click-Integration mit `stopPropagation` auf Ticker-Link, `MemoPanel`-Stub-Replacement auf Factsheet-Page (gemeinsame Komponenten). Killer-Feature für Capstone-Demo: Memo unsichtbar → Memo demoable in 13 atomaren Commits.

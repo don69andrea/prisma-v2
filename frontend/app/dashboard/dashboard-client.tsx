@@ -55,7 +55,7 @@ export function DashboardClient() {
 
   const stocksTotalQuery = useQuery({
     queryKey: ['stocks-total'],
-    queryFn: () => listStocks(1, 0),
+    queryFn: () => listStocks(200, 0),
   });
 
   const latestCompletedRun = runs?.find((r) => r.status === 'completed') ?? null;

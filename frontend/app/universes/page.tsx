@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus, XCircle } from 'lucide-react';
+import { Plus, Sparkles, XCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
@@ -35,12 +35,20 @@ export default function UniversesPage() {
             Aktien-Universen verwalten — Basis für jeden Ranking-Run.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/universes/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Neues Universum
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/universes/wizard">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Mit KI generieren
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/universes/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Neues Universum
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card>

@@ -124,3 +124,8 @@ tests/fixtures/llm/*.large.json
 # - prisma-capstone/-Subordner ist eine Repo-Copy von einem versehentlichen Clone
 /package-lock.json
 /prisma-capstone/
+
+# Demo-Polish-Screenshots & Playwright-MCP-Artifacts (lokal, nicht committen)
+.playwright-mcp/
+demo-polish-*.png
+

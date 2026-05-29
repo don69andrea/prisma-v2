@@ -20,28 +20,44 @@ Sichtbare Nachweise gegen das Capstone-Bewertungsraster (Stand: 2026-05-17).
 | **CD-Workflow** | `workflow_dispatch` → Render Deploy Hook (Backend / Frontend / beide) | [`.github/workflows/cd-render.yml`](./.github/workflows/cd-render.yml) |
 | **Deployment** | Live auf Render (Free-Plan) | Frontend: [prisma-frontend-jrto.onrender.com](https://prisma-frontend-jrto.onrender.com) · Backend: [prisma-backend-7ai7.onrender.com/health](https://prisma-backend-7ai7.onrender.com/health) · Config: [`render.yaml`](./render.yaml) |
 | **API-Docs** | OpenAPI/Swagger automatisch generiert (FastAPI) | [prisma-backend-7ai7.onrender.com/docs](https://prisma-backend-7ai7.onrender.com/docs) |
-| **AI-Usage-Log** | Reflexion pro PR mit Agent / Patterns / Lehren — 40%-Bewertungsachse | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) (>15 Einträge, Pattern-Sektion mit Evidenz-Links) |
+| **AI-Usage-Log** | Reflexion pro PR mit Agent / Patterns / Lehren — 40%-Bewertungsachse | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) (>20 Einträge, Pattern-Sektion mit Evidenz-Links) |
+| **Demo-Skript** | Strukturierter Walk-Through für Live-Demo mit Q&A-Prep | [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md) |
 
 ### Demo-Flow
 
-End-to-End mit der ausgelieferten UI:
+Empfohlener End-to-End-Walk-Through (~10-15min, ausführliches Skript in [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md)):
 
-1. **Health-Check** — `/` zeigt API-Health-Badge (Backend-Connectivity).
-2. **Neues Universum anlegen** — `/universes/new` → Name, Region, Ticker → Eintrag erscheint in `/universes`.
-3. **Ranking starten** — `/rankings` → Universe wählen → "Run starten" (~5-60s je nach Universe-Grösse).
-4. **Ergebnis lesen** — `/rankings/[runId]` zeigt 9-Spalten-Tabelle: Rank · Ticker · Avg · Sweet-Spot · 5 Modell-Ranks. Sweet-Spot-Aktien markiert per Badge.
+**Akt 1 — Universe definieren**
+1. **Dashboard** (`/`) — 4 Stats-Karten: Letzter Run, Anzahl Universen, Anzahl Stocks, Top-Pick mit Sweet-Spot-Indikator. Direkt-Link zum Ranking-Form.
+2. **Universen** (`/universes`) — drei vordefinierte Universen sichtbar (Demo-US-5, Semiconductor Leaders, Tech-Big-12).
+3. **LLM-Wizard** (`/universes/wizard`) — Freitext-Eingabe wie *"Halbleiter und KI-Stocks aus den USA"* → Claude Haiku schlägt Tickers aus der katalogweiten Whitelist vor (keine Halluzinationen), Pre-Filled Form zum Editieren.
 
-Selber Flow läuft als Playwright-Test in CI (`frontend/e2e/rankings.spec.ts`, Tests 1-3).
+**Akt 2 — Ranking + Drilldown**
+4. **Rankings** (`/rankings`) — Form zum Run-Start + Liste vergangener Runs.
+5. **Ergebnis** (`/rankings/[runId]`) — Top-10-Cards mit Sweet-Spot-Sternen, Bar-Chart der gewichteten Composite-Scores, vollständige Tabelle mit Per-Modell-Rängen + Tooltips pro Modell-Spalte.
+6. **Factsheet** (`/rankings/[runId]/stock/[ticker]`) — Klick auf Ticker öffnet 5 Modell-Karten mit Q1-Badges, Kurschart (1 Jahr), strukturiertes Research-Memo (Claude-generiert, Pydantic-validiert) oder "Memo generieren"-Button.
+
+**Akt 3 — Robustheits-Check**
+7. **Run-Vergleich** (`/rankings/compare?a=&b=`) — Zwei Runs via Checkbox auswählen → Side-by-Side mit Δ Rank (grün ↑ / rot ↓ / grau ·) und Δ Score. Cross-Universe-Modus zeigt Schnittmenge + Counts (gemeinsam / nur A / nur B).
+
+Optional: **Backtest** (`/backtest`) — Top-N-Picks gegen Benchmark (S&P 500, SMI) simulieren mit Sharpe, MaxDrawdown, annualisierter Rendite.
+
+Selber Flow läuft als Playwright-Tests in CI (`frontend/e2e/`, 7 Spec-Files).
 
 > **Hinweis Free-Tier**: Der Render-Free-Plan schläft Services nach 15 min Inaktivität ein. Erster Request nach Pause kann 30-60s dauern (Cold-Start). Aggressive Browser-Adblocker (uBlock Origin, Brave Shields o.ä.) können Requests zu `*.onrender.com` blocken — Test in Inkognito empfohlen.
 
 ## Features
 
 - **Quant Core**: 5 Modelle (Quality Classic, Alpha, Trend Momentum / EWMA, Value Alpha Potential, Diversification / Ledoit-Wolf)
-- **Narrative Engine**: LLM-generierte, strukturierte Research-Memos (Claude API + Pydantic-Schema)
+- **LLM-Universe-Wizard**: Claude Haiku schlägt aus Stock-Katalog passende Universen vor — Whitelist-constrained, Pydantic-validiert, keine Halluzinationen
+- **Narrative Engine**: LLM-generierte, strukturierte Research-Memos pro Top-Pick (Claude Sonnet + Tool-Use + Pydantic-Schema)
+- **Memo-Drilldown**: Klick auf Ticker im Ranking öffnet Factsheet mit dem strukturierten Memo (Stärken, Risiken, Widersprüche zwischen Modellen, One-Liner)
 - **Multi-Agent Deep-Dive**: Fundamentals / Sentiment / Synthesizer-Agenten für Top-10
 - **MCP-Server**: PRISMA als Tool aus Claude Desktop nutzbar
 - **Backtest**: Benchmark-Vergleich mit Sharpe, MaxDD, annualisierter Rendite
+- **Run-History + Vergleich**: Vergangene Runs auswählen und Side-by-Side vergleichen (Δ Rank, Δ Score, Same/Cross-Universe-Erkennung)
+- **Dashboard-Stats**: 4 Karten + Runs-Tabelle als Startseite
+- **Mobile-Responsive**: Header passt sich an <640px-Viewports an (stacked statt cutoff)
 
 ## Stack
 
@@ -95,10 +111,16 @@ Ausführliche Setup-Anleitung + Troubleshooting: **[docs/getting-started.md](./d
 ## Demo-Daten
 
 ```bash
-python scripts/seed_demo_universe.py   # legt "Demo-US-5" mit AAPL/MSFT/GOOGL/NVDA/JPM an
+# Demo-US-5 (5 Tickers — AAPL/MSFT/GOOGL/NVDA/JPM)
+python scripts/seed_demo_universe.py
+
+# Tech-Big-12 (12 Tech-Tickers — empfohlen für reichhaltige Demo)
+python scripts/seed_tech_catalog.py
 ```
 
-Idempotent — mehrfaches Ausführen erzeugt keine Duplikate.
+Beide Skripte sind idempotent — mehrfaches Ausführen erzeugt keine Duplikate.
+
+Für die Run-Vergleich-Demo: nach Seed mindestens 2 Runs starten (einmal Tech-Big-12, einmal Demo-US-5), damit der Compare-Flow Cross-Universe-Differenzen zeigt.
 
 ## RAG-Ingestion (einmalig)
 

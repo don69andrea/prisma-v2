@@ -5,6 +5,7 @@ import type { RankingItem } from '@/lib/api/runs';
 
 function item(ticker: string, rank: number, score: number): RankingItem {
   return {
+    stock_id: null,
     ticker,
     total_rank: rank,
     weighted_avg: score,
@@ -54,7 +55,7 @@ describe('buildCompareRows', () => {
   it('filters items with null rank or null score', () => {
     const a: RankingItem[] = [
       item('AAPL', 1, 0.9),
-      { ticker: 'MSFT', total_rank: null, weighted_avg: 0.8, is_sweet_spot: false, per_model_ranks: {} },
+      { stock_id: null, ticker: 'MSFT', total_rank: null, weighted_avg: 0.8, is_sweet_spot: false, per_model_ranks: {} },
     ];
     const b: RankingItem[] = [
       item('AAPL', 1, 0.9),
@@ -93,7 +94,7 @@ describe('buildCompareStats', () => {
   it('ignores items with null rank when counting stats', () => {
     const a: RankingItem[] = [
       item('AAPL', 1, 0.9),
-      { ticker: 'PENDING', total_rank: null, weighted_avg: null, is_sweet_spot: false, per_model_ranks: {} },
+      { stock_id: null, ticker: 'PENDING', total_rank: null, weighted_avg: null, is_sweet_spot: false, per_model_ranks: {} },
     ];
     const b: RankingItem[] = [item('AAPL', 1, 0.9)];
 

@@ -30,6 +30,7 @@ describe('DashboardClient — StatsCards-Integration', () => {
         id: '11111111-1111-1111-1111-111111111111',
         status: 'completed',
         universe_id: 'uni-1',
+        universe_name: 'Test-Universe',
         created_at: '2026-05-28T10:00:00Z',
       },
     ]);
@@ -79,6 +80,7 @@ describe('DashboardClient — StatsCards-Integration', () => {
         id: '11111111-1111-1111-1111-111111111111',
         status: 'pending',
         universe_id: 'uni-1',
+        universe_name: 'Test-Universe',
         created_at: '2026-05-28T10:00:00Z',
       },
     ]);

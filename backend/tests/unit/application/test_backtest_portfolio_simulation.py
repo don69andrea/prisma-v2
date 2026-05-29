@@ -92,7 +92,7 @@ def test_simulate_portfolio_within_month_drift_diverges_from_5050() -> None:
     prices = pd.DataFrame(
         {
             "A": np.linspace(100.0, 200.0, n),  # +100% innerhalb Jan, monoton
-            "B": [100.0] * n,                    # flat
+            "B": [100.0] * n,  # flat
         },
         index=idx,
     )

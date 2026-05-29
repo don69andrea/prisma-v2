@@ -38,14 +38,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
           <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-14 items-center">
+            <div className="container flex flex-col gap-2 py-2 sm:h-14 sm:flex-row sm:items-center sm:gap-0 sm:py-0">
               <Link
                 href="/"
-                className="mr-8 flex items-center gap-2 font-bold tracking-tight text-foreground"
+                className="flex items-center gap-2 font-bold tracking-tight text-foreground sm:mr-8"
               >
                 <span className="text-lg font-black uppercase tracking-widest">PRISMA</span>
               </Link>
-              <nav className="flex items-center gap-6 text-sm">
+              <nav className="flex items-center gap-4 text-sm sm:gap-6">
                 {navLinks.map((link) => (
                   <Link
                     key={`${link.href}-${link.label}`}

@@ -32,6 +32,7 @@ const sampleRun: RunResponse = {
   id: 'run-42',
   status: 'completed',
   universe_id: 'u-1',
+  universe_name: 'SMI',
   created_at: '2026-05-17T12:00:00Z',
 };
 

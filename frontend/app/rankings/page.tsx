@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RankingsForm } from './rankings-form';
+import { RunHistoryList } from './run-history-list';
 
 export const metadata: Metadata = {
   title: 'Rankings',
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function RankingsPage() {
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Ranking starten</h1>
         <p className="text-muted-foreground text-sm">
@@ -25,6 +26,8 @@ export default function RankingsPage() {
           <RankingsForm />
         </CardContent>
       </Card>
+
+      <RunHistoryList />
     </div>
   );
 }

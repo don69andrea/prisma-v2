@@ -6,6 +6,7 @@ export interface RunResponse {
   id: string;
   status: RankingRunStatus;
   universe_id: string;
+  universe_name: string;
   created_at: string;
 }
 

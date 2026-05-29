@@ -5,6 +5,7 @@ import type { RankingItem } from '@/lib/api/runs';
 
 function makeItem(ticker: string, rank: number | null, avg: number | null = 0): RankingItem {
   return {
+    stock_id: null,
     ticker,
     total_rank: rank,
     weighted_avg: avg,

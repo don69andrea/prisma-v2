@@ -13,7 +13,9 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
+from backend.application.services.stock_service import StockService
 from backend.domain.entities.ranking_run import RankingRun
+from backend.domain.entities.stock import Stock
 from backend.domain.entities.universe import Universe
 from backend.domain.models.quality_classic import UniverseData
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
@@ -26,8 +28,30 @@ from backend.interfaces.rest.dependencies import (
     get_fundamentals_provider,
     get_market_data_provider,
     get_ranking_run_repository,
+    get_stock_service,
     get_universe_repository,
 )
+
+
+class _InMemoryStockService(StockService):
+    """Test-Double — vermeidet DB-backed StockRepository im Integration-Test."""
+
+    _NS = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+    def __init__(self, tickers: list[str]) -> None:
+        self._by_ticker: dict[str, Stock] = {
+            t.upper(): Stock(
+                id=uuid.uuid5(self._NS, t.upper()),
+                ticker=t.upper(),
+                name=f"Stub {t.upper()}",
+                currency="USD",
+            )
+            for t in tickers
+        }
+
+    async def get_by_ticker(self, ticker: str) -> Stock | None:
+        return self._by_ticker.get(ticker.upper())
+
 
 pytestmark = pytest.mark.integration
 
@@ -129,11 +153,14 @@ async def http_client() -> AsyncGenerator[AsyncClient, None]:
     fundamentals_provider = StubFundamentalsProvider()
     market_data_provider = FixedDateStubMarketDataProvider()
 
+    stock_service = _InMemoryStockService(list(_DEMO_UNIVERSE.tickers))
+
     app = create_app()
     app.dependency_overrides[get_universe_repository] = lambda: universe_repo
     app.dependency_overrides[get_ranking_run_repository] = lambda: run_repo
     app.dependency_overrides[get_fundamentals_provider] = lambda: fundamentals_provider
     app.dependency_overrides[get_market_data_provider] = lambda: market_data_provider
+    app.dependency_overrides[get_stock_service] = lambda: stock_service
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:

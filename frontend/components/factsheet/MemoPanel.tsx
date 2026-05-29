@@ -1,23 +1,46 @@
+'use client';
+
 import { FileText } from 'lucide-react';
 
+import { useStockMemo } from '@/lib/hooks/useStockMemo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MemoContent } from './MemoContent';
+import { MemoEmpty } from './MemoEmpty';
+import { MemoErrorCard } from './MemoErrorCard';
 
-export function MemoPanel() {
+interface Props {
+  stockId: string;
+  runId: string;
+}
+
+export function MemoPanel({ stockId, runId }: Props) {
+  const { memo, isLoading, isError, error, generate, isGenerating } = useStockMemo(
+    stockId,
+    runId,
+  );
+
   return (
-    <Card className="border-dashed bg-muted/30">
-      <CardHeader className="pb-2">
+    <Card>
+      <CardHeader className="pb-3">
         <CardTitle className="text-base font-medium flex items-center gap-2">
           <FileText className="h-4 w-4 text-muted-foreground" />
           Research Memo
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col items-center justify-center py-8 gap-2 text-center text-muted-foreground">
-          <FileText className="h-8 w-8 opacity-30" />
-          <p className="text-sm">
-            KI-Memo noch nicht verfügbar — Layer-1-Integration folgt.
+        {isLoading && <div className="h-24 rounded-lg bg-muted animate-pulse" />}
+        {!isLoading && isError && (
+          <p className="text-sm text-destructive" role="alert">
+            Memo konnte nicht geladen werden: {error?.message ?? 'Unbekannter Fehler'}
           </p>
-        </div>
+        )}
+        {!isLoading && !isError && memo === null && (
+          <MemoEmpty onGenerate={generate} isGenerating={isGenerating} />
+        )}
+        {!isLoading && !isError && memo && memo.is_error && (
+          <MemoErrorCard memo={memo} onRegenerate={generate} isGenerating={isGenerating} />
+        )}
+        {!isLoading && !isError && memo && !memo.is_error && <MemoContent memo={memo} />}
       </CardContent>
     </Card>
   );

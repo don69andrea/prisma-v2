@@ -162,12 +162,14 @@ async def get_ranking_run_service(
     run_repo: RankingRunRepository = Depends(get_ranking_run_repository),
     fundamentals_provider: FundamentalsProvider = Depends(get_fundamentals_provider),
     market_data_provider: MarketDataProvider = Depends(get_market_data_provider),
+    stock_service: StockService = Depends(get_stock_service),
 ) -> RankingRunService:
     return RankingRunService(
         universe_repo=universe_repo,
         run_repo=run_repo,
         fundamentals_provider=fundamentals_provider,
         market_data_provider=market_data_provider,
+        stock_service=stock_service,
     )
 
 

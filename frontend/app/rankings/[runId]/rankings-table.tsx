@@ -19,6 +19,7 @@ import type { RankingItem } from '@/lib/api/runs';
 import { InfoPopover } from '@/components/InfoPopover';
 import { ModelInfoIcon } from '@/components/ModelInfoIcon';
 import { MODEL_INFO, SWEET_SPOT_DEFINITION, getSweetSpotModels, type ModelKey } from '@/lib/model-info';
+import { MemoSheet } from '@/components/factsheet/MemoSheet';
 
 const MODEL_COLUMNS: Array<{ key: ModelKey; label: string }> = [
   { key: 'quality_classic', label: 'Quality' },
@@ -125,6 +126,7 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
   const [sortKey, setSortKey] = useState<SortKey>('total_rank');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [filter, setFilter] = useState('');
+  const [selectedStock, setSelectedStock] = useState<{ stockId: string; ticker: string } | null>(null);
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -218,21 +220,39 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
           </TableHeader>
           <TableBody>
             {displayItems.map((item) => (
-              <TableRow key={item.ticker} className="cursor-pointer hover:bg-muted/50">
+              <TableRow
+                key={item.ticker}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => {
+                  if (item.stock_id) {
+                    setSelectedStock({ stockId: item.stock_id, ticker: item.ticker });
+                  }
+                }}
+              >
                 <TableCell>
-                  <Link href={ROUTES.factsheet(runId, item.ticker)} className="block w-full">
+                  <Link
+                    href={ROUTES.factsheet(runId, item.ticker)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="block w-full"
+                  >
                     {formatNumber(item.total_rank)}
                   </Link>
                 </TableCell>
                 <TableCell className="font-mono">
-                  <Link href={ROUTES.factsheet(runId, item.ticker)} className="block w-full">
+                  <Link
+                    href={ROUTES.factsheet(runId, item.ticker)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="block w-full"
+                  >
                     {item.ticker}
                   </Link>
                 </TableCell>
                 <TableCell>{formatNumber(item.weighted_avg, 2)}</TableCell>
                 <TableCell>
                   {item.is_sweet_spot ? (
-                    <SweetSpotBadge ticker={item.ticker} perModelRanks={item.per_model_ranks} totalStocks={items.length} />
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <SweetSpotBadge ticker={item.ticker} perModelRanks={item.per_model_ranks} totalStocks={items.length} />
+                    </span>
                   ) : null}
                 </TableCell>
                 {MODEL_COLUMNS.map((col) => (
@@ -245,6 +265,16 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
           </TableBody>
         </Table>
       )}
+
+      <MemoSheet
+        stockId={selectedStock?.stockId ?? null}
+        runId={runId}
+        ticker={selectedStock?.ticker ?? ''}
+        open={selectedStock !== null}
+        onOpenChange={(o) => {
+          if (!o) setSelectedStock(null);
+        }}
+      />
     </div>
   );
 }

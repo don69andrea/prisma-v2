@@ -24,6 +24,7 @@ vi.mock('next/navigation', () => ({
 
 function makeItem(ticker: string, rank: number): RankingItem {
   return {
+    stock_id: null,
     ticker,
     total_rank: rank,
     weighted_avg: rank,

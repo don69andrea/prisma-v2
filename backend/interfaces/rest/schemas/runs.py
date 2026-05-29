@@ -52,6 +52,7 @@ class RunResponse(BaseModel):
 
 
 class RankingItem(BaseModel):
+    stock_id: UUID | None = None
     ticker: str
     total_rank: int | None
     weighted_avg: float | None

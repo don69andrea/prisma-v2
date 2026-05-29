@@ -1,11 +1,13 @@
 """RankingRunService — orchestriert Erstellung und Ausführung von Ranking-Läufen."""
 
 import asyncio
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
 from backend.application.services.ranking_aggregator import RankingAggregator
+from backend.application.services.stock_service import StockService
 from backend.domain.entities.ranking_run import RankingRun
 from backend.domain.entities.universe import WeightConfig
 from backend.domain.models.alpha import AlphaModel
@@ -17,6 +19,8 @@ from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
+
+_logger = logging.getLogger(__name__)
 
 
 class UniverseNotFound(Exception):
@@ -38,11 +42,13 @@ class RankingRunService:
         run_repo: RankingRunRepository,
         fundamentals_provider: FundamentalsProvider,
         market_data_provider: MarketDataProvider,
+        stock_service: StockService,
     ) -> None:
         self._universe_repo = universe_repo
         self._run_repo = run_repo
         self._fundamentals_provider = fundamentals_provider
         self._market_data_provider = market_data_provider
+        self._stock_service = stock_service
 
     async def create_and_execute_run(
         self,
@@ -84,9 +90,24 @@ class RankingRunService:
             for model_name, results in per_model.items()
         }
 
+        tickers_in_results = [r.ticker for r in total_results]
+        stock_id_by_ticker: dict[str, str | None] = {}
+        for ticker in tickers_in_results:
+            stock = await self._stock_service.get_by_ticker(ticker)
+            if stock is None:
+                _logger.warning(
+                    "stock_id lookup failed for ticker %s in run %s — Memo-Drilldown will be disabled for this row",
+                    ticker,
+                    run.id,
+                )
+                stock_id_by_ticker[ticker] = None
+            else:
+                stock_id_by_ticker[ticker] = str(stock.id)
+
         results: list[dict[str, Any]] = sorted(
             [
                 {
+                    "stock_id": stock_id_by_ticker[r.ticker],
                     "ticker": r.ticker,
                     "total_rank": r.total_rank,
                     "weighted_avg": r.weighted_avg,

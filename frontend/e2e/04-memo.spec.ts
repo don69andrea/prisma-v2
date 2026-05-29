@@ -4,11 +4,20 @@ const FIXTURE_MEMO = {
   id: "00000000-0000-0000-0000-000000000099",
   stock_id: "11111111-1111-1111-1111-111111111111",
   model_run_id: "00000000-0000-0000-0000-000000000001",
-  content:
-    "AAPL ist ein führendes Technologieunternehmen mit starker Marktposition. " +
-    "Die fundamentalen Kennzahlen zeigen solide Profitabilität und stabiles Wachstum.",
   language: "de",
+  one_liner:
+    "AAPL ist ein führendes Technologieunternehmen mit starker Marktposition.",
+  ranking_interpretation:
+    "Die fundamentalen Kennzahlen zeigen solide Profitabilität und stabiles Wachstum.",
+  sweet_spot: false,
+  sweet_spot_explanation: null,
+  contradictions: [],
+  key_strengths: [],
+  key_risks: [],
+  confidence: "high",
+  model_version: "claude-sonnet-4-6",
   created_at: new Date().toISOString(),
+  is_error: false,
 };
 
 test("Memo anfordern und Research-Memo anzeigen", async ({ page, request }) => {

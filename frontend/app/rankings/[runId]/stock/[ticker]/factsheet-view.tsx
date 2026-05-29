@@ -22,7 +22,7 @@ interface Props {
   ticker: string;
 }
 
-export function FactsheetView({ ticker }: Props) {
+export function FactsheetView({ ticker, runId }: Props) {
   const factsheetQuery = useQuery({
     queryKey: ['factsheet', ticker],
     queryFn: () => getFactsheet(ticker),
@@ -96,7 +96,7 @@ export function FactsheetView({ ticker }: Props) {
       )}
       {pricesQuery.isLoading && <SkeletonCard className="h-72" />}
 
-      <MemoPanel />
+      <MemoPanel stockId={stock.id} runId={runId} />
     </div>
   );
 }

@@ -81,8 +81,9 @@ function FactsheetContent() {
             <CardTitle>Research-Memo</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* stub display — replaced by MemoPanel in Task 10 */}
             <p className="whitespace-pre-wrap text-sm" data-testid="memo-content">
-              {memo.content}
+              {memo.one_liner}
             </p>
           </CardContent>
         </Card>

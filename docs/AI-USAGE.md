@@ -132,6 +132,15 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-05-28 · Dashboard-Stats — 4 Karten über Runs-Tabelle (Backlog Priorität 5)
+- **Agent**: Claude Code (Opus 4.7 Orchestrator + Sonnet 4.6 Implementer-Subagents)
+- **Scope**: Frontend-only Erweiterung des `/dashboard`. Neue `StatsCards`-Komponente (Letzter Run, # Universen, # Stocks, Top-Pick mit Sweet-Spot-Pink) + DashboardClient-Integration mit 2 zusätzlichen Tanstack-Queries. 3-Task Subagent-Driven-Execution mit TDD-Pattern. Synergie mit Memo-Drilldown: Top-Pick-Klick führt direkt zum echten LLM-Memo.
+- **Was gut lief**: Spec-Schreiben war schnell weil das Dashboard schon halb-existierte (Runs-Tabelle aus PR #124) — Erweiterung statt Neuschreiben. Pre-Discovered-Context im Implementer-Prompt (existing `STATUS_VARIANT`/`STATUS_LABEL` patterns) eliminierte Duplikation. Schema-Synergie mit Memo-Drilldown's `stock_id`-Feature: Top-Pick-Link nutzt jetzt korrekt das neue UUID-Routing.
+- **Was nicht klappte**: Backend's `GET /api/v1/stocks` Router setzt `total=len(items)` — pre-existing Pagination-Bug. Bei `limit=1` ist `total=1` immer, unabhängig von DB-Inhalt. Frontend zeigte "Stocks: 1" statt korrekter 7. Fix als Frontend-Workaround (`limit=200` + `items.length`) statt Backend-Fix in diesem Slice (Scope-Disziplin). Backend-Fix (Repository.count()-Method) als Folge-PR vermerkt. Plus: Test-Mock musste angepasst werden weil mit dem Workaround `items.length` zählt statt `total`.
+- **Nachbearbeitung nötig bei**: Backend-Fix für `StockListResponse.total` (Repository.count()-Method) — pre-existing Bug, separater Follow-up-PR.
+- **Lektion**: **Pre-existing Bugs außerhalb des PR-Scopes lieber als Folge-Issue dokumentieren statt nicht-gefixt drin lassen.** Workaround-Comment im Code (`// Backend's total-Field ist buggy → items.length nutzen`) macht für künftige Wartung sofort klar wo der eigentliche Bug sitzt. Ehrlicher als stille Symptom-Behandlung.
+- **Autor**: Sheyla Sampietro (mit Claude Code)
+
 ## 2026-05-19 · Backtest `_simulate_portfolio` mit Drift + Monthly-Reset (Issue #140)
 - **Agent**: Claude Code (Opus 4.7)
 - **Scope**: `_simulate_portfolio` an Backtest-Light-Spec v1.1 §5 angeglichen. Bestehende Impl (`returns.mean(axis=1)`) war mathematisch ein taeglich-rebalanciertes Equal-Weight-Portfolio — entsprach NICHT der Spec (Drift + monatlicher Reset). Neuer Helper `_monthly_rebalance_dates` per `pd.Grouper(freq="ME")`. TDD-Workflow: 8 Unit-Tests in neuer Datei `test_backtest_portfolio_simulation.py` (Drift-, Reset-, Edge-Case- und Sanity-Tests), erst rot, dann Rewrite.

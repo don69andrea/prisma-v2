@@ -43,3 +43,16 @@ export function getFactsheet(ticker: string): Promise<StockFactsheet> {
 export function getPrices(ticker: string, days = 252): Promise<PriceSeriesResponse> {
   return apiFetch<PriceSeriesResponse>(`/api/v1/stocks/${ticker}/prices?days=${days}`);
 }
+
+export interface StockListResponse {
+  items: StockRead[];
+  total: number;
+}
+
+// Workaround: Backend's `total`-Field liefert `len(items)` (siehe stocks.py Router) —
+// bei kleinem `limit` falsch. Default-limit auf Max (200) gesetzt, damit
+// `items.length` als verlässlicher Count im Dashboard nutzbar ist. Backend-Fix
+// (echter count() im Repository) als Folge-PR.
+export function listStocks(limit = 200, offset = 0): Promise<StockListResponse> {
+  return apiFetch<StockListResponse>(`/api/v1/stocks?limit=${limit}&offset=${offset}`);
+}

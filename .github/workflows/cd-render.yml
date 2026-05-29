@@ -37,7 +37,7 @@ jobs:
           status=$(echo "$response" | tail -n 1)
           echo "Backend Deploy Hook Status: $status"
           echo "Body: $body"
-          if [ "$status" != "200" ] && [ "$status" != "201" ]; then
+          if [ "$status" != "200" ] && [ "$status" != "201" ] && [ "$status" != "202" ]; then
             echo "::error::Render-Deploy-Hook failed (Backend)"
             exit 1
           fi
@@ -50,7 +50,7 @@ jobs:
           status=$(echo "$response" | tail -n 1)
           echo "Frontend Deploy Hook Status: $status"
           echo "Body: $body"
-          if [ "$status" != "200" ] && [ "$status" != "201" ]; then
+          if [ "$status" != "200" ] && [ "$status" != "201" ] && [ "$status" != "202" ]; then
             echo "::error::Render-Deploy-Hook failed (Frontend)"
             exit 1
           fi

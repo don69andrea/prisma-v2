@@ -192,10 +192,9 @@ class BacktestService:
         annual_vol = float(daily_returns.std() * math.sqrt(252)) if len(daily_returns) > 1 else 0.0
         sharpe = cagr / annual_vol if annual_vol > 0 else 0.0
 
-        rolling_max = portfolio.cummax()
-        max_drawdown = float(
-            ((rolling_max - portfolio) / rolling_max.replace(0, float("nan"))).max()
-        )
+        cummax = portfolio.cummax()
+        drawdown = (portfolio - cummax) / cummax.replace(0, float("nan"))
+        max_drawdown = float(drawdown.min())
 
         return PortfolioMetrics(
             total_return=Decimal(str(round(total_return, 6))),

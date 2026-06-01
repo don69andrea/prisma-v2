@@ -47,6 +47,12 @@ class UniverseListResponse(BaseModel):
     total: int
 
 
+class UniverseSyncResponse(BaseModel):
+    universe_id: UUID
+    synced_count: int
+    failed_tickers: list[str]
+
+
 class UniverseSuggestionRequest(BaseModel):
     description: str = Field(..., min_length=3, max_length=500)
 

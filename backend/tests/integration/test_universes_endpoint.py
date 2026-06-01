@@ -188,6 +188,55 @@ async def test_create_universe_blank_tickers_returns_422(http_client: AsyncClien
 
 
 # ---------------------------------------------------------------------------
+# Tests: POST /api/v1/universes/{id}/sync
+# ---------------------------------------------------------------------------
+
+
+async def test_sync_universe_returns_200(http_client: AsyncClient) -> None:
+    response = await http_client.post(f"/api/v1/universes/{_SMI_ID}/sync")
+    assert response.status_code == 200
+
+
+async def test_sync_universe_response_has_expected_fields(http_client: AsyncClient) -> None:
+    body = (await http_client.post(f"/api/v1/universes/{_SP500_ID}/sync")).json()
+    assert "universe_id" in body
+    assert "synced_count" in body
+    assert "failed_tickers" in body
+
+
+async def test_sync_universe_returns_correct_universe_id(http_client: AsyncClient) -> None:
+    body = (await http_client.post(f"/api/v1/universes/{_SMI_ID}/sync")).json()
+    assert body["universe_id"] == str(_SMI_ID)
+
+
+async def test_sync_universe_unknown_id_returns_404(http_client: AsyncClient) -> None:
+    response = await http_client.post(f"/api/v1/universes/{uuid.uuid4()}/sync")
+    assert response.status_code == 404
+
+
+async def test_sync_universe_sp500_synced_count_is_positive(http_client: AsyncClient) -> None:
+    """S&P-500-Subset (AAPL, MSFT) liegen im StubFundamentalsProvider — synced_count > 0."""
+    body = (await http_client.post(f"/api/v1/universes/{_SP500_ID}/sync")).json()
+    assert body["synced_count"] > 0
+    assert body["synced_count"] + len(body["failed_tickers"]) == 2  # SP500 hat 2 Tickers
+
+
+async def test_sync_universe_smi_tickers_not_in_stub_land_in_failed(
+    http_client: AsyncClient,
+) -> None:
+    """SMI-Tickers (NESN/NOVN/ROG) fehlen im StubFundamentalsProvider → alle failed."""
+    body = (await http_client.post(f"/api/v1/universes/{_SMI_ID}/sync")).json()
+    assert body["synced_count"] == 0
+    assert set(body["failed_tickers"]) == {"NESN", "NOVN", "ROG"}
+
+
+async def test_sync_universe_ticker_count_invariant(http_client: AsyncClient) -> None:
+    """synced_count + len(failed_tickers) == Anzahl Tickers im Universum (immer)."""
+    body = (await http_client.post(f"/api/v1/universes/{_SMI_ID}/sync")).json()
+    assert body["synced_count"] + len(body["failed_tickers"]) == 3  # SMI hat 3 Tickers
+
+
+# ---------------------------------------------------------------------------
 # Tests: POST /api/v1/universes/suggest
 # ---------------------------------------------------------------------------
 

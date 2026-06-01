@@ -140,8 +140,14 @@ async def get_universe_repository(
 
 async def get_universe_service(
     repository: UniverseRepository = Depends(get_universe_repository),
+    fundamentals_provider: FundamentalsProvider = Depends(get_fundamentals_provider),
+    market_data_provider: MarketDataProvider = Depends(get_market_data_provider),
 ) -> UniverseService:
-    return UniverseService(repository=repository)
+    return UniverseService(
+        repository=repository,
+        fundamentals_provider=fundamentals_provider,
+        market_data_provider=market_data_provider,
+    )
 
 
 async def get_ranking_run_repository(

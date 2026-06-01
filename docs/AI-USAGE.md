@@ -132,6 +132,14 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-05-26 · POST /api/v1/universes/{id}/sync — Ticker-Stocks-Sync (Issue #114, PR #133)
+- **Agent**: Claude Code (Sonnet 4.6) — superpowers:writing-plans + subagent-driven-development
+- **Scope**: `UniverseService.sync_universe()` + REST-Endpoint + 8 Integration-Tests. Service prüft Verfügbarkeit via FundamentalsProvider + MarketDataProvider, liefert `UniverseSyncResult(synced_count, failed_tickers)`.
+- **Was gut lief**: Clean-Architecture-Schichten sauber eingehalten (kein REST-Leak ins Application-Layer). DI-Pattern konsequent: Providers via `__init__`, Exception-Logging vorhanden.
+- **Was nicht klappte**: Test `test_sync_universe_synced_count_equals_ticker_count` verwendete SMI-Tickers (NESN/NOVN/ROG), die im `StubFundamentalsProvider` nicht existieren — `synced_count=0` war garantiert, aber der Test-Kommentar behauptete das Gegenteil. Reviewer-Feedback (SheylaSam + itsFabia) deckte auf, dass kein Test `synced_count > 0` verifiziierte. Fix: Test auf `_SP500_ID` (AAPL/MSFT, im Stub vorhanden) umgestellt + separaten Test für SMI-Fehlerpfad ergänzt.
+- **Nachbearbeitung nötig bei**: `test_universes_endpoint.py` (Sync-Tests), `universe_service.py` (Docstring).
+- **Autor**: Andrea Petretta (mit Claude Code)
+
 ## 2026-05-29 · Run-History — Liste auf /rankings + Compare-Page (Frontend-Backlog Priorität 6, PR #153)
 - **Agent**: Claude Code (Opus 4.7 als Orchestrator + Sonnet 4.6 für Implementer-Subagents)
 - **Scope**: Spec → Plan → 7-Task-Subagent-Driven-Execution mit Orchestrator-Self-Review-Variante. Backend: `RunResponse.universe_name` ergänzt (Router joint `UniverseRepository` mit `"(deleted)"`-Fallback). Frontend: `<RunHistoryList/>` mit Checkbox-FIFO (max 2 ausgewählt), `/rankings/compare?a=&b=` Page mit `<CompareBanner/>` (Same/Cross-Universe-Auto-Detection) + `<CompareTable/>` mit Δ-Visuals (grün ↑ / rot ↓ / grau ·). 23 neue Vitest + 6 neue Backend-Tests + 1 Playwright-E2E.

@@ -20,6 +20,7 @@ from backend.interfaces.rest.schemas.universe import (
     UniverseRead,
     UniverseSuggestionRequest,
     UniverseSuggestionResponse,
+    UniverseSyncResponse,
 )
 
 router = APIRouter(prefix="/api/v1/universes", tags=["universes"])
@@ -76,6 +77,26 @@ async def create_universe(
     )
     return UniverseRead(
         id=universe.id, name=universe.name, region=universe.region, tickers=list(universe.tickers)
+    )
+
+
+@router.post(
+    "/{universe_id}/sync",
+    response_model=UniverseSyncResponse,
+    summary="Ticker-Daten für ein Universum synchronisieren",
+)
+async def sync_universe(
+    universe_id: UUID,
+    service: UniverseService = Depends(get_universe_service),
+) -> UniverseSyncResponse:
+    try:
+        result = await service.sync_universe(universe_id=universe_id)
+    except UniverseNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return UniverseSyncResponse(
+        universe_id=result.universe_id,
+        synced_count=result.synced_count,
+        failed_tickers=result.failed_tickers,
     )
 
 

@@ -1,26 +1,11 @@
 """EmbeddingRepository-Port — Persistence + Retrieval fuer RAG-Pipeline."""
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Any
 from uuid import UUID
 
 from backend.domain.entities.document import Document
 from backend.domain.entities.embedding_chunk import EmbeddingChunk
-
-
-@dataclass(frozen=True)
-class RetrievalResult:
-    """Ein gefundener Chunk mit Ähnlichkeitsscore (1=identisch, 0=unverwandt)."""
-
-    chunk_id: UUID
-    document_id: UUID
-    chunk_idx: int
-    content: str
-    similarity: float
-    ticker: str
-    doc_type: str
-    metadata: dict[str, Any] = field(default_factory=dict)
+from backend.domain.entities.retrieval_result import RetrievalResult
 
 
 class DuplicateUrl(Exception):

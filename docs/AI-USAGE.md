@@ -813,3 +813,19 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Autor**: Sheyla Sampietro (mit Claude Code)
 
 <!-- Neue Einträge oben an die Liste anfügen. -->
+
+## 2026-05-26 · RAG-Kontext in NarrativeService + CI-Debugging (Issues #138, PR #146)
+- **Agent**: Claude Code (Sonnet 4.6) — systematic-debugging skill
+- **Scope**: Issue #138 DoD: NarrativeService.generate_memo() ruft RetrievalService.retrieve() auf, bettet 3–5 SEC-Filing-Chunks als `rag_context` in den LLM-Prompt ein. DI-Chain verdrahtet RetrievalService wenn VOYAGE_API_KEY gesetzt; graceful degradation bei Fehler. Gleichzeitig: 6 CI-Runs debuggt bis PR #146 grün war.
+- **Was gut lief**: NarrativeService-Integration war bereits vollständig implementiert (Konstruktor-Parameter, Prompt-Template-Block, Unit-Tests, DI-Chain) — durch sorgfältiges Code-Reading vor dem Plan-Schreiben entdeckt. systematic-debugging Skill verhinderte blinden 6. Fix-Versuch.
+- **Was nicht klappte**: CI hat 5× gefailed (vorherige Session) ohne Root-Cause-Analyse. In dieser Session: Root Cause systematisch isoliert — 3 unabhängige Schichten: (1) Test-Kontamination durch `test_embedding_repository.py` ohne Cleanup-Fixture, (2) pgvector NaN-Similarity bei Zero-Vektor-Mock `[0.0]*2048`, (3) Singleton-Engine hält asyncpg-Connections über pytest-function-Event-Loops → `RuntimeError: Task got Future attached to a different loop`.
+- **Lektion (wichtig für die 40%-Achse)**: **Wenn CI 3+ Mal failt: sofort Root-Cause analysieren, nicht weiterfixen.** `systematic-debugging` Skill erzwingt diesen Stop. Konkrete Werkzeuge: `gh run view --log-failed` zeigt exakte Fehlerzeilen; `git log --oneline` im CI-Log zeigt Test-Ausführungsreihenfolge; dann Hypothese → minimaler Fix → verifizieren. NullPool-Pattern für async SQLAlchemy in pytest ist Standard — `asyncio_default_test_loop_scope=function` + Singleton-Engine = cross-loop Bug.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-26 · RAG-Pipeline Slice 2+3 (Issue #18)
+
+- **Agent**: Claude Code (Haiku 4.5 + Subagent-Driven-Development)
+- **Scope**: 17-Task Implementation: Domain-Dataclass → RetrievalService → REST-Endpoint → 15 Tests + Ingestion-Script
+- **Was gut lief**: Erkannt dass Slice 1 >50% Infra bereits lieferte. Focused auf fehlende Teile. TDD natural. Subagent-Driven mit fresh context pro Task optimal für unabhängige Tasks.
+- **Was nicht klappte**: Anfängliches Code-Reading zu spät. Initial Branch-Organisation (commits auf falschen Branch). Ingestion-Script nur Stub-Level.
+- **Nachbearbeitung nötig bei**: Voyage-API-Integrationstests, Postgres halfvec-Casting robustness, E2E-Smoke gegen echtes EDGAR.

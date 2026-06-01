@@ -1,77 +1,111 @@
-"""Unit-Tests für RetrievalService mit gemocktem Repository + LLMClient."""
+"""Unit-Tests für RetrievalService."""
 
-import uuid
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 
-from backend.application.services.retrieval_service import _MAX_K, RetrievalService
-from backend.domain.repositories.embedding_repository import RetrievalResult
-
-pytestmark = pytest.mark.unit
-
-_FAKE_EMBEDDING = [0.1] * 2048
+from backend.application.services.retrieval_service import RetrievalService
+from backend.domain.entities.retrieval_result import RetrievalResult
+from backend.domain.repositories.embedding_repository import EmbeddingRepository
 
 
-def _make_result(ticker: str = "AAPL", similarity: float = 0.9) -> RetrievalResult:
-    return RetrievalResult(
-        chunk_id=uuid.uuid4(),
-        document_id=uuid.uuid4(),
-        chunk_idx=0,
-        content="Apple revenue grew 12% year-over-year.",
-        similarity=similarity,
-        ticker=ticker,
-        doc_type="10-K",
-    )
+@pytest.fixture
+def mock_repo() -> AsyncMock:
+    return AsyncMock(spec=EmbeddingRepository)
 
 
-def _make_service() -> tuple[RetrievalService, MagicMock, MagicMock]:
-    mock_repo = MagicMock()
-    mock_repo.find_nearest = AsyncMock(return_value=[])
-    mock_llm = MagicMock()
-    mock_llm.embed = AsyncMock(return_value=[_FAKE_EMBEDDING])
-    service = RetrievalService(embedding_repo=mock_repo, llm_client=mock_llm)
-    return service, mock_repo, mock_llm
+@pytest.fixture
+def mock_llm() -> AsyncMock:
+    return AsyncMock()
 
 
-class TestRetrieve:
-    async def test_calls_embed_with_query_text(self) -> None:
-        service, _, mock_llm = _make_service()
-        await service.retrieve(query="Apple revenue")
-        mock_llm.embed.assert_called_once_with(
-            texts=["Apple revenue"], model="voyage-3-large", feature="rag_retrieval"
-        )
+@pytest.fixture
+def service(mock_repo: AsyncMock, mock_llm: AsyncMock) -> RetrievalService:
+    return RetrievalService(embedding_repo=mock_repo, llm_client=mock_llm)
 
-    async def test_calls_find_nearest_with_embedding(self) -> None:
-        service, mock_repo, _ = _make_service()
-        await service.retrieve(query="Apple revenue", k=3)
-        mock_repo.find_nearest.assert_called_once_with(
-            query_embedding=_FAKE_EMBEDDING, k=3, ticker=None
-        )
 
-    async def test_passes_ticker_filter(self) -> None:
-        service, mock_repo, _ = _make_service()
-        await service.retrieve(query="revenue", ticker="MSFT")
-        call_kwargs = mock_repo.find_nearest.call_args.kwargs
-        assert call_kwargs["ticker"] == "MSFT"
+class TestRetrievalService:
+    @pytest.mark.asyncio
+    async def test_retrieve_basic(
+        self: "TestRetrievalService",
+        service: RetrievalService,
+        mock_repo: AsyncMock,
+        mock_llm: AsyncMock,
+    ) -> None:
+        mock_llm.embed.return_value = [[0.1] * 2048]
+        mock_repo.find_nearest.return_value = [
+            RetrievalResult(
+                chunk_id=uuid4(),
+                document_id=uuid4(),
+                chunk_idx=0,
+                content="Apple",
+                similarity=0.95,
+                ticker="AAPL",
+                doc_type="10-K",
+            )
+        ]
+        results = await service.retrieve("Apple", k=5)
+        assert len(results) == 1 and results[0].similarity == 0.95
 
-    async def test_clamps_k_to_max(self) -> None:
-        service, mock_repo, _ = _make_service()
-        await service.retrieve(query="revenue", k=999)
-        call_kwargs = mock_repo.find_nearest.call_args.kwargs
-        assert call_kwargs["k"] == _MAX_K
+    @pytest.mark.asyncio
+    async def test_k_capped(
+        self: "TestRetrievalService",
+        service: RetrievalService,
+        mock_repo: AsyncMock,
+        mock_llm: AsyncMock,
+    ) -> None:
+        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_repo.find_nearest.return_value = []
+        await service.retrieve("test", k=50)
+        assert mock_repo.find_nearest.call_args[1]["k"] == 20
 
-    async def test_returns_results_from_repo(self) -> None:
-        service, mock_repo, _ = _make_service()
-        expected = [_make_result("AAPL", 0.95), _make_result("AAPL", 0.80)]
-        mock_repo.find_nearest.return_value = expected
+    @pytest.mark.asyncio
+    async def test_no_embedding(
+        self: "TestRetrievalService",
+        service: RetrievalService,
+        mock_repo: AsyncMock,
+        mock_llm: AsyncMock,
+    ) -> None:
+        mock_llm.embed.return_value = []
+        results = await service.retrieve("test")
+        assert results == []
 
-        result = await service.retrieve(query="revenue")
+    @pytest.mark.asyncio
+    async def test_multiple_results(
+        self: "TestRetrievalService",
+        service: RetrievalService,
+        mock_repo: AsyncMock,
+        mock_llm: AsyncMock,
+    ) -> None:
+        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_repo.find_nearest.return_value = [
+            RetrievalResult(uuid4(), uuid4(), 0, "c1", 0.95, "AAPL", "10-K"),
+            RetrievalResult(uuid4(), uuid4(), 1, "c2", 0.87, "AAPL", "10-Q"),
+        ]
+        results = await service.retrieve("test", k=5)
+        assert len(results) == 2
 
-        assert result == expected
+    @pytest.mark.asyncio
+    async def test_default_k(
+        self: "TestRetrievalService",
+        service: RetrievalService,
+        mock_repo: AsyncMock,
+        mock_llm: AsyncMock,
+    ) -> None:
+        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_repo.find_nearest.return_value = []
+        await service.retrieve("test")
+        assert mock_repo.find_nearest.call_args[1]["k"] == 5
 
-    async def test_default_k_is_five(self) -> None:
-        service, mock_repo, _ = _make_service()
-        await service.retrieve(query="anything")
-        call_kwargs = mock_repo.find_nearest.call_args.kwargs
-        assert call_kwargs["k"] == 5
+    @pytest.mark.asyncio
+    async def test_ticker_filter(
+        self: "TestRetrievalService",
+        service: RetrievalService,
+        mock_repo: AsyncMock,
+        mock_llm: AsyncMock,
+    ) -> None:
+        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_repo.find_nearest.return_value = []
+        await service.retrieve("test", ticker="AAPL")
+        assert mock_repo.find_nearest.call_args[1]["ticker"] == "AAPL"

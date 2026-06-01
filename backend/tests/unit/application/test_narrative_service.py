@@ -841,7 +841,7 @@ def _make_retrieval_result(content: str = "Apple revenue grew 12%.") -> object:
     """Minimales RetrievalResult-Objekt fuer Tests."""
     from uuid import uuid4
 
-    from backend.domain.repositories.embedding_repository import RetrievalResult
+    from backend.domain.entities.retrieval_result import RetrievalResult
 
     return RetrievalResult(
         chunk_id=uuid4(),

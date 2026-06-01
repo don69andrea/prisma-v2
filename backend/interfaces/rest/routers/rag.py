@@ -1,12 +1,16 @@
-"""REST-Router fuer RAG-Retrieval-Endpunkte unter /api/v1/rag."""
+"""FastAPI Router für RAG-Retrieval-Endpoint."""
 
 from fastapi import APIRouter, Depends
 
 from backend.application.services.retrieval_service import RetrievalService
 from backend.interfaces.rest.dependencies import get_retrieval_service
-from backend.interfaces.rest.schemas.rag import ChunkResponse, RetrieveRequest, RetrieveResponse
+from backend.interfaces.rest.schemas.rag import (
+    ChunkResponse,
+    RetrieveRequest,
+    RetrieveResponse,
+)
 
-router = APIRouter(prefix="/api/v1/rag", tags=["rag"])
+router = APIRouter(prefix="/api/v1/rag", tags=["RAG"])
 
 
 @router.post(
@@ -18,11 +22,8 @@ async def retrieve(
     request: RetrieveRequest,
     service: RetrievalService = Depends(get_retrieval_service),
 ) -> RetrieveResponse:
-    results = await service.retrieve(
-        query=request.query,
-        k=request.k,
-        ticker=request.ticker,
-    )
+    """POST /api/v1/rag/retrieve — Semantische Suche über SEC-Filing-Chunks."""
+    results = await service.retrieve(query=request.query, k=request.k, ticker=request.ticker)
     return RetrieveResponse(
         results=[
             ChunkResponse(

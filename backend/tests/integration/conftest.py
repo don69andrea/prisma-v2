@@ -3,6 +3,7 @@
 from collections.abc import AsyncGenerator
 
 import pytest_asyncio
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from backend.config import get_settings
@@ -36,3 +37,23 @@ async def db_session(
     """Async-Session fuer direkte DB-Queries in Tests."""
     async with session_factory() as session:
         yield session
+
+
+@pytest_asyncio.fixture
+async def truncate_embeddings(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> AsyncGenerator[None, None]:
+    """Per-Test-Cleanup fuer documents+embedding_chunks (CASCADE).
+
+    Verhindert NaN-Similarity-Fehler, die entstehen wenn Persistenz-Tests
+    Chunks mit echten Embeddings hinterlassen und RAG-Tests anschliessend
+    Zero-Vektor-Mocks gegen nichtleere DB ausfuehren.
+    """
+    truncate_sql = text("TRUNCATE documents CASCADE")
+    async with session_factory() as session:
+        await session.execute(truncate_sql)
+        await session.commit()
+    yield
+    async with session_factory() as session:
+        await session.execute(truncate_sql)
+        await session.commit()

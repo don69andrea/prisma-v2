@@ -4,6 +4,7 @@ Pattern: session_factory pro Operation (PR #25-Stil, analog
 SQLAResearchMemoRepository) — vermeidet Transaction-Leaks.
 """
 
+import math
 from uuid import UUID
 
 from sqlalchemy import func, select, text
@@ -13,10 +14,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from backend.domain.entities.document import Document
 from backend.domain.entities.embedding_chunk import EmbeddingChunk
+from backend.domain.entities.retrieval_result import RetrievalResult
 from backend.domain.repositories.embedding_repository import (
     DuplicateUrl,
     EmbeddingRepository,
-    RetrievalResult,
 )
 from backend.infrastructure.persistence.models.embedding import (
     DocumentORM,
@@ -130,6 +131,8 @@ class SQLAEmbeddingRepository(EmbeddingRepository):
         # halfvec-Cast auf Query und Column, damit der HNSW-Index genutzt wird.
         # JOIN documents bringt ticker und doc_type mit.
         ticker_filter = "AND d.ticker = :ticker" if ticker else ""
+        # Convert list to PostgreSQL vector format: [0.1, 0.2, ...] -> "'[0.1, 0.2, ...]'::vector"
+        query_vector_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
         raw_sql = f"""
             SELECT
                 ec.id          AS chunk_id,
@@ -139,34 +142,39 @@ class SQLAEmbeddingRepository(EmbeddingRepository):
                 ec.metadata,
                 d.ticker,
                 d.doc_type,
-                1 - ((ec.embedding::halfvec(2048)) <=> (:query::vector(2048)::halfvec(2048)))
+                1 - ((ec.embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048)))
                                AS similarity
             FROM embedding_chunks ec
             JOIN documents d ON d.id = ec.document_id
             WHERE 1=1 {ticker_filter}
-            ORDER BY (ec.embedding::halfvec(2048)) <=> (:query::vector(2048)::halfvec(2048))
+            ORDER BY (ec.embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048))
             LIMIT :k
         """
-        params: dict[str, object] = {"query": str(query_embedding), "k": k}
+        params: dict[str, object] = {"k": k}
         if ticker:
             params["ticker"] = ticker
 
         async with self._session_factory() as session:
             rows = (await session.execute(text(raw_sql), params)).mappings().all()
 
-        return [
-            RetrievalResult(
-                chunk_id=row["chunk_id"],
-                document_id=row["document_id"],
-                chunk_idx=row["chunk_idx"],
-                content=row["content"],
-                similarity=float(row["similarity"]),
-                ticker=row["ticker"],
-                doc_type=row["doc_type"],
-                metadata=row["metadata"] or {},
+        results = []
+        for row in rows:
+            sim = float(row["similarity"])
+            if math.isnan(sim):
+                continue
+            results.append(
+                RetrievalResult(
+                    chunk_id=row["chunk_id"],
+                    document_id=row["document_id"],
+                    chunk_idx=row["chunk_idx"],
+                    content=row["content"],
+                    similarity=sim,
+                    ticker=row["ticker"],
+                    doc_type=row["doc_type"],
+                    metadata=row["metadata"] or {},
+                )
             )
-            for row in rows
-        ]
+        return results
 
 
 def _orm_to_doc(row: DocumentORM) -> Document:

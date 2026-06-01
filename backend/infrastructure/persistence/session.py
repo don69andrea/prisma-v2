@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from backend.config import Settings, get_settings
 
@@ -21,14 +22,22 @@ def _get_engine(settings: Settings | None = None) -> AsyncEngine:
     global _engine
     if _engine is None:
         cfg = settings or get_settings()
-        _engine = create_async_engine(
-            cfg.database_url,
-            # Echo SQL only in non-production environments for debugging.
-            echo=cfg.environment != "production",
-            pool_pre_ping=True,
-            pool_size=10,
-            max_overflow=20,
-        )
+        if cfg.environment == "test":
+            # NullPool verhindert Connection-Reuse über pytest-function-Event-Loops.
+            # Jede DB-Operation bekommt eine frische Connection → kein "different loop" Error.
+            _engine = create_async_engine(
+                cfg.database_url,
+                echo=True,
+                poolclass=NullPool,
+            )
+        else:
+            _engine = create_async_engine(
+                cfg.database_url,
+                echo=cfg.environment != "production",
+                pool_pre_ping=True,
+                pool_size=10,
+                max_overflow=20,
+            )
     return _engine
 
 

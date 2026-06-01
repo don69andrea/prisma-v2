@@ -1,7 +1,11 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
+
+import { LoadingScreen } from '@/components/LoadingScreen';
+
+const LOADING_DURATION_MS = 6500;
 
 interface ProvidersProps {
   children: ReactNode;
@@ -13,8 +17,8 @@ export function Providers({ children }: ProvidersProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // 1 minute
-            gcTime: 5 * 60 * 1000, // 5 minutes
+            staleTime: 60 * 1000,
+            gcTime: 5 * 60 * 1000,
             retry: 1,
             refetchOnWindowFocus: false,
           },
@@ -25,5 +29,17 @@ export function Providers({ children }: ProvidersProps) {
       })
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const [showLoading, setShowLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowLoading(false), LOADING_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {showLoading && <LoadingScreen />}
+      {children}
+    </QueryClientProvider>
+  );
 }

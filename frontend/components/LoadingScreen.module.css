@@ -1,0 +1,410 @@
+/* Loading Screen — 6.5s animation cycle, plays once on app load */
+
+/* ── Background elements ── */
+.dotGrid {
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, #c8c8dc 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  animation: gridFade 6.5s ease-in-out forwards;
+}
+
+.colorWash {
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 210deg at 50% 50%,
+    rgba(139, 92, 246, 0.07) 0deg,
+    rgba(59, 130, 246, 0.055) 72deg,
+    rgba(16, 185, 129, 0.05) 144deg,
+    rgba(245, 158, 11, 0.06) 216deg,
+    rgba(239, 68, 68, 0.07) 288deg,
+    rgba(139, 92, 246, 0.07) 360deg
+  );
+  pointer-events: none;
+  animation:
+    washSpin 10s linear infinite,
+    washFade 6.5s ease-in-out forwards;
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 70% at 50% 50%,
+    transparent 20%,
+    rgba(255, 255, 255, 0.82) 100%
+  );
+  pointer-events: none;
+}
+
+/* ── Outer wrapper ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Scene ── */
+.scene {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: sceneFade 6.5s ease-in-out forwards;
+}
+
+/* ── Laser beam ── */
+.laserWrap {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.laserBeam {
+  width: 2.5px;
+  height: 0;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(200, 210, 255, 0.6),
+    rgba(255, 255, 255, 0.95)
+  );
+  border-radius: 2px;
+  box-shadow:
+    0 0 8px rgba(180, 190, 255, 0.8),
+    0 0 20px rgba(180, 190, 255, 0.35);
+  animation: laserDrop 6.5s ease-in forwards;
+}
+
+/* ── Diamond ── */
+.diamondWrap {
+  position: relative;
+  z-index: 5;
+  margin-bottom: -4px;
+}
+
+.diamondG {
+  animation: diamondCharge 6.5s ease-in-out forwards;
+}
+
+/* Crown facets */
+.fTable { animation: facetT   6.5s ease-in-out forwards; }
+.fCL    { animation: facetCL  6.5s ease-in-out forwards; }
+.fCR    { animation: facetCR  6.5s ease-in-out forwards; }
+.fCCL   { animation: facetCCL 6.5s ease-in-out forwards; }
+.fCCR   { animation: facetCCR 6.5s ease-in-out forwards; }
+
+/* Pavilion facets */
+.fP1 { animation: pavFacet1 6.5s ease-in-out forwards; }
+.fP2 { animation: pavFacet2 6.5s ease-in-out forwards; }
+.fP3 { animation: pavFacet3 6.5s ease-in-out forwards; }
+.fP4 { animation: pavFacet4 6.5s ease-in-out forwards; }
+.fP5 { animation: pavFacet5 6.5s ease-in-out forwards; }
+
+/* Internal laser rays */
+.intRay {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  opacity: 0;
+}
+.ir1 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.00s; stroke: rgba(139, 92, 246, 0.6); }
+.ir2 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.06s; stroke: rgba(59, 130, 246, 0.55); }
+.ir3 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.12s; stroke: rgba(16, 185, 129, 0.55); }
+.ir4 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.18s; stroke: rgba(245, 158, 11, 0.55); }
+.ir5 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.24s; stroke: rgba(239, 68, 68, 0.6); }
+
+/* ── Exit beams (anchored at culet) ── */
+.beamsWrap {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.exitBeam,
+.exitGlow {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 0;
+  border-radius: 3px;
+  transform-origin: 0 0;
+  opacity: 0;
+  animation: exitBeam 6.5s ease-out forwards;
+}
+
+.exitGlow {
+  width: 13px;
+  left: -5px;
+  filter: blur(4px);
+  transform-origin: 5px 0;
+}
+
+.eb1, .eg1 { transform: rotate(-52deg); }
+.eb2, .eg2 { transform: rotate(-24deg); }
+.eb3, .eg3 { transform: rotate(4deg);   }
+.eb4, .eg4 { transform: rotate(30deg);  }
+.eb5, .eg5 { transform: rotate(56deg);  }
+
+.eb1 { background: linear-gradient(180deg, #8b5cf6, rgba(139, 92, 246, 0)); animation-delay: 0.00s; }
+.eb2 { background: linear-gradient(180deg, #3b82f6, rgba(59, 130, 246, 0));  animation-delay: 0.07s; }
+.eb3 { background: linear-gradient(180deg, #10b981, rgba(16, 185, 129, 0));  animation-delay: 0.14s; }
+.eb4 { background: linear-gradient(180deg, #f59e0b, rgba(245, 158, 11, 0));  animation-delay: 0.21s; }
+.eb5 { background: linear-gradient(180deg, #ef4444, rgba(239, 68, 68, 0));   animation-delay: 0.28s; }
+.eg1 { background: rgba(139, 92, 246, 0.5);  animation-delay: 0.00s; }
+.eg2 { background: rgba(59, 130, 246, 0.45); animation-delay: 0.07s; }
+.eg3 { background: rgba(16, 185, 129, 0.45); animation-delay: 0.14s; }
+.eg4 { background: rgba(245, 158, 11, 0.45); animation-delay: 0.21s; }
+.eg5 { background: rgba(239, 68, 68, 0.5);   animation-delay: 0.28s; }
+
+/* ── Text block ── */
+.textBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 48px;
+  gap: 12px;
+}
+
+.prismaName {
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 0.55em;
+  text-indent: 0.55em;
+  text-transform: uppercase;
+  color: #0c0c1e;
+  animation: nameReveal 6.5s ease-out forwards;
+}
+
+.spectrumLine {
+  height: 3px;
+  width: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8b5cf6, #3b82f6, #10b981, #f59e0b, #ef4444);
+  box-shadow:
+    0 0 14px rgba(139, 92, 246, 0.45),
+    0 0 28px rgba(239, 68, 68, 0.2);
+  animation: specLine 6.5s ease-out forwards;
+}
+
+.taglineWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: tagReveal 6.5s ease-out forwards;
+}
+
+.taglineMain {
+  font-family: 'SF Mono', 'Fira Mono', 'Cascadia Code', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #1a1a2e;
+  text-shadow:
+    0 0 20px rgba(139, 92, 246, 0.25),
+    0 0 40px rgba(59, 130, 246, 0.12);
+}
+
+.dimRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.dimTag {
+  font-family: 'SF Mono', 'Fira Mono', monospace;
+  font-size: 0.46rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+}
+
+.dt1 { color: #7c3aed; background: rgba(139, 92, 246, 0.07); }
+.dt2 { color: #1d4ed8; background: rgba(59, 130, 246, 0.07);  }
+.dt3 { color: #065f46; background: rgba(16, 185, 129, 0.07);  }
+.dt4 { color: #92400e; background: rgba(245, 158, 11, 0.07);  }
+.dt5 { color: #991b1b; background: rgba(239, 68, 68, 0.07);   }
+
+.dimDivider {
+  width: 1px;
+  height: 10px;
+  background: #d0d0e0;
+}
+
+/* ════════════════════════════════════
+   KEYFRAMES
+   Timeline (6.5s):
+     0.00–0.80s  diamond fades in
+     0.80–1.50s  laser descends
+     1.50–2.00s  laser hits → facets light up
+     2.00–2.60s  exit beams burst out
+     2.60–3.20s  text reveals
+     3.20–5.70s  HOLD 2.5s
+     5.70–6.50s  fade out
+════════════════════════════════════ */
+
+@keyframes gridFade {
+  0%, 8%  { opacity: 0; }
+  18%     { opacity: 0.55; }
+  88%     { opacity: 0.55; }
+  100%    { opacity: 0; }
+}
+
+@keyframes washSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes washFade {
+  0%, 12% { opacity: 0; }
+  22%     { opacity: 1; }
+  88%     { opacity: 1; }
+  100%    { opacity: 0; }
+}
+
+@keyframes sceneFade {
+  0%, 10% { opacity: 0; }
+  18%     { opacity: 1; }
+  88%     { opacity: 1; }
+  100%    { opacity: 0; }
+}
+
+@keyframes laserDrop {
+  0%, 11%  { height: 0;    opacity: 0; }
+  12%      { height: 0;    opacity: 1; }
+  23%      { height: 90px; opacity: 1; }
+  30%      { height: 90px; opacity: 0; }
+  100%     { height: 90px; opacity: 0; }
+}
+
+@keyframes diamondCharge {
+  0%, 10%  { filter: none; }
+  22%      { filter: drop-shadow(0 0 18px rgba(139,92,246,0.55)) drop-shadow(0 0 40px rgba(59,130,246,0.25)); }
+  25%      { filter: drop-shadow(0 0 70px white) brightness(2.4); }
+  28%      { filter: drop-shadow(0 0 20px rgba(139,92,246,0.4)); }
+  88%      { filter: drop-shadow(0 2px 12px rgba(139,92,246,0.2)); }
+  100%     { filter: none; }
+}
+
+@keyframes facetT {
+  0%, 14% { fill: rgba(235,235,255,0.7);  }
+  23%     { fill: rgba(255,255,255,0.98); }
+  26%     { fill: rgba(240,240,255,0.85); }
+  88%     { fill: rgba(235,235,255,0.7);  }
+  100%    { fill: rgba(235,235,255,0.7);  }
+}
+@keyframes facetCL {
+  0%, 14% { fill: rgba(210,215,245,0.55); }
+  24%     { fill: rgba(255,255,255,0.9);  }
+  28%     { fill: rgba(218,222,250,0.65); }
+  88%     { fill: rgba(210,215,245,0.55); }
+  100%    { fill: rgba(210,215,245,0.55); }
+}
+@keyframes facetCR {
+  0%, 14% { fill: rgba(200,210,240,0.5);  }
+  24%     { fill: rgba(255,255,255,0.88); }
+  28%     { fill: rgba(208,218,245,0.6);  }
+  88%     { fill: rgba(200,210,240,0.5);  }
+  100%    { fill: rgba(200,210,240,0.5);  }
+}
+@keyframes facetCCL {
+  0%, 14% { fill: rgba(190,200,235,0.45); }
+  25%     { fill: rgba(250,252,255,0.85); }
+  28%     { fill: rgba(198,208,240,0.55); }
+  88%     { fill: rgba(190,200,235,0.45); }
+  100%    { fill: rgba(190,200,235,0.45); }
+}
+@keyframes facetCCR {
+  0%, 14% { fill: rgba(185,198,232,0.42); }
+  25%     { fill: rgba(248,250,255,0.82); }
+  28%     { fill: rgba(193,205,237,0.52); }
+  88%     { fill: rgba(185,198,232,0.42); }
+  100%    { fill: rgba(185,198,232,0.42); }
+}
+
+@keyframes pavFacet1 {
+  0%, 14% { fill: rgba(190,195,235,0.4);  }
+  26%     { fill: rgba(139,92,246,0.55);  }
+  30%     { fill: rgba(139,92,246,0.2);   }
+  88%     { fill: rgba(139,92,246,0.12);  }
+  100%    { fill: rgba(190,195,235,0.4);  }
+}
+@keyframes pavFacet2 {
+  0%, 14% { fill: rgba(185,200,232,0.38); }
+  27%     { fill: rgba(59,130,246,0.5);   }
+  31%     { fill: rgba(59,130,246,0.18);  }
+  88%     { fill: rgba(59,130,246,0.1);   }
+  100%    { fill: rgba(185,200,232,0.38); }
+}
+@keyframes pavFacet3 {
+  0%, 14% { fill: rgba(180,205,228,0.36); }
+  28%     { fill: rgba(16,185,129,0.48);  }
+  32%     { fill: rgba(16,185,129,0.16);  }
+  88%     { fill: rgba(16,185,129,0.09);  }
+  100%    { fill: rgba(180,205,228,0.36); }
+}
+@keyframes pavFacet4 {
+  0%, 14% { fill: rgba(185,202,228,0.38); }
+  28%     { fill: rgba(245,158,11,0.5);   }
+  32%     { fill: rgba(245,158,11,0.18);  }
+  88%     { fill: rgba(245,158,11,0.1);   }
+  100%    { fill: rgba(185,202,228,0.38); }
+}
+@keyframes pavFacet5 {
+  0%, 14% { fill: rgba(190,198,232,0.4);  }
+  29%     { fill: rgba(239,68,68,0.52);   }
+  33%     { fill: rgba(239,68,68,0.2);    }
+  88%     { fill: rgba(239,68,68,0.11);   }
+  100%    { fill: rgba(190,198,232,0.4);  }
+}
+
+@keyframes intRay {
+  0%, 21%  { stroke-dashoffset: 100; opacity: 0;    }
+  24%      { stroke-dashoffset: 0;   opacity: 0.9;  }
+  29%      { stroke-dashoffset: 0;   opacity: 0.35; }
+  88%      { opacity: 0.2; }
+  100%     { opacity: 0;   }
+}
+
+@keyframes exitBeam {
+  0%, 29%  { height: 0;     opacity: 0;    }
+  32%      { height: 20px;  opacity: 1;    }
+  40%      { height: 160px; opacity: 0.9;  }
+  88%      { height: 200px; opacity: 0.25; }
+  100%     { height: 200px; opacity: 0;    }
+}
+
+@keyframes nameReveal {
+  0%, 36%  { opacity: 0; letter-spacing: 1.1em; text-indent: 1.1em; }
+  50%, 88% { opacity: 1; letter-spacing: 0.55em; text-indent: 0.55em; }
+  100%     { opacity: 0; }
+}
+
+@keyframes specLine {
+  0%, 40%  { width: 0;     opacity: 0; }
+  54%, 88% { width: 250px; opacity: 1; }
+  100%     { opacity: 0; }
+}
+
+@keyframes tagReveal {
+  0%, 46%  { opacity: 0; transform: translateY(10px); }
+  60%, 88% { opacity: 1; transform: translateY(0);    }
+  100%     { opacity: 0; }
+}

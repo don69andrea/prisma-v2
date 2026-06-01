@@ -129,3 +129,4 @@ tests/fixtures/llm/*.large.json
 .playwright-mcp/
 demo-polish-*.png
 
+.superpowers/

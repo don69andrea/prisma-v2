@@ -2,9 +2,11 @@
 
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { listRuns } from '@/lib/api/runs';
 import {
   CartesianGrid,
   Legend,
@@ -27,6 +29,16 @@ function BacktestContent() {
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const runsQuery = useQuery({
+    queryKey: ['runs', 'backtest'],
+    queryFn: () => listRuns(50, 0),
+  });
+  const completedRuns = (runsQuery.data ?? []).filter((r) => r.status === 'completed');
+  const runDateFmt = new Intl.DateTimeFormat('de-CH', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,13 +81,30 @@ function BacktestContent() {
             data-testid="backtest-form"
           >
             <div>
-              <label className="mb-1 block text-sm font-medium">Run ID</label>
-              <Input
+              <label className="mb-1 block text-sm font-medium">Run</label>
+              <select
                 value={runId}
                 onChange={(e) => setRunId(e.target.value)}
-                placeholder="UUID des Ranking-Runs"
+                disabled={runsQuery.isLoading}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 data-testid="backtest-run-id"
-              />
+              >
+                <option value="">
+                  {runsQuery.isLoading
+                    ? 'Lädt Runs…'
+                    : completedRuns.length === 0
+                      ? 'Keine abgeschlossenen Runs'
+                      : '— Run wählen —'}
+                </option>
+                {runId && !completedRuns.some((r) => r.id === runId) && (
+                  <option value={runId}>{runId} (aus Link)</option>
+                )}
+                {completedRuns.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {runDateFmt.format(new Date(r.created_at))} · {r.universe_name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Top N</label>

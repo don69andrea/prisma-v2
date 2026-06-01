@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 import { UniverseList } from '../universe-list';
 import type { UniverseRead } from '@/lib/api/universes';
@@ -8,6 +8,11 @@ vi.mock('next/link', () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
   ),
+}));
+
+vi.mock('@/components/universes/StartRankingDialog', () => ({
+  StartRankingDialog: ({ universe }: { universe: { name: string } | null }) =>
+    universe ? <div data-testid="dialog">{universe.name}</div> : null,
 }));
 
 const sampleUniverses: UniverseRead[] = [
@@ -47,5 +52,18 @@ describe('UniverseList', () => {
   it('shows empty-state message when list is empty', () => {
     render(<UniverseList universes={[]} />);
     expect(screen.getByText(/Noch keine Universen angelegt/)).toBeInTheDocument();
+  });
+
+  it('renders a "Ranking starten" button for each universe', () => {
+    render(<UniverseList universes={sampleUniverses} />);
+    const buttons = screen.getAllByRole('button', { name: /Ranking starten/i });
+    expect(buttons).toHaveLength(2);
+  });
+
+  it('klick auf Button öffnet Dialog mit richtigem Universe', () => {
+    render(<UniverseList universes={sampleUniverses} />);
+    expect(screen.queryByTestId('dialog')).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: /Ranking starten/i })[0]);
+    expect(screen.getByTestId('dialog')).toHaveTextContent('SMI');
   });
 });

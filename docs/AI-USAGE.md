@@ -166,6 +166,24 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-06-01 · UX-Polish — Nav-Highlight, Deutsche Labels, Spinner, URL-Preselect (PR #161)
+- **Agent**: Claude Code (Sonnet 4.6) — superpowers:brainstorming + writing-plans + subagent-driven-development
+- **Scope**: 5 kleine UX-Verbesserungen in 4 Subagent-Tasks: (1) `NavLinks`-Client-Component mit `usePathname()` + `aria-current="page"` für aktiven Tab; (2) Deutsche Status-Labels in `RunHistoryList` ("Abgeschlossen", "Ausstehend", "Läuft…", "Fehlgeschlagen") + "Date"→"Datum"; (3) `Loader2`-Spinner bei laufendem Run + "Neuer Run"→"Zurück zu Rankings" in Detail-Page; (4) `RankingsForm` liest `?universeId=` aus URL + `<Suspense>`-Grenze in `rankings/page.tsx`. 6 neue Tests.
+- **Was gut lief**: Alle 5 Punkte berührten komplett verschiedene Dateien → keine Task-Konflikte, Subagent-Driven-Execution lief ohne Blocker durch. `useSearchParams()`-Suspense-Anforderung in Next.js 14 war im Plan bereits antizipiert — Subagent musste nichts nachrecherchieren. PR #161 war sofort grün (alle CI-Gates inkl. E2E).
+- **Was nicht klappte**: Nichts Kritisches. Der `layout.tsx`-Server-Component-Split (NavLinks als Client-Component extrahieren) hätte auch durch eine falsche `'use client'`-Platzierung auf dem falschen Level scheitern können — im Plan explizit als Anforderung formuliert, kein Problem.
+- **Nachbearbeitung nötig bei**: Keine.
+- **Lektion**: **UX-Kleinkram akkumuliert sich zu echter Qualität wenn man ihn gezielt sammelt und en-bloc angeht.** 5 Punkte einzeln als separate Mini-Sessions wäre Overhead — als brainstormte Liste in einem Plan zusammengefasst und per Subagent-Driven-Development mit Two-Stage-Review durchgezogen war es sauber und schnell. **`useSearchParams()` in Next.js 14 immer mit `<Suspense>` planen** — bei Server-Component-Wrapping ist das nicht optional und wird von tsc nicht gefangen.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-06-01 · Universe → Ranking CTA mit Post-Creation-Dialog (PR #160)
+- **Agent**: Claude Code (Sonnet 4.6) — superpowers:brainstorming + writing-plans + subagent-driven-development
+- **Scope**: 5 Subagent-Tasks. (1) Radix Dialog UI-Primitive (`components/ui/dialog.tsx`, `@radix-ui/react-dialog` war bereits installiert). (2) `StartRankingDialog`-Component: erscheint nach Universe-Erstellung, fragt "Ranking starten?", "Ja" → `createRun()` + Navigation zu `/rankings/<id>`, "Nein" → onClose + Redirect zu `/universes`. (3+4) Beide Erstellungs-Pages (`new/page.tsx`, `wizard/page.tsx`) nutzen Dialog statt direktem Redirect. (5) `UniverseList` wird Client-Component + "Ranking starten"-Button pro Zeile öffnet denselben Dialog. 7 neue Tests (5 für Dialog, 2 für List).
+- **Was gut lief**: Radix Dialog bereits im Projekt vorhanden (`@radix-ui/react-dialog` in package.json) → Task 1 war reines Scaffolding ohne Dependency-Risiko. `StartRankingDialog` als wiederverwendbarer Component (genutzt in 3 Stellen) statt 3× inline-Implementation. Two-Stage-Review fing keine kritischen Issues — Plan-Code-Qualität war hoch genug für direkten PASS.
+- **Was nicht klappte**: **2 E2E-Tests schlugen fehl** (`01-universe.spec.ts` + `rankings.spec.ts` Test 2): beide erwarteten nach dem Formular-Submit einen direkten Redirect zu `/universes`, aber der neue Dialog hält die Page auf `/universes/new`. Fix: je eine Zeile `await page.getByRole('button', { name: /Nein/i }).click()` vor der `toHaveURL`-Assertion. Die Unit-/Integrationstests (Vitest) hatten diesen Fall nicht abgedeckt, weil E2E der einzige Ort ist, wo der volle Browser-Flow getestet wird.
+- **Nachbearbeitung nötig bei**: E2E-Fix in eigenem Commit (`ca76a2e`) im gleichen PR nachgeliefert, CI läuft durch.
+- **Lektion**: **Bei Änderungen am Post-Submit-Flow immer die E2E-Tests mitlesen.** Unit-Tests mocken die Navigation weg (`mockPush`), E2E-Tests testen den echten Browser-Zustand. Ein neues UI-Element (Dialog) das die URL-Navigation verzögert ist für Unit-Tests unsichtbar, für E2E sofort ein Blocker. **E2E-Tests als Dokumentation des erwarteten User-Flows lesen** — sie hätten den Dialog-Schritt eigentlich schon im Plan-Review auffallen lassen sollen.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
 ## 2026-06-01 · Abgabe-Absicherung — Demo-DB-Diagnose, Anthropic-Key-Fix, Katalog-Parität-Migration (chore/abgabe-final)
 - **Agent**: Claude Code (Opus 4.8, inline ohne Subagent-Split)
 - **Scope**: Post-Demo-Submission-Polish. (1) Live-Render-Deployment verifiziert → Demo-DB war leer (0 Universen/Runs) → via Live-API neu geseedet (Universum + 2 Runs mit divergierenden Gewichten für Compare-Story). (2) Memo-Generierung auf Prod gab blanken 500 → per **lokaler Reproduktion + Ausschlussverfahren** als fehlender `ANTHROPIC_API_KEY` auf Render diagnostiziert (nicht Code/Daten). (3) Nach Key-Fix: 10 Memos generiert, kompletter Demo-Pfad (Rankings → Memo-Drilldown → Compare) per Playwright auf der Live-URL E2E-verifiziert. (4) Migration `0012` für 13-Stock-Katalog-Parität lokal↔deployed. (5) README-Setup-Bugs + Doku-Konsistenz gefixt.
@@ -174,6 +192,14 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Nachbearbeitung nötig bei**: Optionales Code-Hardening offen — `anthropic.AuthenticationError` im Memo-Pfad abfangen → strukturierter 502 statt blanker 500 (nur relevant falls Key erneut ausfällt). Universen/Runs/Memos auf Prod bleiben via-API-geseedet und damit nicht reset-resistent (nur der Stock-Katalog ist via Migration permanent).
 - **Lektion**: **Bei Env-spezifischen Prod-Fehlern ist lokale Reproduktion mit Ausschlussverfahren schneller und sicherer als Log-Archäologie.** Ein blanker 500 ohne Log-Zugriff ist trotzdem präzise diagnostizierbar, wenn man systematisch Code+Daten lokal ausschließt, bis nur die Env-Config übrig bleibt. **Ephemere PaaS-DBs gehören in Migrationen, nicht in manuelle Seeds** — was reproduzierbar in der DB sein muss, gehört in eine idempotente Migration (läuft bei jedem Deploy), nicht in ein Skript, das jemand manuell ausführen muss und nach dem nächsten Reset vergisst.
 - **Autor**: Sheyla Sampietro (mit Claude Code)
+
+## 2026-06-01 · Futuristic Loading Screen (PR #158) ⟨retrospektiv⟩
+- **Agent**: Claude Code (Sonnet 4.6, inline)
+- **Scope**: 6.5s animierter Splash-Screen der beim ersten App-Load erscheint. Ein Laserstrahl trifft einen Diamanten (= Unternehmen), bricht sich in 5 Spektralfarben und visualisiert PRISMA's Core-Concept "See through every company." `sessionStorage`-Guard verhindert Wiederholung, CSS-Keyframe-Animation, kein externes Framework.
+- **Was gut lief**: Rein visueller, isolierter Feature-Scope — keine Backend-Abhängigkeit, kein State-Impakt auf andere Teile der App. CSS-only Animation blieb im Bundle-Size-Budget.
+- **Was nicht klappte**: Retrospektiv nicht rekonstruierbar (keine Session-Notes vorhanden).
+- **Nachbearbeitung nötig bei**: Keine — PR #158 grün gemerged.
+- **Autor**: Andrea Petretta (mit Claude Code)
 
 ## 2026-05-26 · POST /api/v1/universes/{id}/sync — Ticker-Stocks-Sync (Issue #114, PR #133)
 - **Agent**: Claude Code (Sonnet 4.6) — superpowers:writing-plans + subagent-driven-development
@@ -191,6 +217,15 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Nachbearbeitung nötig bei**: keine — alle CI-Gates grün (ruff + mypy + pytest backend; lint + tsc + vitest + e2e frontend). PR #153 offen für Review.
 - **Lektion**: **Orchestrator-Self-Review-Variante ist optimal für mechanische Tasks mit engem Plan.** Ein voller 3-Reviewer-Loop ist Overhead, wenn (a) der Plan verbatim Code enthält und (b) ich zwischen den Tasks Zeit habe, den Output selbst zu lesen und die Commits (SHA) zu verifizieren. **Sanity-Check Subagent-Deviations im Self-Review:** wenn ein Subagent von der Spec abweicht "um den Test grün zu bekommen", fast immer ist der Test der Bug, nicht die Production-Logic — separater Hotfix-Commit dokumentiert die Korrektur sauber.
 - **Autor**: Sheyla Sampietro (mit Claude Code)
+
+## 2026-05-31 · max_drawdown-Vorzeichen korrigieren (PR #145) ⟨retrospektiv⟩
+- **Agent**: Claude Code (Sonnet 4.6, inline)
+- **Scope**: Formel-Bug in `_compute_metrics`: `max_drawdown` wurde mit falschem Vorzeichen berechnet (`(rolling_max - portfolio) / rolling_max + .max()` → positiv). Spec §6-konforme Formel `(portfolio - cummax) / cummax + .min()` → korrekt negativ. 2 Tests angepasst.
+- **Was gut lief**: Root-Cause war durch Spec-Vergleich sofort klar — kein langer Debug-Prozess. Einzeiliger Formel-Fix mit direkter Test-Verifikation.
+- **Was nicht klappte**: Retrospektiv nicht rekonstruierbar. Der Bug war seit der ursprünglichen Backtest-Implementation (#120) vorhanden ohne aufzufallen — kein Vorzeichen-Test existierte.
+- **Nachbearbeitung nötig bei**: Keine.
+- **Lektion**: **Quant-Formeln brauchen Vorzeichen-Tests.** `max_drawdown` semantisch negativ — ein Test `assert max_drawdown < 0` hätte den Bug beim ersten Merge gefangen.
+- **Autor**: Andrea Petretta (mit Claude Code)
 
 ## 2026-05-28 · LLM-Universe-Wizard — Claude Haiku für Universe-Vorschläge (PR #152)
 - **Agent**: Claude Code (Opus 4.7 als Orchestrator + Sonnet 4.6 für Implementer-Subagents)
@@ -254,6 +289,61 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Nachbearbeitung nötig bei**: Backend-Fix für `StockListResponse.total` (Repository.count()-Method) — pre-existing Bug, separater Follow-up-PR.
 - **Lektion**: **Pre-existing Bugs außerhalb des PR-Scopes lieber als Folge-Issue dokumentieren statt nicht-gefixt drin lassen.** Workaround-Comment im Code (`// Backend's total-Field ist buggy → items.length nutzen`) macht für künftige Wartung sofort klar wo der eigentliche Bug sitzt. Ehrlicher als stille Symptom-Behandlung.
 - **Autor**: Sheyla Sampietro (mit Claude Code)
+
+## 2026-05-18 · CI-Split + Integration-Tests + Zeitbomben-Fix (PR #130) ⟨retrospektiv⟩
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `test_backtests_endpoint.py` (8 neue Integration-Tests für Backtest-Endpoints); CI-Job-Split in `backend-unit-tests` (ohne Postgres) und `backend-integration-tests` (mit Postgres-Service-Container); relative Datumsangaben in `test_backtest_service.py` durch absolute Daten ersetzt (Zeitbomben-Fix Issue #121).
+- **Was gut lief**: CI-Split war architektonisch überfällig — Unit-Tests laufen jetzt deutlich schneller ohne Postgres-Dependency. Zeitbomben-Fix war nach Identifikation trivial.
+- **Was nicht klappte**: Retrospektiv nicht rekonstruierbar (keine Session-Notes vorhanden).
+- **Nachbearbeitung nötig bei**: Keine — PR #130 grün gemerged.
+- **Lektion**: **Relative Datumsangaben in Tests sind Zeitbomben.** `datetime.now() - timedelta(days=30)` produziert unterschiedliche Ergebnisse je nach Ausführungstag. Immer absolute, feste Daten in Test-Fixtures verwenden.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-18 · Backend/Frontend-Fixes Sprint (PRs #110–#113) ⟨retrospektiv⟩
+- **Agent**: Claude Code (Sonnet 4.6, inline)
+- **Scope**: 4 Fixes in einem Sprint:
+  - **#110** `is_error`-Erkennung in `MemoResponse.from_entity()` von String-Check auf `model_version == ERROR_FALLBACK_MODEL_VERSION` umgestellt (locale-robust, bruchsicher bei Text-Änderungen). Score-Berechnung aus Prompts entfernt.
+  - **#111** Production-Warning für Stub-Provider in `dependencies.py` — `get_fundamentals_provider()` loggt `WARNING` wenn `environment=production`, damit synthetische Demo-Daten sichtbar bleiben.
+  - **#112** `X-API-Key`-Header in `apiFetch` (Frontend) ergänzt — alle Calls gegen authentifizierte Endpoints lieferten ohne diesen Header 401.
+  - **#113** `elapsed`-Check aus Stale-Cleanup-Guard des Narrative-Workers entfernt — TOCTOU-Race zwischen GET-Handler und Worker führte zu Status-Überschreiben.
+- **Was gut lief**: Alle 4 Fixes isoliert — kein Crosscut zwischen den Änderungen. String-based `is_error`-Prüfung durch kanonische `model_version`-Prüfung zu ersetzen war die richtige Abstraktions-Ebene.
+- **Was nicht klappte**: Retrospektiv nicht rekonstruierbar.
+- **Nachbearbeitung nötig bei**: Keine.
+- **Lektion**: **String-based Discriminants sind fragil** — sie brechen bei Refactoring oder i18n. Wenn ein Typ einen kanonischen Marker hat (`model_version`), diesen bevorzugen.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-14 · MCP-Server Slice 1 — Skeleton + run_ranking Tool (PR #102) ⟨retrospektiv⟩
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `backend/interfaces/mcp/` Skeleton via FastMCP/STDIO: `server.py` (Entry-Point), `rest_client.py` (async httpx mit X-API-Key + Error-Mapping), `tools/run_ranking.py` (erstes MCP-Tool). Gemäss Spec `docs/specs/2026-05-11-mcp-server-slice-1-skeleton.md`.
+- **Was gut lief**: MCP-Layer klar als dünner Adapter über Application-Services — keine Business-Logik im MCP-Layer (CLAUDE.md-Konvention eingehalten). Spec-First-Workflow (Spec existierte vor Code) sorgte für klaren Scope.
+- **Was nicht klappte**: Retrospektiv nicht rekonstruierbar.
+- **Nachbearbeitung nötig bei**: Keine — Grundlage für weitere MCP-Tools.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-14 · GET /api/v1/stocks/{ticker}/factsheet (PR #103) ⟨retrospektiv⟩
+- **Agent**: Claude Code (Sonnet 4.6, inline)
+- **Scope**: Neues `get_latest_ticker_result(ticker)` auf `RankingRunRepository`-Port + SQLA-Implementierung via `jsonb_array_elements`-PostgreSQL-Query (kein Full-Result-Set in Python). `LatestRankingSnapshot` + `StockFactsheet` Pydantic-Schemas. REST-Endpoint `GET /api/v1/stocks/{ticker}/factsheet`.
+- **Was gut lief**: PostgreSQL-native JSONB-Query statt Python-seitigem Filtering — skaliert auch bei grossen Runs. Clean-Architecture-Schichten eingehalten (kein SQL im Router).
+- **Was nicht klappte**: Retrospektiv nicht rekonstruierbar.
+- **Nachbearbeitung nötig bei**: Keine.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-14 · Persistence save() Silent Data Loss Fix (PR #101) ⟨retrospektiv⟩
+- **Agent**: Claude Code (Sonnet 4.6, inline)
+- **Scope**: `RankingRunRepository.save()` UPDATE-Branch schrieb nur `status`, ignorierte `weight_config` und alle anderen mutablen Felder still. Fix: alle mutablen Felder explizit zuweisen.
+- **Was gut lief**: Bug war durch Code-Lesen unmittelbar erkennbar sobald die Issue-Beschreibung ihn beschrieb.
+- **Was nicht klappte**: Retrospektiv nicht rekonstruierbar. Kein Test hatte den UPDATE-Branch mit Nicht-Status-Mutation verifiziert — daher blieb der Bug bis Issue #93 unentdeckt.
+- **Nachbearbeitung nötig bei**: Keine.
+- **Lektion**: **UPDATE-Branches in Repository.save() müssen alle mutablen Felder explizit auflisten.** "Nur status schreiben" klingt harmlos, ist aber ein stiller Datenverlust sobald andere Felder geändert werden sollen.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-14 · Anthropic-Client Singleton + BudgetCap-Test (PR #107) ⟨retrospektiv⟩
+- **Agent**: Claude Code (Sonnet 4.6, inline)
+- **Scope**: `get_anthropic_client()` auf `@lru_cache(maxsize=1)` umgestellt — `AsyncAnthropic` öffnet einen `httpx`-Connection-Pool der nicht pro Request neu aufgebaut werden soll (Issue #68). BudgetCap 402-Test ergänzt (Issue #98).
+- **Was gut lief**: Pattern ist analog zu `get_prompt_loader()` im selben Codebase — Konsistenz.
+- **Was nicht klappte**: Retrospektiv nicht rekonstruierbar.
+- **Nachbearbeitung nötig bei**: Keine.
+- **Autor**: Andrea Petretta (mit Claude Code)
 
 ## 2026-05-19 · Backtest `_simulate_portfolio` mit Drift + Monthly-Reset (Issue #140)
 - **Agent**: Claude Code (Opus 4.7)
@@ -855,6 +945,22 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Nachbearbeitung nötig bei**: `pyproject.toml` (build-backend), `Dockerfile.frontend` (2 Stellen), `Dockerfile.backend` (PYTHONPATH), `backend/config.py` (NoDecode). Insgesamt ca. 15 Minuten Debugging.
 - **Lektion**: Agents produzieren syntaktisch plausiblen, aber real nicht funktionalen Code wenn es um seltene Infrastruktur-Detail-APIs geht (Dockerfile-vs-Shell-Unterschied, pydantic-settings v2 quirks, obscure Build-Backend-Namen). TDD-Prinzip gilt auch für Infrastruktur: **erstmal bauen + hochfahren + anfragen, bevor man den nächsten Layer draufsetzt**. Alles grün erst nach Verifikation.
 - **Autor**: Sheyla Sampietro (mit Claude Code + Sub-Agents)
+
+## 2026-04-27 · Early Implementation Sprint — Domain, Modelle, REST, Docs (PRs #27–#33) ⟨retrospektiv⟩
+- **Agent**: Claude Code (Modell unbekannt, retrospektiv rekonstruiert aus Git-History)
+- **Scope**: 7 PRs am selben Tag — das Kern-Fundament des PRISMA-Backends und der ersten Dokumentation:
+  - **#27** `docs/getting-started.md` — Schritt-für-Schritt-Setup-Guide (Voraussetzungen, Clone, venv, Docker, Verify)
+  - **#28** Domain-Modell: `Universe`, `WeightConfig`, `RankingRun`-Aggregate mit Status-Lifecycle, Repository-Interfaces, SQLAlchemy-Implementierungen, Alembic-Migration
+  - **#29** `scripts/seed_demo_universe.py` — idempotentes Seed-Script für "Demo-US-5" (AAPL/MSFT/GOOGL/NVDA/JPM)
+  - **#30** `QualityClassicModel.run()` — 8 Kennzahlen, Z-Score-Normalisierung, fehlende Daten robust behandelt
+  - **#31** `RankingAggregator` — gewichteter Total-Rank, Sweet-Spot-Detection (Top-25% in ≥3/5 Modellen), Weight-Redistribution bei fehlenden Modellen
+  - **#32** Spec für alle 5 MVP-Quant-Modelle (Formeln, yfinance-Fields, Edge-Cases, Test-Approach)
+  - **#33** REST-Endpoints: `POST /api/v1/runs`, `GET /api/v1/runs/{id}`, `GET /api/v1/runs/{id}/rankings` + Migration 0004 + `FundamentalsProvider`-Port + Stub
+- **Was gut lief**: In einem Tag wurde das komplette Quant-Backend auslieferbar — Domain, Persistence, Berechnung, API. Die Spec (#32) wurde nach Implementierung der ersten Modelle geschrieben (unideal, aber bei frühem Prototyping pragmatisch). `RankingAggregator`-Sweet-Spot-Heuristik (≥3/5 Modelle Top-25%) erwies sich als stabil für die gesamte Projektlaufzeit.
+- **Was nicht klappte**: Retrospektiv nicht vollständig rekonstruierbar. Spec-First-Konvention (#32 nach #30/#31) wurde in diesem Sprint nicht eingehalten — Quant-Spec entstand nach der Implementation statt davor. Wurde in späteren PRs konsequenter umgesetzt.
+- **Nachbearbeitung nötig bei**: Modelle Alpha, Trend Momentum, Value Alpha Potential, Diversification waren zu diesem Zeitpunkt noch offen (in #32 als "noch offen" markiert).
+- **Lektion**: **Spec-First zahlt sich aus, auch wenn es in frühen Sprints verführerisch ist, Code-First zu gehen.** Die nachträglich geschriebene Quant-Spec (#32) korrigierte einige Formeln gegenüber der ersten Implementierung — bei strenger Spec-First-Disziplin wären diese Korrekturen nie als Commits nötig gewesen.
+- **Autor**: Andrea Petretta (mit Claude Code)
 
 ## 2026-05-12 · fix(frontend): Rankings nav-link /universes → /rankings (#51)
 - **Agent**: Claude Code (Sonnet 4.6) — superpowers:writing-plans + inline Execution

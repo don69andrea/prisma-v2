@@ -20,6 +20,9 @@ test.describe('PRISMA E2E', () => {
     await page.getByLabel(/Ticker/i).fill('AAPL, MSFT');
     await page.getByRole('button', { name: /Universum anlegen/i }).click();
 
+    // Dialog erscheint — "Nein" klicken, um zur Universum-Liste zurückzukehren
+    await page.getByRole('button', { name: /Nein/i }).click();
+
     await expect(page).toHaveURL(/\/universes$/);
     await expect(page.getByText(`e2e-flow-${suffix}`)).toBeVisible({ timeout: 10_000 });
   });

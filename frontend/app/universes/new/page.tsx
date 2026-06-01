@@ -1,14 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { StartRankingDialog } from '@/components/universes/StartRankingDialog';
 import { createUniverse } from '@/lib/api/universes';
 
 export default function NewUniversePage() {
@@ -17,6 +18,7 @@ export default function NewUniversePage() {
   const [name, setName] = useState('');
   const [region, setRegion] = useState('');
   const [tickersRaw, setTickersRaw] = useState('');
+  const [createdUniverse, setCreatedUniverse] = useState<{ id: string; name: string } | null>(null);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -28,9 +30,9 @@ export default function NewUniversePage() {
           .map((t) => t.trim().toUpperCase())
           .filter(Boolean),
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['universes'] });
-      router.push('/universes');
+      setCreatedUniverse({ id: data.id, name: data.name });
     },
   });
 
@@ -120,6 +122,14 @@ export default function NewUniversePage() {
           </form>
         </CardContent>
       </Card>
+
+      <StartRankingDialog
+        universe={createdUniverse}
+        onClose={() => {
+          setCreatedUniverse(null);
+          router.push('/universes');
+        }}
+      />
     </div>
   );
 }

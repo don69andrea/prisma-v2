@@ -15,6 +15,9 @@ test("Universum mit 5 Ticker-Symbolen erstellen", async ({ page }) => {
   // Submit form
   await page.getByRole("button", { name: /Universum anlegen/i }).click();
 
+  // Dialog erscheint — "Nein" klicken, um zur Universum-Liste zurückzukehren
+  await page.getByRole("button", { name: /Nein/i }).click();
+
   // Should redirect back to universes list
   await expect(page).toHaveURL(/\/universes$/, { timeout: 15_000 });
 });

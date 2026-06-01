@@ -9,6 +9,7 @@ import { ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { StartRankingDialog } from '@/components/universes/StartRankingDialog';
 import {
   createUniverse,
   suggestUniverse,
@@ -24,6 +25,7 @@ export default function WizardPage() {
   const [name, setName] = useState('');
   const [region, setRegion] = useState('');
   const [tickersRaw, setTickersRaw] = useState('');
+  const [createdUniverse, setCreatedUniverse] = useState<{ id: string; name: string } | null>(null);
 
   const suggestMutation = useMutation({
     mutationFn: () => suggestUniverse(description),
@@ -45,9 +47,9 @@ export default function WizardPage() {
           .map((t) => t.trim().toUpperCase())
           .filter(Boolean),
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['universes'] });
-      router.push('/universes');
+      setCreatedUniverse({ id: data.id, name: data.name });
     },
   });
 
@@ -163,6 +165,14 @@ export default function WizardPage() {
           </Card>
         </>
       )}
+
+      <StartRankingDialog
+        universe={createdUniverse}
+        onClose={() => {
+          setCreatedUniverse(null);
+          router.push('/universes');
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { XCircle } from 'lucide-react';
 
@@ -11,7 +11,10 @@ import { createRun } from '@/lib/api/runs';
 
 export function RankingsForm() {
   const router = useRouter();
-  const [universeId, setUniverseId] = useState<string>('');
+  const searchParams = useSearchParams();
+  const [universeId, setUniverseId] = useState<string>(
+    searchParams.get('universeId') ?? '',
+  );
 
   const universesQuery = useQuery({
     queryKey: ['universes'],
@@ -60,7 +63,9 @@ export function RankingsForm() {
           <XCircle className="h-4 w-4 shrink-0" />
           <span>
             Universen konnten nicht geladen werden:{' '}
-            {universesQuery.error instanceof Error ? universesQuery.error.message : 'Unbekannter Fehler'}
+            {universesQuery.error instanceof Error
+              ? universesQuery.error.message
+              : 'Unbekannter Fehler'}
           </span>
         </div>
       )}
@@ -69,7 +74,9 @@ export function RankingsForm() {
         <div className="flex items-center gap-2 text-destructive text-sm" role="alert">
           <XCircle className="h-4 w-4 shrink-0" />
           <span>
-            {mutation.error instanceof Error ? mutation.error.message : 'Run konnte nicht gestartet werden'}
+            {mutation.error instanceof Error
+              ? mutation.error.message
+              : 'Run konnte nicht gestartet werden'}
           </span>
         </div>
       )}

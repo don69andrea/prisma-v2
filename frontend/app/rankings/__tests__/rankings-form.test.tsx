@@ -7,8 +7,11 @@ import type { UniverseListResponse } from '@/lib/api/universes';
 import type { RunResponse } from '@/lib/api/runs';
 
 const mockPush = vi.fn();
+const mockUseSearchParams = vi.fn(() => new URLSearchParams());
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => mockUseSearchParams(),
 }));
 
 const mockListUniverses = vi.fn();
@@ -50,6 +53,7 @@ describe('RankingsForm', () => {
     mockPush.mockReset();
     mockListUniverses.mockReset();
     mockCreateRun.mockReset();
+    mockUseSearchParams.mockReturnValue(new URLSearchParams());
   });
 
   it('rendert Universe-Optionen aus listUniverses', async () => {
@@ -85,5 +89,13 @@ describe('RankingsForm', () => {
     fireEvent.change(screen.getByLabelText(/Universe/i), { target: { value: 'u-1' } });
     fireEvent.click(screen.getByRole('button', { name: /Run starten/i }));
     await waitFor(() => expect(screen.getByText(/Backend down/)).toBeInTheDocument());
+  });
+
+  it('wählt Universe aus URL-Parameter ?universeId= vor', async () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams('universeId=u-2'));
+    mockListUniverses.mockResolvedValue(sampleUniverses);
+    renderForm();
+    const select = await screen.findByLabelText(/Universe/i);
+    await waitFor(() => expect(select).toHaveValue('u-2'));
   });
 });

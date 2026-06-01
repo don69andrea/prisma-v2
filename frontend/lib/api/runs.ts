@@ -22,6 +22,15 @@ export interface RankingItem {
 /** Alias used in pages that were built before RunResponse was typed. */
 export type Run = RunResponse;
 
+export function statusLabel(status: RankingRunStatus): string {
+  switch (status) {
+    case 'completed': return 'Abgeschlossen';
+    case 'running':   return 'Läuft…';
+    case 'pending':   return 'Ausstehend';
+    case 'failed':    return 'Fehlgeschlagen';
+  }
+}
+
 export async function createRun(universeId: string): Promise<RunResponse> {
   return apiFetch<RunResponse>('/api/v1/runs', {
     method: 'POST',

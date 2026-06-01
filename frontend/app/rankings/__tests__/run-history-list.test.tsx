@@ -138,4 +138,26 @@ describe('<RunHistoryList />', () => {
 
     expect(mockPush).toHaveBeenCalledWith('/rankings/compare?a=r1&b=r2');
   });
+
+  it('zeigt "Datum" als Spaltenheader', async () => {
+    mockListRuns.mockResolvedValue([makeRun('r1', 'completed')]);
+    renderWithClient(<RunHistoryList />);
+    await waitFor(() => expect(screen.getByText('Datum')).toBeInTheDocument());
+  });
+
+  it('zeigt deutsche Status-Labels in den Badges', async () => {
+    mockListRuns.mockResolvedValue([
+      makeRun('r1', 'completed'),
+      makeRun('r2', 'pending'),
+      makeRun('r3', 'running'),
+      makeRun('r4', 'failed'),
+    ]);
+    renderWithClient(<RunHistoryList />);
+    await waitFor(() => {
+      expect(screen.getByText('Abgeschlossen')).toBeInTheDocument();
+      expect(screen.getByText('Ausstehend')).toBeInTheDocument();
+      expect(screen.getByText('Läuft…')).toBeInTheDocument();
+      expect(screen.getByText('Fehlgeschlagen')).toBeInTheDocument();
+    });
+  });
 });

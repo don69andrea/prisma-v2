@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +24,9 @@ export default function RankingsPage() {
           <CardTitle className="text-base font-medium">Neuer Run</CardTitle>
         </CardHeader>
         <CardContent>
-          <RankingsForm />
+          <Suspense fallback={<div className="h-16 rounded-md bg-muted animate-pulse" />}>
+            <RankingsForm />
+          </Suspense>
         </CardContent>
       </Card>
 

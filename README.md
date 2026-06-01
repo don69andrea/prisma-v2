@@ -30,7 +30,7 @@ Empfohlener End-to-End-Walk-Through (~10-15min, ausführliches Skript in [`docs/
 **Akt 1 — Universe definieren**
 1. **Dashboard** (`/`) — 4 Stats-Karten: Letzter Run, Anzahl Universen, Anzahl Stocks, Top-Pick mit Sweet-Spot-Indikator. Direkt-Link zum Ranking-Form.
 2. **Universen** (`/universes`) — vordefinierte Universen sichtbar (per Seed-Skript: Demo-US-5, Tech-Big-12). Weitere lassen sich jederzeit anlegen.
-3. **LLM-Wizard** (`/universes/wizard`) — Freitext-Eingabe wie *"Halbleiter und KI-Stocks aus den USA"* → Claude Haiku schlägt Tickers aus der katalogweiten Whitelist vor (keine Halluzinationen), Pre-Filled Form zum Editieren.
+3. **LLM-Wizard** (`/universes/wizard`) — Freitext-Eingabe wie *"Halbleiter und KI-Stocks aus den USA"* → Claude Haiku schlägt Tickers aus der katalogweiten Whitelist vor (keine Halluzinationen), Pre-Filled Form zum Editieren. Nach dem Speichern öffnet ein Dialog direkt den Weg zum Ranking-Start.
 
 **Akt 2 — Ranking + Drilldown**
 4. **Rankings** (`/rankings`) — Form zum Run-Start + Liste vergangener Runs.
@@ -48,6 +48,9 @@ Selber Flow läuft als Playwright-Tests in CI (`frontend/e2e/`, 7 Spec-Files).
 
 ## Features
 
+- **Futuristic Loading Screen**: Animierter Ladescreen beim App-Start
+- **Universe → Ranking CTA**: Post-Creation-Dialog leitet direkt zum Ranking-Start weiter
+- **Backtest Run-Auswahl**: Dropdown-Selektor mit Run-Namen statt UUID-Textfeld
 - **Quant Core**: 5 Modelle (Quality Classic, Alpha, Trend Momentum / EWMA, Value Alpha Potential, Diversification / Ledoit-Wolf)
 - **LLM-Universe-Wizard**: Claude Haiku schlägt aus Stock-Katalog passende Universen vor — Whitelist-constrained, Pydantic-validiert, keine Halluzinationen
 - **Narrative Engine**: LLM-generierte, strukturierte Research-Memos pro Top-Pick (Claude Sonnet + Tool-Use + Pydantic-Schema)

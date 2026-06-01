@@ -16,7 +16,7 @@ Pro PR mit substantieller Agent-Beteiligung ein Eintrag:
 - **Autor**: <Teammitglied>
 ```
 
-## Patterns (extrahiert aus 14 Einträgen, Stand 2026-05-10)
+## Patterns (extrahiert aus 52 Einträgen, Stand 2026-06-01)
 
 Diese Sektion kondensiert wiederkehrende Lehren aus den Einträgen unten. Jeder Pattern verlinkt auf die Einträge mit konkreter Evidenz, damit der Pattern-Claim verifizierbar bleibt — nicht aus dem Bauch, sondern aus tatsächlich gemachten Erfahrungen.
 
@@ -72,6 +72,12 @@ Diese Sektion kondensiert wiederkehrende Lehren aus den Einträgen unten. Jeder 
 - **Evidenz**: ADR-0005 (Opus für Trade-off-Analyse, Sonnet-Subagent für ADR-Schreibarbeit nach Vorbild). PR #24 (Opus-Brainstorming, Sonnet-Subagent für 643-Zeilen-Spec-Schreibarbeit).
 - **Wirkung**: Opus-Hauptkontext bleibt frei für Entscheidungen, die Urteil brauchen. Spiegelt PRISMAs eigenes Multi-Agent-Pattern (AnalystAgent vs SynthesizerAgent).
 
+#### P10. Null-Object statt Mock für persistente Infrastruktur in Tests
+**Test-Infrastruktur (Repositories, Clients) via Null-Object-Pattern implementieren statt via `MagicMock`.** Null-Objekte sind explizit, typsicher und dokumentieren die erlaubten Operationen.
+- **Evidenz**: PR #135 (`_NullCostLogRepository` für `FixtureLLMClient` — implementiert das `CostLogRepository`-Interface vollständig, alle Operationen als No-Op. Kein `AsyncMock(return_value=...)` pro Methode nötig). `InMemoryUniverseRepository` in Integration-Tests.
+- **Wirkung**: Null-Objekte fangen Breaking Changes an der Schnittstelle (mypy schlägt an wenn Interface sich ändert), Mocks tun das nicht. Testcode ist weniger fragil.
+- **How to apply**: Wenn ein Mock mehr als 2 `return_value`-Konfigurationen braucht → Null-Object schreiben. Für einfache Single-Call-Verifikation bleibt `AsyncMock` sinnvoll.
+
 ---
 
 ### Anti-Patterns — was wiederholt schiefging
@@ -111,6 +117,21 @@ Diese Sektion kondensiert wiederkehrende Lehren aus den Einträgen unten. Jeder 
 - **Evidenz**: PR #64 (Pydantic `string_too_long` auf `ranking_interpretation` mit `max_length=600`, Sonnet schreibt typisch 700-1000 Zeichen für 5-Modell-Interpretation. In Production wäre alles in Error-Memo-Pfad gewandert).
 - **Mitigation**: Vor dem ersten Production-Smoke einmal mit echten Inputs gegen das Modell laufen lassen, dann Schema-Constraints kalibrieren. Real-API-Smoke ist Acceptance, nicht Polish (Q4).
 
+#### A8. Required kwargs ohne Default in internen APIs unbemerkt vergessen
+**Interne Hilfsfunktionen mit required kwargs (kein Default)** werden beim ersten Aufrufer korrekt gesetzt, aber bei neuen Aufrufern oft vergessen — besonders wenn die Funktion viele optionale Kwargs hat.
+- **Evidenz**: PR #136 / Nacharbeit 2026-05-19 (`LLMClient.embed(feature=)` ist required, aber `RetrievalService.retrieve()` rief `embed()` ohne `feature=` auf — stiller TypeError zur Laufzeit, kein mypy-Fehler weil der Service selbst nicht vollständig getypt war).
+- **Mitigation**: (1) Neuen Aufrufer immer gegen die vollständige Methodensignatur der aufgerufenen Funktion gegenchecken. (2) Bei `mypy strict` wäre das sofort gefangen worden — Strict-Mypy zahlt sich aus. (3) Required kwargs in internen APIs als Code-Review-Checkliste aufnehmen.
+
+#### A9. session.merge() mit transientem Objekt hat dasselbe Identity-Map-Problem wie flush()+get()
+**`AsyncSession.merge(new_ORM_instance)` emittiert ein SELECT gegen die DB — pending (noch nicht committete) Rows werden nicht gesehen.** Ein zweiter `merge()` mit derselben PK erstellt ein zweites Pending-Objekt → `UniqueViolationError` beim Commit.
+- **Evidenz**: PR #131 Follow-up 2026-05-19 (zwei `test_save_twice_updates_instead_of_insert`-Tests, `test_ranking_run_repository` + `test_universe_repository`, knallten mit `asyncpg.UniqueViolationError` — beide Pending-Inserts hatten dieselbe UUID). Das Original-PR-Entry („nichts klappte") war voreilig — CI lief erst nach dem Merge.
+- **Mitigation**: PostgreSQL-nativer Upsert via `pg_insert(...).on_conflict_do_update(index_elements=["id"], set_={...})`. Atomic, session-state-unabhängig, kein SELECT nötig. Kostet eine explizite `set_`-Dict-Pflege (welche Felder bei Update geschrieben werden), schützt aber vor allen Identity-Map-Quirks.
+
+#### A10. Jinja2 {% if %}/{% endif %} Leerzeilen bei trim_blocks=False
+**Mit `trim_blocks=False` (Default) bleibt der Zeilenumbruch nach `{% endif %}` im Output.** Wird der Block nie betreten (falsy condition), kommt trotzdem ein `\n` aus dem `{% endif %}`-Tag. Ein Blank-Line vor dem `{% if %}`-Tag addiert sich — Ergebnis: 2 statt 1 Leerzeilen.
+- **Evidenz**: PR #139 2026-05-19 (`test_prompt_loader.py` snapshot-Tests: `AssertionError` weil Template mit `{% if rag_context %}` Block + Leerzeile davor 2 Leerzeilen produzierte, Snapshot erwartete 1).
+- **Mitigation**: (1) Blank-Line vor `{% if %}` entfernen — die `\n` aus dem `{% endif %}`-Tag gibt die einzige Trennzeile wenn Block falsy. (2) Oder `trim_blocks=True` in der Jinja2-Environment setzen. (3) Snapshot-Tests immer mit dem leeren Zustand (`rag_context=""`) verifizieren, nicht nur mit Inhalt.
+
 ---
 
 ### Quer-Patterns für die 40%-AI-Achse
@@ -131,6 +152,15 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 ---
 
 ## Einträge
+
+## 2026-06-01 · Abgabe-Absicherung — Demo-DB-Diagnose, Anthropic-Key-Fix, Katalog-Parität-Migration (chore/abgabe-final)
+- **Agent**: Claude Code (Opus 4.8, inline ohne Subagent-Split)
+- **Scope**: Post-Demo-Submission-Polish. (1) Live-Render-Deployment verifiziert → Demo-DB war leer (0 Universen/Runs) → via Live-API neu geseedet (Universum + 2 Runs mit divergierenden Gewichten für Compare-Story). (2) Memo-Generierung auf Prod gab blanken 500 → per **lokaler Reproduktion + Ausschlussverfahren** als fehlender `ANTHROPIC_API_KEY` auf Render diagnostiziert (nicht Code/Daten). (3) Nach Key-Fix: 10 Memos generiert, kompletter Demo-Pfad (Rankings → Memo-Drilldown → Compare) per Playwright auf der Live-URL E2E-verifiziert. (4) Migration `0012` für 13-Stock-Katalog-Parität lokal↔deployed. (5) README-Setup-Bugs + Doku-Konsistenz gefixt.
+- **Was gut lief**: **Diagnose per lokaler Reproduktion schlug Raten.** Statt den 500 auf Prod zu interpretieren, denselben Memo-Call lokal mit echtem Key gegen lokale DB gefahren → lief grün (200). Damit war Code+Daten als Ursache ausgeschlossen und nur die Prod-Env-Config blieb übrig. Code-Lesen bestätigte: RAG/Voyage-Fehler ist env-unabhängig abgefangen (`narrative_service.py:549`), nur `anthropic.AuthenticationError` ist uncaught → blanker 500. Lückenlose Beweiskette ohne Render-Log-Zugriff. **Migration statt Seed-Skript für Katalog-Parität**: idempotente Daten-Migration (Pattern aus 0009b) bringt lokal+deployed auf denselben Stand UND regeneriert nach jedem Free-Tier-DB-Reset — löst die wiederkehrende „Demo-DB plötzlich leer"-Klasse dauerhaft.
+- **Was nicht klappte**: Erste lokale Verifikation gab 11 statt 13 Stocks — meine Test-DB war durch einen früheren `seed_demo_universe.py`-Lauf (NVDA/JPM statt AMZN/TSLA) verunreinigt, `ON CONFLICT DO NOTHING` übersprang die Überlappung. Kein Migrations-Bug — mit frischer DB von Null (= exakter Prod-Deploy-Pfad) korrekt 13. Lehre: Daten-Migrationen immer gegen eine **frisch von Null migrierte** DB verifizieren, nicht gegen eine über die Session gewachsene lokale DB.
+- **Nachbearbeitung nötig bei**: Optionales Code-Hardening offen — `anthropic.AuthenticationError` im Memo-Pfad abfangen → strukturierter 502 statt blanker 500 (nur relevant falls Key erneut ausfällt). Universen/Runs/Memos auf Prod bleiben via-API-geseedet und damit nicht reset-resistent (nur der Stock-Katalog ist via Migration permanent).
+- **Lektion**: **Bei Env-spezifischen Prod-Fehlern ist lokale Reproduktion mit Ausschlussverfahren schneller und sicherer als Log-Archäologie.** Ein blanker 500 ohne Log-Zugriff ist trotzdem präzise diagnostizierbar, wenn man systematisch Code+Daten lokal ausschließt, bis nur die Env-Config übrig bleibt. **Ephemere PaaS-DBs gehören in Migrationen, nicht in manuelle Seeds** — was reproduzierbar in der DB sein muss, gehört in eine idempotente Migration (läuft bei jedem Deploy), nicht in ein Skript, das jemand manuell ausführen muss und nach dem nächsten Reset vergisst.
+- **Autor**: Sheyla Sampietro (mit Claude Code)
 
 ## 2026-05-26 · POST /api/v1/universes/{id}/sync — Ticker-Stocks-Sync (Issue #114, PR #133)
 - **Agent**: Claude Code (Sonnet 4.6) — superpowers:writing-plans + subagent-driven-development
@@ -220,6 +250,23 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Nachbearbeitung nötig bei**: Integration-Tests (Postgres-Container) lokal nicht ausfuehrbar, CI ist Acceptance-Gate fuer `test_backtests_endpoint.py`.
 - **Lektion**: TDD-Skill hat einen falsch-positiven Test sofort gefangen. Der vorgeschlagene "test passes immediately → fix test"-Regel-Trigger hat den Reset-Test von einem schwachen ("Feb-1 = 50/50") zu einem starken ("Drift im Januar + Reset am 31.01.") gemacht. Faengt zukuenftige Vectorize-Regressionen.
 - **Autor**: Fabia Holzer (mit Claude Code)
+
+## 2026-05-19 · AI-USAGE.md — Einträge für PRs #131–#136 (PR #137)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: 6 neue Einträge + 2 neue Patterns (P10: Null-Object, A8: Required kwargs) in `docs/AI-USAGE.md`. Einträge decken session.merge()-Refactor, SIGTERM-Shutdown, Universe-Sync, CI-Checkliste, Fixture-Mode, RAG-Pipeline ab.
+- **Was gut lief**: Rückblickende Pattern-Extraktion aus 6 PRs in einer Session — klare Evidenzlinks pro Pattern, kein Generalisierungsproblem.
+- **Was nicht klappte**: PR #131-Eintrag war voreilig positiv formuliert — `session.merge()`-Bug wurde erst durch CI nach Merge entdeckt (A9 entstand als Korrektur in diesem Follow-up, nicht im Original-PR-Entry).
+- **Lektion**: AI-USAGE-Einträge direkt nach CI-Ergebnis schreiben, nicht nach Local-Check. CI ist das Acceptance-Gate (Q4 gilt nicht nur für LLM-Output).
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-05-19 · session.merge() Fix — pg upsert (Issues #91 #92, PR #131 Follow-up)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `session.merge()` in `SQLARankingRunRepository.save()` und `SQLAUniverseRepository.save()` durch `pg_insert(...).on_conflict_do_update()` ersetzt. Fixes 3 CI-Failures: `test_save_twice_updates_instead_of_insert` (ranking_run + universe) und `test_save_then_save_results_then_save_persists_all`.
+- **Was gut lief**: Root-Cause sofort klar aus CI-Fehler (`executemany` mit 2 Rows derselben UUID = 2 Pending-Objekte → doppelter INSERT). `pg_insert().on_conflict_do_update()` ist atomic + session-state-unabhängig — kein SELECT, kein Identity-Map-Problem.
+- **Was nicht klappte**: `ruff format`-Check schlug fehl weil `set_={"name": ..., "region": ..., "tickers": ...}` zu lang für eine Zeile war. Fix: Dict auf mehrere Zeilen aufgebrochen.
+- **Nachbearbeitung nötig bei**: Issues #91 + #92 können nach PR-Merge geschlossen werden (Upsert-Semantik ist erfüllt, nur via anderem Mechanismus als ursprünglich geplant).
+- **Lektion**: CI-Ergebnis ist nicht gleich Local-Prüfung — PR #131's Original-Eintrag schrieb „nichts klappte nicht", aber `session.merge()` mit transientem Objekt hat dasselbe Problem wie das Pattern das es ersetzen sollte (A9).
+- **Autor**: Andrea Petretta (mit Claude Code)
 
 ## 2026-05-19 · RAG-Pipeline Retrieval — Tests + Bug-Fix (Issue #18, PR #136)
 - **Agent**: Claude Code (Sonnet 4.6)

@@ -14,13 +14,13 @@ Sichtbare Nachweise gegen das Capstone-Bewertungsraster (Stand: 2026-05-17).
 |---|---|---|
 | **Architektur** | Clean Architecture (4 Schichten: Domain / Application / Interfaces / Infrastructure) | [`docs/specs/2026-04-21-prisma-capstone-design.md`](./docs/specs/2026-04-21-prisma-capstone-design.md) · siehe Architektur-Sektion unten |
 | **Tests** | Backend Unit + Integration · Frontend Vitest · Playwright E2E | [`backend/tests/`](./backend/tests) · [`frontend/app/**/__tests__/`](./frontend/app) · [`frontend/e2e/`](./frontend/e2e) |
-| **Test-Coverage** | ~89.8% Backend lokal verifiziert | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) — Coverage-Gate-Eintrag |
+| **Test-Coverage** | ~94.1% Backend lokal verifiziert (497 Tests, Gate 80%) | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) — Coverage-Gate-Eintrag |
 | **CI** | GitHub Actions: Backend Lint+Tests, Frontend Lint+Build, Frontend E2E (Playwright) | [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) · [Actions-Tab](https://github.com/SheylaSam/prisma-capstone/actions) |
 | **Release-Workflow** | Tag `v*` → Docker-Images auf GHCR + GitHub Release mit Auto-Notes | [`.github/workflows/release.yml`](./.github/workflows/release.yml) |
 | **CD-Workflow** | `workflow_dispatch` → Render Deploy Hook (Backend / Frontend / beide) | [`.github/workflows/cd-render.yml`](./.github/workflows/cd-render.yml) |
 | **Deployment** | Live auf Render (Free-Plan) | Frontend: [prisma-frontend-jrto.onrender.com](https://prisma-frontend-jrto.onrender.com) · Backend: [prisma-backend-7ai7.onrender.com/health](https://prisma-backend-7ai7.onrender.com/health) · Config: [`render.yaml`](./render.yaml) |
 | **API-Docs** | OpenAPI/Swagger automatisch generiert (FastAPI) | [prisma-backend-7ai7.onrender.com/docs](https://prisma-backend-7ai7.onrender.com/docs) |
-| **AI-Usage-Log** | Reflexion pro PR mit Agent / Patterns / Lehren — 40%-Bewertungsachse | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) (>20 Einträge, Pattern-Sektion mit Evidenz-Links) |
+| **AI-Usage-Log** | Reflexion pro PR mit Agent / Patterns / Lehren — 40%-Bewertungsachse | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) (52 Einträge · 10 Positives + 10 Anti-Patterns + 4 Quer-Patterns mit Evidenz-Links) |
 | **Demo-Skript** | Strukturierter Walk-Through für Live-Demo mit Q&A-Prep | [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md) |
 
 ### Demo-Flow
@@ -29,7 +29,7 @@ Empfohlener End-to-End-Walk-Through (~10-15min, ausführliches Skript in [`docs/
 
 **Akt 1 — Universe definieren**
 1. **Dashboard** (`/`) — 4 Stats-Karten: Letzter Run, Anzahl Universen, Anzahl Stocks, Top-Pick mit Sweet-Spot-Indikator. Direkt-Link zum Ranking-Form.
-2. **Universen** (`/universes`) — drei vordefinierte Universen sichtbar (Demo-US-5, Semiconductor Leaders, Tech-Big-12).
+2. **Universen** (`/universes`) — vordefinierte Universen sichtbar (per Seed-Skript: Demo-US-5, Tech-Big-12). Weitere lassen sich jederzeit anlegen.
 3. **LLM-Wizard** (`/universes/wizard`) — Freitext-Eingabe wie *"Halbleiter und KI-Stocks aus den USA"* → Claude Haiku schlägt Tickers aus der katalogweiten Whitelist vor (keine Halluzinationen), Pre-Filled Form zum Editieren.
 
 **Akt 2 — Ranking + Drilldown**
@@ -94,14 +94,14 @@ cp .env.example .env   # ANTHROPIC_API_KEY, DATABASE_URL anpassen
 # Services starten
 docker compose up -d
 
-# Backend-Dependencies + Migrations
-cd backend
+# Backend-Dependencies + Migrations (vom Repo-Root ausführen —
+# pyproject.toml und alembic.ini liegen im Root, die App importiert via `backend.`)
 pip install -e ".[dev]"
 alembic upgrade head
-uvicorn interfaces.rest.app:app --reload
+uvicorn backend.interfaces.rest.main:app --reload
 
 # Frontend
-cd ../frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -109,6 +109,13 @@ npm run dev
 Ausführliche Setup-Anleitung + Troubleshooting: **[docs/getting-started.md](./docs/getting-started.md)**
 
 ## Demo-Daten
+
+Der **Stock-Katalog (13 Ticker)** wird automatisch durch die Migrationen geseedet
+(`alembic upgrade head`, Migration `0012`) — lokal *und* auf dem Deployment identisch,
+und reproduziert sich nach jedem Deploy bzw. DB-Reset. Es ist also kein Skript nötig,
+um die Aktien selbst anzulegen.
+
+Die Skripte legen nur die **Universen** (Ticker-Gruppierungen) an:
 
 ```bash
 # Demo-US-5 (5 Tickers — AAPL/MSFT/GOOGL/NVDA/JPM)

@@ -1,8 +1,8 @@
 # PRISMA Demo-Skript
 
 > **Zweck:** Strukturierter Walk-Through für die Capstone-Live-Demo (~10-15min).
-> **Demo-URL:** http://localhost:3000  
-> **Stand:** 2026-05-29 (alle 6 Features auf `demo/all-features`)
+> **Demo-URL:** http://localhost:3000 (lokal) bzw. Live auf Render (siehe README)
+> **Stand:** 2026-06-01 — **alle Features sind in `main` gemerged** (PRs #142–#155). Der frühere Integrations-Branch `demo/all-features` ist obsolet.
 
 ## 1. Pre-Flight (5min vor Demo)
 
@@ -18,9 +18,9 @@ cd frontend && npm run dev
 # Browser: http://localhost:3000
 ```
 
-**Branch:** `demo/all-features` (NICHT main — main hat alte Version ohne die 6 Features)
+**Branch:** `main` (enthält alle Features; `alembic upgrade head` seedet den 13-Stock-Katalog automatisch via Migration 0012).
 
-**Smoke-Check** vor Publikum: http://localhost:3000/dashboard sollte Stocks=13 + 2 Runs zeigen. Wenn nicht → DB-Container kontrollieren (`docker ps` → `prisma-db`).
+**Smoke-Check** vor Publikum: http://localhost:3000/dashboard sollte Stocks=13 + ≥1 Run zeigen. Wenn nicht → DB-Container kontrollieren (`docker ps` → `prisma-db`) und Universen/Runs per `scripts/seed_demo_universe.py` + Run-Start anlegen.
 
 ## 2. Story-Bogen (30 Sekunden)
 
@@ -35,7 +35,7 @@ cd frontend && npm run dev
 **Startpunkt:** `/dashboard` zeigen.
 
 **Talking Points:**
-- "Drei Universen vordefiniert: Demo-US-5, Tech-Big-12, Semiconductor Leaders."
+- "Vordefinierte Universen per Seed-Skript: Demo-US-5, Tech-Big-12 (weitere jederzeit anlegbar)."
 - "Jeden Run kann man von hier aus starten — aber zuerst zeige ich, wie ein Universe selbst entsteht."
 
 **Klick:** Nav → "Universen"

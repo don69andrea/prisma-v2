@@ -8,13 +8,13 @@ PRISMA zerlegt Aktien in analytische Dimensionen — wie ein optisches Prisma we
 
 ## Abgabe-Status
 
-Sichtbare Nachweise gegen das Capstone-Bewertungsraster (Stand: 2026-05-17).
+Sichtbare Nachweise gegen das Capstone-Bewertungsraster (Stand: 2026-06-01).
 
 | Kriterium | Status | Nachweis |
 |---|---|---|
 | **Architektur** | Clean Architecture (4 Schichten: Domain / Application / Interfaces / Infrastructure) | [`docs/specs/2026-04-21-prisma-capstone-design.md`](./docs/specs/2026-04-21-prisma-capstone-design.md) · siehe Architektur-Sektion unten |
 | **Tests** | Backend Unit + Integration · Frontend Vitest · Playwright E2E | [`backend/tests/`](./backend/tests) · [`frontend/app/**/__tests__/`](./frontend/app) · [`frontend/e2e/`](./frontend/e2e) |
-| **Test-Coverage** | ~94.1% Backend lokal verifiziert (497 Tests, Gate 80%) | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) — Coverage-Gate-Eintrag |
+| **Test-Coverage** | ~94.5% Backend lokal verifiziert (508 Tests, Gate 80%) | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) — Coverage-Gate-Eintrag |
 | **CI** | GitHub Actions: Backend Lint+Tests, Frontend Lint+Build, Frontend E2E (Playwright) | [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) · [Actions-Tab](https://github.com/SheylaSam/prisma-capstone/actions) |
 | **Release-Workflow** | Tag `v*` → Docker-Images auf GHCR + GitHub Release mit Auto-Notes | [`.github/workflows/release.yml`](./.github/workflows/release.yml) |
 | **CD-Workflow** | `workflow_dispatch` → Render Deploy Hook (Backend / Frontend / beide) | [`.github/workflows/cd-render.yml`](./.github/workflows/cd-render.yml) |

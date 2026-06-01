@@ -20,7 +20,7 @@ PRISMA zerlegt Aktien in analytische Dimensionen — wie ein optisches Prisma we
 | **CD-Workflow** | `workflow_dispatch` → Render Deploy Hook (Backend / Frontend / beide) | [`.github/workflows/cd-render.yml`](./.github/workflows/cd-render.yml) |
 | **Deployment** | Live auf Render (Free-Plan) | Frontend: [prisma-frontend-jrto.onrender.com](https://prisma-frontend-jrto.onrender.com) · Backend: [prisma-backend-7ai7.onrender.com/health](https://prisma-backend-7ai7.onrender.com/health) · Config: [`render.yaml`](./render.yaml) |
 | **API-Docs** | OpenAPI/Swagger automatisch generiert (FastAPI) | [prisma-backend-7ai7.onrender.com/docs](https://prisma-backend-7ai7.onrender.com/docs) |
-| **AI-Usage-Log** | Reflexion pro PR mit Agent / Patterns / Lehren | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) (52 Einträge · 10 Positives + 10 Anti-Patterns + 4 Quer-Patterns mit Evidenz-Links) |
+| **AI-Usage-Log** | Reflexion pro PR mit Agent / Patterns / Lehren, Einträge von allen 4 Teammitgliedern | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) (63 Einträge · 10 Positives + 10 Anti-Patterns + 4 Quer-Patterns mit Evidenz-Links) |
 | **Demo-Skript** | Strukturierter Walk-Through für Live-Demo mit Q&A-Prep | [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md) |
 
 ### Demo-Flow
@@ -58,6 +58,57 @@ Selber Flow läuft als Playwright-Tests in CI (`frontend/e2e/`, 7 Spec-Files).
 - **Run-History + Vergleich**: Vergangene Runs auswählen und Side-by-Side vergleichen (Δ Rank, Δ Score, Same/Cross-Universe-Erkennung)
 - **Dashboard-Stats**: 4 Karten + Runs-Tabelle als Startseite
 - **Mobile-Responsive**: Header passt sich an <640px-Viewports an (stacked statt cutoff)
+
+## AI-assisted Development
+
+PRISMA wurde durchgehend mit **Claude Code** als primären Coding-Agent entwickelt — von der ersten Architekturentscheidung bis zum letzten Feature. Der Entwicklungs-Workflow ist explizit und reproduzierbar:
+
+### Workflow
+
+```
+Brainstorming → Spec-First → Plan-as-Contract → Subagent-Driven Execution → Two-Stage Review → Reflexion
+```
+
+1. **Brainstorming** (`superpowers:brainstorming`) — Architekturentscheidungen werden eine nach der anderen mit dem Team durchgespielt, bevor Code entsteht. Keine "Wall of Decisions", sondern eine Frage pro Turn mit Optionen + Empfehlung.
+2. **Spec-First** — Jedes Feature startet mit einer Spec in `docs/specs/`. Der Agent schreibt keine Zeile Code ohne Freigabe der Spec. Über 45 Spec-Dokumente im Repo belegen dies.
+3. **Plan-as-Contract** (`superpowers:writing-plans`) — Detaillierte Implementationspläne (800–1500 Zeilen) mit verbatim Test-Code, Bash-Befehlen und Commit-Messages pro Step. Ein Plan ist kein Vorschlag, sondern ein Vertrag — Subagents führen ihn aus, ohne Rückfragen.
+4. **Subagent-Driven Execution** (`superpowers:subagent-driven-development`) — Frischer Subagent pro Task mit isoliertem Kontext. Kein Kontext-Spill zwischen Tasks. Der Orchestrator-Agent koordiniert, Implementer-Subagents liefern.
+5. **Two-Stage Review** — Jeder Task wird nach der Implementierung zweifach geprüft: (1) Spec-Compliance-Review (wurde genau das gebaut, was bestellt war?) und (2) Code-Quality-Review (ist es sauber, wartbar, DRY?). Beide Reviews laufen als separate Subagents.
+6. **Reflexion** — Jeder PR mit substantieller AI-Beteiligung landet in `docs/AI-USAGE.md` mit Agent, Scope, Was gut/schlecht lief, und einer konkreten Lektion.
+
+### Agent-Vertrag
+
+[`AGENTS.md`](./AGENTS.md) ist der verbindliche Verhaltensvertrag für alle Coding-Agents in diesem Repo. Er enthält: Coding-Konventionen mit konkreten Dialogen aus 5+ Features, Branch- und Commit-Strategie, TDD-Pflicht für Domain-Code, LLM-Output-Regeln (Pydantic-Schema, Prompt-Caching, kein Freitext), MCP-Layer-Constraints und Sicherheits-Regeln. Claude Code liest `AGENTS.md` + `CLAUDE.md` automatisch zu Sessionbeginn.
+
+### Modell-Routing
+
+| Aufgabe | Modell |
+|---|---|
+| Architektur-Entscheidungen, Trade-off-Analyse, Brainstorming | Claude Opus |
+| Feature-Implementierung, Review-Loops, Integration | Claude Sonnet |
+| Schnelle Strukturierungs-Tasks, triviale Schritte, Haiku-Responses | Claude Haiku |
+
+Das Routing folgt ADR-0005: teurere Modelle für Urteil, günstigere für Schreibarbeit — nicht aus Kostengründen, sondern um den Hauptkontext für Entscheidungen freizuhalten.
+
+### 3 AI-Layer im Produkt
+
+PRISMA nutzt AI nicht nur im Entwicklungsprozess, sondern als Kernfunktion des Produkts selbst:
+
+| Layer | Technologie | Funktion |
+|---|---|---|
+| **1 · Narrative Engine** | Claude Sonnet + Tool-Use + Pydantic-Schema | Strukturierte Research-Memos pro Aktie: One-Liner, Stärken, Risiken, Modell-Widersprüche, Analyst-Interpretation. Output ist Pydantic-validiert — kein Freitext, kein Schema-Drift. |
+| **2 · Multi-Agent Deep-Dive** | Fundamentals-Agent + Sentiment-Agent + Synthesizer-Agent | Parallelisierte Dossiers für Top-N Picks. Jeder Agent spezialisiert auf eine Analyse-Dimension, Synthesizer fasst zusammen. |
+| **3 · MCP-Server** | MCP SDK (Python) + FastMCP | PRISMA direkt aus Claude Desktop per Natursprache bedienbar — z.B. *"Zeig mir SPI-Titel, die in Quality und Trend Top-20% sind."* |
+
+### Nachweise auf einen Blick
+
+| Was | Wo | Umfang |
+|---|---|---|
+| AI-Nutzungs-Reflexion | [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) | 63 Einträge, alle 4 Teammitglieder, 24 destillierte Patterns |
+| Specs (Spec-First-Nachweis) | [`docs/specs/`](./docs/specs) | 45+ Spec-Dokumente |
+| Implementationspläne | [`docs/superpowers/plans/`](./docs/superpowers/plans) | 9 Pläne, je 800–1500 Zeilen |
+| Architecture Decision Records | [`docs/adr/`](./docs/adr) | 6 ADRs mit Status-Feld |
+| Agent-Vertrag | [`AGENTS.md`](./AGENTS.md) | Coding-Konventionen + Dialoge |
 
 ## Stack
 
@@ -161,11 +212,12 @@ npx playwright test         # E2E
 
 ## Dokumentation
 
-- **Design-Spec**: [`docs/specs/2026-04-21-prisma-capstone-design.md`](./docs/specs/2026-04-21-prisma-capstone-design.md)
-- **Architecture Decision Records**: [`docs/adr/`](./docs/adr)
-- **Agent-Konventionen**: [`AGENTS.md`](./AGENTS.md)
+- **Design-Spec**: [`docs/specs/2026-04-21-prisma-capstone-design.md`](./docs/specs/2026-04-21-prisma-capstone-design.md) — Gesamtarchitektur, Domain-Modell, 5 Quant-Modelle, Test-Strategie, CI/CD, Bewertungsraster
+- **Architecture Decision Records**: [`docs/adr/`](./docs/adr) — 6 ADRs (Tech-Stack, LLM-Provider, Narrative-Engine, Multi-Agent, Datenquellen, Quant-Modelle-Redesign), je mit Kontext / Entscheidung / Konsequenzen / Status
+- **Implementationspläne**: [`docs/superpowers/plans/`](./docs/superpowers/plans) — 9 detaillierte Pläne (800–1500 Zeilen) als Plan-as-Contract für Subagent-Driven-Execution
+- **Agent-Konventionen**: [`AGENTS.md`](./AGENTS.md) — verbindlicher Verhaltensvertrag für alle Coding-Agents
 - **Contribution-Guidelines**: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
-- **AI-Nutzungs-Reflexion**: [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) (wird laufend geführt)
+- **AI-Nutzungs-Reflexion**: [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) — 63 Einträge, laufend geführt während des Projekts
 
 ## Team
 

@@ -1,6 +1,6 @@
 # ADR 0005: Datenquelle für Quant-Fundamentaldaten
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Datum**: 2026-04-22
 - **Kontext**: Phase-2-MVP — Datenversorgung der 8 Quality-Classic-Metriken (P/E, P/B, FCF Yield, Operating Margin, Dividendenrendite, D/E, EPS-Wachstum 3J, Sales-Wachstum 3J)
 - **Supersedes**: Implizite Annahme in §13 des Design-Dokuments, dass yfinance zur Laufzeit als primäre Fundamentaldatenquelle dient

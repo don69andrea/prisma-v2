@@ -54,19 +54,20 @@ docs/              # specs/ adr/ agents/
 ## Standard-Kommandos
 
 ```bash
-# Setup lokal (nach git clone)
+# Setup lokal (nach git clone) — Backend-Befehle vom Repo-Root
+# (pyproject.toml + alembic.ini liegen im Root)
 docker compose up -d
-cd backend && pip install -e ".[dev]" && alembic upgrade head
-cd ../frontend && npm install
+pip install -e ".[dev]" && alembic upgrade head
+cd frontend && npm install
 
 # Pre-Commit-Hooks aktivieren (einmal pro Klon)
 pipx install pre-commit    # oder: brew install pre-commit
 pre-commit install         # aktiviert automatische Checks bei jedem commit
 
-# Entwickeln
-uvicorn interfaces.rest.app:app --reload        # Backend
-npm run dev                                      # Frontend
-python -m interfaces.mcp.server                  # MCP-Server lokal
+# Entwickeln (Backend vom Repo-Root)
+uvicorn backend.interfaces.rest.main:app --reload   # Backend
+npm run dev                                          # Frontend (in frontend/)
+python -m backend.interfaces.mcp.server              # MCP-Server lokal
 
 # Testen
 pytest                                           # alle Python-Tests
@@ -97,7 +98,7 @@ npx eslint frontend/ --fix
 5. Token-Kosten in Commit-Message vermerken.
 
 ### Wenn ein MCP-Tool hinzugefügt wird
-1. Tool-Schema in `backend/interfaces/mcp/tools.py`.
+1. Tool-Schema in `backend/interfaces/mcp/tools/`.
 2. Tool ruft Application-Service — keine DB-Queries direkt im MCP-Handler.
 3. `claude_desktop_config.json`-Snippet im `docs/` ergänzen.
 4. Manuell in Claude Desktop getestet + Screenshot in PR.
@@ -148,8 +149,6 @@ Jede PR, die substantiell mit einem Coding-Agent entstanden ist, bekommt in `doc
 - **Was nicht klappte**: <1 Satz>
 - **Nachbearbeitung nötig bei**: <1 Satz>
 ```
-
-Diese Reflexion ist **direkt notenrelevant** für die 40%-Achse.
 
 ## Häufige CI-Fallstricke
 

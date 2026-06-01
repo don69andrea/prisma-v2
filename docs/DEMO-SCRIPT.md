@@ -138,7 +138,7 @@ cd frontend && npm run dev
 - Drei Stellen:
   1. **LLM-Wizard** für Universe-Erstellung (Haiku 4.5 — schnell, billig)
   2. **Research-Memos** pro Top-Pick (Sonnet 4.6 für Synthese-Qualität)
-  3. **Development-Tool** — Capstone wurde mit Claude Code entwickelt (siehe `docs/AI-USAGE.md`, 40%-Bewertungsachse)
+  3. **Development-Tool** — Capstone wurde mit Claude Code entwickelt (siehe `docs/AI-USAGE.md`)
 - Klare Trennung: PRISMA als App ist NICHT abhängig von Claude für Kern-Funktion. Quantitative Rankings funktionieren ohne LLM. LLM ist eine Erweiterung, nicht das Fundament.
 
 ### "Was würde ich anders machen wenn ich nochmal anfangen würde?"

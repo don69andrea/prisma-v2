@@ -1,8 +1,8 @@
-# ADR 0005: Quant-Modelle für Free-Tier-Daten neu wählen
+# ADR 0006: Quant-Modelle für Free-Tier-Daten neu wählen
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Datum**: 2026-04-27
-- **Kontext**: PR #26, Spec `docs/specs/2026-04-27-quant-models-redesign.md`
+- **Kontext**: PR #26, Spec `docs/specs/2026-04-27-quant-models-redesign.md`. Motiviert durch den Free-Tier-Daten-Constraint aus [ADR 0005](./0005-data-source-quant-fundamentals.md).
 
 ## Kontext
 

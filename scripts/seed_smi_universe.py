@@ -50,7 +50,7 @@ SMI_20 = [
     ("PGHN",  "CH0024608827", "Partners Group Holding AG",          "Financials"),       # * verify
     ("KRIN",  "CH0334776754", "Kühne + Nagel International AG",     "Industrials"),      # * verify
     ("CFR",   "CH0210483332", "Compagnie Financière Richemont SA",  "Consumer Disc."),   # * verify
-    ("STMN",  "CH0038863350", "Straumann Holding AG",               "Healthcare"),       # * verify — placeholder ISIN
+    ("STMN",  "CH0012050267", "Straumann Holding AG",               "Healthcare"),       # * verify via yf.Ticker("STMN.SW").isin
 ]
 
 UNIVERSE_NAME = "SMI-20"

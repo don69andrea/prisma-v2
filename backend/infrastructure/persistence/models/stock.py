@@ -1,8 +1,10 @@
+# backend/infrastructure/persistence/models/stock.py
 """SQLAlchemy ORM-Modell für die stocks-Tabelle."""
 
 import uuid
+from decimal import Decimal
 
-from sqlalchemy import Index, String
+from sqlalchemy import Index, Numeric, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,11 +26,12 @@ class StockORM(Base):
     isin: Mapped[str | None] = mapped_column(String(12), nullable=True)
     sector: Mapped[str | None] = mapped_column(String(100), nullable=True)
     country: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    # ISO 4217, immer 3 Zeichen
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    # Swiss Market fields (nullable for non-Swiss stocks)
+    exchange: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    market_cap_chf: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
 
     __table_args__ = (
-        # Unique-Index für schnelle Ticker-Lookups; stellt DB-seitige Eindeutigkeit sicher.
         Index("ix_stocks_ticker", "ticker", unique=True),
     )
 

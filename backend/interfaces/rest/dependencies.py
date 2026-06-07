@@ -16,6 +16,7 @@ from backend.application.services.narrative_service import NarrativeService
 from backend.application.services.ranking_run_service import RankingRunService
 from backend.application.services.retrieval_service import RetrievalService
 from backend.application.services.stock_service import StockService
+from backend.application.services.swiss_market_service import SwissMarketService
 from backend.application.services.universe_service import UniverseService
 from backend.application.services.universe_suggestion_service import UniverseSuggestionService
 from backend.config import Settings, get_settings
@@ -26,6 +27,7 @@ from backend.domain.repositories.memo_batch_job_repository import MemoBatchJobRe
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.research_memo_repository import ResearchMemoRepository
 from backend.domain.repositories.stock_repository import StockRepository
+from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
 from backend.infrastructure.llm.client import LLMClient
 from backend.infrastructure.llm.pricing import PRICING  # Single-Source-of-Truth via DI an LLMClient
@@ -44,6 +46,9 @@ from backend.infrastructure.persistence.repositories.research_memo_repository im
 )
 from backend.infrastructure.persistence.repositories.stock_repository import (
     SQLAStockRepository,
+)
+from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
+    SQLASwissStockRepository,
 )
 from backend.infrastructure.persistence.repositories.universe_repository import (
     SQLAUniverseRepository,
@@ -368,15 +373,10 @@ async def get_universe_suggestion_service(
     return UniverseSuggestionService(llm_client=llm, stock_service=stock_service)
 
 
+
 # ---------------------------------------------------------------------------
 # SwissMarketService DI-Chain
 # ---------------------------------------------------------------------------
-
-from backend.application.services.swiss_market_service import SwissMarketService
-from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
-from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
-    SQLASwissStockRepository,
-)
 
 
 async def get_swiss_stock_repository(

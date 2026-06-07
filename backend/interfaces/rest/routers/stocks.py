@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.stock_service import StockNotFound, StockService
-from backend.interfaces.rest.dependencies import get_factsheet_service, get_stock_service
+from backend.application.services.swiss_market_service import SwissMarketService
+from backend.interfaces.rest.dependencies import (
+    get_factsheet_service,
+    get_stock_service,
+    get_swiss_market_service,
+)
 from backend.interfaces.rest.schemas.stock import (
     LatestRankingSnapshot,
     PricePoint,
@@ -46,7 +51,26 @@ async def list_stocks(
     offset: int = Query(default=0, ge=0, description="Anzahl zu überspringender Einträge"),
     exchange: str | None = Query(default=None, description="Filter: 'XSWX' für Swiss Stocks"),
     service: StockService = Depends(get_stock_service),
+    swiss_service: SwissMarketService = Depends(get_swiss_market_service),
 ) -> StockListResponse:
+    if exchange == "XSWX":
+        all_swiss = await swiss_service.list_smi_stocks()
+        paginated = all_swiss[offset : offset + limit]
+        items = [
+            StockRead(
+                id=s.id,
+                ticker=s.ticker,
+                name=s.name,
+                isin=s.isin,
+                sector=s.sector,
+                country="CH",
+                currency=s.currency,
+                exchange=s.exchange,
+                market_cap_chf=s.market_cap_chf,
+            )
+            for s in paginated
+        ]
+        return StockListResponse(items=items, total=len(all_swiss))
     stocks = await service.list_stocks(limit=limit, offset=offset, exchange=exchange)
     items = [StockRead.model_validate(stock) for stock in stocks]
     return StockListResponse(items=items, total=len(items))

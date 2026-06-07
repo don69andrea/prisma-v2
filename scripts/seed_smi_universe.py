@@ -54,7 +54,7 @@ SMI_20 = [
 ]
 
 UNIVERSE_NAME = "SMI-20"
-UNIVERSE_DESCRIPTION = "Swiss Market Index — 20 Blue Chip Titel (SIX Swiss Exchange)"
+UNIVERSE_REGION = "CH"
 
 
 async def seed(session: AsyncSession) -> None:
@@ -83,41 +83,24 @@ async def seed(session: AsyncSession) -> None:
         )
         _logger.info("  ✓ %s (%s)", ticker, name)
 
-    # Create SMI-20 Universe entry if not exists
-    result = await session.execute(
-        text("SELECT id FROM universes WHERE name = :name"),
-        {"name": UNIVERSE_NAME},
+    # Upsert SMI-20 Universe entry (tickers stored as ARRAY column per schema)
+    smi_tickers = [row[0] for row in SMI_20]
+    await session.execute(
+        text("""
+            INSERT INTO universes (id, name, region, tickers)
+            VALUES (:id, :name, :region, :tickers)
+            ON CONFLICT (name) DO UPDATE SET
+                region  = EXCLUDED.region,
+                tickers = EXCLUDED.tickers
+        """),
+        {
+            "id": str(uuid.uuid4()),
+            "name": UNIVERSE_NAME,
+            "region": UNIVERSE_REGION,
+            "tickers": smi_tickers,
+        },
     )
-    existing = result.fetchone()
-    if existing is None:
-        universe_id = str(uuid.uuid4())
-        await session.execute(
-            text("""
-                INSERT INTO universes (id, name, description)
-                VALUES (:id, :name, :description)
-                ON CONFLICT DO NOTHING
-            """),
-            {
-                "id": universe_id,
-                "name": UNIVERSE_NAME,
-                "description": UNIVERSE_DESCRIPTION,
-            },
-        )
-        _logger.info("Created universe '%s' (id=%s)", UNIVERSE_NAME, universe_id)
-
-        # Link all SMI stocks to the universe
-        tickers = [row[0] for row in SMI_20]
-        for ticker in tickers:
-            await session.execute(
-                text("""
-                    INSERT INTO universe_stocks (universe_id, stock_id)
-                    SELECT :universe_id, id FROM stocks WHERE ticker = :ticker
-                    ON CONFLICT DO NOTHING
-                """),
-                {"universe_id": universe_id, "ticker": ticker},
-            )
-    else:
-        _logger.info("Universe '%s' already exists — skipping universe creation", UNIVERSE_NAME)
+    _logger.info("Upserted universe '%s' with %d tickers", UNIVERSE_NAME, len(smi_tickers))
 
     await session.commit()
     _logger.info("Seed complete.")

@@ -73,17 +73,21 @@ class SQLASwissStockRepository(SwissStockRepository):
             },
         )
         result = await self._session.execute(stmt)
-        await self._session.commit()
         return result.rowcount
 
     @staticmethod
     def _to_domain(orm: StockORM) -> SwissStock:
+        if orm.isin is None:
+            raise ValueError(
+                f"StockORM {orm.ticker!r} has exchange set but isin=NULL — "
+                "data invariant violation"
+            )
         return SwissStock(
             id=orm.id,
             ticker=orm.ticker,
-            isin=orm.isin or "",
+            isin=orm.isin,
             name=orm.name,
-            exchange="XSWX",
+            exchange=orm.exchange,  # type: ignore[arg-type]
             sector=orm.sector,
             market_cap_chf=Decimal(str(orm.market_cap_chf)) if orm.market_cap_chf else None,
         )

@@ -44,9 +44,10 @@ async def get_stock_by_ticker(
 async def list_stocks(
     limit: int = Query(default=50, ge=1, le=200, description="Maximale Anzahl Ergebnisse"),
     offset: int = Query(default=0, ge=0, description="Anzahl zu überspringender Einträge"),
+    exchange: str | None = Query(default=None, description="Filter: 'XSWX' für Swiss Stocks"),
     service: StockService = Depends(get_stock_service),
 ) -> StockListResponse:
-    stocks = await service.list_stocks(limit=limit, offset=offset)
+    stocks = await service.list_stocks(limit=limit, offset=offset, exchange=exchange)
     items = [StockRead.model_validate(stock) for stock in stocks]
     return StockListResponse(items=items, total=len(items))
 

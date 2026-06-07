@@ -1,5 +1,6 @@
 """Pydantic-Schemas für den REST-Layer (Request/Response DTOs)."""
 
+from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -17,6 +18,8 @@ class StockRead(BaseModel):
     sector: str | None
     country: str | None
     currency: str
+    exchange: str | None = None
+    market_cap_chf: Decimal | None = None
 
 
 class StockListResponse(BaseModel):

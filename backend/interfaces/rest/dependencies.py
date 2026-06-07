@@ -366,3 +366,28 @@ async def get_universe_suggestion_service(
 ) -> UniverseSuggestionService:
     """Erstellt den UniverseSuggestionService mit LLMClient und StockService."""
     return UniverseSuggestionService(llm_client=llm, stock_service=stock_service)
+
+
+# ---------------------------------------------------------------------------
+# SwissMarketService DI-Chain
+# ---------------------------------------------------------------------------
+
+from backend.application.services.swiss_market_service import SwissMarketService
+from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
+from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
+    SQLASwissStockRepository,
+)
+
+
+async def get_swiss_stock_repository(
+    session: AsyncSession = Depends(get_session),
+) -> SwissStockRepository:
+    """Instanziiert den SQLAlchemy-Adapter für Swiss Stocks mit der aktuellen Session."""
+    return SQLASwissStockRepository(session=session)
+
+
+async def get_swiss_market_service(
+    repo: SwissStockRepository = Depends(get_swiss_stock_repository),
+) -> SwissMarketService:
+    """Erstellt den SwissMarketService mit dem injizierten Repository."""
+    return SwissMarketService(repo=repo)

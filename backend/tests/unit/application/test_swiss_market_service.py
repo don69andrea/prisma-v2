@@ -1,6 +1,5 @@
 """Unit-Tests für SwissMarketService mit gemocktem Repository."""
 
-from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 

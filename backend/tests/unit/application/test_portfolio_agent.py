@@ -20,7 +20,9 @@ from backend.application.agents.portfolio_agent import (
 from backend.domain.entities.swiss_stock import SwissStock
 
 
-def _mock_rankings(tickers: list[str], scores: list[float] | None = None) -> list[dict[str, object]]:
+def _mock_rankings(
+    tickers: list[str], scores: list[float] | None = None
+) -> list[dict[str, object]]:
     scores = scores or [80.0, 70.0, 60.0, 55.0, 50.0]
     return [
         {"ticker": t, "total_rank": i + 1, "weighted_avg": scores[i] if i < len(scores) else 50.0}

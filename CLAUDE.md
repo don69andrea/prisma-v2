@@ -4,41 +4,98 @@ Kurzkontext für Claude Code. **Quelle der Wahrheit ist `AGENTS.md`** — dieses
 
 ## Projekt in einem Satz
 
-PRISMA = quantitatives Stock-Selection-Tool (5 Modelle) + Claude-Narrative-Engine + Multi-Agent-Research + MCP-Server. Capstone FHNW FS 2026.
+PRISMA V2 = quantitative Stock-Intelligence-Plattform für den Schweizer Markt (SMI/SMIM/SPI), Swiss Quant Scoring Engine + Claude-Narrative-Engine + VIAC 3a-Entscheidungsunterstützung. FHNW Capstone FS 2026.
 
 ## Vor jeder Aufgabe lesen
 
-1. `AGENTS.md` — verbindliche Konventionen
-2. `docs/specs/2026-04-21-prisma-capstone-design.md` — Gesamtdesign
-3. Die zum Task passende Spec unter `docs/specs/` (wenn vorhanden)
+1. `AGENTS.md` — verbindliche Konventionen (Goldene Regeln, Security, Gitflow)
+2. `docs/superpowers/plans/` — aktueller Implementierungsplan wenn vorhanden
+3. `docs/superpowers/specs/` — Design-Docs für laufende Features
+
+## Swiss Market Kontext
+
+**Adapter:** `YFinanceSwissAdapter` (`backend/infrastructure/adapters/yfinance_swiss.py`) implementiert `SwissMarketDataProvider`-Port. Alle yfinance-Calls via `asyncio.to_thread()` (nicht `run_in_executor`). Ticker-Format: `NESN.SW` (SIX-Suffix).
+
+**Scoring:** `SwissQuantScorer` (`backend/domain/services/swiss_quant_scorer.py`) berechnet value/income/quality-Scores mit SMI-kalibrierten Bändern → `SwissQuantScore` Value Object mit Signal BUY/HOLD/WATCH.
+
+**Seed-Daten:** `scripts/seed_smi_universe.py` — 20 SMI-Konstituenten. Offene ISIN-TODOs: ABBN, BALN (delisted), STMN.
+
+**yfinance-Einschränkung:** `.info`-Dict liefert für `.SW`-Ticker kein `isin`-Feld (immer `None`). ISINs müssen manuell via SIX Exchange verifiziert werden.
+
+## Schnellstart-Befehle
+
+```bash
+# Venv aktivieren (immer zuerst)
+source /tmp/prisma-v2/venv/bin/activate
+
+# Unit Tests
+pytest backend/tests/unit -q
+
+# Integration Tests (braucht laufende DB)
+pytest backend/tests/integration -q
+
+# Lint + Format-Check
+ruff check backend/
+ruff format --check backend/
+
+# Einen einzelnen Test
+pytest backend/tests/unit/domain/test_swiss_quant_scorer.py -v
+```
 
 ## Claude-Code-spezifische Regeln
 
 ### Spec-First
-Wenn der User eine neue Feature-Arbeit verlangt, **schreibe zuerst die Spec**, committe sie, und frage dann nach Freigabe, bevor Code entsteht. Nutze die `superpowers:brainstorming`- und `superpowers:writing-plans`-Skills.
+Wenn der User eine neue Feature-Arbeit verlangt, **schreibe zuerst den Plan** nach `docs/superpowers/plans/YYYY-MM-DD-*.md`, committe ihn, und führe dann aus. Nutze `superpowers:brainstorming` → `superpowers:writing-plans` → `superpowers:subagent-driven-development`.
 
 ### TDD-Pflicht
-Für Domain-Code und Quant-Modelle: erst Tests schreiben, dann Implementierung. Nutze `superpowers:test-driven-development`.
+Für Domain-Code, Quant-Modelle, Application Services: Tests schreiben **bevor** die Implementierung existiert (Red-Green-Refactor). `pytestmark = pytest.mark.unit` in allen Unit-Test-Files.
 
 ### LLM-Features
-- **Immer** Pydantic-Schema für Output. Kein Freitext.
+- **Immer** Pydantic-Schema für Output. Kein Freitext ins Frontend.
 - Prompt-Caching aktivieren (`cache_control: ephemeral`) bei wiederkehrenden System-Prompts.
-- Für Tests: Fixture-Mode in `tests/fixtures/llm/` nutzen, nicht gegen Live-API in CI.
-- Modell-Wahl: `claude-haiku-4-5` für schnelle Strukturierungs-Tasks, `claude-sonnet-4-6` für Research-Synthese.
+- Für Tests: Fixture-Mode in `tests/fixtures/llm/` nutzen — nie gegen Live-API in CI.
+- Modell-Wahl: `claude-haiku-4-5-20251001` für schnelle Tasks, `claude-sonnet-4-6` für Research-Synthese.
+
+### Async-Pattern
+```python
+# RICHTIG — codebase-Konvention
+result = await asyncio.to_thread(sync_function, arg)
+
+# FALSCH — nicht verwenden
+loop = asyncio.get_event_loop()
+result = await loop.run_in_executor(None, partial(sync_function, arg))
+```
+
+### Retry-Pattern
+Kein `tenacity`. Manueller Retry: `_RETRIES = 2`, `_BASE_DELAY = 1.0`, Exponential Backoff (`base * 2**attempt`). Muster aus `YFinanceSwissAdapter._fetch_info()`.
 
 ### MCP-Server-Arbeit
 MCP-Tools in `backend/interfaces/mcp/` liegen dünn über Application-Services. Keine Business-Logik im MCP-Layer.
 
-### Code-Reviews
-Beim Review eigener Arbeit: `superpowers:verification-before-completion`-Skill nutzen — nie "done" claimen ohne grüne Tests und Coverage.
-
 ## Häufige Claude-Fehler in diesem Projekt (bitte vermeiden)
 
-- Quant-Formeln aus dem Gedächtnis rekonstruieren statt aus der Spec zu zitieren
-- `yfinance` / `finnhub` direkt im Application-Service aufrufen (→ muss über Port in Infrastructure)
+- Quant-Formeln aus dem Gedächtnis rekonstruieren statt aus dem Plan/Spec zu zitieren
+- `yfinance` direkt im Application-Service aufrufen (→ muss über Port in Infrastructure)
+- `if market_cap:` statt `if market_cap is not None:` (0 ist valider Wert)
+- `run_in_executor` statt `asyncio.to_thread`
 - LLM-Responses mit `response.content[0].text` ungeparst weiterreichen
 - Datumshandling ohne Timezone (→ immer UTC-aware)
 - Floats für Geldbeträge statt `Decimal`
+
+## Glossar
+
+| Begriff | Bedeutung |
+|---------|-----------|
+| **SMI** | Swiss Market Index — 20 grösste SIX-kotierte Titel |
+| **SMIM** | Swiss Mid Caps Index — 30 mittlere Titel |
+| **SPI** | Swiss Performance Index — Gesamtmarkt |
+| **SIX** | Swiss Infrastructure and Exchange — Schweizer Börse |
+| **XSWX** | MIC-Code für SIX Swiss Exchange (intern als `exchange`-Feld) |
+| **3a** | Säule 3a — gebundene Vorsorge (steuerlich begünstigt), max. CHF 7'258/Jahr (2026) |
+| **VIAC** | Swiss Life Vorsorge-App mit Einzeltitel-Selektion (VIAC Stocks Initiative) |
+| **FINMA** | Eidgenössische Finanzmarktaufsicht — reguliert 3a-fähige Anlagen |
+| **CH-ISIN** | Schweizer ISIN-Format: `CH` + 9 Ziffern + Luhn-Check-Digit |
+| **BUY/HOLD/WATCH** | Signal aus `SwissQuantScore.signal`: composite ≥70 / 40–69 / <40 |
 
 ## Wenn unsicher: fragen
 

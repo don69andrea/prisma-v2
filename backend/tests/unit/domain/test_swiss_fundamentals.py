@@ -4,9 +4,9 @@ from decimal import Decimal
 
 import pytest
 
-pytestmark = pytest.mark.unit
-
 from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
+
+pytestmark = pytest.mark.unit
 
 
 def test_swiss_fundamentals_all_fields() -> None:

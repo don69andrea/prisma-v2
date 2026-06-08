@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -87,7 +88,7 @@ def app(mock_swiss_service, mock_stock_service):
 
 
 @pytest.mark.asyncio
-async def test_swiss_stocks_returns_20_items(app) -> None:
+async def test_swiss_stocks_returns_20_items(app: Any) -> None:
     """exchange=XSWX filter gibt genau 20 SMI-Stocks zurück."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/api/v1/stocks", params={"exchange": "XSWX", "limit": 50})
@@ -98,7 +99,7 @@ async def test_swiss_stocks_returns_20_items(app) -> None:
 
 
 @pytest.mark.asyncio
-async def test_swiss_stocks_all_chf_currency(app) -> None:
+async def test_swiss_stocks_all_chf_currency(app: Any) -> None:
     """Alle zurückgegebenen Swiss Stocks haben currency=CHF."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/api/v1/stocks", params={"exchange": "XSWX", "limit": 50})
@@ -107,7 +108,7 @@ async def test_swiss_stocks_all_chf_currency(app) -> None:
 
 
 @pytest.mark.asyncio
-async def test_swiss_stocks_all_have_exchange_field(app) -> None:
+async def test_swiss_stocks_all_have_exchange_field(app: Any) -> None:
     """Alle zurückgegebenen Swiss Stocks haben exchange=XSWX."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/api/v1/stocks", params={"exchange": "XSWX", "limit": 50})
@@ -116,7 +117,7 @@ async def test_swiss_stocks_all_have_exchange_field(app) -> None:
 
 
 @pytest.mark.asyncio
-async def test_stocks_without_exchange_filter_not_affected(app) -> None:
+async def test_stocks_without_exchange_filter_not_affected(app: Any) -> None:
     """GET /api/v1/stocks ohne exchange-Filter delegiert an StockService (kein Regression)."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/api/v1/stocks")

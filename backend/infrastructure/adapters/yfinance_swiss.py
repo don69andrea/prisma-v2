@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from decimal import Decimal
+from typing import Any
 
 import pandas as pd
 import yfinance as yf
@@ -59,13 +60,13 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
         info = await self._fetch_info(ticker)
         return info.get("isin")
 
-    async def _fetch_info(self, ticker: str) -> dict:
+    async def _fetch_info(self, ticker: str) -> dict[str, Any]:
         yf_ticker = self.build_yf_ticker(ticker)
         last_exc: Exception | None = None
 
         for attempt in range(_RETRIES + 1):
             try:
-                info: dict = await asyncio.to_thread(self._sync_info, yf_ticker)
+                info: dict[str, Any] = await asyncio.to_thread(self._sync_info, yf_ticker)
                 if not info:
                     raise SwissDataUnavailableError(ticker)
                 return info
@@ -111,8 +112,8 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
         raise last_exc  # type: ignore[misc]
 
     @staticmethod
-    def _sync_info(yf_ticker: str) -> dict:
-        return yf.Ticker(yf_ticker).info
+    def _sync_info(yf_ticker: str) -> dict[str, Any]:
+        return dict(yf.Ticker(yf_ticker).info)
 
     @staticmethod
     def _sync_history(yf_ticker: str, days: int) -> pd.DataFrame:

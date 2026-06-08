@@ -1,6 +1,7 @@
 """Unit-Tests für die SwissStock-Domain-Entity."""
 
 from decimal import Decimal
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -10,7 +11,7 @@ from backend.domain.entities.swiss_stock import SwissStock
 pytestmark = pytest.mark.unit
 
 
-def _valid_kwargs() -> dict:
+def _valid_kwargs() -> dict[str, Any]:
     return {
         "id": uuid4(),
         "ticker": "NESN",

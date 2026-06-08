@@ -13,7 +13,12 @@ pytestmark = pytest.mark.unit
 _scorer = SwissQuantScorer()
 
 
-def _fund(pe=None, pb=None, div=None, eps=None) -> SwissFundamentals:
+def _fund(
+    pe: float | None = None,
+    pb: float | None = None,
+    div: float | None = None,
+    eps: float | None = None,
+) -> SwissFundamentals:
     return SwissFundamentals(
         market_cap_chf=Decimal("100000000000"),
         pe_ratio=pe,

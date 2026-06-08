@@ -73,7 +73,7 @@ class SQLASwissStockRepository(SwissStockRepository):
             },
         )
         result = await self._session.execute(stmt)
-        return result.rowcount
+        return result.rowcount  # type: ignore[attr-defined,no-any-return]
 
     @staticmethod
     def _to_domain(orm: StockORM) -> SwissStock:

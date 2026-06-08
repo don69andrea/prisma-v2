@@ -41,3 +41,15 @@ class BudgetCapExceeded(Exception):
             f"Budget-Cap erreicht: {current_usd:.2f} + {attempted_usd:.2f} "
             f"USD würde {cap_usd:.2f} USD überschreiten."
         )
+
+
+class SwissDataUnavailableError(Exception):
+    """yfinance liefert keinen Datensatz für diesen .SW-Ticker.
+
+    Wird geworfen wenn yfinance ein leeres .info-Dict zurückgibt
+    oder der Ticker nicht als .SW-Ticker bekannt ist.
+    """
+
+    def __init__(self, ticker: str) -> None:
+        self.ticker = ticker
+        super().__init__(f"Keine yfinance-Daten für Swiss Ticker '{ticker}.SW'")

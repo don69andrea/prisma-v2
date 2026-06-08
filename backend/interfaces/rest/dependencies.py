@@ -22,6 +22,7 @@ from backend.application.services.universe_suggestion_service import UniverseSug
 from backend.config import Settings, get_settings
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
+from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
 from backend.domain.repositories.cost_log_repository import CostLogRepository
 from backend.domain.repositories.memo_batch_job_repository import MemoBatchJobRepository
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
@@ -29,6 +30,7 @@ from backend.domain.repositories.research_memo_repository import ResearchMemoRep
 from backend.domain.repositories.stock_repository import StockRepository
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
+from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.infrastructure.llm.client import LLMClient
 from backend.infrastructure.llm.pricing import PRICING  # Single-Source-of-Truth via DI an LLMClient
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
@@ -386,8 +388,14 @@ async def get_swiss_stock_repository(
     return SQLASwissStockRepository(session=session)
 
 
+async def get_swiss_market_data_provider() -> SwissMarketDataProvider:
+    """Instanziiert den YFinanceSwissAdapter für Swiss Market Data."""
+    return YFinanceSwissAdapter()
+
+
 async def get_swiss_market_service(
     repo: SwissStockRepository = Depends(get_swiss_stock_repository),
+    market_data: SwissMarketDataProvider = Depends(get_swiss_market_data_provider),
 ) -> SwissMarketService:
-    """Erstellt den SwissMarketService mit dem injizierten Repository."""
-    return SwissMarketService(repo=repo)
+    """Erstellt den SwissMarketService mit Repository + YFinanceSwissAdapter."""
+    return SwissMarketService(repo=repo, market_data=market_data)

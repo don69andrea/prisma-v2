@@ -8,6 +8,7 @@ import { listRuns, getRankings, type RankingRunStatus } from '@/lib/api/runs';
 import { listUniverses } from '@/lib/api/universes';
 import { listStocks } from '@/lib/api/stocks';
 import { StatsCards, type TopPick } from '@/components/dashboard/StatsCards';
+import { MacroWidget } from '@/components/dashboard/MacroWidget';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -83,12 +84,15 @@ export function DashboardClient() {
       : null;
 
   const statsCards = (
-    <StatsCards
-      latestRun={latestRun}
-      universeCount={universeCount}
-      stockCount={stockCount}
-      topPick={topPick}
-    />
+    <>
+      <StatsCards
+        latestRun={latestRun}
+        universeCount={universeCount}
+        stockCount={stockCount}
+        topPick={topPick}
+      />
+      <MacroWidget />
+    </>
   );
 
   if (runsLoading) {

@@ -16,6 +16,7 @@ from backend.interfaces.rest.routers import (
     backtests,
     eligibility,
     health,
+    macro,
     memos,
     rag,
     runs,
@@ -103,5 +104,6 @@ def create_app() -> FastAPI:
     app.include_router(memos.router, prefix="/api/v1")
     app.include_router(backtests.router)
     app.include_router(rag.router)
+    app.include_router(macro.router)
 
     return app

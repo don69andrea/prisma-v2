@@ -5,7 +5,9 @@ from __future__ import annotations
 from backend.domain.entities.swiss_stock import SwissStock
 from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
+from backend.domain.services.eligibility_filter import EligibilityFilter
 from backend.domain.services.swiss_quant_scorer import SwissQuantScorer
+from backend.domain.value_objects.eligibility_result import EligibilityResult
 from backend.domain.value_objects.swiss_quant_score import SwissQuantScore
 
 
@@ -18,6 +20,7 @@ class SwissMarketService:
         self._repo = repo
         self._market_data = market_data
         self._scorer = SwissQuantScorer()
+        self._eligibility = EligibilityFilter()
 
     async def list_smi_stocks(self) -> list[SwissStock]:
         """Gibt alle XSWX-kotierten Swiss Stocks zurück (SMI-Universum)."""
@@ -61,3 +64,11 @@ class SwissMarketService:
             raise ValueError(f"Swiss Stock '{upper}' nicht gefunden")
         fundamentals = await self._market_data.get_fundamentals(upper)
         return self._scorer.score(upper, fundamentals)
+
+    async def check_3a_eligibility(self, ticker: str) -> EligibilityResult:
+        """Prüft 3a-Eignung eines Swiss Stocks nach BVV2/FINMA-Regeln."""
+        upper = ticker.upper()
+        stock = await self._repo.get_by_ticker(upper)
+        if stock is None:
+            raise ValueError(f"Swiss Stock '{upper}' nicht gefunden")
+        return self._eligibility.check(stock)

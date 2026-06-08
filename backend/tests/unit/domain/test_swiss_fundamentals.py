@@ -4,6 +4,8 @@ from decimal import Decimal
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
 
 

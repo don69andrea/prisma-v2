@@ -9,15 +9,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from backend.application.services.signal_aggregation_service import SignalAggregationService
 from backend.application.services.universe_service import UniverseNotFound, UniverseService
-from backend.interfaces.rest.dependencies import get_universe_service
+from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
+from backend.interfaces.rest.dependencies import get_swiss_stock_repository, get_universe_service
 from backend.interfaces.rest.schemas.decision import DecisionListResponse, DecisionSignalResponse
 
 router = APIRouter(prefix="/api/v1/decisions", tags=["decisions"])
 _logger = logging.getLogger(__name__)
 
 
-def get_signal_aggregation_service() -> SignalAggregationService:
-    return SignalAggregationService()
+def get_signal_aggregation_service(
+    swiss_stock_repo: SwissStockRepository = Depends(get_swiss_stock_repository),
+) -> SignalAggregationService:
+    return SignalAggregationService(swiss_stock_repo=swiss_stock_repo)
 
 
 @router.get(
@@ -48,7 +51,6 @@ async def list_decisions(
     tickers = list(universe.tickers)
     signals = await aggregation_service.get_signals(tickers)
 
-    # Filter anwenden
     if signal is not None:
         signal_upper = signal.upper()
         if signal_upper not in {"BUY", "HOLD", "WATCH"}:

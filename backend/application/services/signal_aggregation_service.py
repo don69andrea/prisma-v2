@@ -6,6 +6,7 @@ import logging
 
 from backend.application.services.ml_feature_service import MLFeatureService
 from backend.application.services.ml_prediction_service import MLPredictionService
+from backend.domain.services.eligibility_filter import EligibilityFilter
 from backend.domain.value_objects.decision_signal import DecisionSignal
 
 _logger = logging.getLogger(__name__)
@@ -21,32 +22,6 @@ _ML_SIGNAL_TO_SCORE: dict[str, float] = {
     "NEUTRAL": 50.0,
     "UNDERPERFORM": 15.0,
 }
-
-# 3a-eligible Swiss tickers (FINMA/BVV2 Large-Cap SPI)
-_3A_ELIGIBLE = frozenset(
-    {
-        "NESN",
-        "NOVN",
-        "ROG",
-        "UBSG",
-        "ABBN",
-        "CSGN",
-        "SREN",
-        "SCMN",
-        "SLHN",
-        "BALN",
-        "GEBN",
-        "ZURN",
-        "ALC",
-        "GIVN",
-        "LOGN",
-        "LONN",
-        "PGHN",
-        "SIKA",
-        "STMN",
-        "TEMN",
-    }
-)
 
 
 def _snb_macro_score(snb_rate: float) -> float:
@@ -65,10 +40,6 @@ def _snb_macro_score(snb_rate: float) -> float:
     return 20.0
 
 
-def _is_3a_eligible(ticker: str) -> bool:
-    return ticker.upper() in _3A_ELIGIBLE
-
-
 class SignalAggregationService:
     """Aggregiert Quant-, ML- und Macro-Signale zu einem BUY/HOLD/WATCH-Signal."""
 
@@ -76,11 +47,26 @@ class SignalAggregationService:
         self,
         feature_service: MLFeatureService | None = None,
         prediction_service: MLPredictionService | None = None,
+        swiss_stock_repo: object | None = None,
     ) -> None:
         self._feature_service = feature_service or MLFeatureService()
         self._prediction_service = prediction_service or MLPredictionService(
             feature_service=self._feature_service
         )
+        self._swiss_stock_repo = swiss_stock_repo
+        self._eligibility = EligibilityFilter()
+
+    async def _check_3a_eligible(self, ticker: str) -> bool:
+        """Prüft 3a-Eignung via EligibilityFilter; nicht im Repo → nicht eligible."""
+        if self._swiss_stock_repo is None:
+            return False
+        from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
+
+        repo: SwissStockRepository = self._swiss_stock_repo  # type: ignore[assignment]
+        stock = await repo.get_by_ticker(ticker.upper())
+        if stock is None:
+            return False
+        return self._eligibility.check(stock).eligible
 
     async def get_signal(self, ticker: str) -> DecisionSignal | None:
         """Berechnet das aggregierte Signal für einen Ticker."""
@@ -106,6 +92,7 @@ class SignalAggregationService:
         weighted_score = _W_QUANT * quant_score + _W_ML * ml_score + _W_MACRO * macro_score
         signal = DecisionSignal.signal_for_score(weighted_score)
         confidence = round(weighted_score / 100.0, 4)
+        is_eligible = await self._check_3a_eligible(ticker)
 
         return DecisionSignal(
             ticker=ticker.upper(),
@@ -116,7 +103,7 @@ class SignalAggregationService:
             quant_score=round(quant_score, 2),
             ml_score=round(ml_score, 2),
             macro_score=round(macro_score, 2),
-            is_3a_eligible=_is_3a_eligible(ticker),
+            is_3a_eligible=is_eligible,
         )
 
     async def get_signals(self, tickers: list[str]) -> list[DecisionSignal]:

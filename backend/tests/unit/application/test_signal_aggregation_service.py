@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import pytest
 
 from backend.application.services.signal_aggregation_service import (
     SignalAggregationService,
-    _is_3a_eligible,
     _snb_macro_score,
 )
+from backend.domain.entities.swiss_stock import SwissStock
 from backend.domain.value_objects.decision_signal import DecisionSignal
 from backend.domain.value_objects.ml_feature_vector import MLFeatureVector
 from backend.domain.value_objects.ml_prediction import MLPrediction
@@ -55,6 +57,24 @@ def _make_prediction(signal: str = "OUTPERFORM") -> MLPrediction:
     )
 
 
+def _make_swiss_stock(ticker: str = "NESN", market_cap: int = 200_000_000) -> SwissStock:
+    return SwissStock(
+        id=uuid4(),
+        ticker=ticker,
+        isin="CH0012221716",
+        name=ticker,
+        exchange="XSWX",
+        sector=None,
+        market_cap_chf=Decimal(market_cap),
+    )
+
+
+def _make_repo(stock: SwissStock | None) -> AsyncMock:
+    repo = AsyncMock()
+    repo.get_by_ticker.return_value = stock
+    return repo
+
+
 # --- _snb_macro_score ---
 
 
@@ -82,32 +102,22 @@ def test_snb_macro_score_very_restrictive() -> None:
     assert _snb_macro_score(2.0) == 20.0
 
 
-# --- _is_3a_eligible ---
-
-
-def test_3a_eligible_nesn() -> None:
-    assert _is_3a_eligible("NESN") is True
-    assert _is_3a_eligible("nesn") is True
-
-
-def test_3a_not_eligible_unknown() -> None:
-    assert _is_3a_eligible("UNKNOWN123") is False
-
-
 # --- SignalAggregationService ---
 
 
 @pytest.mark.asyncio
-async def test_get_signal_buy() -> None:
-    """Hoher Quant + OUTPERFORM ML → BUY."""
+async def test_get_signal_buy_eligible() -> None:
+    """Hoher Quant + OUTPERFORM ML + XSWX large-cap → BUY, 3a eligible."""
     feature_svc = AsyncMock()
     feature_svc.build_features.return_value = _make_features(quant_score=80.0, snb_rate=0.25)
     pred_svc = AsyncMock()
     pred_svc.predict.return_value = _make_prediction("OUTPERFORM")
+    repo = _make_repo(_make_swiss_stock("NESN", 200_000_000))
 
     service = SignalAggregationService(
         feature_service=feature_svc,
         prediction_service=pred_svc,
+        swiss_stock_repo=repo,
     )
     result = await service.get_signal("NESN")
 
@@ -116,6 +126,46 @@ async def test_get_signal_buy() -> None:
     assert result.ticker == "NESN"
     assert result.is_3a_eligible is True
     assert 0.0 <= result.confidence <= 1.0
+
+
+@pytest.mark.asyncio
+async def test_get_signal_not_eligible_small_cap() -> None:
+    """Small-cap (< 100M CHF) → nicht 3a-eligible."""
+    feature_svc = AsyncMock()
+    feature_svc.build_features.return_value = _make_features(quant_score=75.0)
+    pred_svc = AsyncMock()
+    pred_svc.predict.return_value = _make_prediction("OUTPERFORM")
+    repo = _make_repo(_make_swiss_stock("TINY", 50_000_000))
+
+    service = SignalAggregationService(
+        feature_service=feature_svc,
+        prediction_service=pred_svc,
+        swiss_stock_repo=repo,
+    )
+    result = await service.get_signal("TINY")
+
+    assert result is not None
+    assert result.is_3a_eligible is False
+
+
+@pytest.mark.asyncio
+async def test_get_signal_not_eligible_not_in_repo() -> None:
+    """Ticker nicht im Swiss-Stock-Repo (US-Ticker) → nicht 3a-eligible."""
+    feature_svc = AsyncMock()
+    feature_svc.build_features.return_value = _make_features(ticker="AAPL", quant_score=70.0)
+    pred_svc = AsyncMock()
+    pred_svc.predict.return_value = _make_prediction("OUTPERFORM")
+    repo = _make_repo(None)
+
+    service = SignalAggregationService(
+        feature_service=feature_svc,
+        prediction_service=pred_svc,
+        swiss_stock_repo=repo,
+    )
+    result = await service.get_signal("AAPL")
+
+    assert result is not None
+    assert result.is_3a_eligible is False
 
 
 @pytest.mark.asyncio

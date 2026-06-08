@@ -33,13 +33,16 @@ test("Memo anfordern und Research-Memo anzeigen", async ({ page, request }) => {
   });
 
   // Setup: universe + run via API
+  const universeName = `E2E Memo ${Date.now()}`;
   const universeResp = await request.post(`${apiBase}/api/v1/universes`, {
-    data: { name: "E2E Memo", tickers: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"] },
+    data: { name: universeName, tickers: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"] },
   });
+  expect(universeResp.ok()).toBeTruthy();
   const universe = await universeResp.json();
   const runResp = await request.post(`${apiBase}/api/v1/runs`, {
     data: { universe_id: universe.id },
   });
+  expect(runResp.ok()).toBeTruthy();
   const run = await runResp.json();
 
   // Navigate directly to AAPL factsheet

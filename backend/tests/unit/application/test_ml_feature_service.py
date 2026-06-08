@@ -20,7 +20,6 @@ from backend.domain.value_objects.ml_feature_vector import MLFeatureVector
 from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
 from backend.domain.value_objects.swiss_quant_score import SwissQuantScore
 
-
 # ---------------------------------------------------------------------------
 # SNB Rate Lookup
 # ---------------------------------------------------------------------------

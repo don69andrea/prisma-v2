@@ -27,12 +27,12 @@ class SwissQuantScorer:
         value_score = self._score_value(fundamentals)
         income_score = self._score_income(fundamentals)
         quality_score = self._score_quality(fundamentals)
-        composite = round(
-            value_score * 0.4 + income_score * 0.4 + quality_score * 0.2, 2
-        )
+        composite = round(value_score * 0.4 + income_score * 0.4 + quality_score * 0.2, 2)
         signal = (
-            "BUY" if composite >= _BUY_THRESHOLD
-            else "HOLD" if composite >= _HOLD_THRESHOLD
+            "BUY"
+            if composite >= _BUY_THRESHOLD
+            else "HOLD"
+            if composite >= _HOLD_THRESHOLD
             else "WATCH"
         )
         return SwissQuantScore(

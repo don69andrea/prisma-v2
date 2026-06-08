@@ -124,9 +124,7 @@ async def test_get_fundamentals_retries_on_transient_error(
 @pytest.mark.asyncio
 @patch("backend.infrastructure.adapters.yfinance_swiss.asyncio.sleep", new_callable=AsyncMock)
 @patch("backend.infrastructure.adapters.yfinance_swiss.yf")
-async def test_unavailable_error_not_retried(
-    mock_yf: MagicMock, mock_sleep: AsyncMock
-) -> None:
+async def test_unavailable_error_not_retried(mock_yf: MagicMock, mock_sleep: AsyncMock) -> None:
     mock_yf.Ticker.return_value.info = {}
 
     adapter = YFinanceSwissAdapter()

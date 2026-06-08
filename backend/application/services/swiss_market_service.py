@@ -54,9 +54,7 @@ class SwissMarketService:
     async def score_stock(self, ticker: str) -> SwissQuantScore:
         """Berechnet den Swiss Quant Score für einen Ticker."""
         if self._market_data is None:
-            raise RuntimeError(
-                "SwissMarketService ohne MarketDataProvider konfiguriert"
-            )
+            raise RuntimeError("SwissMarketService ohne MarketDataProvider konfiguriert")
         upper = ticker.upper()
         existing = await self._repo.get_by_ticker(upper)
         if existing is None:

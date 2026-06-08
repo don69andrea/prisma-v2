@@ -20,14 +20,31 @@ pytestmark = pytest.mark.integration
 # Test data — 20 SMI stocks (all with valid CH ISIN CH0038863350 for simplicity)
 # ---------------------------------------------------------------------------
 
+
 def _make_smi_stocks() -> list[SwissStock]:
     nesn_isin = "CH0038863350"  # Luhn-valid
     sectors = ["Consumer Staples", "Healthcare", "Financials", "Industrials", "Materials"]
     tickers = [
-        "NESN", "NOVN", "ROG", "ABBN", "ZURN",
-        "UBSG", "UHR", "GEBN", "GIVN", "LONN",
-        "SREN", "SGKN", "SLHN", "SCMN", "BALN",
-        "HOLN", "PGHN", "KRIN", "CFR", "STMN",
+        "NESN",
+        "NOVN",
+        "ROG",
+        "ABBN",
+        "ZURN",
+        "UBSG",
+        "UHR",
+        "GEBN",
+        "GIVN",
+        "LONN",
+        "SREN",
+        "SGKN",
+        "SLHN",
+        "SCMN",
+        "BALN",
+        "HOLN",
+        "PGHN",
+        "KRIN",
+        "CFR",
+        "STMN",
     ]
     return [
         SwissStock(

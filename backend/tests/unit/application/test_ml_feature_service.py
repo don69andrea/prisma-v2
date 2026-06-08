@@ -80,22 +80,30 @@ def test_compute_rsi_too_short_returns_50() -> None:
 
 
 def test_score_wachstum_no_eps_none() -> None:
-    f = SwissFundamentals(market_cap_chf=None, pe_ratio=15.0, pb_ratio=None, dividend_yield=None, eps_chf=None)
+    f = SwissFundamentals(
+        market_cap_chf=None, pe_ratio=15.0, pb_ratio=None, dividend_yield=None, eps_chf=None
+    )
     assert _score_wachstum(f) == 50.0
 
 
 def test_score_wachstum_negative_eps() -> None:
-    f = SwissFundamentals(market_cap_chf=None, pe_ratio=None, pb_ratio=None, dividend_yield=None, eps_chf=-1.0)
+    f = SwissFundamentals(
+        market_cap_chf=None, pe_ratio=None, pb_ratio=None, dividend_yield=None, eps_chf=-1.0
+    )
     assert _score_wachstum(f) == 10.0
 
 
 def test_score_wachstum_value_stock() -> None:
-    f = SwissFundamentals(market_cap_chf=None, pe_ratio=12.0, pb_ratio=None, dividend_yield=None, eps_chf=5.0)
+    f = SwissFundamentals(
+        market_cap_chf=None, pe_ratio=12.0, pb_ratio=None, dividend_yield=None, eps_chf=5.0
+    )
     assert _score_wachstum(f) == 70.0
 
 
 def test_score_wachstum_expensive() -> None:
-    f = SwissFundamentals(market_cap_chf=None, pe_ratio=45.0, pb_ratio=None, dividend_yield=None, eps_chf=2.0)
+    f = SwissFundamentals(
+        market_cap_chf=None, pe_ratio=45.0, pb_ratio=None, dividend_yield=None, eps_chf=2.0
+    )
     assert _score_wachstum(f) == 40.0
 
 
@@ -138,7 +146,9 @@ async def test_build_features_happy_path() -> None:
     scorer_mock = MagicMock()
     scorer_mock.score.return_value = _make_score()
 
-    with patch("backend.application.services.ml_feature_service._current_chf_eur", return_value=0.93):
+    with patch(
+        "backend.application.services.ml_feature_service._current_chf_eur", return_value=0.93
+    ):
         service = MLFeatureService(yfinance_adapter=adapter_mock, scorer=scorer_mock)
         result = await service.build_features("NESN")
 

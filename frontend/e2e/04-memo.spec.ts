@@ -32,8 +32,10 @@ test("Memo anfordern und Research-Memo anzeigen", async ({ page, request }) => {
     });
   });
 
-  // Setup: universe + run via API
+  // Unique name prevents 500 on Playwright retry (universe already exists)
   const universeName = `E2E Memo ${Date.now()}`;
+
+  // Setup: universe + run via API
   const universeResp = await request.post(`${apiBase}/api/v1/universes`, {
     data: { name: universeName, tickers: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"] },
   });

@@ -14,7 +14,9 @@ from backend.infrastructure.persistence.base import Base
 
 class MLFeatureORM(Base):
     __tablename__ = "ml_features"
-    __table_args__ = (UniqueConstraint("ticker", "snapshot_date", name="uq_ml_features_ticker_date"),)
+    __table_args__ = (
+        UniqueConstraint("ticker", "snapshot_date", name="uq_ml_features_ticker_date"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     ticker: Mapped[str] = mapped_column(String(10), nullable=False, index=True)

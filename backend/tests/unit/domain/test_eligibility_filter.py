@@ -53,7 +53,7 @@ class TestEligibleStock:
 
 class TestIneligibleStock:
     def test_exchange_not_recognized_fails(self) -> None:
-        stock = _stock(exchange="XNAS", isin="CH0038863350")  # type: ignore[arg-type]
+        stock = _stock(exchange="XNAS", isin="CH0038863350")
         result = _filter.check(stock)
         assert result.eligible is False
         assert EligibilityReason.EXCHANGE_NOT_RECOGNIZED in result.reasons
@@ -69,7 +69,7 @@ class TestIneligibleStock:
         assert EligibilityReason.MARKET_CAP_TOO_LOW in result.reasons
 
     def test_both_reasons_when_both_rules_violated(self) -> None:
-        stock = _stock(exchange="NYSE", market_cap_chf=Decimal("10_000_000"), isin="CH0038863350")  # type: ignore[arg-type]
+        stock = _stock(exchange="NYSE", market_cap_chf=Decimal("10_000_000"), isin="CH0038863350")
         result = _filter.check(stock)
         assert result.eligible is False
         assert EligibilityReason.EXCHANGE_NOT_RECOGNIZED in result.reasons

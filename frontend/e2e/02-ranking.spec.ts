@@ -3,10 +3,13 @@ import { test, expect } from "@playwright/test";
 test("Ranking-Lauf starten und Tabelle mit 5 Zeilen anzeigen", async ({ page, request }) => {
   const apiBase = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:8000";
 
+  // Unique name prevents 500 on Playwright retry (universe already exists)
+  const universeName = `E2E Ranking Test ${Date.now()}`;
+
   // Setup: create universe via API
   const universeResp = await request.post(`${apiBase}/api/v1/universes`, {
     data: {
-      name: "E2E Ranking Test",
+      name: universeName,
       region: "US",
       tickers: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"],
     },

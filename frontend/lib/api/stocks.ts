@@ -10,6 +10,8 @@ export interface StockRead {
   sector: string | null;
   country: string | null;
   currency: string;
+  exchange: string | null;
+  market_cap_chf: string | null;  // Decimal serialized as string
 }
 
 export interface LatestRankingSnapshot {
@@ -53,6 +55,8 @@ export interface StockListResponse {
 // bei kleinem `limit` falsch. Default-limit auf Max (200) gesetzt, damit
 // `items.length` als verlässlicher Count im Dashboard nutzbar ist. Backend-Fix
 // (echter count() im Repository) als Folge-PR.
-export function listStocks(limit = 200, offset = 0): Promise<StockListResponse> {
-  return apiFetch<StockListResponse>(`/api/v1/stocks?limit=${limit}&offset=${offset}`);
+export function listStocks(limit = 200, offset = 0, exchange?: string): Promise<StockListResponse> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (exchange) params.set('exchange', exchange);
+  return apiFetch<StockListResponse>(`/api/v1/stocks?${params.toString()}`);
 }

@@ -12,6 +12,8 @@ const stock: StockRead = {
   sector: 'Technology',
   country: 'US',
   currency: 'USD',
+  exchange: null,
+  market_cap_chf: null,
 };
 
 const ranking: LatestRankingSnapshot = {

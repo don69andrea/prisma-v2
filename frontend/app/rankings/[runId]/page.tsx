@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { XCircle, ArrowLeft, Loader2 } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { getRun, getRankings, statusLabel } from '@/lib/api/runs';
 import { getUniverse } from '@/lib/api/universes';
+import { listStocks } from '@/lib/api/stocks';
 import { ApiError } from '@/lib/api/client';
 
 import { RankingsTable } from './rankings-table';
@@ -51,6 +53,17 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
     queryFn: () => getUniverse(runQuery.data!.universe_id),
     enabled: !!runQuery.data?.universe_id,
   });
+
+  const stocksQuery = useQuery({
+    queryKey: ['stocks-xswx'],
+    queryFn: () => listStocks(200, 0, 'XSWX'),
+    staleTime: 5 * 60 * 1000,  // 5 min cache
+  });
+
+  const swissTickers = useMemo(
+    () => new Set(stocksQuery.data?.items.map((s) => s.ticker) ?? []),
+    [stocksQuery.data],
+  );
 
   const is404 = runQuery.error instanceof ApiError && runQuery.error.status === 404;
 
@@ -122,7 +135,7 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
       {isCompleted && rankingsQuery.data && (
         <>
           <TopTenLeaderboard items={rankingsQuery.data} runId={params.runId} />
-          <RankingsTable items={rankingsQuery.data} runId={params.runId} />
+          <RankingsTable items={rankingsQuery.data} runId={params.runId} swissTickers={swissTickers} />
         </>
       )}
 

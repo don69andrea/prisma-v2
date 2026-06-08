@@ -398,3 +398,27 @@ async def get_swiss_market_service(
 ) -> SwissMarketService:
     """Erstellt den SwissMarketService mit Repository + YFinanceSwissAdapter."""
     return SwissMarketService(repo=repo, market_data=market_data)
+
+
+# ---------------------------------------------------------------------------
+# Swiss RAG (SIX Filings) DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_swiss_filing_repository() -> Any:
+    from backend.infrastructure.persistence.repositories.swiss_filing_repository import (
+        SQLASwissFilingRepository,
+    )
+
+    return SQLASwissFilingRepository(session_factory=get_session_factory())
+
+
+async def get_swiss_filing_retrieval_service(
+    repo: Any = Depends(get_swiss_filing_repository),
+) -> Any:
+    from backend.application.services.swiss_filing_retrieval_service import (
+        SwissFilingRetrievalService,
+    )
+
+    voyage = get_voyage_client()
+    return SwissFilingRetrievalService(repository=repo, voyage_client=voyage)

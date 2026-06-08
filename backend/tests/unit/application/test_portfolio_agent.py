@@ -194,10 +194,15 @@ async def test_allocate_llm_narrative_parsed() -> None:
     llm_resp = MagicMock()
     llm_resp.content = [
         MagicMock(
-            text=json.dumps({
-                "overall": "Solide Allokation mit Fokus auf defensive Schweizer Titel.",
-                "positions": {"NESN": "Marktführer Nahrungsmittel.", "NOVN": "Pharma-Exposure."},
-            })
+            text=json.dumps(
+                {
+                    "overall": "Solide Allokation mit Fokus auf defensive Schweizer Titel.",
+                    "positions": {
+                        "NESN": "Marktführer Nahrungsmittel.",
+                        "NOVN": "Pharma-Exposure.",
+                    },
+                }
+            )
         )
     ]
     llm.messages_create.return_value = llm_resp

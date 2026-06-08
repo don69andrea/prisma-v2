@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Fragment, Suspense, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -16,7 +16,46 @@ import {
 import { SwissBadge } from '@/components/ui/swiss-badge';
 import { generateMemo, type Memo } from '@/lib/api/memos';
 import { apiFetch } from '@/lib/api/client';
-import { getFactsheet } from '@/lib/api/stocks';
+import { getFactsheet, getLangfristScore, type LangfristScore } from '@/lib/api/stocks';
+
+function scoreColor(value: number): string {
+  if (value >= 7.5) return 'text-emerald-600 dark:text-emerald-400';
+  if (value >= 5.0) return 'text-amber-600 dark:text-amber-400';
+  return 'text-red-600 dark:text-red-400';
+}
+
+function LangfristCard({ score }: { score: LangfristScore }) {
+  const componentLabels: Record<string, string> = {
+    dividende: 'Dividende',
+    bilanz: 'Bilanz',
+    stabilitaet: 'Stabilität',
+    marktkapita: 'Marktgrösse',
+  };
+  return (
+    <Card data-testid="langfrist-card">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">VIAC Langfrist-Score</CardTitle>
+          <span className={`text-2xl font-bold tabular-nums ${scoreColor(score.value)}`}>
+            {score.value.toFixed(1)}<span className="text-sm font-normal text-muted-foreground">/10</span>
+          </span>
+        </div>
+        <CardDescription className="text-xs">{score.explanation}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          {Object.entries(score.components).map(([key, val]) => (
+            <Fragment key={key}>
+              <dt className="text-muted-foreground">{componentLabels[key] ?? key}</dt>
+              <dd className={`font-medium ${scoreColor(val)}`}>{val.toFixed(1)}</dd>
+            </Fragment>
+          ))}
+        </dl>
+        <p className="mt-3 text-xs text-muted-foreground">{score.disclaimer}</p>
+      </CardContent>
+    </Card>
+  );
+}
 
 function formatMarketCap(value: string): string {
   const n = parseFloat(value);
@@ -40,6 +79,13 @@ function FactsheetContent() {
   const { data: factsheet } = useQuery({
     queryKey: ['factsheet', symbol],
     queryFn: () => getFactsheet(symbol),
+    retry: false,
+  });
+
+  // Optional: load Langfrist-Score for Swiss stocks
+  const { data: langfrist } = useQuery({
+    queryKey: ['langfrist-score', symbol],
+    queryFn: () => getLangfristScore(symbol),
     retry: false,
   });
 
@@ -137,6 +183,8 @@ function FactsheetContent() {
           )}
         </CardContent>
       </Card>
+
+      {langfrist && <LangfristCard score={langfrist} />}
 
       {memo && (
         <Card data-testid="memo-card">

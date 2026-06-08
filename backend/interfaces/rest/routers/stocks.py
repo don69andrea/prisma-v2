@@ -10,6 +10,7 @@ from backend.interfaces.rest.dependencies import (
     get_stock_service,
     get_swiss_market_service,
 )
+from backend.interfaces.rest.schemas.langfrist import LangfristScoreResponse
 from backend.interfaces.rest.schemas.stock import (
     LatestRankingSnapshot,
     PricePoint,
@@ -112,4 +113,30 @@ async def get_prices(
     return PriceSeriesResponse(
         ticker=ticker_upper,
         prices=[PricePoint(date=str(p["date"]), close=float(p["close"])) for p in prices],
+    )
+
+
+@router.get(
+    "/stocks/{ticker}/langfrist-score",
+    response_model=LangfristScoreResponse,
+    summary="VIAC Langfrist-Score (0–10)",
+    description=(
+        "Berechnet den 30-Jahres-Vorsorge-Score aus Dividendenstabilität, "
+        "Bilanzqualität, Kursvolatilität und Marktkapitalisierung. "
+        "Keine Anlageberatung — rein modellbasiert."
+    ),
+)
+async def get_langfrist_score(
+    ticker: str,
+    service: SwissMarketService = Depends(get_swiss_market_service),
+) -> LangfristScoreResponse:
+    try:
+        score = await service.score_langfrist(ticker)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return LangfristScoreResponse(
+        ticker=score.ticker,
+        value=score.value,
+        components=score.components,
+        explanation=score.explanation,
     )

@@ -1,7 +1,7 @@
 """yfinance-Adapter für Schweizer Aktien (SIX Swiss Exchange, .SW-Suffix).
 
 Implementiert SwissMarketDataProvider-Port.
-yfinance ist synchron — alle Aufrufe laufen via asyncio.run_in_executor.
+yfinance ist synchron — alle Aufrufe laufen via asyncio.to_thread.
 Retry: 2x Exponential Backoff, kein externes Framework nötig.
 """
 
@@ -10,7 +10,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from decimal import Decimal
-from functools import partial
 
 import pandas as pd
 import yfinance as yf
@@ -36,7 +35,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
         info = await self._fetch_info(ticker)
         market_cap = info.get("marketCap")
         return SwissFundamentals(
-            market_cap_chf=Decimal(str(market_cap)) if market_cap else None,
+            market_cap_chf=Decimal(str(market_cap)) if market_cap is not None else None,
             pe_ratio=info.get("trailingPE"),
             pb_ratio=info.get("priceToBook"),
             dividend_yield=info.get("dividendYield"),
@@ -44,12 +43,10 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
         )
 
     async def get_price_history(self, ticker: str, days: int = 252) -> pd.DataFrame:
+        if days <= 0:
+            raise ValueError(f"days must be positive, got {days}")
         yf_ticker = self.build_yf_ticker(ticker)
-        loop = asyncio.get_event_loop()
-        df: pd.DataFrame = await loop.run_in_executor(
-            None, partial(self._sync_history, yf_ticker, days)
-        )
-        return df
+        return await self._fetch_history(yf_ticker, days)
 
     async def get_isin(self, ticker: str) -> str | None:
         info = await self._fetch_info(ticker)
@@ -57,14 +54,11 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
 
     async def _fetch_info(self, ticker: str) -> dict:
         yf_ticker = self.build_yf_ticker(ticker)
-        loop = asyncio.get_event_loop()
         last_exc: Exception | None = None
 
         for attempt in range(_RETRIES + 1):
             try:
-                info: dict = await loop.run_in_executor(
-                    None, partial(self._sync_info, yf_ticker)
-                )
+                info: dict = await asyncio.to_thread(self._sync_info, yf_ticker)
                 if not info:
                     raise SwissDataUnavailableError(ticker)
                 return info
@@ -86,6 +80,31 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
 
         raise last_exc  # type: ignore[misc]
 
+    async def _fetch_history(self, yf_ticker: str, days: int) -> pd.DataFrame:
+        last_exc: Exception | None = None
+
+        for attempt in range(_RETRIES + 1):
+            try:
+                df: pd.DataFrame = await asyncio.to_thread(
+                    self._sync_history, yf_ticker, days
+                )
+                return df
+            except Exception as exc:
+                last_exc = exc
+                if attempt < _RETRIES:
+                    delay = _BASE_DELAY * (2**attempt)
+                    _logger.warning(
+                        "yfinance history %s attempt %d/%d failed: %s — retry in %.1fs",
+                        yf_ticker,
+                        attempt + 1,
+                        _RETRIES,
+                        exc,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
+
+        raise last_exc  # type: ignore[misc]
+
     @staticmethod
     def _sync_info(yf_ticker: str) -> dict:
         return yf.Ticker(yf_ticker).info
@@ -95,4 +114,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
         df = yf.Ticker(yf_ticker).history(period=f"{days}d")
         if df.empty:
             return pd.DataFrame()
-        return df[["Close", "Volume"]]
+        try:
+            return df[["Close", "Volume"]]
+        except KeyError:
+            return pd.DataFrame()

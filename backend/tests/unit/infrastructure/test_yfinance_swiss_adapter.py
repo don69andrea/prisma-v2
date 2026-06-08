@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pandas as pd
 import pytest
@@ -102,3 +102,44 @@ async def test_get_isin(mock_yf: MagicMock) -> None:
     result = await adapter.get_isin("NESN")
 
     assert result == "CH0038863350"
+
+
+@pytest.mark.asyncio
+@patch("backend.infrastructure.adapters.yfinance_swiss.asyncio.sleep", new_callable=AsyncMock)
+@patch("backend.infrastructure.adapters.yfinance_swiss.yf")
+async def test_get_fundamentals_retries_on_transient_error(
+    mock_yf: MagicMock, mock_sleep: AsyncMock
+) -> None:
+    good_ticker_obj = MagicMock()
+    good_ticker_obj.info = {"marketCap": 100_000_000}
+    mock_yf.Ticker.side_effect = [Exception("network timeout"), good_ticker_obj]
+
+    adapter = YFinanceSwissAdapter()
+    result = await adapter.get_fundamentals("NOVN")
+
+    assert result.market_cap_chf == Decimal("100000000")
+    mock_sleep.assert_called_once()
+
+
+@pytest.mark.asyncio
+@patch("backend.infrastructure.adapters.yfinance_swiss.asyncio.sleep", new_callable=AsyncMock)
+@patch("backend.infrastructure.adapters.yfinance_swiss.yf")
+async def test_unavailable_error_not_retried(
+    mock_yf: MagicMock, mock_sleep: AsyncMock
+) -> None:
+    mock_yf.Ticker.return_value.info = {}
+
+    adapter = YFinanceSwissAdapter()
+    with pytest.raises(SwissDataUnavailableError):
+        await adapter.get_fundamentals("UNKNOWN")
+
+    mock_sleep.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("backend.infrastructure.adapters.yfinance_swiss.yf")
+async def test_get_isin_returns_none_when_absent(mock_yf: MagicMock) -> None:
+    mock_yf.Ticker.return_value.info = {"marketCap": 1_000_000}
+    adapter = YFinanceSwissAdapter()
+    result = await adapter.get_isin("NOVN")
+    assert result is None

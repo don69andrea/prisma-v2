@@ -37,7 +37,7 @@ test("Memo anfordern und Research-Memo anzeigen", async ({ page, request }) => {
 
   // Setup: universe + run via API
   const universeResp = await request.post(`${apiBase}/api/v1/universes`, {
-    data: { name: universeName, tickers: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"] },
+    data: { name: universeName, region: "US", tickers: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"] },
   });
   expect(universeResp.ok()).toBeTruthy();
   const universe = await universeResp.json();

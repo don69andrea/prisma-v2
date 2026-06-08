@@ -37,7 +37,7 @@ def _fetch_chf_eur() -> float:
 _NARRATIVE_SYSTEM = (
     "Du bist ein präziser Schweizer Finanz-Analyst. "
     "Antworte NUR mit validem JSON ohne Markdown-Codeblock. "
-    "Schema: {\"de\": \"<max 2 Sätze DE>\", \"en\": \"<max 2 Sätze EN>\"}"
+    'Schema: {"de": "<max 2 Sätze DE>", "en": "<max 2 Sätze EN>"}'
 )
 
 
@@ -46,7 +46,7 @@ def _narrative_prompt(leitzins: float, chf_eur: float, climate: str) -> str:
         f"SNB-Leitzins: {leitzins:.2f}%, CHF/EUR: {chf_eur:.4f}, "
         f"Makro-Klima: {climate}. "
         "Erstelle eine kurze, sachliche Makro-Einschätzung für Schweizer Aktieninvestoren "
-        "(freie Mittel, nicht 3a-gebunden). Antworte mit JSON {{\"de\": \"...\", \"en\": \"...\"}}."
+        '(freie Mittel, nicht 3a-gebunden). Antworte mit JSON {{"de": "...", "en": "..."}}.'
     )
 
 
@@ -106,12 +106,6 @@ class MacroService:
 
     @staticmethod
     def _fallback_narrative(leitzins: float, chf_eur: float, climate: str) -> tuple[str, str]:
-        de = (
-            f"SNB-Leitzins bei {leitzins:.2f}%, CHF/EUR {chf_eur:.4f}. "
-            f"Makro-Klima: {climate}."
-        )
-        en = (
-            f"SNB policy rate at {leitzins:.2f}%, CHF/EUR {chf_eur:.4f}. "
-            f"Macro climate: {climate}."
-        )
+        de = f"SNB-Leitzins bei {leitzins:.2f}%, CHF/EUR {chf_eur:.4f}. Makro-Klima: {climate}."
+        en = f"SNB policy rate at {leitzins:.2f}%, CHF/EUR {chf_eur:.4f}. Macro climate: {climate}."
         return de, en

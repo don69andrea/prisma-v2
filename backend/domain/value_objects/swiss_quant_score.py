@@ -14,8 +14,8 @@ class SwissQuantScore:
     """
 
     ticker: str
-    value_score: float       # P/E + P/B gewichtet
-    income_score: float      # Dividendenrendite
-    quality_score: float     # EPS-Qualität
-    composite: float         # Gesamtscore (gewichtetes Mittel)
-    signal: str              # "BUY" | "HOLD" | "WATCH"
+    value_score: float  # P/E + P/B gewichtet
+    income_score: float  # Dividendenrendite
+    quality_score: float  # EPS-Qualität
+    composite: float  # Gesamtscore (gewichtetes Mittel)
+    signal: str  # "BUY" | "HOLD" | "WATCH"

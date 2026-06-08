@@ -375,7 +375,6 @@ async def get_universe_suggestion_service(
     return UniverseSuggestionService(llm_client=llm, stock_service=stock_service)
 
 
-
 # ---------------------------------------------------------------------------
 # SwissMarketService DI-Chain
 # ---------------------------------------------------------------------------

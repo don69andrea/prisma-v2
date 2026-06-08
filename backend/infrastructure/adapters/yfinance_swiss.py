@@ -92,9 +92,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
 
         for attempt in range(_RETRIES + 1):
             try:
-                df: pd.DataFrame = await asyncio.to_thread(
-                    self._sync_history, yf_ticker, days
-                )
+                df: pd.DataFrame = await asyncio.to_thread(self._sync_history, yf_ticker, days)
                 return df
             except Exception as exc:
                 last_exc = exc

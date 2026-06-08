@@ -31,9 +31,7 @@ class StockORM(Base):
     exchange: Mapped[str | None] = mapped_column(String(10), nullable=True)
     market_cap_chf: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
 
-    __table_args__ = (
-        Index("ix_stocks_ticker", "ticker", unique=True),
-    )
+    __table_args__ = (Index("ix_stocks_ticker", "ticker", unique=True),)
 
     def __repr__(self) -> str:
         return f"<StockORM ticker={self.ticker!r} name={self.name!r}>"

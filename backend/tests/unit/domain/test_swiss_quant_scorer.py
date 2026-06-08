@@ -58,7 +58,10 @@ def test_none_fundamentals_get_neutral_scores() -> None:
 
 
 def test_pe_bands_score_correctly() -> None:
-    assert _scorer.score("A", _fund(pe=10.0)).value_score > _scorer.score("B", _fund(pe=28.0)).value_score
+    assert (
+        _scorer.score("A", _fund(pe=10.0)).value_score
+        > _scorer.score("B", _fund(pe=28.0)).value_score
+    )
 
 
 def test_dividend_yield_bands_score_correctly() -> None:

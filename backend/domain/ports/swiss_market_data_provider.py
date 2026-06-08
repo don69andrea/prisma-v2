@@ -10,7 +10,6 @@ from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
 
 
 class SwissMarketDataProvider(ABC):
-
     @abstractmethod
     async def get_fundamentals(self, ticker: str) -> SwissFundamentals:
         """Gibt Fundamentaldaten für einen Swiss Stock zurück.

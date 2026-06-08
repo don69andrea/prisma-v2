@@ -79,8 +79,7 @@ class SQLASwissStockRepository(SwissStockRepository):
     def _to_domain(orm: StockORM) -> SwissStock:
         if orm.isin is None:
             raise ValueError(
-                f"StockORM {orm.ticker!r} has exchange set but isin=NULL — "
-                "data invariant violation"
+                f"StockORM {orm.ticker!r} has exchange set but isin=NULL — data invariant violation"
             )
         return SwissStock(
             id=orm.id,

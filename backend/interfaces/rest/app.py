@@ -17,6 +17,7 @@ from backend.interfaces.rest.routers import (
     eligibility,
     health,
     memos,
+    ml,
     rag,
     runs,
     stocks,
@@ -103,5 +104,6 @@ def create_app() -> FastAPI:
     app.include_router(memos.router, prefix="/api/v1")
     app.include_router(backtests.router)
     app.include_router(rag.router)
+    app.include_router(ml.router)
 
     return app

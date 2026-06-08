@@ -39,7 +39,6 @@ def _make_prediction_mock(signal: str = "OUTPERFORM") -> MagicMock:
 
 
 def _make_stock(
-    exchange: str = "XSWX",
     market_cap_chf: Decimal = Decimal("200_000_000"),
 ) -> SwissStock:
     return SwissStock(
@@ -47,7 +46,7 @@ def _make_stock(
         ticker="NESN",
         isin="CH0012221716",
         name="Nestlé",
-        exchange=exchange,
+        exchange="XSWX",
         sector=None,
         market_cap_chf=market_cap_chf,
     )

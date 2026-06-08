@@ -49,6 +49,8 @@ describe('DashboardClient — StatsCards-Integration', () => {
         sector: null,
         country: null,
         currency: 'USD',
+        exchange: null,
+        market_cap_chf: null,
       })),
       total: 5,
     });

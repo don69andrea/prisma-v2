@@ -20,6 +20,7 @@ import { InfoPopover } from '@/components/InfoPopover';
 import { ModelInfoIcon } from '@/components/ModelInfoIcon';
 import { MODEL_INFO, SWEET_SPOT_DEFINITION, getSweetSpotModels, type ModelKey } from '@/lib/model-info';
 import { MemoSheet } from '@/components/factsheet/MemoSheet';
+import { SwissBadge } from '@/components/ui/swiss-badge';
 
 const MODEL_COLUMNS: Array<{ key: ModelKey; label: string }> = [
   { key: 'quality_classic', label: 'Quality' },
@@ -122,10 +123,17 @@ function SweetSpotBadge({
   );
 }
 
-export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: string }) {
+interface RankingsTableProps {
+  items: RankingItem[];
+  runId: string;
+  swissTickers?: Set<string>;  // optional — no filter shown if undefined
+}
+
+export function RankingsTable({ items, runId, swissTickers }: RankingsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('total_rank');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [filter, setFilter] = useState('');
+  const [exchangeFilter, setExchangeFilter] = useState<'all' | 'xswx'>('all');
   const [selectedStock, setSelectedStock] = useState<{ stockId: string; ticker: string } | null>(null);
 
   function handleSort(key: SortKey) {
@@ -138,7 +146,11 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
   }
 
   const displayItems = useMemo(() => {
-    const filtered = items.filter((item) =>
+    let result = items;
+    if (exchangeFilter === 'xswx' && swissTickers) {
+      result = result.filter((item) => swissTickers.has(item.ticker));
+    }
+    const filtered = result.filter((item) =>
       item.ticker.toLowerCase().includes(filter.toLowerCase()),
     );
     return [...filtered].sort((a, b) => {
@@ -150,7 +162,7 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
       if (bv === Infinity) return -1;
       return sortDir === 'asc' ? av - bv : bv - av;
     });
-  }, [items, filter, sortKey, sortDir]);
+  }, [items, filter, sortKey, sortDir, exchangeFilter, swissTickers]);
 
   return (
     <div className="space-y-3">
@@ -171,6 +183,24 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
           <Download className="mr-1 h-4 w-4" />
           CSV
         </Button>
+        {swissTickers !== undefined && (
+          <div className="flex gap-1 ml-auto">
+            <Button
+              variant={exchangeFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setExchangeFilter('all')}
+            >
+              Alle
+            </Button>
+            <Button
+              variant={exchangeFilter === 'xswx' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setExchangeFilter('xswx')}
+            >
+              🇨🇭 XSWX
+            </Button>
+          </div>
+        )}
       </div>
 
       {displayItems.length === 0 ? (
@@ -239,13 +269,12 @@ export function RankingsTable({ items, runId }: { items: RankingItem[]; runId: s
                   </Link>
                 </TableCell>
                 <TableCell className="font-mono">
-                  <Link
-                    href={ROUTES.factsheet(runId, item.ticker)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="block w-full"
-                  >
-                    {item.ticker}
-                  </Link>
+                  <div className="flex items-center gap-1.5">
+                    <Link href={ROUTES.factsheet(runId, item.ticker)} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                      {item.ticker}
+                    </Link>
+                    {swissTickers?.has(item.ticker) && <SwissBadge exchange="XSWX" />}
+                  </div>
                 </TableCell>
                 <TableCell>{formatNumber(item.weighted_avg, 2)}</TableCell>
                 <TableCell>

@@ -398,3 +398,26 @@ async def get_swiss_market_service(
 ) -> SwissMarketService:
     """Erstellt den SwissMarketService mit Repository + YFinanceSwissAdapter."""
     return SwissMarketService(repo=repo, market_data=market_data)
+
+
+# ---------------------------------------------------------------------------
+# SteuerAgent DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_steuer_agent(
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+    retrieval: RetrievalService = Depends(get_retrieval_service),
+) -> Any:
+    from backend.application.agents.steuer_agent import SteuerAgent
+
+    return SteuerAgent(
+        llm_client=LLMClient(
+            anthropic=get_anthropic_client(),
+            voyage=get_voyage_client(),
+            cost_tracker=cost_tracker,
+            pricing=PRICING,
+        ),
+        retrieval_service=retrieval,
+        prompt_loader=get_prompt_loader(),
+    )

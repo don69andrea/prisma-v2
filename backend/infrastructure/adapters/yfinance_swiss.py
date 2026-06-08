@@ -49,6 +49,13 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
         return await self._fetch_history(yf_ticker, days)
 
     async def get_isin(self, ticker: str) -> str | None:
+        """Ruft die ISIN über yfinance ab.
+
+        Bekannte Einschränkung: Yahoo Finance liefert für SIX-kotierte (.SW)
+        Titel kein `isin`-Feld im info-Dict — diese Methode gibt daher immer
+        None zurück. ISINs für SMI-Stocks müssen manuell via SIX Exchange
+        (https://www.six-group.com) verifiziert werden.
+        """
         info = await self._fetch_info(ticker)
         return info.get("isin")
 

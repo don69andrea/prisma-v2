@@ -64,3 +64,12 @@ async def test_refresh_market_data_raises_when_stock_not_found() -> None:
         await service.refresh_market_data("UNKNOWN")
 
     mock_market_data.get_fundamentals.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_refresh_market_data_raises_without_market_data_provider() -> None:
+    mock_repo = AsyncMock()
+    service = SwissMarketService(repo=mock_repo)  # no market_data
+
+    with pytest.raises(RuntimeError, match="MarketDataProvider"):
+        await service.refresh_market_data("NESN")

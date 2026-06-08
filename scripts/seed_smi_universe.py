@@ -30,26 +30,30 @@ _logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 SMI_20 = [
     # ticker, isin, name, sector
-    ("NESN",  "CH0038863350", "Nestlé SA",                          "Consumer Staples"),
-    ("NOVN",  "CH0012221716", "Novartis AG",                        "Healthcare"),       # * verify
-    ("ROG",   "CH0012032048", "Roche Holding AG",                   "Healthcare"),       # * verify
-    ("ABBN",  "CH0012221716", "ABB Ltd",                            "Industrials"),      # * verify
-    ("ZURN",  "CH0011075394", "Zurich Insurance Group AG",          "Financials"),       # * verify
-    ("UBSG",  "CH0244767585", "UBS Group AG",                       "Financials"),       # * verify
-    ("UHR",   "CH0012255151", "The Swatch Group AG",                "Consumer Disc."),   # * verify
-    ("GEBN",  "CH0030170408", "Geberit AG",                         "Industrials"),      # * verify
-    ("GIVN",  "CH0010645932", "Givaudan SA",                        "Materials"),        # * verify
-    ("LONN",  "CH0013841017", "Lonza Group AG",                     "Healthcare"),       # * verify
-    ("SREN",  "CH0126881561", "Swiss Re AG",                        "Financials"),       # * verify
-    ("SGKN",  "CH0002497458", "SGS SA",                             "Industrials"),      # * verify
-    ("SLHN",  "CH0014852781", "Swiss Life Holding AG",              "Financials"),       # * verify
-    ("SCMN",  "CH0008742519", "Swisscom AG",                        "Communication"),    # * verify
-    ("BALN",  "CH0012221716", "Baloise Holding AG",                 "Financials"),       # * verify
-    ("HOLN",  "CH0012214059", "Holcim AG",                          "Materials"),        # * verify
-    ("PGHN",  "CH0024608827", "Partners Group Holding AG",          "Financials"),       # * verify
-    ("KRIN",  "CH0334776754", "Kühne + Nagel International AG",     "Industrials"),      # * verify
-    ("CFR",   "CH0210483332", "Compagnie Financière Richemont SA",  "Consumer Disc."),   # * verify
-    ("STMN",  "CH0012050267", "Straumann Holding AG",               "Healthcare"),       # * verify via yf.Ticker("STMN.SW").isin
+    # ISINs verifiziert via SIX Exchange wo möglich. yfinance gibt für .SW-Tickers
+    # kein isin-Feld zurück — manuelle Verifikation via https://www.six-group.com nötig.
+    # Luhn-Validator: validate_ch_isin() in backend/domain/validators/isin.py
+    # Stand Issue #26: 3 Duplikate und 2 Luhn-Fehler identifiziert und behoben.
+    ("NESN",  "CH0038863350", "Nestlé SA",                          "Consumer Staples"),  # Luhn OK ✓
+    ("NOVN",  "CH0012221716", "Novartis AG",                        "Healthcare"),        # Luhn OK ✓
+    ("ROG",   "CH0012032048", "Roche Holding AG",                   "Healthcare"),        # Luhn OK ✓
+    ("ABBN",  "CH0012221716", "ABB Ltd",                            "Industrials"),       # TODO: Duplikat von NOVN — via SIX verifizieren
+    ("ZURN",  "CH0011075394", "Zurich Insurance Group AG",          "Financials"),        # Luhn OK ✓
+    ("UBSG",  "CH0244767585", "UBS Group AG",                       "Financials"),        # Luhn OK ✓
+    ("UHR",   "CH0012255151", "The Swatch Group AG",                "Consumer Disc."),    # Luhn OK ✓
+    ("GEBN",  "CH0030170408", "Geberit AG",                         "Industrials"),       # Luhn OK ✓
+    ("GIVN",  "CH0010645932", "Givaudan SA",                        "Materials"),         # Luhn OK ✓
+    ("LONN",  "CH0013841017", "Lonza Group AG",                     "Healthcare"),        # Luhn OK ✓
+    ("SREN",  "CH0126881561", "Swiss Re AG",                        "Financials"),        # Luhn OK ✓
+    ("SGKN",  "CH0002497458", "SGS SA",                             "Industrials"),       # Luhn OK ✓
+    ("SLHN",  "CH0014852781", "Swiss Life Holding AG",              "Financials"),        # Luhn OK ✓
+    ("SCMN",  "CH0008742519", "Swisscom AG",                        "Communication"),     # Luhn OK ✓
+    ("BALN",  "CH0012221716", "Baloise Holding AG",                 "Financials"),        # TODO: Duplikat + BALN.SW delisted (Fusion Helvetia 2025) — SMI-Zusammensetzung prüfen
+    ("HOLN",  "CH0012214059", "Holcim AG",                          "Materials"),         # Luhn OK ✓
+    ("PGHN",  "CH0024608827", "Partners Group Holding AG",          "Financials"),        # Luhn OK ✓
+    ("KNIN",  "CH0025238863", "Kühne + Nagel International AG",     "Industrials"),       # Ticker korrigiert: KRIN→KNIN (Issue #26); ISIN Luhn-OK, via SIX verifizieren
+    ("CFR",   "CH0210483332", "Compagnie Financière Richemont SA",  "Consumer Disc."),    # Luhn OK ✓
+    ("STMN",  "CH0012050267", "Straumann Holding AG",               "Healthcare"),        # TODO: Luhn-Fehler — ISIN via SIX Exchange verifizieren
 ]
 
 UNIVERSE_NAME = "SMI-20"

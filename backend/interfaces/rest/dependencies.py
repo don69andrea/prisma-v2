@@ -398,3 +398,61 @@ async def get_swiss_market_service(
 ) -> SwissMarketService:
     """Erstellt den SwissMarketService mit Repository + YFinanceSwissAdapter."""
     return SwissMarketService(repo=repo, market_data=market_data)
+
+
+# ---------------------------------------------------------------------------
+# News-RAG DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_news_repository() -> Any:
+    from backend.infrastructure.persistence.repositories.news_repository import (
+        SQLANewsRepository,
+    )
+
+    return SQLANewsRepository(session_factory=get_session_factory())
+
+
+async def get_news_ingestion_service(
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+) -> Any:
+    from backend.application.services.news_ingestion_service import NewsIngestionService
+    from backend.infrastructure.adapters.rss_news_adapter import RssNewsAdapter
+    from backend.infrastructure.adapters.ticker_ner import SWISS_TICKERS, TickerNer
+    from backend.infrastructure.persistence.repositories.news_repository import (
+        SQLANewsRepository,
+    )
+
+    repo = SQLANewsRepository(session_factory=get_session_factory())
+    voyage = get_voyage_client()
+    llm = LLMClient(
+        anthropic=get_anthropic_client(),
+        voyage=voyage,
+        cost_tracker=cost_tracker,
+        pricing=PRICING,
+    )
+    return NewsIngestionService(
+        news_repo=repo,
+        rss_adapter=RssNewsAdapter(),
+        ticker_ner=TickerNer(SWISS_TICKERS),
+        llm_client=llm,
+    )
+
+
+async def get_news_retrieval_service(
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+) -> Any:
+    from backend.application.services.news_retrieval_service import NewsRetrievalService
+    from backend.infrastructure.persistence.repositories.news_repository import (
+        SQLANewsRepository,
+    )
+
+    repo = SQLANewsRepository(session_factory=get_session_factory())
+    voyage = get_voyage_client()
+    llm = LLMClient(
+        anthropic=get_anthropic_client(),
+        voyage=voyage,
+        cost_tracker=cost_tracker,
+        pricing=PRICING,
+    )
+    return NewsRetrievalService(news_repo=repo, llm_client=llm)

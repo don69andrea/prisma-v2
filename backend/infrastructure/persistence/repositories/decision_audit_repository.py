@@ -31,9 +31,7 @@ class SQLADecisionAuditRepository(DecisionAuditRepository):
         self._session.add(orm)
         await self._session.flush()
 
-    async def list_by_ticker(
-        self, ticker: str, limit: int = 10
-    ) -> list[DecisionAuditRecord]:
+    async def list_by_ticker(self, ticker: str, limit: int = 10) -> list[DecisionAuditRecord]:
         stmt = (
             sa.select(DecisionAuditLogORM)
             .where(DecisionAuditLogORM.ticker == ticker.upper())

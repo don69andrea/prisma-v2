@@ -1,7 +1,7 @@
 """Create ml_features table (Feature Store für ML-Layer).
 
-Revision ID: 0015
-Revises: 0013
+Revision ID: 0016
+Revises: 0015
 """
 
 from __future__ import annotations
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0015"
-down_revision: str | None = "0013"
+revision: str = "0016"
+down_revision: str | None = "0015"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

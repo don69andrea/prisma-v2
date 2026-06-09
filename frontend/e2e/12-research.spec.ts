@@ -7,8 +7,6 @@ test("Research — Suche in Swiss Jahresberichten und SEC Filings", async ({ pag
   await page.getByTestId("research-query-input").fill("Dividendenstrategie");
   await page.getByTestId("research-search-btn").click();
 
-  // Entweder Ergebnisse oder Leer-Zustand
-  await expect(
-    page.getByTestId("research-search-btn").or(page.getByText(/Ergebnis|Keine Ergebnisse/))
-  ).toBeVisible({ timeout: 15_000 });
+  // Button bleibt immer sichtbar; bei Ergebnis erscheint zusätzlich Ergebnis-Text
+  await expect(page.getByTestId("research-search-btn")).toBeVisible({ timeout: 15_000 });
 });

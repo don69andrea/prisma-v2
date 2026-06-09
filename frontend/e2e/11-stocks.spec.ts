@@ -4,17 +4,12 @@ test("Aktien-Liste — Seite laden und Suchfilter benutzen", async ({ page }) =>
   await page.goto("/stocks");
   await expect(page.getByRole("heading", { name: "Aktienuniversum" })).toBeVisible();
 
-  // Warte auf Tabelle oder Skeleton
-  await expect(
-    page.getByTestId("stocks-search").or(page.getByText(/Aktien/))
-  ).toBeVisible({ timeout: 15_000 });
+  // Warte bis Suchfeld sichtbar (Seite vollständig geladen)
+  await expect(page.getByTestId("stocks-search")).toBeVisible({ timeout: 15_000 });
 
   // Suchfilter eingeben
-  const search = page.getByTestId("stocks-search");
-  if (await search.isVisible()) {
-    await search.fill("NESN");
-    await expect(
-      page.getByTestId("stock-row-NESN").or(page.getByText(/Keine Aktien/))
-    ).toBeVisible({ timeout: 10_000 });
-  }
+  await page.getByTestId("stocks-search").fill("NESN");
+  await expect(
+    page.getByTestId("stock-row-NESN").or(page.getByText("Keine Aktien gefunden."))
+  ).toBeVisible({ timeout: 10_000 });
 });

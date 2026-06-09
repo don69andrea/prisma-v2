@@ -44,7 +44,15 @@ export function UniverseList({ universes }: { universes: UniverseRead[] }) {
         <TableBody>
           {universes.map((u) => (
             <TableRow key={u.id}>
-              <TableCell className="font-medium">{u.name}</TableCell>
+              <TableCell className="font-medium">
+                <Link
+                  href={`/universes/${u.id}`}
+                  className="hover:underline"
+                  data-testid={`universe-name-link-${u.id}`}
+                >
+                  {u.name}
+                </Link>
+              </TableCell>
               <TableCell>{u.region}</TableCell>
               <TableCell>{u.tickers.length}</TableCell>
               <TableCell className="text-right">

@@ -4,7 +4,7 @@ import { Fragment, Suspense, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileSearch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -139,13 +139,23 @@ function FactsheetContent() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <Link
-        href={runId ? `/rankings/${runId}` : '/rankings'}
-        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="mr-1 h-4 w-4" />
-        Zurück
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href={runId ? `/rankings/${runId}` : '/rankings'}
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Zurück
+        </Link>
+        <Link
+          href={`/research?ticker=${symbol}`}
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          data-testid="research-link"
+        >
+          <FileSearch className="h-3.5 w-3.5" />
+          CH-Filings
+        </Link>
+      </div>
 
       <Card>
         <CardHeader>

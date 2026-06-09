@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { ResearchClient } from './research-client';
 
@@ -11,7 +12,9 @@ export default function ResearchPage() {
         Semantische Suche in SIX Jahresberichten und SEC Filings (pgvector)
       </p>
       <div className="pt-4">
-        <ResearchClient />
+        <Suspense>
+          <ResearchClient />
+        </Suspense>
       </div>
     </div>
   );

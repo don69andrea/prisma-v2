@@ -20,6 +20,7 @@ from backend.interfaces.rest.exception_handlers import handle_budget_cap_exceede
 from backend.interfaces.rest.routers import (
     admin,
     backtests,
+    decisions,
     eligibility,
     health,
     memos,
@@ -179,5 +180,6 @@ def create_app() -> FastAPI:
     app.include_router(steuer.router)
     app.include_router(news.router)
     app.include_router(ml.router)
+    app.include_router(decisions.router)
 
     return app

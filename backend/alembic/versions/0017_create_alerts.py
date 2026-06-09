@@ -2,7 +2,7 @@
 """create alerts table
 
 Revision ID: 0017
-Revises: 0016
+Revises: 0013
 Create Date: 2026-06-09
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0017"
-down_revision: str | None = "0016"
+down_revision: str | None = "0013"
 branch_labels: Sequence[str] | None = None
 depends_on: Sequence[str] | None = None
 

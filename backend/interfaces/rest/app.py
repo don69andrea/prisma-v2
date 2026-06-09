@@ -20,6 +20,7 @@ from backend.interfaces.rest.routers import (
     dividends,
     eligibility,
     fonds_vergleich,
+    fundamentals,
     health,
     macro,
     memos,
@@ -115,6 +116,7 @@ def create_app() -> FastAPI:
     app.include_router(stocks.router)
     app.include_router(eligibility.router)
     app.include_router(dividends.router)
+    app.include_router(fundamentals.router)
     app.include_router(universes.router)
     app.include_router(admin.router)
     app.include_router(runs.router)

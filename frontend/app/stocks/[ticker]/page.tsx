@@ -18,7 +18,9 @@ import { generateMemo, type Memo } from '@/lib/api/memos';
 import { apiFetch } from '@/lib/api/client';
 import { getFactsheet, getLangfristScore, getPrices, type LangfristScore } from '@/lib/api/stocks';
 import { getDividends } from '@/lib/api/dividends';
+import { getFundamentals } from '@/lib/api/fundamentals';
 import { DividendCard } from '@/components/factsheet/DividendCard';
+import { FundamentalsCard } from '@/components/factsheet/FundamentalsCard';
 import { PriceChart } from '@/components/factsheet/PriceChart';
 import { AuditPanel } from '@/components/factsheet/AuditPanel';
 import { MLPanel } from '@/components/factsheet/MLPanel';
@@ -98,6 +100,13 @@ function FactsheetContent() {
   const { data: dividendData } = useQuery({
     queryKey: ['dividends', symbol],
     queryFn: () => getDividends(symbol),
+    retry: false,
+    staleTime: 5 * 60 * 1_000,
+  });
+
+  const { data: fundamentalsData } = useQuery({
+    queryKey: ['fundamentals', symbol],
+    queryFn: () => getFundamentals(symbol),
     retry: false,
     staleTime: 5 * 60 * 1_000,
   });
@@ -206,6 +215,8 @@ function FactsheetContent() {
       </Card>
 
       {langfrist && <LangfristCard score={langfrist} />}
+
+      {fundamentalsData && <FundamentalsCard data={fundamentalsData} />}
 
       {dividendData && <DividendCard data={dividendData} />}
 

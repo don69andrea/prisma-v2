@@ -49,3 +49,8 @@ export async function getRankings(runId: string): Promise<RankingItem[]> {
 export async function listRuns(limit = 50, offset = 0): Promise<RunResponse[]> {
   return apiFetch<RunResponse[]>(`/api/v1/runs?limit=${limit}&offset=${offset}`);
 }
+
+export function getRankingsCsvUrl(runId: string): string {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  return `${base}/api/v1/runs/${runId}/export?format=csv`;
+}

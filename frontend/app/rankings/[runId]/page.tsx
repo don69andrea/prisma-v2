@@ -3,11 +3,12 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { XCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { XCircle, ArrowLeft, Loader2, Download } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { getRun, getRankings, statusLabel } from '@/lib/api/runs';
+import { getRun, getRankings, statusLabel, getRankingsCsvUrl } from '@/lib/api/runs';
 import { getUniverse } from '@/lib/api/universes';
 import { listStocks } from '@/lib/api/stocks';
 import { ApiError } from '@/lib/api/client';
@@ -69,15 +70,29 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <Link
-          href="/rankings"
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Zurück zu Rankings
-        </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Link
+            href="/rankings"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Zurück zu Rankings
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis</h1>
+        </div>
+        {isCompleted && rankingsQuery.data && (
+          <a
+            href={getRankingsCsvUrl(params.runId)}
+            download
+            data-testid="csv-download-btn"
+          >
+            <Button variant="outline" size="sm">
+              <Download className="mr-1 h-4 w-4" />
+              CSV
+            </Button>
+          </a>
+        )}
       </div>
 
       {is404 && (

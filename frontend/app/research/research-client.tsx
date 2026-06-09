@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
 import { Search, ExternalLink } from 'lucide-react';
 
 import {
@@ -81,9 +82,12 @@ function SecResultCard({ item }: { item: SecChunkResult }) {
 }
 
 export function ResearchClient() {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<TabType>('swiss');
   const [query, setQuery] = useState('');
-  const [ticker, setTicker] = useState('');
+  const [ticker, setTicker] = useState(
+    () => searchParams.get('ticker')?.toUpperCase() ?? '',
+  );
   const [swissLang, setSwissLang] = useState<'' | 'de' | 'en' | 'fr'>('');
   const [swissResults, setSwissResults] = useState<SwissChunkResult[] | null>(null);
   const [secResults, setSecResults] = useState<SecChunkResult[] | null>(null);

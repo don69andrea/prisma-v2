@@ -72,7 +72,7 @@ function PlanResult({ plan }: { plan: RebalancingPlan }) {
   const holds = plan.steps.filter((s) => s.action === 'HOLD').length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="rebalancing-result">
       <div className="flex flex-wrap gap-3">
         <div className="rounded-lg border bg-card px-4 py-2 text-sm">
           <p className="text-muted-foreground text-xs">Portfoliowert</p>

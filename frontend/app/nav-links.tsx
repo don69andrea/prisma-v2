@@ -12,6 +12,7 @@ const navLinks = [
   { href: ROUTES.rankings,  label: 'Rankings' },
   { href: ROUTES.backtest,  label: 'Backtest' },
   { href: ROUTES.decision,  label: 'Signale' },
+  { href: ROUTES.alerts,    label: 'Alerts' },
 ] as const;
 
 export function NavLinks() {

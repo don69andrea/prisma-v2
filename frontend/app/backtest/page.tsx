@@ -6,6 +6,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { listRuns } from '@/lib/api/runs';
 import {
   CartesianGrid,
@@ -17,7 +25,54 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { runBacktest, type BacktestResult } from '@/lib/api/backtest';
+import { runBacktest, type BacktestResult, type PortfolioMetrics } from '@/lib/api/backtest';
+
+const METRIC_ROWS: Array<{ label: string; key: keyof PortfolioMetrics; pct: boolean }> = [
+  { label: 'Total Return',  key: 'total_return', pct: true  },
+  { label: 'CAGR',          key: 'cagr',         pct: true  },
+  { label: 'Volatilität',   key: 'annual_vol',   pct: true  },
+  { label: 'Sharpe Ratio',  key: 'sharpe',       pct: false },
+  { label: 'Max. Drawdown', key: 'max_drawdown', pct: true  },
+];
+
+function fmtMetric(v: string, pct: boolean): string {
+  const n = parseFloat(v);
+  if (isNaN(n)) return '—';
+  return pct ? `${(n * 100).toFixed(1)}%` : n.toFixed(2);
+}
+
+function MetricsTable({
+  prisma,
+  universum,
+  benchmark,
+}: {
+  prisma: PortfolioMetrics;
+  universum: PortfolioMetrics;
+  benchmark: PortfolioMetrics;
+}) {
+  return (
+    <Table data-testid="backtest-metrics-table">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Metrik</TableHead>
+          <TableHead className="text-right text-indigo-600 dark:text-indigo-400">PRISMA</TableHead>
+          <TableHead className="text-right text-emerald-600 dark:text-emerald-400">Universum</TableHead>
+          <TableHead className="text-right text-amber-600 dark:text-amber-400">Benchmark</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {METRIC_ROWS.map(({ label, key, pct }) => (
+          <TableRow key={label}>
+            <TableCell className="text-muted-foreground text-sm">{label}</TableCell>
+            <TableCell className="text-right font-medium tabular-nums">{fmtMetric(prisma[key], pct)}</TableCell>
+            <TableCell className="text-right tabular-nums">{fmtMetric(universum[key], pct)}</TableCell>
+            <TableCell className="text-right tabular-nums">{fmtMetric(benchmark[key], pct)}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
 
 function BacktestContent() {
   const searchParams = useSearchParams();
@@ -163,7 +218,7 @@ function BacktestContent() {
           <CardHeader>
             <CardTitle>Performance-Vergleich</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div data-testid="backtest-chart" className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
@@ -200,6 +255,11 @@ function BacktestContent() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            <MetricsTable
+              prisma={result.prisma_metrics}
+              universum={result.universe_metrics}
+              benchmark={result.benchmark_metrics}
+            />
           </CardContent>
         </Card>
       )}

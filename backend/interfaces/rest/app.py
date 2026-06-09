@@ -27,6 +27,7 @@ from backend.interfaces.rest.routers import (
     memos,
     ml,
     news,
+    portfolio,
     rag,
     runs,
     steuer,
@@ -183,5 +184,6 @@ def create_app() -> FastAPI:
     app.include_router(ml.router)
     app.include_router(decisions.router)
     app.include_router(macro.router)
+    app.include_router(portfolio.router)
 
     return app

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-import { listRuns, getRankings, type RankingRunStatus } from '@/lib/api/runs';
+import { listRuns, getRankings, type RankingRunStatus, type RunResponse } from '@/lib/api/runs';
 import { listUniverses } from '@/lib/api/universes';
 import { listStocks } from '@/lib/api/stocks';
 import { StatsCards, type TopPick } from '@/components/dashboard/StatsCards';
@@ -47,6 +47,13 @@ export function DashboardClient() {
   } = useQuery({
     queryKey: ['runs'],
     queryFn: () => listRuns(),
+    refetchInterval: (q) => {
+      const data = q.state.data as RunResponse[] | undefined;
+      const hasActive = data?.some(
+        (r: RunResponse) => r.status === 'pending' || r.status === 'running',
+      );
+      return hasActive ? 5_000 : false;
+    },
   });
 
   const { data: universesData } = useQuery({
@@ -160,7 +167,7 @@ export function DashboardClient() {
             {runs.map((run) => (
               <TableRow
                 key={run.id}
-                className="cursor-pointer"
+                className={`cursor-pointer ${run.status === 'pending' || run.status === 'running' ? 'animate-pulse' : ''}`}
                 onClick={() => router.push(`/rankings/${run.id}`)}
               >
                 <TableCell className="font-mono text-xs">{run.id.slice(0, 8)}</TableCell>

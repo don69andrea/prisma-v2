@@ -7,6 +7,10 @@ export const ROUTES = {
   alerts: '/alerts',
   portfolio: '/portfolio',
   fonds: '/fonds',
+  stocks: '/stocks',
+  news: '/news',
+  steuer: '/steuer',
+  research: '/research',
   factsheet: (runId: string, ticker: string) =>
     `/rankings/${runId}/stock/${ticker}` as const,
 } as const;

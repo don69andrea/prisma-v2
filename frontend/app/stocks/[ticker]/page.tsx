@@ -21,6 +21,8 @@ import { getDividends } from '@/lib/api/dividends';
 import { DividendCard } from '@/components/factsheet/DividendCard';
 import { PriceChart } from '@/components/factsheet/PriceChart';
 import { AuditPanel } from '@/components/factsheet/AuditPanel';
+import { MLPanel } from '@/components/factsheet/MLPanel';
+import { EligibilityPanel } from '@/components/factsheet/EligibilityPanel';
 
 function scoreColor(value: number): string {
   if (value >= 7.5) return 'text-emerald-600 dark:text-emerald-400';
@@ -99,6 +101,7 @@ function FactsheetContent() {
     retry: false,
     staleTime: 5 * 60 * 1_000,
   });
+
 
   const { data: prices } = useQuery({
     queryKey: ['prices', symbol],
@@ -208,7 +211,12 @@ function FactsheetContent() {
 
       {prices && <PriceChart ticker={symbol} prices={prices.prices} />}
 
+      <MLPanel ticker={symbol} />
+
       <AuditPanel ticker={symbol} />
+
+      <EligibilityPanel ticker={symbol} />
+
 
       {memo && (
         <Card data-testid="memo-card">

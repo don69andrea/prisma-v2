@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+import Link from 'next/link';
 import { listUniverses } from '@/lib/api/universes';
 import { listDecisions, type SignalType, type DecisionSignal } from '@/lib/api/decisions';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +42,12 @@ function SignalCard({ item }: { item: DecisionSignal }) {
     <div className="rounded-lg border bg-card p-4 space-y-3 hover:shadow-sm transition-shadow">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-base leading-none">{item.ticker}</p>
+          <Link
+            href={`/stocks/${item.ticker}`}
+            className="font-semibold text-base leading-none hover:underline"
+          >
+            {item.ticker}
+          </Link>
           <p className="text-xs text-muted-foreground mt-0.5">
             {new Date(item.snapshot_date).toLocaleDateString('de-CH', { dateStyle: 'short' })}
           </p>

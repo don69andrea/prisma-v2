@@ -15,13 +15,17 @@ const navLinks = [
   { href: ROUTES.alerts,    label: 'Alerts' },
   { href: ROUTES.portfolio, label: 'Portfolio' },
   { href: ROUTES.fonds,     label: 'Fonds' },
+  { href: ROUTES.stocks,    label: 'Aktien' },
+  { href: ROUTES.news,      label: 'News' },
+  { href: ROUTES.research,  label: 'Research' },
+  { href: ROUTES.steuer,    label: 'Steuer' },
 ] as const;
 
 export function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center gap-4 text-sm sm:gap-6">
+    <nav className="flex items-center gap-4 text-sm sm:gap-5 overflow-x-auto scrollbar-none pb-0.5 sm:pb-0 flex-nowrap w-full">
       {navLinks.map((link) => {
         const isActive =
           link.href === ROUTES.dashboard
@@ -34,7 +38,7 @@ export function NavLinks() {
             href={link.href}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'transition-colors hover:text-foreground',
+              'shrink-0 transition-colors hover:text-foreground',
               isActive ? 'text-foreground font-medium' : 'text-muted-foreground',
             )}
           >

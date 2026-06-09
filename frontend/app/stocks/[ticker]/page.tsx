@@ -20,6 +20,7 @@ import { getFactsheet, getLangfristScore, getPrices, type LangfristScore } from 
 import { PriceChart } from '@/components/factsheet/PriceChart';
 import { AuditPanel } from '@/components/factsheet/AuditPanel';
 import { MLPanel } from '@/components/factsheet/MLPanel';
+import { EligibilityPanel } from '@/components/factsheet/EligibilityPanel';
 
 function scoreColor(value: number): string {
   if (value >= 7.5) return 'text-emerald-600 dark:text-emerald-400';
@@ -201,6 +202,8 @@ function FactsheetContent() {
       <MLPanel ticker={symbol} />
 
       <AuditPanel ticker={symbol} />
+
+      <EligibilityPanel ticker={symbol} />
 
       {memo && (
         <Card data-testid="memo-card">

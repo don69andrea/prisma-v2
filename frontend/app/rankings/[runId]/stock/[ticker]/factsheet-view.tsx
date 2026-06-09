@@ -12,6 +12,7 @@ import { PriceChart } from '@/components/factsheet/PriceChart';
 import { MemoPanel } from '@/components/factsheet/MemoPanel';
 import { AuditPanel } from '@/components/factsheet/AuditPanel';
 import { MLPanel } from '@/components/factsheet/MLPanel';
+import { EligibilityPanel } from '@/components/factsheet/EligibilityPanel';
 
 function SkeletonCard({ className = '' }: { className?: string }) {
   return (
@@ -101,6 +102,8 @@ export function FactsheetView({ ticker, runId }: Props) {
       <MLPanel ticker={ticker} />
 
       <AuditPanel ticker={ticker} />
+
+      <EligibilityPanel ticker={ticker} />
 
       <MemoPanel stockId={stock.id} runId={runId} />
     </div>

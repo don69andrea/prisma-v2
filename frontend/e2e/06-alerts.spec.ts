@@ -11,9 +11,6 @@ test("Alert anlegen, in Liste sehen und löschen", async ({ page, request }) => 
     await request.delete(`${apiBase}/api/v1/alerts/${alert.id}`);
   }
 
-  // Eindeutige E-Mail pro Test-Run verwenden
-  const uniqueEmail = `test-${Date.now()}@example.com`;
-
   // Alerts-Page öffnen
   await page.goto("/alerts");
   await expect(page.getByRole("heading", { name: "Alerts" })).toBeVisible();
@@ -23,7 +20,7 @@ test("Alert anlegen, in Liste sehen und löschen", async ({ page, request }) => 
   await page.getByLabel("Threshold (%)").fill("10");
   await page.locator('select').filter({ hasText: "Kursänderung" }).selectOption("PRICE_CHANGE");
   await page.locator('select').filter({ hasText: "E-Mail" }).selectOption("EMAIL");
-  await page.getByPlaceholder("name@example.com").fill(uniqueEmail);
+  await page.getByPlaceholder("name@example.com").fill(`test-${Date.now()}@example.com`);
   await page.getByRole("button", { name: /Alert anlegen/i }).click();
 
   // Alert erscheint in der Liste
@@ -33,6 +30,8 @@ test("Alert anlegen, in Liste sehen und löschen", async ({ page, request }) => 
   await page.getByRole("button", { name: /Alert löschen/i }).first().click();
   await page.getByRole("button", { name: /^Löschen$/ }).click();
 
-  // Alert aus Liste verschwunden (nur noch der soeben gelöschte)
-  await expect(page.getByText(uniqueEmail)).not.toBeVisible({ timeout: 5_000 });
+  // Liste ist wieder leer
+  await expect(
+    page.getByText("Keine Alerts konfiguriert.")
+  ).toBeVisible({ timeout: 10_000 });
 });

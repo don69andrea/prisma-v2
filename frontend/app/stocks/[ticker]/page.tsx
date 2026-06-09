@@ -17,6 +17,8 @@ import { SwissBadge } from '@/components/ui/swiss-badge';
 import { generateMemo, type Memo } from '@/lib/api/memos';
 import { apiFetch } from '@/lib/api/client';
 import { getFactsheet, getLangfristScore, type LangfristScore } from '@/lib/api/stocks';
+import { getDividends } from '@/lib/api/dividends';
+import { DividendCard } from '@/components/factsheet/DividendCard';
 
 function scoreColor(value: number): string {
   if (value >= 7.5) return 'text-emerald-600 dark:text-emerald-400';
@@ -87,6 +89,14 @@ function FactsheetContent() {
     queryKey: ['langfrist-score', symbol],
     queryFn: () => getLangfristScore(symbol),
     retry: false,
+  });
+
+  // Optional: load dividend data for Swiss stocks
+  const { data: dividendData } = useQuery({
+    queryKey: ['dividends', symbol],
+    queryFn: () => getDividends(symbol),
+    retry: false,
+    staleTime: 5 * 60 * 1_000,
   });
 
   const handleRequestMemo = async () => {
@@ -185,6 +195,8 @@ function FactsheetContent() {
       </Card>
 
       {langfrist && <LangfristCard score={langfrist} />}
+
+      {dividendData && <DividendCard data={dividendData} />}
 
       {memo && (
         <Card data-testid="memo-card">

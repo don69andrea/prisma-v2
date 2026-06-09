@@ -392,6 +392,11 @@ async def get_swiss_market_data_provider() -> SwissMarketDataProvider:
     return YFinanceSwissAdapter()
 
 
+async def get_yfinance_adapter() -> YFinanceSwissAdapter:
+    """Liefert einen YFinanceSwissAdapter für direkte Adapter-Nutzung (z.B. Dividenden)."""
+    return YFinanceSwissAdapter()
+
+
 async def get_swiss_market_service(
     repo: SwissStockRepository = Depends(get_swiss_stock_repository),
     market_data: SwissMarketDataProvider = Depends(get_swiss_market_data_provider),

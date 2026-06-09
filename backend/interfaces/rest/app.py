@@ -31,6 +31,7 @@ from backend.interfaces.rest.routers import (
     news,
     portfolio,
     rag,
+    rebalancing,
     runs,
     steuer,
     stocks,
@@ -189,5 +190,6 @@ def create_app() -> FastAPI:
     app.include_router(macro.router)
     app.include_router(portfolio.router)
     app.include_router(fonds_vergleich.router)
+    app.include_router(rebalancing.router)
 
     return app

@@ -1,12 +1,18 @@
 """FastAPI Application-Factory."""
 
+from __future__ import annotations
+
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+if TYPE_CHECKING:
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from backend.config import get_settings
 from backend.domain.errors import BudgetCapExceeded
@@ -17,6 +23,7 @@ from backend.interfaces.rest.routers import (
     eligibility,
     health,
     memos,
+    news,
     rag,
     runs,
     steuer,
@@ -27,9 +34,73 @@ from backend.interfaces.rest.routers import (
 _logger = logging.getLogger(__name__)
 
 
+def _build_scheduler() -> AsyncIOScheduler:
+    """Erzeugt einen APScheduler für tägliche News-Ingestion (07:00 Europe/Zurich)."""
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+    from backend.infrastructure.adapters.rss_news_adapter import RssNewsAdapter
+    from backend.infrastructure.adapters.ticker_ner import SWISS_TICKERS, TickerNer
+    from backend.infrastructure.llm.client import LLMClient
+    from backend.infrastructure.llm.pricing import PRICING
+    from backend.infrastructure.persistence.repositories.news_repository import (
+        SQLANewsRepository,
+    )
+    from backend.infrastructure.persistence.session import get_session_factory
+
+    scheduler: AsyncIOScheduler = AsyncIOScheduler(timezone="Europe/Zurich")
+
+    async def _scheduled_ingest() -> None:
+        from backend.application.services.cost_tracker import CostTracker
+        from backend.application.services.news_ingestion_service import NewsIngestionService
+        from backend.infrastructure.llm.pricing import PRICING as _pricing
+        from backend.infrastructure.persistence.repositories.cost_log_repository import (
+            SQLACostLogRepository,
+        )
+
+        cost_repo = SQLACostLogRepository(session_factory=get_session_factory())
+        settings = get_settings()
+        cost_tracker = CostTracker(
+            repository=cost_repo,
+            pricing=_pricing,
+            cap_usd=settings.budget_cap_usd,
+            threshold=settings.budget_cap_threshold,
+        )
+        import anthropic as _anthropic
+        import voyageai as _voyageai
+
+        voyage = (
+            _voyageai.Client(api_key=settings.voyage_api_key)  # type: ignore[attr-defined]
+            if settings.voyage_api_key
+            else None
+        )
+        llm = LLMClient(
+            anthropic=_anthropic.AsyncAnthropic(
+                api_key=settings.anthropic_api_key, timeout=30.0, max_retries=3
+            ),
+            voyage=voyage,
+            cost_tracker=cost_tracker,
+            pricing=PRICING,
+        )
+        svc = NewsIngestionService(
+            news_repo=SQLANewsRepository(session_factory=get_session_factory()),
+            rss_adapter=RssNewsAdapter(),
+            ticker_ner=TickerNer(SWISS_TICKERS),
+            llm_client=llm,
+        )
+        stats = await svc.ingest_all()
+        _logger.info("Scheduled news ingestion complete: %s", stats)
+
+    scheduler.add_job(_scheduled_ingest, "cron", hour=7, minute=0, id="daily_news_ingest")
+    return scheduler
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    scheduler = _build_scheduler()
+    scheduler.start()
+    _logger.info("APScheduler started — daily news ingestion at 07:00 Europe/Zurich")
     yield
+    scheduler.shutdown(wait=False)
     # On shutdown: mark any jobs that are still "running" or "pending" as failed
     # so the next restart can safely ignore them instead of treating them as active.
     try:
@@ -105,5 +176,6 @@ def create_app() -> FastAPI:
     app.include_router(backtests.router)
     app.include_router(rag.router)
     app.include_router(steuer.router)
+    app.include_router(news.router)
 
     return app

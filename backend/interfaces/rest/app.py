@@ -15,11 +15,20 @@ from backend.interfaces.rest.routers import (
     admin,
     alerts,
     backtests,
+    decision_audit,
+    decisions,
     eligibility,
+    fonds_vergleich,
     health,
+    macro,
     memos,
+    ml,
+    news,
+    portfolio,
     rag,
+    rebalancing,
     runs,
+    steuer,
     stocks,
     universes,
 )
@@ -33,10 +42,9 @@ async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     scheduler = create_alert_scheduler()
     scheduler.start()
-    _logger.info("Alert-Scheduler gestartet")
+    _logger.info("APScheduler started — daily alert check at 08:00 Europe/Zurich")
     yield
     scheduler.shutdown(wait=False)
-    _logger.info("Alert-Scheduler gestoppt")
     # On shutdown: mark any jobs that are still "running" or "pending" as failed
     # so the next restart can safely ignore them instead of treating them as active.
     try:
@@ -111,6 +119,15 @@ def create_app() -> FastAPI:
     app.include_router(memos.router, prefix="/api/v1")
     app.include_router(backtests.router)
     app.include_router(rag.router)
+    app.include_router(steuer.router)
+    app.include_router(news.router)
+    app.include_router(ml.router)
+    app.include_router(decisions.router)
+    app.include_router(decision_audit.router)
+    app.include_router(macro.router)
+    app.include_router(portfolio.router)
+    app.include_router(fonds_vergleich.router)
+    app.include_router(rebalancing.router)
     app.include_router(alerts.router)
 
     return app

@@ -4,6 +4,7 @@ export const ROUTES = {
   rankings: '/rankings',
   backtest: '/backtest',
   decision: '/decision',
+  stocks: '/stocks',
   news: '/news',
   steuer: '/steuer',
   factsheet: (runId: string, ticker: string) =>

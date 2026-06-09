@@ -12,6 +12,7 @@ const navLinks = [
   { href: ROUTES.rankings,  label: 'Rankings' },
   { href: ROUTES.backtest,  label: 'Backtest' },
   { href: ROUTES.decision,  label: 'Signale' },
+  { href: ROUTES.stocks,    label: 'Aktien' },
   { href: ROUTES.news,      label: 'News' },
   { href: ROUTES.steuer,    label: 'Steuer' },
 ] as const;

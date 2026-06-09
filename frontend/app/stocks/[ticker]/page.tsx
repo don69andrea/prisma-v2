@@ -22,6 +22,7 @@ import { getFundamentals } from '@/lib/api/fundamentals';
 import { DividendCard } from '@/components/factsheet/DividendCard';
 import { FundamentalsCard } from '@/components/factsheet/FundamentalsCard';
 import { MacroWidget } from '@/components/dashboard/MacroWidget';
+import { NewsPanel } from '@/components/factsheet/NewsPanel';
 import { PriceChart } from '@/components/factsheet/PriceChart';
 import { AuditPanel } from '@/components/factsheet/AuditPanel';
 import { MLPanel } from '@/components/factsheet/MLPanel';
@@ -224,6 +225,8 @@ function FactsheetContent() {
       {prices && <PriceChart ticker={symbol} prices={prices.prices} />}
 
       <MacroWidget />
+
+      <NewsPanel ticker={symbol} />
 
       <MLPanel ticker={symbol} />
 

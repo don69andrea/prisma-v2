@@ -23,8 +23,8 @@ test("Alert anlegen, in Liste sehen und löschen", async ({ page, request }) => 
   await expect(page.getByText("NOVN")).toBeVisible({ timeout: 10_000 });
 
   // Alert löschen (Bestätigung)
-  await page.getByRole("button", { name: /Trash/i }).first().click();
-  await page.getByRole("button", { name: /Löschen/i }).click();
+  await page.getByRole("button", { name: /Alert löschen/i }).first().click();
+  await page.getByRole("button", { name: /^Löschen$/ }).click();
 
   // Alert aus Liste verschwunden
   await expect(page.getByText("test@example.com")).not.toBeVisible({ timeout: 5_000 });

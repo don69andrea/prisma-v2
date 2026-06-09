@@ -67,6 +67,7 @@ function AlertRow({ alert, onDelete }: { alert: Alert; onDelete: () => void }) {
           <Button
             size="icon"
             variant="ghost"
+            aria-label="Alert löschen"
             className="h-7 w-7 text-muted-foreground hover:text-destructive"
             onClick={() => setConfirming(true)}
           >
@@ -139,8 +140,9 @@ function CreateAlertForm({ onCreated }: { onCreated: () => void }) {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Threshold (%)</label>
+          <label htmlFor="alert-threshold" className="text-xs text-muted-foreground">Threshold (%)</label>
           <input
+            id="alert-threshold"
             className="w-full rounded border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             type="number"
             min="0.1"

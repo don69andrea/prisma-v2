@@ -184,8 +184,9 @@ export function PortfolioClient() {
       <form onSubmit={handleSubmit} className="rounded-lg border bg-card p-4 space-y-4">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Portfoliowert (CHF)</label>
+            <label htmlFor="portfolio-total-value" className="text-xs text-muted-foreground">Portfoliowert (CHF)</label>
             <input
+              id="portfolio-total-value"
               className="w-40 rounded border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               type="number"
               min="1"

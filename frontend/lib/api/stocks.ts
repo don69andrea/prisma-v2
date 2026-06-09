@@ -60,3 +60,17 @@ export function listStocks(limit = 200, offset = 0, exchange?: string): Promise<
   if (exchange) params.set('exchange', exchange);
   return apiFetch<StockListResponse>(`/api/v1/stocks?${params.toString()}`);
 }
+
+// ---- Langfrist-Score -------------------------------------------------------
+
+export interface LangfristScore {
+  ticker: string;
+  value: number;         // 0–10
+  components: Record<string, number>;
+  explanation: string;
+  disclaimer: string;
+}
+
+export function getLangfristScore(ticker: string): Promise<LangfristScore> {
+  return apiFetch<LangfristScore>(`/api/v1/stocks/${ticker}/langfrist-score`);
+}

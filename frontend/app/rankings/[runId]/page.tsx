@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { XCircle, ArrowLeft, Loader2, Download } from 'lucide-react';
+import { XCircle, ArrowLeft, Loader2, Download, FlaskConical } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -82,16 +82,24 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
           <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis</h1>
         </div>
         {isCompleted && rankingsQuery.data && (
-          <a
-            href={getRankingsCsvUrl(params.runId)}
-            download
-            data-testid="csv-download-btn"
-          >
-            <Button variant="outline" size="sm">
-              <Download className="mr-1 h-4 w-4" />
-              CSV
-            </Button>
-          </a>
+          <div className="flex items-center gap-2">
+            <Link href={`/backtest?run_id=${params.runId}`} data-testid="backtest-shortcut-btn">
+              <Button variant="outline" size="sm">
+                <FlaskConical className="mr-1 h-4 w-4" />
+                Backtest
+              </Button>
+            </Link>
+            <a
+              href={getRankingsCsvUrl(params.runId)}
+              download
+              data-testid="csv-download-btn"
+            >
+              <Button variant="outline" size="sm">
+                <Download className="mr-1 h-4 w-4" />
+                CSV
+              </Button>
+            </a>
+          </div>
         )}
       </div>
 

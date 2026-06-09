@@ -19,6 +19,7 @@ import { apiFetch } from '@/lib/api/client';
 import { getFactsheet, getLangfristScore, getPrices, type LangfristScore } from '@/lib/api/stocks';
 import { getDividends } from '@/lib/api/dividends';
 import { DividendCard } from '@/components/factsheet/DividendCard';
+import { NewsPanel } from '@/components/factsheet/NewsPanel';
 import { PriceChart } from '@/components/factsheet/PriceChart';
 import { AuditPanel } from '@/components/factsheet/AuditPanel';
 import { MLPanel } from '@/components/factsheet/MLPanel';
@@ -210,6 +211,8 @@ function FactsheetContent() {
       {dividendData && <DividendCard data={dividendData} />}
 
       {prices && <PriceChart ticker={symbol} prices={prices.prices} />}
+
+      <NewsPanel ticker={symbol} />
 
       <MLPanel ticker={symbol} />
 

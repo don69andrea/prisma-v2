@@ -23,6 +23,7 @@ import { DividendCard } from '@/components/factsheet/DividendCard';
 import { FundamentalsCard } from '@/components/factsheet/FundamentalsCard';
 import { MacroWidget } from '@/components/dashboard/MacroWidget';
 import { NewsPanel } from '@/components/factsheet/NewsPanel';
+import { SteuerPanel } from '@/components/factsheet/SteuerPanel';
 import { PriceChart } from '@/components/factsheet/PriceChart';
 import { AuditPanel } from '@/components/factsheet/AuditPanel';
 import { MLPanel } from '@/components/factsheet/MLPanel';
@@ -239,6 +240,8 @@ function FactsheetContent() {
       <NewsPanel ticker={symbol} />
 
       <MLPanel ticker={symbol} />
+
+      <SteuerPanel ticker={symbol} />
 
       <AuditPanel ticker={symbol} />
 

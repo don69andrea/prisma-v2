@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import Link from 'next/link';
@@ -111,7 +111,23 @@ export function DecisionClient() {
     enabled: !!selectedUniverse,
   });
 
+  const { data: decisionsAllData } = useQuery({
+    queryKey: ['decisions-all', selectedUniverse, eligibleOnly],
+    queryFn: () => listDecisions(selectedUniverse, undefined, eligibleOnly || undefined),
+    enabled: !!selectedUniverse,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const signals = decisionsData?.items ?? [];
+
+  const counts = useMemo(() => {
+    const all = decisionsAllData?.items ?? [];
+    return {
+      BUY:   all.filter((s) => s.signal === 'BUY').length,
+      HOLD:  all.filter((s) => s.signal === 'HOLD').length,
+      WATCH: all.filter((s) => s.signal === 'WATCH').length,
+    };
+  }, [decisionsAllData]);
 
   return (
     <div className="space-y-4">
@@ -159,6 +175,32 @@ export function DecisionClient() {
           </label>
         </div>
       </div>
+
+      {/* Signal-Zusammenfassung */}
+      {selectedUniverse && decisionsAllData && (
+        <div className="flex flex-wrap gap-2" data-testid="signal-summary">
+          {(['BUY', 'HOLD', 'WATCH'] as const).map((sig) => {
+            const cfg = SIGNAL_CONFIG[sig];
+            const active = signalFilter === sig;
+            return (
+              <button
+                key={sig}
+                onClick={() => setSignalFilter(active ? '' : sig)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? 'border-transparent bg-foreground text-background'
+                    : 'bg-background hover:bg-muted'
+                }`}
+                data-testid={`signal-chip-${sig}`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+                {cfg.label}
+                <span className="tabular-nums">{counts[sig]}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Content */}
       {!selectedUniverse && (

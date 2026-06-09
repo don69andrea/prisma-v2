@@ -1,0 +1,13 @@
+Erstelle eine Steuereinschätzung für folgende Anfrage:
+
+**Ticker:** {{ ticker }}
+**Anlegerprofil:** {{ anlegerprofil }}
+**Geplante Halteperiode:** {{ halteperiode_jahre }} Jahr(e)
+**Aktuelles Datum:** {{ current_date }}
+
+Berücksichtige die steuerlichen Implikationen spezifisch für:
+- Das Anlegerprofil "{{ anlegerprofil }}" (Besonderheiten der Anlageform)
+- Die Halteperiode von {{ halteperiode_jahre }} Jahren (z.B. Vermögenssteuer-Kumulierung)
+- Schweizer und ggf. ausländische Quellensteuer-Aspekte
+
+Gib als JSON-Antwort zurück (Felder: steuerarten, pflichten, hinweise, quellen, disclaimer, generated_at="{{ generated_at }}", model_version="{{ model_version }}").

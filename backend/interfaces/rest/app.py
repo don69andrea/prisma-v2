@@ -19,6 +19,7 @@ from backend.interfaces.rest.routers import (
     memos,
     rag,
     runs,
+    steuer,
     stocks,
     universes,
 )
@@ -103,5 +104,6 @@ def create_app() -> FastAPI:
     app.include_router(memos.router, prefix="/api/v1")
     app.include_router(backtests.router)
     app.include_router(rag.router)
+    app.include_router(steuer.router)
 
     return app

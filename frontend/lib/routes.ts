@@ -4,6 +4,8 @@ export const ROUTES = {
   rankings: '/rankings',
   backtest: '/backtest',
   decision: '/decision',
+  news: '/news',
+  steuer: '/steuer',
   factsheet: (runId: string, ticker: string) =>
     `/rankings/${runId}/stock/${ticker}` as const,
 } as const;

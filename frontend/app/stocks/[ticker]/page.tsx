@@ -16,7 +16,10 @@ import {
 import { SwissBadge } from '@/components/ui/swiss-badge';
 import { generateMemo, type Memo } from '@/lib/api/memos';
 import { apiFetch } from '@/lib/api/client';
-import { getFactsheet, getLangfristScore, type LangfristScore } from '@/lib/api/stocks';
+import { getFactsheet, getLangfristScore, getPrices, type LangfristScore } from '@/lib/api/stocks';
+import { PriceChart } from '@/components/factsheet/PriceChart';
+import { AuditPanel } from '@/components/factsheet/AuditPanel';
+import { MLPanel } from '@/components/factsheet/MLPanel';
 
 function scoreColor(value: number): string {
   if (value >= 7.5) return 'text-emerald-600 dark:text-emerald-400';
@@ -86,6 +89,13 @@ function FactsheetContent() {
   const { data: langfrist } = useQuery({
     queryKey: ['langfrist-score', symbol],
     queryFn: () => getLangfristScore(symbol),
+    retry: false,
+  });
+
+  const { data: prices } = useQuery({
+    queryKey: ['prices', symbol],
+    queryFn: () => getPrices(symbol),
+    staleTime: 5 * 60 * 1000,
     retry: false,
   });
 
@@ -185,6 +195,12 @@ function FactsheetContent() {
       </Card>
 
       {langfrist && <LangfristCard score={langfrist} />}
+
+      {prices && <PriceChart ticker={symbol} prices={prices.prices} />}
+
+      <MLPanel ticker={symbol} />
+
+      <AuditPanel ticker={symbol} />
 
       {memo && (
         <Card data-testid="memo-card">

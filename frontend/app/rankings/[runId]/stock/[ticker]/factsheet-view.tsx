@@ -10,6 +10,7 @@ import { StockHeader } from '@/components/factsheet/StockHeader';
 import { ModelRankCards } from '@/components/factsheet/ModelRankCards';
 import { PriceChart } from '@/components/factsheet/PriceChart';
 import { MemoPanel } from '@/components/factsheet/MemoPanel';
+import { AuditPanel } from '@/components/factsheet/AuditPanel';
 
 function SkeletonCard({ className = '' }: { className?: string }) {
   return (
@@ -95,6 +96,8 @@ export function FactsheetView({ ticker, runId }: Props) {
         <PriceChart ticker={ticker} prices={pricesQuery.data.prices} />
       )}
       {pricesQuery.isLoading && <SkeletonCard className="h-72" />}
+
+      <AuditPanel ticker={ticker} />
 
       <MemoPanel stockId={stock.id} runId={runId} />
     </div>

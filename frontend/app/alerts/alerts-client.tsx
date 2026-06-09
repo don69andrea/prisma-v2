@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { Bell, Trash2, Plus, Mail, Webhook } from 'lucide-react';
 
 import {
@@ -37,7 +38,12 @@ function AlertRow({ alert, onDelete }: { alert: Alert; onDelete: () => void }) {
           <Bell className="h-4 w-4 text-primary" />
         </div>
         <div className="min-w-0">
-          <p className="font-semibold truncate">{alert.ticker}</p>
+          <Link
+            href={`/stocks/${alert.ticker}`}
+            className="font-semibold truncate hover:underline"
+          >
+            {alert.ticker}
+          </Link>
           <p className="text-xs text-muted-foreground">
             {TRIGGER_LABELS[alert.trigger_type as TriggerType]} ≥ {alert.threshold}%
           </p>

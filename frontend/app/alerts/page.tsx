@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
 import { AlertsClient } from './alerts-client';
@@ -15,7 +16,9 @@ export default function AlertsPage() {
           Kurs- und Signal-Benachrichtigungen für Swiss Stocks
         </p>
       </div>
-      <AlertsClient />
+      <Suspense>
+        <AlertsClient />
+      </Suspense>
     </div>
   );
 }

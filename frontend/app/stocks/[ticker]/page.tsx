@@ -4,7 +4,7 @@ import { Fragment, Suspense, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { ArrowLeft, FileSearch } from 'lucide-react';
+import { ArrowLeft, Bell, FileSearch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -148,14 +148,24 @@ function FactsheetContent() {
           <ArrowLeft className="mr-1 h-4 w-4" />
           Zurück
         </Link>
-        <Link
-          href={`/research?ticker=${symbol}`}
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          data-testid="research-link"
-        >
-          <FileSearch className="h-3.5 w-3.5" />
-          CH-Filings
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/research?ticker=${symbol}`}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            data-testid="research-link"
+          >
+            <FileSearch className="h-3.5 w-3.5" />
+            CH-Filings
+          </Link>
+          <Link
+            href={`/alerts?ticker=${symbol}`}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            data-testid="create-alert-link"
+          >
+            <Bell className="h-3.5 w-3.5" />
+            Alert
+          </Link>
+        </div>
       </div>
 
       <Card>

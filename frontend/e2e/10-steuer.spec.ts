@@ -7,8 +7,9 @@ test("Steuer-Einschätzung — Formular absenden und Ergebnis sehen", async ({ p
   await page.getByTestId("steuer-ticker-input").fill("NESN");
   await page.getByTestId("steuer-submit-btn").click();
 
-  // Entweder Ergebnis oder Fehlermeldung erscheinen
+  // In CI läuft Backend mit dummy-API-Key → Fehlermeldung erwartet
+  // Bei echtem Key: Steuerarten-Sektion erscheint stattdessen
   await expect(
-    page.getByText(/Verrechnungssteuer|Keine Steuerberatung|fehlgeschlagen/)
+    page.getByText(/fehlgeschlagen|Steuerarten|Einschätzung für/)
   ).toBeVisible({ timeout: 30_000 });
 });

@@ -1,30 +1,27 @@
 databases:
-  - name: prisma-db
-    databaseName: prisma
-    user: prisma
+  - name: prisma-v2-db
+    databaseName: prisma_v2
+    user: prisma_v2
     plan: free
     postgresMajorVersion: "16"
 
 services:
   - type: web
-    name: prisma-backend
+    name: prisma-v2-backend
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
     plan: free
     healthCheckPath: /health
     autoDeploy: true
-    # Dockerfile CMD calls /app/backend-start.sh which runs alembic +
-    # uvicorn. No dockerCommand override needed — Render uses the CMD.
+    # Dockerfile CMD calls /app/backend-start.sh which runs alembic + uvicorn.
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: prisma-db
+          name: prisma-v2-db
           property: connectionString
       - key: ANTHROPIC_API_KEY
         sync: false
       # Admin-API-Key (X-API-Key-Header) für /admin-Endpoints.
-      # Production-Validator in backend/config.py:71 erzwingt einen Wert —
-      # ohne diesen bricht der Container-Boot mit ValidationError ab.
       # sync: false → manuell im Dashboard setzen (openssl rand -hex 32).
       - key: API_KEY
         sync: false
@@ -34,20 +31,25 @@ services:
         sync: false
       - key: PYTHONPATH
         value: /app
+      # Alert Engine: E-Mail-Benachrichtigungen via SendGrid
+      - key: SENDGRID_API_KEY
+        sync: false
+      # VoyageAI Embedding-Key
+      - key: VOYAGE_API_KEY
+        sync: false
+      # App-Version — wird von /health zurückgegeben
+      - key: APP_VERSION
+        value: "2.0.0"
 
   - type: web
-    name: prisma-frontend
+    name: prisma-v2-frontend
     runtime: docker
     dockerfilePath: ./Dockerfile.frontend
     plan: free
     autoDeploy: true
     envVars:
-      # Render's fromService.property: host liefert nur den Hostname ohne
-      # Scheme — der Client-Code braucht aber eine voll-qualifizierte URL
-      # (sonst interpretiert der Browser den Wert als relativen Pfad und
-      # bekommt 404). Deshalb hardcoded auf den bekannten Backend-Host.
       - key: NEXT_PUBLIC_API_URL
-        value: https://prisma-backend-7ai7.onrender.com
+        sync: false
     buildFilter:
       paths:
         - frontend/**

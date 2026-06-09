@@ -1,13 +1,16 @@
-name: CD — Render Deploy
+name: CD — Render V2 Deploy
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       target:
         description: "Service zum Deployen"
         required: true
         type: choice
-        default: backend
+        default: both
         options:
           - backend
           - frontend
@@ -15,24 +18,31 @@ on:
 
 jobs:
   deploy:
-    name: Trigger Render Deploy Hook
+    name: Trigger Render V2 Deploy Hook
     runs-on: ubuntu-latest
     steps:
-      - name: Validate secret is set
+      - name: Validate secrets are set
         run: |
-          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}" ] && [ "${{ inputs.target }}" != "frontend" ]; then
-            echo "::error::Secret RENDER_DEPLOY_HOOK_BACKEND ist nicht gesetzt (Settings → Secrets → Actions)."
-            exit 1
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ inputs.target }}" != "frontend" ]; then
+            if [ -z "${{ secrets.RENDER_V2_DEPLOY_HOOK_BACKEND }}" ]; then
+              echo "::error::Secret RENDER_V2_DEPLOY_HOOK_BACKEND nicht gesetzt (Settings → Secrets → Actions)."
+              exit 1
+            fi
           fi
-          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}" ] && [ "${{ inputs.target }}" != "backend" ]; then
-            echo "::error::Secret RENDER_DEPLOY_HOOK_FRONTEND ist nicht gesetzt (Settings → Secrets → Actions)."
-            exit 1
+          if [ "${{ github.event_name }}" = "push" ] || [ "${{ inputs.target }}" != "backend" ]; then
+            if [ -z "${{ secrets.RENDER_V2_DEPLOY_HOOK_FRONTEND }}" ]; then
+              echo "::error::Secret RENDER_V2_DEPLOY_HOOK_FRONTEND nicht gesetzt (Settings → Secrets → Actions)."
+              exit 1
+            fi
           fi
 
       - name: Trigger backend deploy
-        if: inputs.target == 'backend' || inputs.target == 'both'
+        if: >
+          github.event_name == 'push' ||
+          inputs.target == 'backend' ||
+          inputs.target == 'both'
         run: |
-          response=$(curl -sS -w "\n%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}")
+          response=$(curl -sS -w "\n%{http_code}" -X POST "${{ secrets.RENDER_V2_DEPLOY_HOOK_BACKEND }}")
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
           echo "Backend Deploy Hook Status: $status"
@@ -43,9 +53,12 @@ jobs:
           fi
 
       - name: Trigger frontend deploy
-        if: inputs.target == 'frontend' || inputs.target == 'both'
+        if: >
+          github.event_name == 'push' ||
+          inputs.target == 'frontend' ||
+          inputs.target == 'both'
         run: |
-          response=$(curl -sS -w "\n%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}")
+          response=$(curl -sS -w "\n%{http_code}" -X POST "${{ secrets.RENDER_V2_DEPLOY_HOOK_FRONTEND }}")
           body=$(echo "$response" | head -n -1)
           status=$(echo "$response" | tail -n 1)
           echo "Frontend Deploy Hook Status: $status"
@@ -57,9 +70,10 @@ jobs:
 
       - name: Summary
         run: |
-          echo "### Deploy Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "### PRISMA V2 Deploy Triggered" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- Target: \`${{ inputs.target }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Trigger: \`workflow_dispatch\` by ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Target: \`${{ inputs.target || 'both (auto push)' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: \`${{ github.event_name }}\` by ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Render baut das Image — Status im Render-Dashboard sichtbar." >> $GITHUB_STEP_SUMMARY
+          echo "Render baut das Image — Status im [Render-Dashboard](https://dashboard.render.com) sichtbar." >> $GITHUB_STEP_SUMMARY

@@ -1,8 +1,8 @@
-# backend/alembic/versions/0017_create_alerts.py
+# backend/alembic/versions/0018_create_alerts.py
 """create alerts table
 
-Revision ID: 0017
-Revises: 0013
+Revision ID: 0018
+Revises: 0017
 Create Date: 2026-06-09
 """
 
@@ -11,8 +11,8 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0017"
-down_revision: str | None = "0013"
+revision: str = "0018"
+down_revision: str | None = "0017"
 branch_labels: Sequence[str] | None = None
 depends_on: Sequence[str] | None = None
 

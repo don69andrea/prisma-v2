@@ -270,12 +270,12 @@ export function PortfolioClient() {
           <Button type="button" size="sm" variant="outline" onClick={addPosition}>
             <Plus className="h-3.5 w-3.5 mr-1" /> Position
           </Button>
-          <Button type="submit" size="sm" disabled={mutation.isPending}>
+          <Button type="submit" size="sm" disabled={mutation.isPending} data-testid="plan-submit-btn">
             {mutation.isPending ? 'Berechne…' : 'Plan berechnen'}
           </Button>
         </div>
 
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && <p className="text-xs text-destructive" data-testid="portfolio-error">{error}</p>}
       </form>
 
       {mutation.data && <PlanResult plan={mutation.data} />}

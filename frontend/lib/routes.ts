@@ -7,6 +7,7 @@ export const ROUTES = {
   stocks: '/stocks',
   news: '/news',
   steuer: '/steuer',
+  research: '/research',
   factsheet: (runId: string, ticker: string) =>
     `/rankings/${runId}/stock/${ticker}` as const,
 } as const;

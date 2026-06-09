@@ -13,7 +13,6 @@ from backend.domain.errors import BudgetCapExceeded
 from backend.interfaces.rest.exception_handlers import handle_budget_cap_exceeded
 from backend.interfaces.rest.routers import (
     admin,
-    alerts,
     backtests,
     eligibility,
     health,
@@ -29,14 +28,7 @@ _logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    from backend.infrastructure.workers.alert_worker import create_alert_scheduler
-
-    scheduler = create_alert_scheduler()
-    scheduler.start()
-    _logger.info("Alert-Scheduler gestartet")
     yield
-    scheduler.shutdown(wait=False)
-    _logger.info("Alert-Scheduler gestoppt")
     # On shutdown: mark any jobs that are still "running" or "pending" as failed
     # so the next restart can safely ignore them instead of treating them as active.
     try:
@@ -111,6 +103,5 @@ def create_app() -> FastAPI:
     app.include_router(memos.router, prefix="/api/v1")
     app.include_router(backtests.router)
     app.include_router(rag.router)
-    app.include_router(alerts.router)
 
     return app

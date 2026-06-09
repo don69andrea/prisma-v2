@@ -15,11 +15,20 @@ from backend.interfaces.rest.routers import (
     admin,
     alerts,
     backtests,
+    decision_audit,
+    decisions,
     eligibility,
+    fonds_vergleich,
     health,
+    macro,
     memos,
+    ml,
+    news,
+    portfolio,
     rag,
+    rebalancing,
     runs,
+    steuer,
     stocks,
     universes,
 )
@@ -110,6 +119,15 @@ def create_app() -> FastAPI:
     app.include_router(memos.router, prefix="/api/v1")
     app.include_router(backtests.router)
     app.include_router(rag.router)
+    app.include_router(steuer.router)
+    app.include_router(news.router)
+    app.include_router(ml.router)
+    app.include_router(decisions.router)
+    app.include_router(decision_audit.router)
+    app.include_router(macro.router)
+    app.include_router(portfolio.router)
+    app.include_router(fonds_vergleich.router)
+    app.include_router(rebalancing.router)
     app.include_router(alerts.router)
 
     return app

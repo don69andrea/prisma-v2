@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { Badge } from '@/components/ui/badge';
@@ -29,11 +29,22 @@ function statusBadgeVariant(status: RankingRunStatus): 'default' | 'secondary' |
 export function RunHistoryList() {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
+  const [universeFilter, setUniverseFilter] = useState('');
 
   const runsQuery = useQuery({
     queryKey: ['runs', 'history'],
-    queryFn: () => listRuns(10, 0),
+    queryFn: () => listRuns(50, 0),
   });
+
+  const universeNames = useMemo(() => {
+    const names = new Set((runsQuery.data ?? []).map((r) => r.universe_name).filter(Boolean));
+    return Array.from(names).sort();
+  }, [runsQuery.data]);
+
+  const visibleRuns = useMemo(() => {
+    const all = runsQuery.data ?? [];
+    return universeFilter ? all.filter((r) => r.universe_name === universeFilter) : all;
+  }, [runsQuery.data, universeFilter]);
 
   function toggle(runId: string) {
     setSelected((prev) => {
@@ -50,16 +61,33 @@ export function RunHistoryList() {
 
   return (
     <Card>
-      <CardHeader className="pb-3 flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-medium">Vergangene Runs</CardTitle>
-        <Button
-          size="sm"
-          onClick={onCompare}
-          disabled={selected.length !== 2}
-          aria-label="Vergleichen"
-        >
-          Vergleichen
-        </Button>
+      <CardHeader className="pb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-base font-medium">Vergangene Runs</CardTitle>
+          <div className="flex items-center gap-2">
+            {universeNames.length > 0 && (
+              <select
+                value={universeFilter}
+                onChange={(e) => setUniverseFilter(e.target.value)}
+                className="h-8 rounded-md border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                data-testid="run-history-universe-filter"
+              >
+                <option value="">Alle Universen</option>
+                {universeNames.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            )}
+            <Button
+              size="sm"
+              onClick={onCompare}
+              disabled={selected.length !== 2}
+              aria-label="Vergleichen"
+            >
+              Vergleichen
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {runsQuery.isLoading && (
@@ -76,7 +104,13 @@ export function RunHistoryList() {
           </p>
         )}
 
-        {runsQuery.data && runsQuery.data.length > 0 && (
+        {runsQuery.data && runsQuery.data.length > 0 && visibleRuns.length === 0 && (
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            Keine Runs für «{universeFilter}».
+          </p>
+        )}
+
+        {visibleRuns.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
@@ -88,7 +122,7 @@ export function RunHistoryList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {runsQuery.data.map((run: RunResponse) => {
+              {visibleRuns.map((run: RunResponse) => {
                 const disabled = run.status !== 'completed';
                 return (
                   <TableRow key={run.id}>

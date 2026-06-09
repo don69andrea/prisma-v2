@@ -14,6 +14,7 @@ import { listStocks } from '@/lib/api/stocks';
 import { ApiError } from '@/lib/api/client';
 
 import { RankingsTable } from './rankings-table';
+import { PortfolioAllocationPanel } from '@/components/rankings/PortfolioAllocationPanel';
 import { TopTenLeaderboard } from '@/components/rankings/TopTenLeaderboard';
 
 
@@ -151,6 +152,7 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
         <>
           <TopTenLeaderboard items={rankingsQuery.data} runId={params.runId} />
           <RankingsTable items={rankingsQuery.data} runId={params.runId} swissTickers={swissTickers} />
+          <PortfolioAllocationPanel runId={params.runId} />
         </>
       )}
 

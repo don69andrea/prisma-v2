@@ -38,3 +38,36 @@ export async function computeRebalancingPlan(req: RebalancingRequest): Promise<R
     body: JSON.stringify(req),
   });
 }
+
+export interface PortfolioAllocateRequest {
+  run_id: string;
+  top_n?: number;
+  eligible_only?: boolean;
+  method?: 'score_weighted' | 'risk_parity';
+}
+
+export interface PortfolioPosition {
+  ticker: string;
+  weight: number;
+  quant_score: number;
+  is_3a_eligible: boolean;
+  rationale_de: string;
+}
+
+export interface PortfolioAllocation {
+  run_id: string;
+  method: string;
+  positions: PortfolioPosition[];
+  overall_rationale_de: string;
+  computed_at: string;
+  eligible_only: boolean;
+  total_positions: number;
+}
+
+export async function allocatePortfolio(req: PortfolioAllocateRequest): Promise<PortfolioAllocation> {
+  return apiFetch<PortfolioAllocation>('/api/v1/portfolio/allocate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+}

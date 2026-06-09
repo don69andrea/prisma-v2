@@ -43,7 +43,7 @@ def _make_service(rankings: list[Any]) -> RankingRunService:
 
 def _make_service_not_found() -> RankingRunService:
     svc = AsyncMock(spec=RankingRunService)
-    svc.get_rankings = AsyncMock(side_effect=RankingRunNotFound(str(_RUN_ID)))
+    svc.get_rankings = AsyncMock(side_effect=RankingRunNotFound(_RUN_ID))
     return svc
 
 

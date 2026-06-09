@@ -980,6 +980,15 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 <!-- Neue Einträge oben an die Liste anfügen. -->
 
+## 2026-06-09 · PRISMA V2 Swiss Intelligence Layer — Issues #16–#23 (PRs #45–#52)
+
+- **Agent**: Claude Code (Sonnet 4.6) — multi-issue batch, direkte Implementierung ohne Subagent-Dispatching
+- **Scope**: 8 Features in einer Session: Macro Intelligence Agent, Decision Dashboard, Portfolio Intelligence Agent, Decision Audit Trail, Alert Engine, Fonds-Vergleich, VIAC Pitch Deck, Render V2 Setup, Portfolio Rebalancing Engine. Alle auf separaten Feature-Branches; PR pro Issue; alle grün in CI.
+- **Was gut lief**: ML-Isolation-Pattern (`Any | None` optional parameters, kein module-level import ungemergter Typen) ermöglichte grüne CI auf develop für alle Branches. `SwissFundamentals(all None)` als Fallback für `SwissQuantScorer` (scorer erfordert Objekt, nicht None). ruff format NACH mypy-Edits laufen — mypy-Fixes können Format-Violations einführen.
+- **Was nicht klappte**: Alembic-Migration-Chain-Konflikt erst nach Implementierung entdeckt: Migrations 0016 und 0017 hatten beide `down_revision = "0013"` statt 0015 bzw. 0016 — wäre beim ersten Merge-nach-develop gecrasht. Identifiziert durch manuelle Revision-Inspektion aller Branches. Integration-Tests fehlten initial in allen 5 neuen Branches.
+- **Nachbearbeitung nötig bei**: Frontend-UI für Alert Engine, Fonds-Vergleich, Rebalancing (aktuell nur API). Merge-Reihenfolge beachten: PR #42 (ML Layer, migration 0015) muss VOR PR #47 (Audit, 0016) und #48 (Alerts, 0017) auf develop landen.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
 ## 2026-05-26 · RAG-Kontext in NarrativeService + CI-Debugging (Issues #138, PR #146)
 - **Agent**: Claude Code (Sonnet 4.6) — systematic-debugging skill
 - **Scope**: Issue #138 DoD: NarrativeService.generate_memo() ruft RetrievalService.retrieve() auf, bettet 3–5 SEC-Filing-Chunks als `rag_context` in den LLM-Prompt ein. DI-Chain verdrahtet RetrievalService wenn VOYAGE_API_KEY gesetzt; graceful degradation bei Fehler. Gleichzeitig: 6 CI-Runs debuggt bis PR #146 grün war.

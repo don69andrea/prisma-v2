@@ -1,4 +1,5 @@
 """Pydantic-Schemas für ML Prediction API."""
+
 from __future__ import annotations
 
 from datetime import date

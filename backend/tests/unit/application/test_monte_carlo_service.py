@@ -1,4 +1,5 @@
 """Unit-Tests für MonteCarloService."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
@@ -20,7 +21,10 @@ pytestmark = pytest.mark.unit
 def _make_input(**kwargs) -> MonteCarloInput:
     defaults = dict(
         holdings=[HoldingWeight("NESN.SW", 0.6), HoldingWeight("NOVN.SW", 0.4)],
-        monthly_contribution=588.0, years=30, initial_value=0.0, n_simulations=100,
+        monthly_contribution=588.0,
+        years=30,
+        initial_value=0.0,
+        n_simulations=100,
     )
     defaults.update(kwargs)
     return MonteCarloInput(**defaults)
@@ -38,7 +42,9 @@ def _mock_params(n: int = 2):
 async def test_simulate_returns_correct_shape() -> None:
     svc = MonteCarloService()
     inp = _make_input(years=5, n_simulations=50)
-    with patch.object(svc, "_fetch_return_params", new_callable=AsyncMock, return_value=_mock_params(2)):
+    with patch.object(
+        svc, "_fetch_return_params", new_callable=AsyncMock, return_value=_mock_params(2)
+    ):
         result = await svc.simulate(inp)
     assert isinstance(result, MonteCarloResult)
     assert len(result.p5) == 60
@@ -53,7 +59,9 @@ async def test_simulate_returns_correct_shape() -> None:
 async def test_p5_le_p50_le_p95() -> None:
     svc = MonteCarloService()
     inp = _make_input(holdings=[HoldingWeight("NESN.SW", 1.0)], years=3, n_simulations=200)
-    with patch.object(svc, "_fetch_return_params", new_callable=AsyncMock, return_value=_mock_params(1)):
+    with patch.object(
+        svc, "_fetch_return_params", new_callable=AsyncMock, return_value=_mock_params(1)
+    ):
         result = await svc.simulate(inp)
     for p5, p50, p95 in zip(result.p5, result.p50, result.p95, strict=True):
         assert p5 <= p50 <= p95
@@ -64,7 +72,9 @@ async def test_weights_not_summing_to_one_raises() -> None:
     svc = MonteCarloService()
     inp = MonteCarloInput(
         holdings=[HoldingWeight("NESN.SW", 0.6)],
-        monthly_contribution=500.0, years=5, n_simulations=50,
+        monthly_contribution=500.0,
+        years=5,
+        n_simulations=50,
     )
     with pytest.raises(ValueError, match="Gewichte"):
         await svc.simulate(inp)
@@ -74,7 +84,9 @@ async def test_weights_not_summing_to_one_raises() -> None:
 async def test_prob_bounds() -> None:
     svc = MonteCarloService()
     inp = _make_input(years=1, n_simulations=100)
-    with patch.object(svc, "_fetch_return_params", new_callable=AsyncMock, return_value=_mock_params(2)):
+    with patch.object(
+        svc, "_fetch_return_params", new_callable=AsyncMock, return_value=_mock_params(2)
+    ):
         result = await svc.simulate(inp)
     assert 0.0 <= result.prob_positive_return <= 1.0
     assert 0.0 <= result.prob_500k <= 1.0

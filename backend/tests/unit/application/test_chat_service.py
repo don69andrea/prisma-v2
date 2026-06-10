@@ -16,8 +16,10 @@ async def test_dispatch_tool_search_stocks() -> None:
     mock_stock_service = AsyncMock()
     mock_stock_service.search.return_value = []
 
-    with patch("backend.application.services.chat_service._get_stock_service",
-               return_value=mock_stock_service):
+    with patch(
+        "backend.application.services.chat_service._get_stock_service",
+        return_value=mock_stock_service,
+    ):
         result = await _dispatch_tool("search_stocks", {"query": "Nestlé"})
 
     mock_stock_service.search.assert_called_once_with("Nestlé")

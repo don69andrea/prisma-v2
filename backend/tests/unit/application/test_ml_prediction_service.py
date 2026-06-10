@@ -156,8 +156,10 @@ def test_signal_for_class() -> None:
 
 # --- SHAP Tests ---
 
+
 def _make_shap_explainer_mock(shap_matrix: list[list[float]]) -> MagicMock:
     import numpy as np
+
     explainer = MagicMock()
     explainer.shap_values.return_value = [
         np.zeros_like(shap_matrix),
@@ -183,9 +185,9 @@ def test_build_shap_entries_top8_sorted() -> None:
     model = MagicMock()
     # SHAP values: first feature gets largest value, rest get smaller values
     shap_row = np.zeros(n)
-    shap_row[0] = 0.5   # largest
+    shap_row[0] = 0.5  # largest
     shap_row[1] = -0.3  # second
-    shap_row[2] = 0.1   # third
+    shap_row[2] = 0.1  # third
     # rest are 0
 
     explainer = MagicMock()
@@ -197,7 +199,9 @@ def test_build_shap_entries_top8_sorted() -> None:
     explainer.expected_value = [0.05, 0.1, 0.15]
 
     with patch("shap.TreeExplainer", return_value=explainer):
-        entries, expected = _build_shap_entries(model, np.zeros((1, n)), feature_names, features_dict, 2)
+        entries, expected = _build_shap_entries(
+            model, np.zeros((1, n)), feature_names, features_dict, 2
+        )
 
     assert expected == pytest.approx(0.15)
     assert len(entries) <= 8
@@ -228,13 +232,17 @@ async def test_predict_includes_shap_values() -> None:
     model = _make_mock_model(predicted_class=2)
 
     with (
-        patch("backend.application.services.ml_prediction_service._load_model",
-              return_value=(model, "xgboost")),
-        patch("backend.application.services.ml_prediction_service._build_shap_entries",
-              return_value=(
-                  [SHAPEntry("roe_zscore", 0.3, 1.2, "Return on Equity")],
-                  0.15,
-              )),
+        patch(
+            "backend.application.services.ml_prediction_service._load_model",
+            return_value=(model, "xgboost"),
+        ),
+        patch(
+            "backend.application.services.ml_prediction_service._build_shap_entries",
+            return_value=(
+                [SHAPEntry("roe_zscore", 0.3, 1.2, "Return on Equity")],
+                0.15,
+            ),
+        ),
     ):
         service = MLPredictionService(feature_service=feature_svc)
         result = await service.predict("NESN")
@@ -252,8 +260,10 @@ async def test_predict_shap_empty_on_non_xgboost() -> None:
     feature_svc.build_features.return_value = _make_feature_vector()
     model = _make_mock_model(predicted_class=1)
 
-    with patch("backend.application.services.ml_prediction_service._load_model",
-               return_value=(model, "unknown")):
+    with patch(
+        "backend.application.services.ml_prediction_service._load_model",
+        return_value=(model, "unknown"),
+    ):
         service = MLPredictionService(feature_service=feature_svc)
         result = await service.predict("NESN")
 

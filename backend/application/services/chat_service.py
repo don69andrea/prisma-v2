@@ -21,7 +21,7 @@ _MODEL = "claude-sonnet-4-6"
 
 @dataclass
 class ChatMessage:
-    role: str   # "user" | "assistant"
+    role: str  # "user" | "assistant"
     content: str
 
 
@@ -36,8 +36,14 @@ class ChatService:
                 "input_schema": {
                     "type": "object",
                     "properties": {
-                        "query": {"type": "string", "description": "Suchbegriff: Firmenname oder Ticker"},
-                        "exchange": {"type": "string", "description": "Optional: 'SW' für Swiss, 'US' für US-Markt"},
+                        "query": {
+                            "type": "string",
+                            "description": "Suchbegriff: Firmenname oder Ticker",
+                        },
+                        "exchange": {
+                            "type": "string",
+                            "description": "Optional: 'SW' für Swiss, 'US' für US-Markt",
+                        },
                     },
                     "required": ["query"],
                 },
@@ -51,10 +57,16 @@ class ChatService:
                 "input_schema": {
                     "type": "object",
                     "properties": {
-                        "signal": {"type": "string", "enum": ["BUY", "HOLD", "WATCH"],
-                                   "description": "Swiss Quant Signal"},
+                        "signal": {
+                            "type": "string",
+                            "enum": ["BUY", "HOLD", "WATCH"],
+                            "description": "Swiss Quant Signal",
+                        },
                         "eligible_3a": {"type": "boolean", "description": "Nur 3a-geeignete Titel"},
-                        "min_score": {"type": "number", "description": "Minimum Quant-Score (0–100)"},
+                        "min_score": {
+                            "type": "number",
+                            "description": "Minimum Quant-Score (0–100)",
+                        },
                         "universe": {"type": "string", "description": "SMI | SMIM | SPI"},
                     },
                 },
@@ -65,7 +77,10 @@ class ChatService:
                 "input_schema": {
                     "type": "object",
                     "properties": {
-                        "ticker": {"type": "string", "description": "Ticker-Symbol, z.B. NESN.SW oder AAPL"},
+                        "ticker": {
+                            "type": "string",
+                            "description": "Ticker-Symbol, z.B. NESN.SW oder AAPL",
+                        },
                     },
                     "required": ["ticker"],
                 },
@@ -114,8 +129,9 @@ class ChatService:
             async with client.messages.stream(
                 model=_MODEL,
                 max_tokens=1024,
-                system=[{"type": "text", "text": _SYSTEM_PROMPT,
-                          "cache_control": {"type": "ephemeral"}}],
+                system=[
+                    {"type": "text", "text": _SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}
+                ],
                 tools=self._get_tool_definitions(),
                 messages=api_messages,
             ) as stream:
@@ -124,11 +140,18 @@ class ChatService:
                         if event.type == "content_block_delta":
                             if hasattr(event.delta, "text"):
                                 yield _sse("token", {"content": event.delta.text})
-                        elif event.type == "content_block_start" and hasattr(event.content_block, "type") and event.content_block.type == "tool_use":
-                            yield _sse("tool_call", {
-                                "tool": event.content_block.name,
-                                "tool_use_id": event.content_block.id,
-                            })
+                        elif (
+                            event.type == "content_block_start"
+                            and hasattr(event.content_block, "type")
+                            and event.content_block.type == "tool_use"
+                        ):
+                            yield _sse(
+                                "tool_call",
+                                {
+                                    "tool": event.content_block.name,
+                                    "tool_use_id": event.content_block.id,
+                                },
+                            )
 
                 final = await stream.get_final_message()
 
@@ -139,11 +162,13 @@ class ChatService:
                         yield _sse("tool_call", {"tool": block.name, "input": block.input})
                         result_str = await _dispatch_tool(block.name, block.input)
                         yield _sse("tool_result", {"tool": block.name, "result": result_str[:500]})
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": result_str,
-                        })
+                        tool_results.append(
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": block.id,
+                                "content": result_str,
+                            }
+                        )
 
                 continuation_messages = api_messages + [
                     {"role": "assistant", "content": final.content},
@@ -152,12 +177,21 @@ class ChatService:
                 async with client.messages.stream(
                     model=_MODEL,
                     max_tokens=1024,
-                    system=[{"type": "text", "text": _SYSTEM_PROMPT,
-                              "cache_control": {"type": "ephemeral"}}],
+                    system=[
+                        {
+                            "type": "text",
+                            "text": _SYSTEM_PROMPT,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
                     messages=continuation_messages,
                 ) as stream2:
                     async for event in stream2:
-                        if hasattr(event, "type") and event.type == "content_block_delta" and hasattr(event.delta, "text"):
+                        if (
+                            hasattr(event, "type")
+                            and event.type == "content_block_delta"
+                            and hasattr(event.delta, "text")
+                        ):
                             yield _sse("token", {"content": event.delta.text})
 
         except Exception:
@@ -182,6 +216,7 @@ async def _dispatch_tool(name: str, inputs: dict) -> str:
         if name == "filter_stocks":
             from backend.application.services.swiss_market_service import SwissMarketService
             from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
+
             svc = SwissMarketService(adapter=YFinanceSwissAdapter())
             stocks = await svc.list_stocks(
                 signal=inputs.get("signal"),
@@ -189,10 +224,12 @@ async def _dispatch_tool(name: str, inputs: dict) -> str:
             )
             min_score = inputs.get("min_score", 0)
             filtered = [s for s in stocks if (s.quant_score or 0) >= min_score]
-            return json.dumps([
-                {"ticker": s.ticker, "signal": s.signal, "score": s.quant_score}
-                for s in filtered[:15]
-            ])
+            return json.dumps(
+                [
+                    {"ticker": s.ticker, "signal": s.signal, "score": s.quant_score}
+                    for s in filtered[:15]
+                ]
+            )
 
         if name == "get_factsheet":
             from backend.application.services.factsheet_service import FactsheetService
@@ -200,27 +237,33 @@ async def _dispatch_tool(name: str, inputs: dict) -> str:
                 SQLASwissStockRepository,
             )
             from backend.infrastructure.persistence.session import get_session_factory
+
             repo = SQLASwissStockRepository(session_factory=get_session_factory())
             svc = FactsheetService(swiss_stock_repo=repo)
             data = await svc.get(inputs["ticker"])
             if data is None:
                 return f"Keine Daten für {inputs['ticker']} gefunden."
-            return json.dumps({
-                "ticker": data.ticker,
-                "signal": data.signal,
-                "quant_score": data.quant_score,
-                "eligible_3a": data.eligible_3a,
-            })
+            return json.dumps(
+                {
+                    "ticker": data.ticker,
+                    "signal": data.signal,
+                    "quant_score": data.quant_score,
+                    "eligible_3a": data.eligible_3a,
+                }
+            )
 
         if name == "get_macro_context":
             from backend.application.services.macro_service import MacroService
+
             svc = MacroService()
             ctx = await svc.get_context()
-            return json.dumps({
-                "snb_rate": ctx.snb_rate,
-                "chf_eur": ctx.chf_eur,
-                "inflation_ch": ctx.inflation_ch,
-            })
+            return json.dumps(
+                {
+                    "snb_rate": ctx.snb_rate,
+                    "chf_eur": ctx.chf_eur,
+                    "inflation_ch": ctx.inflation_ch,
+                }
+            )
 
         if name == "compare_stocks":
             from backend.application.services.factsheet_service import FactsheetService
@@ -228,26 +271,35 @@ async def _dispatch_tool(name: str, inputs: dict) -> str:
                 SQLASwissStockRepository,
             )
             from backend.infrastructure.persistence.session import get_session_factory
+
             repo = SQLASwissStockRepository(session_factory=get_session_factory())
             svc = FactsheetService(swiss_stock_repo=repo)
             a = await svc.get(inputs["ticker_a"])
             b = await svc.get(inputs["ticker_b"])
-            return json.dumps({
-                inputs["ticker_a"]: {"signal": a.signal if a else None, "score": a.quant_score if a else None},
-                inputs["ticker_b"]: {"signal": b.signal if b else None, "score": b.quant_score if b else None},
-            })
+            return json.dumps(
+                {
+                    inputs["ticker_a"]: {
+                        "signal": a.signal if a else None,
+                        "score": a.quant_score if a else None,
+                    },
+                    inputs["ticker_b"]: {
+                        "signal": b.signal if b else None,
+                        "score": b.quant_score if b else None,
+                    },
+                }
+            )
 
         if name == "get_ranking":
             from backend.application.services.swiss_market_service import SwissMarketService
             from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
+
             svc = SwissMarketService(adapter=YFinanceSwissAdapter())
             stocks = await svc.list_stocks()
             top_n = inputs.get("top_n", 5)
             ranked = sorted(stocks, key=lambda s: s.quant_score or 0, reverse=True)[:top_n]
-            return json.dumps([
-                {"ticker": s.ticker, "signal": s.signal, "score": s.quant_score}
-                for s in ranked
-            ])
+            return json.dumps(
+                [{"ticker": s.ticker, "signal": s.signal, "score": s.quant_score} for s in ranked]
+            )
 
         return json.dumps({"error": f"Tool '{name}' unbekannt."})
 
@@ -261,6 +313,4 @@ def _get_stock_service():
     from backend.infrastructure.persistence.repositories.stock_repository import SQLAStockRepository
     from backend.infrastructure.persistence.session import get_session_factory
 
-    return StockService(
-        stock_repo=SQLAStockRepository(session_factory=get_session_factory())
-    )
+    return StockService(stock_repo=SQLAStockRepository(session_factory=get_session_factory()))

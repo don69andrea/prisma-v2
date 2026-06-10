@@ -113,7 +113,9 @@ async def monte_carlo(req: MonteCarloRequest) -> MonteCarloResponse:
     try:
         result = await svc.simulate(inp)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
 
     return MonteCarloResponse(
         p5=result.p5,

@@ -1,4 +1,5 @@
 """Application Service: Monte Carlo 3a Retirement Simulator."""
+
 from __future__ import annotations
 
 import asyncio
@@ -77,7 +78,10 @@ class MonteCarloService:
 async def _fetch_ticker_params(ticker: str) -> tuple[float, float, np.ndarray]:
     try:
         import yfinance as yf
-        raw = await asyncio.to_thread(yf.download, ticker, period="1y", progress=False, auto_adjust=True)
+
+        raw = await asyncio.to_thread(
+            yf.download, ticker, period="1y", progress=False, auto_adjust=True
+        )
         if raw.empty or "Close" not in raw.columns:
             raise ValueError("Keine Daten")
         prices = raw["Close"].dropna().values
@@ -96,6 +100,7 @@ async def _fetch_ticker_params(ticker: str) -> tuple[float, float, np.ndarray]:
 async def _fetch_ml_mu(ticker: str) -> float:
     try:
         from backend.application.services.ml_prediction_service import MLPredictionService
+
         result = await MLPredictionService().predict(ticker)
         if result is None:
             return 0.0003
@@ -130,7 +135,7 @@ def _run_gbm(
     z_raw = rng.standard_normal((n_sim, n_months, n_assets))
     z_corr = z_raw @ L.T
 
-    log_ret = (mu_m - 0.5 * sigma_m ** 2) + sigma_m * z_corr
+    log_ret = (mu_m - 0.5 * sigma_m**2) + sigma_m * z_corr
 
     portfolio = np.zeros((n_sim, n_months))
     current_value = np.full(n_sim, inp.initial_value)

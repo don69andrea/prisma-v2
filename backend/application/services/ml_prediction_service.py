@@ -95,9 +95,7 @@ def _build_shap_entries(
                 else explainer.expected_value[0]
             )
 
-        indexed = sorted(
-            enumerate(class_shap), key=lambda t: abs(t[1]), reverse=True
-        )[:_TOP_N_SHAP]
+        indexed = sorted(enumerate(class_shap), key=lambda t: abs(t[1]), reverse=True)[:_TOP_N_SHAP]
 
         entries = [
             SHAPEntry(

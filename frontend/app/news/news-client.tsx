@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 
@@ -66,12 +66,30 @@ export function NewsClient() {
   const [query, setQuery] = useState('');
   const [ticker, setTicker] = useState('');
   const [results, setResults] = useState<NewsChunkResult[] | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'nzz' | 'srf'>('all');
 
   const mutation = useMutation({
     mutationFn: () =>
       retrieveNews({ query, k: 10, ticker: ticker.trim() || undefined }),
-    onSuccess: (data) => setResults(data.results),
+    onSuccess: (data) => {
+      setResults(data.results);
+      setSourceFilter('all');
+    },
   });
+
+  const sourceCounts = useMemo(() => {
+    if (!results) return { nzz: 0, srf: 0 };
+    return {
+      nzz: results.filter((r) => r.source === 'nzz').length,
+      srf: results.filter((r) => r.source === 'srf').length,
+    };
+  }, [results]);
+
+  const filteredResults = useMemo(() => {
+    if (!results) return null;
+    if (sourceFilter === 'all') return results;
+    return results.filter((r) => r.source === sourceFilter);
+  }, [results, sourceFilter]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,18 +138,43 @@ export function NewsClient() {
         </CardContent>
       </Card>
 
-      {results !== null && (
+      {results !== null && results.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {(['all', 'nzz', 'srf'] as const).map((src) => {
+            const label = src === 'all' ? 'Alle' : SOURCE_LABEL[src];
+            const count = src === 'all' ? results.length : sourceCounts[src];
+            const active = sourceFilter === src;
+            return (
+              <button
+                key={src}
+                onClick={() => setSourceFilter(src)}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? 'border-transparent bg-foreground text-background'
+                    : 'bg-background hover:bg-muted'
+                }`}
+                data-testid={`news-source-filter-${src}`}
+              >
+                {label}
+                <span className="tabular-nums">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {filteredResults !== null && (
         <div className="space-y-3">
-          {results.length === 0 ? (
+          {filteredResults.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">
-              Keine Ergebnisse für «{query}».
+              Keine Ergebnisse für «{query}»{sourceFilter !== 'all' ? ` aus Quelle ${SOURCE_LABEL[sourceFilter]}` : ''}.
             </p>
           ) : (
             <>
               <p className="text-xs text-muted-foreground">
-                {results.length} Ergebnis{results.length !== 1 ? 'se' : ''}
+                {filteredResults.length} Ergebnis{filteredResults.length !== 1 ? 'se' : ''}
               </p>
-              {results.map((r) => (
+              {filteredResults.map((r) => (
                 <NewsResultCard key={r.chunk_id} item={r} />
               ))}
             </>

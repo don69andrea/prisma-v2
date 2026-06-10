@@ -108,14 +108,16 @@ interface Position {
   weight: string;
 }
 
+const DEFAULT_FONDS_POSITIONS: Position[] = [
+  { ticker: 'NESN', weight: '30' },
+  { ticker: 'NOVN', weight: '25' },
+  { ticker: 'ROG',  weight: '20' },
+  { ticker: 'ABBN', weight: '25' },
+];
+
 export function FondsClient() {
   const [selectedFonds, setSelectedFonds] = useState('');
-  const [positions, setPositions] = useState<Position[]>([
-    { ticker: 'NESN', weight: '30' },
-    { ticker: 'NOVN', weight: '25' },
-    { ticker: 'ROG',  weight: '20' },
-    { ticker: 'ABBN', weight: '25' },
-  ]);
+  const [positions, setPositions] = useState<Position[]>(DEFAULT_FONDS_POSITIONS);
   const [error, setError] = useState('');
 
   const { data: fondsList, isLoading: fondsLoading } = useQuery({
@@ -220,9 +222,23 @@ export function FondsClient() {
 
         {error && <p className="text-xs text-destructive">{error}</p>}
 
-        <Button type="submit" size="sm" disabled={mutation.isPending || fondsLoading}>
-          {mutation.isPending ? 'Berechne…' : 'Vergleichen'}
-        </Button>
+        <div className="flex gap-2">
+          <Button type="submit" size="sm" disabled={mutation.isPending || fondsLoading}>
+            {mutation.isPending ? 'Berechne…' : 'Vergleichen'}
+          </Button>
+          {JSON.stringify(positions) !== JSON.stringify(DEFAULT_FONDS_POSITIONS) && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="text-destructive hover:text-destructive border-destructive/40 hover:bg-destructive/5"
+              onClick={() => setPositions(DEFAULT_FONDS_POSITIONS)}
+              data-testid="fonds-reset-positions-btn"
+            >
+              Zurücksetzen
+            </Button>
+          )}
+        </div>
       </form>
 
       {mutation.data && <VergleichResult result={mutation.data} />}

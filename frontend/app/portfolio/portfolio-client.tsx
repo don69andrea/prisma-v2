@@ -335,13 +335,25 @@ export function PortfolioClient() {
           </table>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button type="button" size="sm" variant="outline" onClick={addPosition}>
             <Plus className="h-3.5 w-3.5 mr-1" /> Position
           </Button>
           <Button type="submit" size="sm" disabled={mutation.isPending} data-testid="plan-submit-btn">
             {mutation.isPending ? 'Berechne…' : 'Plan berechnen'}
           </Button>
+          {JSON.stringify(positions) !== JSON.stringify(DEFAULT_POSITIONS) && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="text-destructive hover:text-destructive border-destructive/40 hover:bg-destructive/5"
+              onClick={() => setPositions(DEFAULT_POSITIONS)}
+              data-testid="portfolio-reset-positions-btn"
+            >
+              Zurücksetzen
+            </Button>
+          )}
         </div>
 
         {error && <p className="text-xs text-destructive" data-testid="portfolio-error">{error}</p>}

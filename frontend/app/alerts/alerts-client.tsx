@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Bell, Trash2, Plus, Mail, Webhook } from 'lucide-react';
@@ -85,8 +86,8 @@ function AlertRow({ alert, onDelete }: { alert: Alert; onDelete: () => void }) {
   );
 }
 
-function CreateAlertForm({ onCreated }: { onCreated: () => void }) {
-  const [ticker, setTicker] = useState('');
+function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => void; initialTicker?: string }) {
+  const [ticker, setTicker] = useState(initialTicker);
   const [triggerType, setTriggerType] = useState<TriggerType>('PRICE_CHANGE');
   const [threshold, setThreshold] = useState('5');
   const [channel, setChannel] = useState<ChannelType>('EMAIL');
@@ -196,6 +197,8 @@ function CreateAlertForm({ onCreated }: { onCreated: () => void }) {
 }
 
 export function AlertsClient() {
+  const searchParams = useSearchParams();
+  const initialTicker = searchParams.get('ticker')?.toUpperCase() ?? '';
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['alerts'],
@@ -213,7 +216,7 @@ export function AlertsClient() {
 
   return (
     <div className="space-y-6">
-      <CreateAlertForm onCreated={handleCreated} />
+      <CreateAlertForm onCreated={handleCreated} initialTicker={initialTicker} />
 
       <div className="space-y-2">
         {isLoading && (

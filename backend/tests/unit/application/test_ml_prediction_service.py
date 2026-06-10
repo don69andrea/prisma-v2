@@ -47,9 +47,15 @@ async def test_predict_returns_outperform() -> None:
     feature_svc.build_features.return_value = _make_feature_vector()
     model = _make_mock_model(predicted_class=2)
 
-    with patch(
-        "backend.application.services.ml_prediction_service._load_model",
-        return_value=(model, "xgboost"),
+    with (
+        patch(
+            "backend.application.services.ml_prediction_service._load_model",
+            return_value=(model, "xgboost"),
+        ),
+        patch(
+            "backend.application.services.ml_prediction_service._build_shap_entries",
+            return_value=([], 0.0),
+        ),
     ):
         service = MLPredictionService(feature_service=feature_svc)
         result = await service.predict("NESN")
@@ -71,9 +77,15 @@ async def test_predict_returns_underperform() -> None:
     feature_svc.build_features.return_value = _make_feature_vector()
     model = _make_mock_model(predicted_class=0)
 
-    with patch(
-        "backend.application.services.ml_prediction_service._load_model",
-        return_value=(model, "lightgbm"),
+    with (
+        patch(
+            "backend.application.services.ml_prediction_service._load_model",
+            return_value=(model, "lightgbm"),
+        ),
+        patch(
+            "backend.application.services.ml_prediction_service._build_shap_entries",
+            return_value=([], 0.0),
+        ),
     ):
         service = MLPredictionService(feature_service=feature_svc)
         result = await service.predict("NESN")
@@ -154,6 +166,58 @@ def _make_shap_explainer_mock(shap_matrix: list[list[float]]) -> MagicMock:
     ]
     explainer.expected_value = [0.05, 0.1, 0.15]
     return explainer
+
+
+def test_build_shap_entries_top8_sorted() -> None:
+    """_build_shap_entries gibt Top-8 Entries sortiert nach |shap_value| zurück."""
+    import numpy as np
+
+    from backend.application.services.ml_prediction_service import _build_shap_entries
+
+    fv = _make_feature_vector()
+    feature_names = list(fv.FEATURE_NAMES)
+    features_dict = fv.to_feature_dict()
+    n = len(feature_names)
+
+    # Build mock model with mock explainer
+    model = MagicMock()
+    # SHAP values: first feature gets largest value, rest get smaller values
+    shap_row = np.zeros(n)
+    shap_row[0] = 0.5   # largest
+    shap_row[1] = -0.3  # second
+    shap_row[2] = 0.1   # third
+    # rest are 0
+
+    explainer = MagicMock()
+    explainer.shap_values.return_value = [
+        np.zeros((1, n)),
+        np.zeros((1, n)),
+        shap_row.reshape(1, n),
+    ]
+    explainer.expected_value = [0.05, 0.1, 0.15]
+
+    with patch("shap.TreeExplainer", return_value=explainer):
+        entries, expected = _build_shap_entries(model, np.zeros((1, n)), feature_names, features_dict, 2)
+
+    assert expected == pytest.approx(0.15)
+    assert len(entries) <= 8
+    # First entry has largest abs value
+    assert abs(entries[0].shap_value) >= abs(entries[1].shap_value)
+    assert entries[0].shap_value == pytest.approx(0.5)
+
+
+def test_build_shap_entries_returns_empty_on_exception() -> None:
+    """_build_shap_entries gibt leere Liste zurück wenn SHAP fehlschlägt."""
+    import numpy as np
+
+    from backend.application.services.ml_prediction_service import _build_shap_entries
+
+    model = MagicMock()
+    with patch("shap.TreeExplainer", side_effect=RuntimeError("SHAP failed")):
+        entries, expected = _build_shap_entries(model, np.zeros((1, 5)), ["f1"], {"f1": 0.5}, 2)
+
+    assert entries == []
+    assert expected == 0.0
 
 
 @pytest.mark.asyncio

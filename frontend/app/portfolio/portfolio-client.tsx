@@ -145,6 +145,17 @@ function PlanResult({ plan }: { plan: RebalancingPlan }) {
       </button>
       </div>
 
+      {plan.total_transaction_cost_chf / plan.total_portfolio_value_chf > 0.01 && (
+        <div
+          className="flex items-center gap-2 rounded-md border border-amber-400/50 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:bg-amber-950/20 dark:text-amber-300"
+          data-testid="portfolio-cost-warning"
+        >
+          <span className="shrink-0">⚠️</span>
+          Achtung: Transaktionskosten überschreiten 1% des Portfoliowerts (
+          {(plan.total_transaction_cost_chf / plan.total_portfolio_value_chf * 100).toFixed(2)}%)
+        </div>
+      )}
+
       <div className="overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
           <thead>

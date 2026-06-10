@@ -305,8 +305,10 @@ export function DecisionClient() {
       {sortedSignals.length > 0 && (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              {sortedSignals.length} Signal{sortedSignals.length !== 1 ? 'e' : ''} gefunden
+            <p className="text-xs text-muted-foreground" data-testid="decision-signals-count">
+              {sortedSignals.length !== signals.length
+                ? `${sortedSignals.length} von ${signals.length} Signalen`
+                : `${sortedSignals.length} Signal${sortedSignals.length !== 1 ? 'e' : ''} gefunden`}
             </p>
             <button
               onClick={() => exportDecisionCsv(sortedSignals)}

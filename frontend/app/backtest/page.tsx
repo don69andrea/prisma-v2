@@ -99,13 +99,23 @@ function MetricsTable({
   );
 }
 
+const LS_KEY = 'prisma_backtest_config';
+
+function loadStoredConfig() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw) as { startDate: string; endDate: string; topN: number; benchmark: string };
+  } catch {}
+  return null;
+}
+
 function BacktestContent() {
   const searchParams = useSearchParams();
   const [runId, setRunId] = useState(searchParams.get('run_id') ?? '');
-  const [startDate, setStartDate] = useState(searchParams.get('start') ?? '2025-01-01');
-  const [endDate, setEndDate] = useState(searchParams.get('end') ?? '2025-12-31');
-  const [topN, setTopN] = useState(Number(searchParams.get('top_n') ?? '3'));
-  const [benchmark, setBenchmark] = useState(searchParams.get('benchmark') ?? '^SSMI');
+  const [startDate, setStartDate] = useState(() => searchParams.get('start') ?? loadStoredConfig()?.startDate ?? '2025-01-01');
+  const [endDate, setEndDate] = useState(() => searchParams.get('end') ?? loadStoredConfig()?.endDate ?? '2025-12-31');
+  const [topN, setTopN] = useState(() => Number(searchParams.get('top_n') ?? String(loadStoredConfig()?.topN ?? 3)));
+  const [benchmark, setBenchmark] = useState(() => searchParams.get('benchmark') ?? loadStoredConfig()?.benchmark ?? '^SSMI');
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +159,7 @@ function BacktestContent() {
         benchmark_ticker: benchmark,
       });
       setResult(data);
+      try { localStorage.setItem(LS_KEY, JSON.stringify({ startDate, endDate, topN, benchmark })); } catch {}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Backtest-Fehler');
     } finally {

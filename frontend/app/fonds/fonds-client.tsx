@@ -115,9 +115,21 @@ const DEFAULT_FONDS_POSITIONS: Position[] = [
   { ticker: 'ABBN', weight: '25' },
 ];
 
+const LS_FONDS_KEY = 'prisma_fonds_config';
+
+function loadStoredFonds() {
+  try {
+    const raw = localStorage.getItem(LS_FONDS_KEY);
+    if (raw) return JSON.parse(raw) as { selectedFonds: string; positions: Array<{ ticker: string; weight: string }> };
+  } catch {}
+  return null;
+}
+
 export function FondsClient() {
-  const [selectedFonds, setSelectedFonds] = useState('');
-  const [positions, setPositions] = useState<Position[]>(DEFAULT_FONDS_POSITIONS);
+  const [selectedFonds, setSelectedFonds] = useState(() => loadStoredFonds()?.selectedFonds ?? '');
+  const [positions, setPositions] = useState<Position[]>(
+    () => loadStoredFonds()?.positions ?? DEFAULT_FONDS_POSITIONS,
+  );
   const [error, setError] = useState('');
 
   const { data: fondsList, isLoading: fondsLoading } = useQuery({
@@ -127,6 +139,9 @@ export function FondsClient() {
 
   const mutation = useMutation({
     mutationFn: compareFonds,
+    onSuccess: () => {
+      try { localStorage.setItem(LS_FONDS_KEY, JSON.stringify({ selectedFonds, positions })); } catch {}
+    },
     onError: () => setError('Vergleich konnte nicht berechnet werden.'),
   });
 

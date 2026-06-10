@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import { Providers } from '@/app/providers';
 import { NavLinks } from '@/app/nav-links';
+import { ChatDrawer } from '@/components/chat/ChatDrawer';
 import '@/app/globals.css';
 
 export const metadata: Metadata = {
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             />
           </header>
           <main className="container py-8">{children}</main>
+          <ChatDrawer />
         </Providers>
       </body>
     </html>

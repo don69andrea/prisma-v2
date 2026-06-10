@@ -67,6 +67,7 @@ export function NewsClient() {
   const [ticker, setTicker] = useState('');
   const [results, setResults] = useState<NewsChunkResult[] | null>(null);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'nzz' | 'srf'>('all');
+  const [sortMode, setSortMode] = useState<'relevance' | 'date'>('relevance');
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -74,6 +75,7 @@ export function NewsClient() {
     onSuccess: (data) => {
       setResults(data.results);
       setSourceFilter('all');
+      setSortMode('relevance');
     },
   });
 
@@ -90,6 +92,16 @@ export function NewsClient() {
     if (sourceFilter === 'all') return results;
     return results.filter((r) => r.source === sourceFilter);
   }, [results, sourceFilter]);
+
+  const displayResults = useMemo(() => {
+    if (!filteredResults) return null;
+    if (sortMode === 'relevance') return filteredResults;
+    return [...filteredResults].sort((a, b) => {
+      const aMs = a.published_at ? new Date(a.published_at).getTime() : 0;
+      const bMs = b.published_at ? new Date(b.published_at).getTime() : 0;
+      return bMs - aMs;
+    });
+  }, [filteredResults, sortMode]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,18 +175,36 @@ export function NewsClient() {
         </div>
       )}
 
-      {filteredResults !== null && (
+      {displayResults !== null && (
         <div className="space-y-3">
-          {filteredResults.length === 0 ? (
+          {displayResults.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">
               Keine Ergebnisse für «{query}»{sourceFilter !== 'all' ? ` aus Quelle ${SOURCE_LABEL[sourceFilter]}` : ''}.
             </p>
           ) : (
             <>
-              <p className="text-xs text-muted-foreground">
-                {filteredResults.length} Ergebnis{filteredResults.length !== 1 ? 'se' : ''}
-              </p>
-              {filteredResults.map((r) => (
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {displayResults.length} Ergebnis{displayResults.length !== 1 ? 'se' : ''}
+                </p>
+                <div className="flex items-center gap-1">
+                  {(['relevance', 'date'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setSortMode(mode)}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                        sortMode === mode
+                          ? 'bg-foreground text-background'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                      data-testid={`news-sort-${mode}`}
+                    >
+                      {mode === 'relevance' ? 'Relevanz' : 'Datum ↓'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {displayResults.map((r) => (
                 <NewsResultCard key={r.chunk_id} item={r} />
               ))}
             </>

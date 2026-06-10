@@ -49,7 +49,7 @@ describe('StocksListClient', () => {
 
   it('zeigt 3a-Badge nur für CH-Aktien', () => {
     render(<StocksListClient stocks={sampleStocks} />);
-    const badges = screen.getAllByText('3a');
+    const badges = screen.getAllByTestId('badge-3a');
     expect(badges).toHaveLength(2); // NESN + NOVN
   });
 

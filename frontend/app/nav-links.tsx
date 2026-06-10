@@ -8,7 +8,6 @@ import { ROUTES } from '@/lib/routes';
 
 const navLinks = [
   { href: ROUTES.dashboard, label: 'Dashboard' },
-  { href: ROUTES.stocks,    label: 'Aktien' },
   { href: ROUTES.universes, label: 'Universen' },
   { href: ROUTES.rankings,  label: 'Rankings' },
   { href: ROUTES.backtest,  label: 'Backtest' },

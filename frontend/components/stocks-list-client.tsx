@@ -147,7 +147,7 @@ export function StocksListClient({ stocks }: StocksListClientProps) {
                 <TableCell>{stock.currency}</TableCell>
                 <TableCell>
                   {stock.country === 'CH' && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs" data-testid="badge-3a">
                       3a
                     </Badge>
                   )}

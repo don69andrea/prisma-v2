@@ -1,6 +1,5 @@
 export const ROUTES = {
   dashboard: '/',
-  stocks: '/stocks',
   universes: '/universes',
   rankings: '/rankings',
   backtest: '/backtest',

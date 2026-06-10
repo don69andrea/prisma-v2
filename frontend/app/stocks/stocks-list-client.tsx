@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Download, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
@@ -99,13 +99,27 @@ function SortableTh({
   );
 }
 
+const LS_STOCKS_KEY = 'prisma_stocks_filters';
+
+function loadStoredStocksFilters() {
+  try {
+    const raw = localStorage.getItem(LS_STOCKS_KEY);
+    if (raw) return JSON.parse(raw) as { exchange: string; sector: string; only3a: boolean };
+  } catch {}
+  return null;
+}
+
 export function StocksListClient() {
   const [search, setSearch] = useState('');
-  const [exchange, setExchange] = useState('');
-  const [sector, setSector] = useState('');
-  const [only3a, setOnly3a] = useState(false);
+  const [exchange, setExchange] = useState(() => loadStoredStocksFilters()?.exchange ?? '');
+  const [sector, setSector] = useState(() => loadStoredStocksFilters()?.sector ?? '');
+  const [only3a, setOnly3a] = useState(() => loadStoredStocksFilters()?.only3a ?? false);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  useEffect(() => {
+    localStorage.setItem(LS_STOCKS_KEY, JSON.stringify({ exchange, sector, only3a }));
+  }, [exchange, sector, only3a]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['stocks-list', exchange],

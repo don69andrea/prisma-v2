@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Plus, Trash2 } from 'lucide-react';
+import { Download, Plus, Trash2 } from 'lucide-react';
 
 import {
   listFonds,
@@ -61,9 +61,39 @@ function MetricRow({
   );
 }
 
+function exportFondsCsv(result: FondsVergleichResponse) {
+  const rows = [
+    ['Metrik', result.fonds_name, 'Mein Portfolio'],
+    ['Erw. Rendite p.a.', pctFmt(result.fonds_metrics.expected_return_pa), pctFmt(result.custom_metrics.expected_return_pa)],
+    ['Volatilität p.a.', pctFmt(result.fonds_metrics.volatility_pa), pctFmt(result.custom_metrics.volatility_pa)],
+    ['Sharpe Ratio', ratioFmt(result.fonds_metrics.sharpe_ratio), ratioFmt(result.custom_metrics.sharpe_ratio)],
+    ['Max. Drawdown', pctFmt(result.fonds_metrics.max_drawdown), pctFmt(result.custom_metrics.max_drawdown)],
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fonds-vergleich-${result.fonds_name.replace(/\s+/g, '-')}-${result.snapshot_date}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function VergleichResult({ result }: { result: FondsVergleichResponse }) {
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-medium">Ergebnis: {result.snapshot_date}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => exportFondsCsv(result)}
+          data-testid="fonds-csv-export-btn"
+        >
+          <Download className="mr-1 h-3.5 w-3.5" />
+          CSV
+        </Button>
+      </div>
       <div className="flex gap-3 flex-col sm:flex-row">
         <MetricColumn label={result.fonds_name} metrics={result.fonds_metrics} />
         <MetricColumn label="Mein Portfolio" metrics={result.custom_metrics} />

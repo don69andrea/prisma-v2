@@ -16,17 +16,21 @@ from backend.application.services.narrative_service import NarrativeService
 from backend.application.services.ranking_run_service import RankingRunService
 from backend.application.services.retrieval_service import RetrievalService
 from backend.application.services.stock_service import StockService
+from backend.application.services.swiss_market_service import SwissMarketService
 from backend.application.services.universe_service import UniverseService
 from backend.application.services.universe_suggestion_service import UniverseSuggestionService
 from backend.config import Settings, get_settings
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
+from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
 from backend.domain.repositories.cost_log_repository import CostLogRepository
 from backend.domain.repositories.memo_batch_job_repository import MemoBatchJobRepository
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.research_memo_repository import ResearchMemoRepository
 from backend.domain.repositories.stock_repository import StockRepository
+from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
+from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.infrastructure.llm.client import LLMClient
 from backend.infrastructure.llm.pricing import PRICING  # Single-Source-of-Truth via DI an LLMClient
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
@@ -44,6 +48,9 @@ from backend.infrastructure.persistence.repositories.research_memo_repository im
 )
 from backend.infrastructure.persistence.repositories.stock_repository import (
     SQLAStockRepository,
+)
+from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
+    SQLASwissStockRepository,
 )
 from backend.infrastructure.persistence.repositories.universe_repository import (
     SQLAUniverseRepository,
@@ -366,3 +373,138 @@ async def get_universe_suggestion_service(
 ) -> UniverseSuggestionService:
     """Erstellt den UniverseSuggestionService mit LLMClient und StockService."""
     return UniverseSuggestionService(llm_client=llm, stock_service=stock_service)
+
+
+# ---------------------------------------------------------------------------
+# SwissMarketService DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_swiss_stock_repository(
+    session: AsyncSession = Depends(get_session),
+) -> SwissStockRepository:
+    """Instanziiert den SQLAlchemy-Adapter für Swiss Stocks mit der aktuellen Session."""
+    return SQLASwissStockRepository(session=session)
+
+
+async def get_swiss_market_data_provider() -> SwissMarketDataProvider:
+    """Instanziiert den YFinanceSwissAdapter für Swiss Market Data."""
+    return YFinanceSwissAdapter()
+
+
+async def get_yfinance_adapter() -> YFinanceSwissAdapter:
+    """Liefert einen YFinanceSwissAdapter für direkte Adapter-Nutzung (z.B. Dividenden)."""
+    return YFinanceSwissAdapter()
+
+
+async def get_swiss_market_service(
+    repo: SwissStockRepository = Depends(get_swiss_stock_repository),
+    market_data: SwissMarketDataProvider = Depends(get_swiss_market_data_provider),
+) -> SwissMarketService:
+    """Erstellt den SwissMarketService mit Repository + YFinanceSwissAdapter."""
+    return SwissMarketService(repo=repo, market_data=market_data)
+
+
+# ---------------------------------------------------------------------------
+# SteuerAgent DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_steuer_agent(
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+    retrieval: RetrievalService = Depends(get_retrieval_service),
+) -> Any:
+    from backend.application.agents.steuer_agent import SteuerAgent
+
+    return SteuerAgent(
+        llm_client=LLMClient(
+            anthropic=get_anthropic_client(),
+            voyage=get_voyage_client(),
+            cost_tracker=cost_tracker,
+            pricing=PRICING,
+        ),
+        retrieval_service=retrieval,
+        prompt_loader=get_prompt_loader(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# News-RAG DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_news_repository() -> Any:
+    from backend.infrastructure.persistence.repositories.news_repository import (
+        SQLANewsRepository,
+    )
+
+    return SQLANewsRepository(session_factory=get_session_factory())
+
+
+async def get_news_ingestion_service(
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+) -> Any:
+    from backend.application.services.news_ingestion_service import NewsIngestionService
+    from backend.infrastructure.adapters.rss_news_adapter import RssNewsAdapter
+    from backend.infrastructure.adapters.ticker_ner import SWISS_TICKERS, TickerNer
+    from backend.infrastructure.persistence.repositories.news_repository import (
+        SQLANewsRepository,
+    )
+
+    repo = SQLANewsRepository(session_factory=get_session_factory())
+    voyage = get_voyage_client()
+    llm = LLMClient(
+        anthropic=get_anthropic_client(),
+        voyage=voyage,
+        cost_tracker=cost_tracker,
+        pricing=PRICING,
+    )
+    return NewsIngestionService(
+        news_repo=repo,
+        rss_adapter=RssNewsAdapter(),
+        ticker_ner=TickerNer(SWISS_TICKERS),
+        llm_client=llm,
+    )
+
+
+async def get_news_retrieval_service(
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+) -> Any:
+    from backend.application.services.news_retrieval_service import NewsRetrievalService
+    from backend.infrastructure.persistence.repositories.news_repository import (
+        SQLANewsRepository,
+    )
+
+    repo = SQLANewsRepository(session_factory=get_session_factory())
+    voyage = get_voyage_client()
+    llm = LLMClient(
+        anthropic=get_anthropic_client(),
+        voyage=voyage,
+        cost_tracker=cost_tracker,
+        pricing=PRICING,
+    )
+    return NewsRetrievalService(news_repo=repo, llm_client=llm)
+
+
+# ---------------------------------------------------------------------------
+# Swiss RAG (SIX Filings) DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_swiss_filing_repository() -> Any:
+    from backend.infrastructure.persistence.repositories.swiss_filing_repository import (
+        SQLASwissFilingRepository,
+    )
+
+    return SQLASwissFilingRepository(session_factory=get_session_factory())
+
+
+async def get_swiss_filing_retrieval_service(
+    repo: Any = Depends(get_swiss_filing_repository),
+) -> Any:
+    from backend.application.services.swiss_filing_retrieval_service import (
+        SwissFilingRetrievalService,
+    )
+
+    voyage = get_voyage_client()
+    return SwissFilingRetrievalService(repository=repo, voyage_client=voyage)

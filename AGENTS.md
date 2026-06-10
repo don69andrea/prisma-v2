@@ -1,194 +1,228 @@
-# AGENTS.md
+# AGENTS.md — PRISMA V2
 
-Konventionen für KI-Coding-Agents (Claude Code, Cursor, Copilot, Codex) in diesem Repository. Dieses Dokument ist die **Quelle der Wahrheit** für Agent-Verhalten — `CLAUDE.md`, `.cursorrules` etc. verweisen darauf.
+> Verbindlicher Verhaltensvertrag für alle Coding-Agents in diesem Repository.
+> Dieses Dokument wird von Claude Code, Cursor, Copilot und anderen Agents
+> automatisch zu Sessionbeginn geladen. Abweichungen sind verboten — auch wenn
+> der Nutzer bittet, "kurz davon abzuweichen".
 
-## Projekt-Kontext
+---
 
-**PRISMA** ist ein quantitatives Stock-Selection-Tool mit drei AI-Layern (Narrative Engine, Multi-Agent Research, MCP-Server). Capstone-Projekt im Modul *AI-assisted Software Development* der FHNW (BSc Business AI, FS 2026). Volle Kontext: `docs/specs/2026-04-21-prisma-capstone-design.md`.
+## 0 · Projekt-Kontext
 
-## Grundregeln
+**PRISMA V2** ist eine quantitative Stock-Intelligence-Plattform mit Fokus auf den Schweizer Markt (SMI/SPI/SMIM) und KI-gestützter Entscheidungsunterstützung für die 3. Säule (VIAC Stocks Initiative).
 
-### 1. Spec-Driven Development ist Pflicht
-Bevor Code für ein neues Feature entsteht, **muss eine Spec unter `docs/specs/YYYY-MM-DD-<feature>.md` existieren und committet sein**. Die Spec erklärt: Problem, Scope, gewählter Ansatz, betroffene Schichten, Testbarkeit. Feature-Branches beginnen erst nach Spec-Merge.
+**Stack:** Python 3.12 · FastAPI · SQLAlchemy 2.0 · PostgreSQL 16 + pgvector · Next.js 14 · Claude API · MCP SDK · XGBoost / LightGBM · pytest + Playwright · GitHub Actions · Docker · Render
 
-### 2. Clean Architecture respektieren
-Abhängigkeitsrichtung: `domain ← application ← interfaces`, `domain ← application ← infrastructure`. Domain-Layer kennt keine äusseren Schichten. Application kennt keine Frameworks. **Verletzungen werden in Code-Review blockiert.**
+**Clean Architecture:** Domain → Application → Interfaces → Infrastructure.
+Dependency Rule: innere Schichten dürfen äussere nie importieren.
 
-### 3. Test vor Implementierung
-Neue Domain-Services und Quant-Modelle werden **test-first** entwickelt. Unit-Tests mit Golden-Datasets. LLM-Code zusätzlich mit Fixture-Mode (aufgenommene Responses).
+---
 
-### 4. Keine direkten Pushes auf `main`
-Jede Änderung via Pull Request. PR braucht: CI grün, 1 Review, verlinkte Spec. Details in `CONTRIBUTING.md`.
+## 1 · Goldene Regeln (NIEMALS brechen)
 
-## Tech-Stack
+1. **Kein Code ohne Spec.** Jedes Feature startet mit `docs/specs/YYYY-MM-DD-*.md`. Agent wartet auf Freigabe.
+2. **Kein Merge ohne grüne CI.** Nie `--no-verify` verwenden.
+3. **Kein Freitext von LLMs ins Frontend.** Alle LLM-Outputs sind Pydantic-Schema-validiert.
+4. **Kein direkter Push auf `main` oder `develop`.** Immer PR + Review.
+5. **Kein `API_KEY` im Code oder in Logs.** Immer via Environment Variables.
+6. **Test-First für Domain-Code.** Domain-Entities und Services: erst Test, dann Implementierung.
 
-| Layer | Tool | Version |
-|---|---|---|
-| Backend | Python + FastAPI | 3.12 / ≥0.110 |
-| ORM | SQLAlchemy + Alembic | 2.0 |
-| DB | PostgreSQL | 16 |
-| Validation | Pydantic | v2 |
-| Quant | pandas, numpy, scikit-learn | stable |
-| LLM | anthropic SDK | latest |
-| MCP | mcp-sdk (Python) | latest |
-| Frontend | Next.js + shadcn/ui + Recharts | 14 |
-| Tests | pytest, Playwright | stable |
-| CI | GitHub Actions | - |
-| Deploy | Render | - |
+---
 
-**Kein Framework-Wechsel ohne ADR** in `docs/adr/`.
-
-## Repository-Layout
+## 2 · Workflow
 
 ```
-backend/
-  domain/          # Entities, VOs, Domain-Events — keine externen Imports
-  application/     # Services/Use Cases — nutzt Domain + abstrakte Ports
-  interfaces/      # REST (FastAPI), MCP-Server
-  infrastructure/  # Persistence (SQLAlchemy), Market-Data, LLM-Adapter
-frontend/          # Next.js App Router
-tests/             # unit/ integration/ e2e/ fixtures/
-docs/              # specs/ adr/ agents/
+Brainstorming → Spec-First → Plan-as-Contract → Subagent-Driven Execution → Two-Stage Review → Reflexion
 ```
 
-## Standard-Kommandos
+### 2.1 Spec-First
+- Spec-Datei: `docs/specs/YYYY-MM-DD-feature-name.md`
+- Mindestinhalt: Ziel, Entitäten/Schema-Änderungen, API-Endpunkte, Test-Cases, Nicht-Ziele
+- **Agent schreibt keinen Implementierungscode, bis der Nutzer die Spec explizit freigibt.**
 
-```bash
-# Setup lokal (nach git clone) — Backend-Befehle vom Repo-Root
-# (pyproject.toml + alembic.ini liegen im Root)
-docker compose up -d
-pip install -e ".[dev]" && alembic upgrade head
-cd frontend && npm install
+### 2.2 Plan-as-Contract
+- Plan-Datei: `docs/superpowers/plans/YYYY-MM-DD-plan-name.md`
+- Plan enthält: Step-by-Step mit Bash-Befehlen, verbatim Test-Code, Commit-Messages
+- Ein Plan ist ein Vertrag. Subagents führen ihn aus — keine Improvisation, keine Abkürzungen.
+- Wenn ein Step fehlschlägt: stoppen, Fehler melden, auf Freigabe warten.
 
-# Pre-Commit-Hooks aktivieren (einmal pro Klon)
-pipx install pre-commit    # oder: brew install pre-commit
-pre-commit install         # aktiviert automatische Checks bei jedem commit
+### 2.3 Subagent-Driven Execution
+- Frischer Subagent pro Task → kein Kontext-Spill
+- Orchestrator koordiniert, Implementer-Subagents liefern
+- Jeder Subagent liest zuerst: `AGENTS.md` → `CLAUDE.md` → relevante Spec → Plan-Schritt
 
-# Entwickeln (Backend vom Repo-Root)
-uvicorn backend.interfaces.rest.main:app --reload   # Backend
-npm run dev                                          # Frontend (in frontend/)
-python -m backend.interfaces.mcp.server              # MCP-Server lokal
+### 2.4 Two-Stage Review (nach jeder Implementierung)
+1. **Spec-Compliance-Review:** Wurde genau das gebaut, was die Spec verlangt?
+2. **Code-Quality-Review:** Clean Architecture, DRY, keine Leaks, Test-Coverage ≥ 80%
 
-# Testen
-pytest                                           # alle Python-Tests
-pytest --cov=backend --cov-report=term-missing  # mit Coverage
-pytest tests/unit -k quality_classic            # gezielt
-npx playwright test                              # E2E
+### 2.5 Reflexion
+- Jeder PR mit substantieller AI-Beteiligung → Eintrag in `docs/AI-USAGE.md`
+- Format: Agent · Scope · Was gut lief · Was schiefging · Konkrete Lektion
 
-# Lint / Typecheck
-ruff check backend/
-mypy backend/
-npx eslint frontend/ --fix
+---
+
+## 3 · Branch & Commit-Konventionen
+
+### Branches
+```
+main          ← production (protected)
+develop       ← integration
+feat/*        ← neue Features
+fix/*         ← Bugfixes
+chore/*       ← Maintenance
+release/*     ← Release-Kandidaten
 ```
 
-## Agent-Aufgabenmuster
+### Commit-Messages (Conventional Commits)
+```
+feat(swiss-market): add SMI universe seeder with 20 tickers
+fix(ml-layer): correct feature normalization in XGBoost pipeline
+chore(ci): bump Python to 3.12.4
+docs(spec): add Swiss RAG ingestion spec
+test(portfolio-agent): add integration test for rebalancing endpoint
+```
 
-### Wenn ein neues Quant-Modell implementiert werden soll
-1. Spec unter `docs/specs/` erstellen (Problem, Formel, Input, Output, Tests).
-2. Unit-Tests zuerst: Golden-Dataset in `tests/fixtures/`, erwartete Ränge verifiziert.
-3. Modell in `backend/domain/models/` als reine Funktion/Klasse implementieren.
-4. `RankingService` erweitern, Integration-Test schreiben.
-5. ADR bei Design-Entscheidungen (z.B. "Warum Ledoit-Wolf statt OAS-Shrinkage").
+---
 
-### Wenn ein LLM-Feature implementiert werden soll
-1. Pydantic-Schema für Input/Output definieren — **kein Freitext-Output**.
-2. Prompt-Caching aktivieren (`cache_control: ephemeral`).
-3. Fixture aufnehmen in `tests/fixtures/llm/`, Test gegen Fixture in CI.
-4. Golden-Prompt-Smoke-Test gegen echte API nur nightly.
-5. Token-Kosten in Commit-Message vermerken.
+## 4 · Coding-Konventionen
 
-### Wenn ein MCP-Tool hinzugefügt wird
-1. Tool-Schema in `backend/interfaces/mcp/tools/`.
-2. Tool ruft Application-Service — keine DB-Queries direkt im MCP-Handler.
-3. `claude_desktop_config.json`-Snippet im `docs/` ergänzen.
-4. Manuell in Claude Desktop getestet + Screenshot in PR.
-
-## Persistence-Konventionen
-
-### Session-Lifecycle — zwei Patterns
-
-**1. Request-Session** (Normalfall): `get_async_session()` in `infrastructure/persistence/session.py` öffnet eine Session pro Request, committet am Ende automatisch und rollt bei Exception zurück. Router-Handler und ihre Services nutzen dieses Pattern via `Depends(get_session)`.
-
-**2. Self-managed Side-Channel-Session** (Audit/Logging): Repos, deren Schreiboperationen *unabhängig* von der laufenden Business-Transaktion persistiert werden müssen, erhalten eine `session_factory` im Konstruktor und managen Commit/Rollback selbst. Beispiele: `SQLACostLogRepository`, `SQLAResearchMemoRepository`. Begründung: ein Audit-Insert soll nicht mit einer fehlgeschlagenen Business-Operation zurückgerollt werden.
-
-**Regel für Agents**: Neue Repos bekommen `Depends(get_session)`, es sei denn, sie sind explizit Audit-/Logging-Repos — dann `session_factory` (analog `SQLACostLogRepository`). Den `async for`-Wrapper in `get_session()` nicht anfassen; er durchreicht die Generator-Cleanup-Semantik von `get_async_session()` (PR #88).
-
-## Was Agents NICHT tun sollen
-
-- Keine Geheimnisse (.env, API-Keys) committen.
-- Keine breiten Refactorings ohne expliziten Auftrag — PRs mit Scope >200 geänderten Zeilen brauchen ADR.
-- Keine Direktzugriffe auf externe APIs aus Domain/Application — immer via Port/Adapter in Infrastructure.
-- Keine `git push --force` auf shared Branches.
-- Kein `--no-verify` bei Commits (Husky/pre-commit-Hooks sind Pflicht).
-- Keine Financial-Advice-Sprache im User-Facing-Text ("Kauf Aktie X") — alles ist Educational/Research.
-
-## Anti-Pattern: Subagent-Pfad-Ambiguität bei Worktrees
-
-**Problem (aufgetreten 2026-05-17, PR #120):** Ein Subagent schrieb Dateien ins Haupt-Repo-Verzeichnis statt in den aktiven Worktree, weil der Worktree-Pfad im Prompt fehlte.
-
-**Regel:** Jeder Subagent-Prompt bei aktiver Worktree-Session muss enthalten:
-1. Den absoluten Worktree-Pfad (z.B. `/path/to/repo/.claude/worktrees/<branch>/`)
-2. Die Anweisung, nach jedem Commit `git show --stat HEAD` auszuführen und den Output zu melden
-
-**Keine hardcoded Datumsgrenzen in Tests gegen `StubMarketDataProvider`:** Der Provider liefert ~504 Handelstage ab `today`. Tests mit fixen Jahreszahlen (z.B. `2025-01-01`) werden Zeitbomben. Stattdessen relative Daten verwenden:
+### Python (Backend)
 ```python
-_today = date.today()
-_START = date(_today.year - 1, 1, 1)
-_END = date(_today.year - 1, 12, 31)
+# Domain-Entities: reine Datenklassen, kein I/O
+@dataclass
+class SwissStock:
+    ticker: str
+    isin: str
+    exchange: Literal["SIX", "XSWX"]
+    eligible_for_3a: bool
+    langfrist_score: float | None = None
+
+# Services: async, Repository-Pattern
+class SwissMarketService:
+    def __init__(self, repo: SwissStockRepository): ...
+    async def get_eligible_stocks(self, universe_id: UUID) -> list[SwissStock]: ...
+
+# LLM-Outputs: IMMER Pydantic
+class ViacRecommendation(BaseModel):
+    ticker: str
+    signal: Literal["BUY", "HOLD", "WATCH"]
+    langfrist_score: float
+    steuer_hinweis: str
+    confidence: float = Field(ge=0.0, le=1.0)
 ```
 
-## Reflexions-Pflicht
+### TypeScript (Frontend)
+- Strict mode aktiv
+- Keine `any`-Types
+- API-Typen aus OpenAPI-Schema generiert (nicht manuell pflegen)
 
-Jede PR, die substantiell mit einem Coding-Agent entstanden ist, bekommt in `docs/AI-USAGE.md` einen Eintrag:
+### Tests
+```python
+# Unit: pytest, Arrange-Act-Assert, kein I/O
+def test_langfrist_score_calculation():
+    stock = SwissStock(ticker="NOVN", ...)
+    result = calculate_langfrist_score(stock, horizon_years=30)
+    assert 0.0 <= result <= 10.0
 
-```markdown
-## YYYY-MM-DD · <PR-Titel>
-- **Agent**: Claude Code / Cursor / Copilot
-- **Scope**: <1 Satz>
-- **Was gut lief**: <1 Satz>
-- **Was nicht klappte**: <1 Satz>
-- **Nachbearbeitung nötig bei**: <1 Satz>
+# Integration: pytest + TestClient, echter DB (Testcontainer)
+async def test_create_swiss_universe(client, db):
+    response = await client.post("/api/v1/universes", json={"name": "SMI-20"})
+    assert response.status_code == 201
 ```
 
-## Häufige CI-Fallstricke
+---
 
-Drei wiederkehrende Probleme aus PR-History (aufgetreten in PR #126 / Issue #128). Checklisten vor dem PR-Öffnen durchgehen.
+## 5 · LLM-Layer Regeln (PRISMA V2 spezifisch)
 
-### 1. jsdom implementiert `URL.createObjectURL` nicht
+### Modell-Routing
 
-Vitest/jsdom wirft einen Fehler bei `vi.spyOn(URL, 'createObjectURL')`, weil die Methode schlicht nicht existiert.
+| Aufgabe | Modell |
+|---------|--------|
+| Architektur, Trade-off-Analyse, VIAC-Strategie | Claude Opus |
+| Feature-Implementierung, Agents, RAG | Claude Sonnet |
+| Schnelle Strukturierungs-Tasks, Klassifikation | Claude Haiku |
 
-**Checkliste:**
-- [ ] Vor `spyOn` prüfen: `typeof URL.createObjectURL !== 'undefined'`?
-- [ ] Für nicht implementierte Browser-APIs: direkte Zuweisung `global.URL.createObjectURL = vi.fn()` statt `spyOn`
-- [ ] Cleanup nach dem Test: `Reflect.deleteProperty(global.URL, 'createObjectURL')`
+### Pydantic-Pflicht
+Alle Structured Outputs von Claude müssen ein Pydantic-Schema haben:
+```python
+response = await client.messages.create(
+    model="claude-sonnet-4-5",
+    messages=[...],
+    tools=[ViacRecommendation.model_json_schema()],
+)
+recommendation = ViacRecommendation.model_validate(response.content[0].input)
+```
 
-### 2. Doppelte Alembic-Revision (Multiple Heads)
+### Prompt-Caching
+Long System-Prompts (RAG-Kontext, Swiss Tax Rules) → `cache_control: {"type": "ephemeral"}`
 
-Wenn `main` zwischen Branch-Abspaltung und PR-Merge eine eigene Migration mit derselben Revisionsnummer bekommt, meldet Alembic `Multiple head revisions are present` und die Backend-CI schlägt fehl.
+### Kein Halluzinationsrisiko bei Ticker-Lookups
+Swiss Market Stocks: immer aus validierter Whitelist (SIX Exchange API), nie aus freiem LLM-Output.
 
-**Checkliste vor jedem PR mit Alembic-Migrationen:**
-- [ ] `git fetch origin && git log --oneline origin/main -- backend/alembic/versions/` ausführen
-- [ ] Prüfen ob die eigene Revision-ID bereits auf `main` vergeben ist
-- [ ] Bei Kollision: eigene Migration umbenennen (nächste freie ID) und `down_revision` anpassen
-- [ ] `alembic heads` lokal ausführen — genau ein Head darf erscheinen
+---
 
-### 3. `# type: ignore` wird nach echtem Fix zu `unused-ignore`
+## 6 · PRISMA V2 Spezifische Layer
 
-Wenn ein Ruff/mypy-Fehler durch den eigentlichen Fix verschwindet, meldet mypy die alten Suppressor-Kommentare als `[unused-ignore]` — ein zweiter Fix-Commit wird nötig.
+### 6.1 Swiss Market Universe
+- Datenquelle: SIX Exchange API + Yahoo Finance Fallback
+- Universes: SMI (20), SPI (200+), SMIM (30), Custom
+- ISIN-Validierung: CH-Prefix für Swiss stocks
 
-**Checkliste nach type-ignore-relevanten Fixes:**
-- [ ] Nach dem Fix `mypy` lokal laufen lassen (oder `pre-commit run mypy`)
-- [ ] Alle `# type: ignore` in der geänderten Datei auf Aktualität prüfen
-- [ ] Überflüssige Kommentare im selben Commit entfernen, nicht als Nachzügler
+### 6.2 3a Eligibility Filter (VIAC Layer)
+- FINMA-Kriterien: Domizil, Liquidität, Anlageklasse
+- Keine LLM-Entscheidungen für Eligibility — nur regelbasiert
+- Rechtsgrundlage: BVV2, FINMA-Rundschreiben (in `docs/legal/`)
 
-## Bewertungs-Kontext
+### 6.3 ML Return Prediction
+- Features: alle 5 Quant-Modell-Scores + Makro-Faktoren (SNB, CHF/EUR)
+- Modell: XGBoost primary, LightGBM als Benchmark
+- Target: 12-Monats-Return-Klassen (Q1/Q2/Q3/Q4)
+- Kein Live-Trading-Signal — nur Entscheidungsunterstützung (Disclaimer Pflicht)
 
-Das Capstone-Modul bewertet:
-- **40% AI-assisted Development & Tooling**: sichtbarer Agent-Einsatz, AGENTS.md, Spec-Driven, AI-USAGE.md, AI-Features im Produkt.
-- **15% Testing**: Unit + Integration + E2E, ≥80% Coverage.
-- **15% CI/CD**: GitHub Actions, Docker, Cloud-Deploy.
-- **15% Doku & Präsentation**: README, ADRs, Reflexion.
-- **3 × 5%**: Use Case, Architektur, Business-Logik.
+### 6.4 Swiss RAG
+- Quellen: SIX Exchange Filings, NZZ/SRF RSS (News), SNB Statistiken
+- Embedding: Voyage AI (multilingual — DE/EN)
+- Chunk-Strategie: 512 Tokens, 64 Overlap, Metadaten: ticker, source, date, language
+- Sprache: Deutsche Chunks bevorzugen für Swiss-specific Content
 
-Handle danach.
+### 6.5 Decision Intelligence Dashboard
+- Signale: BUY / HOLD / WATCH (nie SELL — kein Shorting-Signal)
+- Jede Entscheidung hat einen Audit Trail (Welche Faktoren? Welcher Agent? Timestamp)
+- Konfidenz-Score sichtbar: "Diese Einschätzung basiert auf X Datenpunkten"
+
+---
+
+## 7 · Sicherheitsregeln
+
+- Alle externen API-Calls haben Timeout + Retry mit Exponential Backoff
+- Rate-Limit-Awareness: SIX API, Yahoo Finance, Anthropic API
+- Sensitive Data (ISIN, Portfolio-Holdings) nie in Logs
+- SQL: immer parameterisierte Queries via SQLAlchemy (nie String-Concat)
+- CORS: nur `localhost` + konfigurierbare Production-Domain
+
+---
+
+## 8 · Verbotene Patterns
+
+❌ `response.text` direkt ins UI rendern ohne Pydantic-Validation  
+❌ `SELECT *` in Production-Queries  
+❌ Hardcoded Tickers oder Market Data  
+❌ LLM-Output als Eligibility-Entscheidung für 3a  
+❌ Synchrone HTTP-Calls im FastAPI-Handler  
+❌ Tests mocken die Datenbank (ausser Unit-Tests für reine Domain-Logik)  
+❌ `print()` statt `logging`  
+❌ `time.sleep()` in Async-Code (→ `asyncio.sleep()`)  
+
+---
+
+## 9 · Dokumentation-Pflichten
+
+Jede neue Komponente braucht:
+- `docs/specs/` — Spec-Dokument
+- `docs/adr/` — ADR wenn Architektur-Entscheidung involviert
+- Docstring mit Zweck + Beispiel
+- `docs/AI-USAGE.md` — Eintrag nach Abschluss
+
+---
+
+*PRISMA V2 — FHNW BI Module FS 2026 | don69andrea/prisma-v2*

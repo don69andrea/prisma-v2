@@ -1,12 +1,13 @@
 import { apiFetch } from './client';
 
-export interface EligibilityRead {
+export type EligibilityReason = 'exchange_not_recognized' | 'market_cap_too_low';
+
+export interface EligibilityResponse {
   ticker: string;
   eligible: boolean;
-  reasons: string[];
-  disclaimer: string;
+  reasons: EligibilityReason[];
 }
 
-export function getEligibility(ticker: string): Promise<EligibilityRead> {
-  return apiFetch<EligibilityRead>(`/api/v1/stocks/${ticker}/3a-eligibility`);
+export async function getEligibility(ticker: string): Promise<EligibilityResponse> {
+  return apiFetch<EligibilityResponse>(`/api/v1/stocks/${encodeURIComponent(ticker)}/3a-eligibility`);
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Play } from 'lucide-react';
+import { Play, Search } from 'lucide-react';
 
 import {
   Table,
@@ -13,11 +13,21 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { StartRankingDialog } from '@/components/universes/StartRankingDialog';
 import type { UniverseRead } from '@/lib/api/universes';
 
 export function UniverseList({ universes }: { universes: UniverseRead[] }) {
   const [selectedUniverse, setSelectedUniverse] = useState<{ id: string; name: string } | null>(null);
+  const [search, setSearch] = useState('');
+
+  const filteredUniverses = useMemo(() => {
+    if (!search.trim()) return universes;
+    const q = search.trim().toLowerCase();
+    return universes.filter(
+      (u) => u.name.toLowerCase().includes(q) || (u.region ?? '').toLowerCase().includes(q),
+    );
+  }, [universes, search]);
 
   if (universes.length === 0) {
     return (
@@ -32,6 +42,18 @@ export function UniverseList({ universes }: { universes: UniverseRead[] }) {
 
   return (
     <>
+      {universes.length >= 3 && (
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Universum suchen…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 max-w-xs"
+            data-testid="universe-search-input"
+          />
+        </div>
+      )}
       <Table>
         <TableHeader>
           <TableRow>
@@ -42,9 +64,17 @@ export function UniverseList({ universes }: { universes: UniverseRead[] }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {universes.map((u) => (
+          {filteredUniverses.map((u) => (
             <TableRow key={u.id}>
-              <TableCell className="font-medium">{u.name}</TableCell>
+              <TableCell className="font-medium">
+                <Link
+                  href={`/universes/${u.id}`}
+                  className="hover:underline"
+                  data-testid={`universe-name-link-${u.id}`}
+                >
+                  {u.name}
+                </Link>
+              </TableCell>
               <TableCell>{u.region}</TableCell>
               <TableCell>{u.tickers.length}</TableCell>
               <TableCell className="text-right">

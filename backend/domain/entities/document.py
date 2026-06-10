@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from uuid import UUID
 
-_VALID_DOC_TYPES = frozenset({"10-K", "10-Q"})
+_VALID_DOC_TYPES = frozenset({"10-K", "10-Q", "ESTV", "BVV2"})
 
 
 @dataclass(frozen=True)

@@ -3,9 +3,18 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { listRuns } from '@/lib/api/runs';
 import {
   CartesianGrid,
@@ -17,18 +26,135 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { runBacktest, type BacktestResult } from '@/lib/api/backtest';
+import { runBacktest, type BacktestResult, type PortfolioMetrics } from '@/lib/api/backtest';
+
+const METRIC_ROWS: Array<{ label: string; key: keyof PortfolioMetrics; pct: boolean }> = [
+  { label: 'Total Return',  key: 'total_return', pct: true  },
+  { label: 'CAGR',          key: 'cagr',         pct: true  },
+  { label: 'Volatilität',   key: 'annual_vol',   pct: true  },
+  { label: 'Sharpe Ratio',  key: 'sharpe',       pct: false },
+  { label: 'Max. Drawdown', key: 'max_drawdown', pct: true  },
+];
+
+function exportMetricsCsv(
+  prisma: PortfolioMetrics,
+  universum: PortfolioMetrics,
+  benchmark: PortfolioMetrics,
+) {
+  const rows = [
+    ['Metrik', 'PRISMA', 'Universum', 'Benchmark'],
+    ...METRIC_ROWS.map(({ label, key, pct }) => [
+      label,
+      fmtMetric(prisma[key], pct),
+      fmtMetric(universum[key], pct),
+      fmtMetric(benchmark[key], pct),
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backtest-metriken-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportSeriesCsv(result: BacktestResult) {
+  const rows = [
+    ['Datum', 'PRISMA%', 'Universum%', 'Benchmark%'],
+    ...result.series.dates.map((d, i) => [
+      d,
+      `${((parseFloat(result.series.prisma[i]) - 1) * 100).toFixed(2)}`,
+      `${((parseFloat(result.series.universe[i]) - 1) * 100).toFixed(2)}`,
+      `${((parseFloat(result.series.benchmark[i]) - 1) * 100).toFixed(2)}`,
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backtest-zeitreihe-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function fmtMetric(v: string, pct: boolean): string {
+  const n = parseFloat(v);
+  if (isNaN(n)) return '—';
+  return pct ? `${(n * 100).toFixed(1)}%` : n.toFixed(2);
+}
+
+function MetricsTable({
+  prisma,
+  universum,
+  benchmark,
+}: {
+  prisma: PortfolioMetrics;
+  universum: PortfolioMetrics;
+  benchmark: PortfolioMetrics;
+}) {
+  return (
+    <Table data-testid="backtest-metrics-table">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Metrik</TableHead>
+          <TableHead className="text-right text-indigo-600 dark:text-indigo-400">PRISMA</TableHead>
+          <TableHead className="text-right text-emerald-600 dark:text-emerald-400">Universum</TableHead>
+          <TableHead className="text-right text-amber-600 dark:text-amber-400">Benchmark</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {METRIC_ROWS.map(({ label, key, pct }) => (
+          <TableRow key={label}>
+            <TableCell className="text-muted-foreground text-sm">{label}</TableCell>
+            <TableCell className="text-right font-medium tabular-nums">{fmtMetric(prisma[key], pct)}</TableCell>
+            <TableCell className="text-right tabular-nums">{fmtMetric(universum[key], pct)}</TableCell>
+            <TableCell className="text-right tabular-nums">{fmtMetric(benchmark[key], pct)}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+const LS_KEY = 'prisma_backtest_config';
+
+function loadStoredConfig() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw) as { startDate: string; endDate: string; topN: number; benchmark: string };
+  } catch {}
+  return null;
+}
 
 function BacktestContent() {
   const searchParams = useSearchParams();
   const [runId, setRunId] = useState(searchParams.get('run_id') ?? '');
-  const [startDate, setStartDate] = useState('2025-01-01');
-  const [endDate, setEndDate] = useState('2025-12-31');
-  const [topN, setTopN] = useState(3);
-  const [benchmark, setBenchmark] = useState('^SSMI');
+  const [startDate, setStartDate] = useState(() => searchParams.get('start') ?? loadStoredConfig()?.startDate ?? '2025-01-01');
+  const [endDate, setEndDate] = useState(() => searchParams.get('end') ?? loadStoredConfig()?.endDate ?? '2025-12-31');
+  const [topN, setTopN] = useState(() => Number(searchParams.get('top_n') ?? String(loadStoredConfig()?.topN ?? 3)));
+  const [benchmark, setBenchmark] = useState(() => searchParams.get('benchmark') ?? loadStoredConfig()?.benchmark ?? '^SSMI');
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  function handleShare() {
+    const params = new URLSearchParams({
+      ...(runId ? { run_id: runId } : {}),
+      start: startDate,
+      end: endDate,
+      top_n: String(topN),
+      benchmark,
+    });
+    const url = `${window.location.origin}/backtest?${params.toString()}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    });
+  }
 
   const runsQuery = useQuery({
     queryKey: ['runs', 'backtest'],
@@ -53,6 +179,7 @@ function BacktestContent() {
         benchmark_ticker: benchmark,
       });
       setResult(data);
+      try { localStorage.setItem(LS_KEY, JSON.stringify({ startDate, endDate, topN, benchmark })); } catch {}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Backtest-Fehler');
     } finally {
@@ -143,7 +270,7 @@ function BacktestContent() {
                 data-testid="backtest-benchmark"
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <Button
                 type="submit"
                 disabled={loading || !runId}
@@ -152,6 +279,15 @@ function BacktestContent() {
               >
                 {loading ? 'Läuft…' : 'Backtest starten'}
               </Button>
+              <button
+                type="button"
+                onClick={handleShare}
+                disabled={!runId}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors disabled:opacity-40"
+                data-testid="backtest-share-btn"
+              >
+                {shareCopied ? 'Kopiert!' : 'Link teilen'}
+              </button>
             </div>
           </form>
           {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
@@ -160,10 +296,33 @@ function BacktestContent() {
 
       {result && (
         <Card>
-          <CardHeader>
-            <CardTitle>Performance-Vergleich</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle>Performance-Vergleich</CardTitle>
+              <CardDescription data-testid="backtest-result-meta">
+                {startDate} – {endDate} · Top {topN} · {benchmark}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportSeriesCsv(result)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                data-testid="backtest-series-csv-btn"
+              >
+                <Download className="h-3 w-3" />
+                Zeitreihe CSV
+              </button>
+              <button
+                onClick={() => exportMetricsCsv(result.prisma_metrics, result.universe_metrics, result.benchmark_metrics)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                data-testid="backtest-metrics-csv-btn"
+              >
+                <Download className="h-3 w-3" />
+                CSV
+              </button>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div data-testid="backtest-chart" className="h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
@@ -200,6 +359,11 @@ function BacktestContent() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            <MetricsTable
+              prisma={result.prisma_metrics}
+              universum={result.universe_metrics}
+              benchmark={result.benchmark_metrics}
+            />
           </CardContent>
         </Card>
       )}

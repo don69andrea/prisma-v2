@@ -1,17 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 
 import Link from 'next/link';
 
 import { Providers } from '@/app/providers';
 import { NavLinks } from '@/app/nav-links';
+import { ChatDrawer } from '@/components/chat/ChatDrawer';
 import '@/app/globals.css';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -28,7 +22,7 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="de" className={inter.variable} suppressHydrationWarning>
+    <html lang="de" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
           <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -52,6 +46,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             />
           </header>
           <main className="container py-8">{children}</main>
+          <ChatDrawer />
         </Providers>
       </body>
     </html>

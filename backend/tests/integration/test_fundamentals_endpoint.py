@@ -1,65 +1,102 @@
 """Integrationstests für GET /api/v1/stocks/{ticker}/fundamentals."""
 
+from __future__ import annotations
+
+from typing import Any
+from unittest.mock import AsyncMock
+
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
+
+from backend.domain.errors import SwissDataUnavailableError
+from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
+from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
+from backend.interfaces.rest.app import create_app
+from backend.interfaces.rest.dependencies import get_yfinance_adapter
 
 pytestmark = pytest.mark.integration
 
-
-async def test_fundamentals_known_ticker_returns_200(http_client: AsyncClient) -> None:
-    response = await http_client.get("/api/v1/stocks/AAPL/fundamentals")
-    assert response.status_code == 200
-
-
-async def test_fundamentals_known_ticker_has_pe_ratio(http_client: AsyncClient) -> None:
-    response = await http_client.get("/api/v1/stocks/AAPL/fundamentals")
-    body = response.json()
-    assert body["pe_ratio"] == pytest.approx(28.0)
-    assert body["pb_ratio"] == pytest.approx(45.0)
+_NESN_FUNDAMENTALS = SwissFundamentals(
+    market_cap_chf=None,
+    pe_ratio=22.5,
+    pb_ratio=4.1,
+    dividend_yield=0.031,
+    eps_chf=4.80,
+)
 
 
-async def test_fundamentals_response_has_ticker_field(http_client: AsyncClient) -> None:
-    response = await http_client.get("/api/v1/stocks/AAPL/fundamentals")
-    body = response.json()
-    assert body["ticker"] == "AAPL"
+def _make_adapter(fundamentals: SwissFundamentals) -> YFinanceSwissAdapter:
+    adapter = AsyncMock(spec=YFinanceSwissAdapter)
+    adapter.get_fundamentals = AsyncMock(return_value=fundamentals)
+    return adapter
 
 
-async def test_fundamentals_response_has_disclaimer(http_client: AsyncClient) -> None:
-    response = await http_client.get("/api/v1/stocks/AAPL/fundamentals")
-    body = response.json()
-    assert "disclaimer" in body
-    assert len(body["disclaimer"]) > 0
+def _make_adapter_unavailable() -> YFinanceSwissAdapter:
+    adapter = AsyncMock(spec=YFinanceSwissAdapter)
+    adapter.get_fundamentals = AsyncMock(side_effect=SwissDataUnavailableError("UNKN"))
+    return adapter
 
 
-async def test_fundamentals_unknown_ticker_returns_404(http_client: AsyncClient) -> None:
-    """Ticker nicht in Stock-DB → 404."""
-    response = await http_client.get("/api/v1/stocks/UNKNOWN/fundamentals")
-    assert response.status_code == 404
+@pytest.fixture
+def app_with_data() -> Any:
+    mock = _make_adapter(_NESN_FUNDAMENTALS)
+    application = create_app()
+    application.dependency_overrides[get_yfinance_adapter] = lambda: mock
+    return application
 
 
-async def test_fundamentals_unknown_ticker_404_detail(http_client: AsyncClient) -> None:
-    response = await http_client.get("/api/v1/stocks/XYZNOTFOUND/fundamentals")
-    assert response.status_code == 404
-    assert "XYZNOTFOUND" in response.json()["detail"]
+@pytest.fixture
+def app_unavailable() -> Any:
+    mock = _make_adapter_unavailable()
+    application = create_app()
+    application.dependency_overrides[get_yfinance_adapter] = lambda: mock
+    return application
 
 
-async def test_fundamentals_null_fields_for_ticker_not_in_stub(
-    http_client: AsyncClient,
-) -> None:
-    """NESN ist in der Stock-DB, aber nicht in StubFundamentalsProvider._DEMO_DATA
-    → alle numerischen Felder null, aber 200 OK mit Disclaimer."""
-    response = await http_client.get("/api/v1/stocks/NESN/fundamentals")
-    assert response.status_code == 200
-    body = response.json()
-    assert body["ticker"] == "NESN"
-    assert body["pe_ratio"] is None
-    assert body["pb_ratio"] is None
-    assert body["fcf_yield"] is None
-    assert body["dividend_yield"] is None
-    assert "disclaimer" in body
+@pytest.mark.asyncio
+async def test_fundamentals_returns_data(app_with_data: Any) -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_data), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/v1/stocks/NESN/fundamentals")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["ticker"] == "NESN"
+    assert data["pe_ratio"] == 22.5
+    assert data["pb_ratio"] == 4.1
+    assert data["eps_chf"] == 4.8
+    assert data["dividend_yield_pct"] == 3.1
+    assert "disclaimer" in data
 
 
-async def test_fundamentals_case_insensitive(http_client: AsyncClient) -> None:
-    response = await http_client.get("/api/v1/stocks/aapl/fundamentals")
-    assert response.status_code == 200
-    assert response.json()["ticker"] == "AAPL"
+@pytest.mark.asyncio
+async def test_fundamentals_unknown_ticker_returns_404(app_unavailable: Any) -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=app_unavailable), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/v1/stocks/UNKN/fundamentals")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_fundamentals_null_fields_allowed(app_with_data: Any) -> None:
+    null_fundamentals = SwissFundamentals(
+        market_cap_chf=None,
+        pe_ratio=None,
+        pb_ratio=None,
+        dividend_yield=None,
+        eps_chf=None,
+    )
+    mock = _make_adapter(null_fundamentals)
+    application = create_app()
+    application.dependency_overrides[get_yfinance_adapter] = lambda: mock
+    async with AsyncClient(
+        transport=ASGITransport(app=application), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/v1/stocks/TINY/fundamentals")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["pe_ratio"] is None
+    assert data["pb_ratio"] is None
+    assert data["eps_chf"] is None
+    assert data["dividend_yield_pct"] is None

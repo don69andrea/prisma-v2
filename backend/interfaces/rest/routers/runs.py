@@ -1,17 +1,22 @@
 """FastAPI-Router für /api/v1/runs."""
 
+import csv
+import io
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 
 from backend.application.services.ranking_run_service import (
     RankingRunNotFound,
     RankingRunService,
     UniverseNotFound,
 )
+from backend.application.services.stock_service import StockService
 from backend.domain.repositories.universe_repository import UniverseRepository
 from backend.interfaces.rest.dependencies import (
     get_ranking_run_service,
+    get_stock_service,
     get_universe_repository,
     require_api_key,
 )
@@ -81,3 +86,54 @@ async def get_rankings(
     except RankingRunNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return [RankingItem.model_validate(r) for r in results]
+
+
+@router.get(
+    "/{run_id}/export",
+    summary="Rankings als CSV exportieren",
+    description=(
+        "Gibt alle Rankings eines abgeschlossenen Runs als CSV-Datei zurueck. "
+        "Spalten: rank, ticker, name, sector, weighted_avg, is_sweet_spot sowie eine Spalte "
+        "pro Modell aus per_model_ranks."
+    ),
+    response_class=Response,
+    responses={200: {"content": {"text/csv": {}}}},
+)
+async def export_rankings_csv(
+    run_id: UUID,
+    export_format: str = Query("csv", alias="format", pattern="^csv$"),
+    service: RankingRunService = Depends(get_ranking_run_service),
+    stock_service: StockService = Depends(get_stock_service),
+) -> Response:
+    try:
+        results = await service.get_rankings(run_id)
+    except RankingRunNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    items = [RankingItem.model_validate(r) for r in results]
+    all_models = sorted({m for item in items for m in item.per_model_ranks})
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        ["rank", "ticker", "name", "sector", "weighted_avg", "is_sweet_spot", *all_models]
+    )
+    for item in items:
+        stock = await stock_service.get_by_ticker(item.ticker)
+        writer.writerow(
+            [
+                item.total_rank if item.total_rank is not None else "",
+                item.ticker,
+                stock.name if stock else "",
+                (stock.sector or "") if stock else "",
+                f"{item.weighted_avg:.4f}" if item.weighted_avg is not None else "",
+                "true" if item.is_sweet_spot else "false",
+                *[item.per_model_ranks.get(m) or "" for m in all_models],
+            ]
+        )
+
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="rankings_{run_id}.csv"'},
+    )

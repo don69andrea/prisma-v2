@@ -1,16 +1,20 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { XCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { XCircle, ArrowLeft, Loader2, Download, FlaskConical } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { getRun, getRankings, statusLabel } from '@/lib/api/runs';
+import { getRun, getRankings, statusLabel, getRankingsCsvUrl } from '@/lib/api/runs';
 import { getUniverse } from '@/lib/api/universes';
+import { listStocks } from '@/lib/api/stocks';
 import { ApiError } from '@/lib/api/client';
 
 import { RankingsTable } from './rankings-table';
+import { PortfolioAllocationPanel } from '@/components/rankings/PortfolioAllocationPanel';
 import { TopTenLeaderboard } from '@/components/rankings/TopTenLeaderboard';
 
 
@@ -52,19 +56,52 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
     enabled: !!runQuery.data?.universe_id,
   });
 
+  const stocksQuery = useQuery({
+    queryKey: ['stocks-xswx'],
+    queryFn: () => listStocks(200, 0, 'XSWX'),
+    staleTime: 5 * 60 * 1000,  // 5 min cache
+  });
+
+  const swissTickers = useMemo(
+    () => new Set(stocksQuery.data?.items.map((s) => s.ticker) ?? []),
+    [stocksQuery.data],
+  );
+
   const is404 = runQuery.error instanceof ApiError && runQuery.error.status === 404;
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <Link
-          href="/rankings"
-          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Zurück zu Rankings
-        </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Link
+            href="/rankings"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Zurück zu Rankings
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis</h1>
+        </div>
+        {isCompleted && rankingsQuery.data && (
+          <div className="flex items-center gap-2">
+            <Link href={`/backtest?run_id=${params.runId}`} data-testid="backtest-shortcut-btn">
+              <Button variant="outline" size="sm">
+                <FlaskConical className="mr-1 h-4 w-4" />
+                Backtest
+              </Button>
+            </Link>
+            <a
+              href={getRankingsCsvUrl(params.runId)}
+              download
+              data-testid="csv-download-btn"
+            >
+              <Button variant="outline" size="sm">
+                <Download className="mr-1 h-4 w-4" />
+                CSV
+              </Button>
+            </a>
+          </div>
+        )}
       </div>
 
       {is404 && (
@@ -78,7 +115,7 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
 
       {!is404 && runQuery.data && (
         <Card>
-          <CardContent className="py-4 flex items-center gap-4 text-sm">
+          <CardContent className="py-4 flex items-center gap-4 text-sm flex-wrap">
             <span>
               <span className="text-muted-foreground">Universe:</span>{' '}
               <span className="font-medium">{universeQuery.data?.name ?? runQuery.data.universe_id}</span>
@@ -97,6 +134,14 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
             <span className="text-muted-foreground">
               {new Date(runQuery.data.created_at).toLocaleString('de-CH')}
             </span>
+            {rankingsQuery.data && (
+              <span data-testid="run-sweet-spot-count">
+                <span className="text-muted-foreground">Sweet Spots:</span>{' '}
+                <span className="font-medium">
+                  {rankingsQuery.data.filter((r) => r.is_sweet_spot).length}
+                </span>
+              </span>
+            )}
           </CardContent>
         </Card>
       )}
@@ -122,7 +167,8 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
       {isCompleted && rankingsQuery.data && (
         <>
           <TopTenLeaderboard items={rankingsQuery.data} runId={params.runId} />
-          <RankingsTable items={rankingsQuery.data} runId={params.runId} />
+          <RankingsTable items={rankingsQuery.data} runId={params.runId} swissTickers={swissTickers} />
+          <PortfolioAllocationPanel runId={params.runId} />
         </>
       )}
 

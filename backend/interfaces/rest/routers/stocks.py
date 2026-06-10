@@ -4,15 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.stock_service import StockNotFound, StockService
-from backend.domain.ports.fundamentals_provider import FundamentalsProvider
+from backend.application.services.swiss_market_service import SwissMarketService
 from backend.interfaces.rest.dependencies import (
     get_factsheet_service,
-    get_fundamentals_provider,
     get_stock_service,
+    get_swiss_market_service,
 )
+from backend.interfaces.rest.schemas.langfrist import LangfristScoreResponse
 from backend.interfaces.rest.schemas.stock import (
-    EligibilityRead,
-    FundamentalsRead,
     LatestRankingSnapshot,
     PricePoint,
     PriceSeriesResponse,
@@ -51,9 +50,29 @@ async def get_stock_by_ticker(
 async def list_stocks(
     limit: int = Query(default=50, ge=1, le=200, description="Maximale Anzahl Ergebnisse"),
     offset: int = Query(default=0, ge=0, description="Anzahl zu überspringender Einträge"),
+    exchange: str | None = Query(default=None, description="Filter: 'XSWX' für Swiss Stocks"),
     service: StockService = Depends(get_stock_service),
+    swiss_service: SwissMarketService = Depends(get_swiss_market_service),
 ) -> StockListResponse:
-    stocks = await service.list_stocks(limit=limit, offset=offset)
+    if exchange == "XSWX":
+        all_swiss = await swiss_service.list_smi_stocks()
+        paginated = all_swiss[offset : offset + limit]
+        items = [
+            StockRead(
+                id=s.id,
+                ticker=s.ticker,
+                name=s.name,
+                isin=s.isin,
+                sector=s.sector,
+                country="CH",
+                currency=s.currency,
+                exchange=s.exchange,
+                market_cap_chf=s.market_cap_chf,
+            )
+            for s in paginated
+        ]
+        return StockListResponse(items=items, total=len(all_swiss))
+    stocks = await service.list_stocks(limit=limit, offset=offset, exchange=exchange)
     items = [StockRead.model_validate(stock) for stock in stocks]
     return StockListResponse(items=items, total=len(items))
 
@@ -76,66 +95,6 @@ async def get_factsheet(
     return StockFactsheet(stock=StockRead.model_validate(stock), latest_ranking=snapshot)
 
 
-_FUNDAMENTALS_DISCLAIMER = "Stub-Daten für Demo-Zwecke. Kein Anlageberatung."
-
-
-@router.get(
-    "/stocks/{ticker}/fundamentals",
-    response_model=FundamentalsRead,
-    summary="Fundamentaldaten abrufen",
-    description="Gibt Fundamentalkennzahlen (P/E, P/B, FCF-Rendite, …) für einen Ticker zurück.",
-)
-async def get_stock_fundamentals(
-    ticker: str,
-    stock_service: StockService = Depends(get_stock_service),
-    fundamentals_provider: FundamentalsProvider = Depends(get_fundamentals_provider),
-) -> FundamentalsRead:
-    stock = await stock_service.get_by_ticker(ticker)
-    if stock is None:
-        raise HTTPException(
-            status_code=404, detail=f"Stock '{ticker.upper()}' nicht gefunden"
-        ) from None
-    data = await fundamentals_provider.get_fundamentals([stock.ticker])
-    f = data.get(stock.ticker, {})
-    return FundamentalsRead(
-        ticker=stock.ticker,
-        pe_ratio=f.get("pe_ratio"),
-        pb_ratio=f.get("pb_ratio"),
-        fcf_yield=f.get("fcf_yield"),
-        operating_margin=f.get("operating_margin"),
-        dividend_yield=f.get("dividend_yield"),
-        disclaimer=_FUNDAMENTALS_DISCLAIMER,
-    )
-
-
-_ELIGIBILITY_DISCLAIMER = "Regelbasiert – keine Anlageberatung."
-
-
-@router.get(
-    "/stocks/{ticker}/3a-eligibility",
-    response_model=EligibilityRead,
-    summary="3a-Eignung abrufen",
-    description="Gibt an, ob eine Aktie die BVV2-Kriterien für Säule-3a erfüllt (regelbasierter Stub).",
-)
-async def get_3a_eligibility(
-    ticker: str,
-    service: StockService = Depends(get_stock_service),
-) -> EligibilityRead:
-    stock = await service.get_by_ticker(ticker)
-    if stock is None:
-        raise HTTPException(
-            status_code=404, detail=f"Stock '{ticker.upper()}' nicht gefunden"
-        ) from None
-    eligible = stock.country == "CH"
-    reasons: list[str] = [] if eligible else ["Nicht an anerkannter Börse kotiert (SIX/BX Swiss)"]
-    return EligibilityRead(
-        ticker=stock.ticker,
-        eligible=eligible,
-        reasons=reasons,
-        disclaimer=_ELIGIBILITY_DISCLAIMER,
-    )
-
-
 @router.get(
     "/stocks/{ticker}/prices",
     response_model=PriceSeriesResponse,
@@ -154,4 +113,30 @@ async def get_prices(
     return PriceSeriesResponse(
         ticker=ticker_upper,
         prices=[PricePoint(date=str(p["date"]), close=float(p["close"])) for p in prices],
+    )
+
+
+@router.get(
+    "/stocks/{ticker}/langfrist-score",
+    response_model=LangfristScoreResponse,
+    summary="VIAC Langfrist-Score (0–10)",
+    description=(
+        "Berechnet den 30-Jahres-Vorsorge-Score aus Dividendenstabilität, "
+        "Bilanzqualität, Kursvolatilität und Marktkapitalisierung. "
+        "Keine Anlageberatung — rein modellbasiert."
+    ),
+)
+async def get_langfrist_score(
+    ticker: str,
+    service: SwissMarketService = Depends(get_swiss_market_service),
+) -> LangfristScoreResponse:
+    try:
+        score = await service.score_langfrist(ticker)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return LangfristScoreResponse(
+        ticker=score.ticker,
+        value=score.value,
+        components=score.components,
+        explanation=score.explanation,
     )

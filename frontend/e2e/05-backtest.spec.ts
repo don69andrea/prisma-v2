@@ -3,14 +3,19 @@ import { test, expect } from "@playwright/test";
 test("Backtest starten und Chart mit 3 Kurven anzeigen", async ({ page, request }) => {
   const apiBase = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:8000";
 
+  // Unique name prevents 500 on Playwright retry (universe already exists)
+  const universeName = `E2E Backtest ${Date.now()}`;
+
   // Setup: universe + ranking run via API
   const universeResp = await request.post(`${apiBase}/api/v1/universes`, {
-    data: { name: "E2E Backtest", region: "US", tickers: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"] },
+    data: { name: universeName, region: "US", tickers: ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"] },
   });
+  expect(universeResp.ok()).toBeTruthy();
   const universe = await universeResp.json();
   const runResp = await request.post(`${apiBase}/api/v1/runs`, {
     data: { universe_id: universe.id },
   });
+  expect(runResp.ok()).toBeTruthy();
   const run = await runResp.json();
 
   // Navigate to backtest page with run_id

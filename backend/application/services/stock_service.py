@@ -40,6 +40,7 @@ class StockService:
         self,
         limit: int = _DEFAULT_LIMIT,
         offset: int = 0,
+        exchange: str | None = None,
     ) -> list[Stock]:
         """Gibt eine paginierte Stock-Liste zurück.
 

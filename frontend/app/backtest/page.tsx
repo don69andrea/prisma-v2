@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -261,7 +261,12 @@ function BacktestContent() {
       {result && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle>Performance-Vergleich</CardTitle>
+            <div>
+              <CardTitle>Performance-Vergleich</CardTitle>
+              <CardDescription data-testid="backtest-result-meta">
+                {startDate} – {endDate} · Top {topN} · {benchmark}
+              </CardDescription>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => exportSeriesCsv(result)}

@@ -166,6 +166,15 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-06-10 · Aktien-Liste mit Suche, Filter & Sortierung (#61 #69)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: Neue `/stocks`-Indexseite mit `StocksListClient` (Live-Suche, 3a-Filter-Checkbox, Spalten-Sortierung mit Lucide-Icons), Nav-Link "Aktien", `ROUTES.stocks` — kein Backend-Change nötig. 11 Vitest-Unit-Tests (TDD-first).
+- **Was gut lief**: Spec-First-Workflow lief reibungslos: Spec committet, Branch angelegt, Tests geschrieben bevor Implementierung — der TDD-Loop erzwang eine klare Komponenten-API (`stocks: StockRead[]`) und testbare Filter-/Sort-Logik. Keine Backend-Arbeit nötig, `listStocks()` war bereits in `lib/api/stocks.ts` vorhanden.
+- **Was nicht klappte**: Node.js ist lokal nicht im PATH → Tests konnten nicht lokal ausgeführt werden. TypeScript-IDE-Diagnostics zeigten false-positive Module-Not-Found-Errors für `vitest` und `@testing-library/react` (kein `npm install` lokal). Außerdem fehlten explizite `HTMLElement`-Typ-Annotationen in `map`/`find`-Callbacks durch fehlende Typ-Inferenz ohne `node_modules`.
+- **Nachbearbeitung nötig bei**: CI-Lauf verifizieren ob alle 11 Tests grün sind. Node.js lokal installieren oder `.nvmrc`/`package.json engines` prüfen.
+- **Lektion**: **Explizite Typ-Annotationen in Test-Callbacks schreiben wenn `node_modules` nicht installiert sind** — ohne Inferenz aus `@testing-library/react` werden `map((r) => ...)` zu implicit-any. Außerdem: **Tool-Verfügbarkeit früh prüfen** (node/npm im PATH) statt erst beim ersten Test-Ausführungsversuch zu scheitern.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
 ## 2026-06-01 · UX-Polish — Nav-Highlight, Deutsche Labels, Spinner, URL-Preselect (PR #161)
 - **Agent**: Claude Code (Sonnet 4.6) — superpowers:brainstorming + writing-plans + subagent-driven-development
 - **Scope**: 5 kleine UX-Verbesserungen in 4 Subagent-Tasks: (1) `NavLinks`-Client-Component mit `usePathname()` + `aria-current="page"` für aktiven Tab; (2) Deutsche Status-Labels in `RunHistoryList` ("Abgeschlossen", "Ausstehend", "Läuft…", "Fehlgeschlagen") + "Date"→"Datum"; (3) `Loader2`-Spinner bei laufendem Run + "Neuer Run"→"Zurück zu Rankings" in Detail-Page; (4) `RankingsForm` liest `?universeId=` aus URL + `<Suspense>`-Grenze in `rankings/page.tsx`. 6 neue Tests.

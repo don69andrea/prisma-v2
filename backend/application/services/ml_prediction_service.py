@@ -7,8 +7,10 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from backend.application.services.ml_feature_service import MLFeatureService
-from backend.domain.value_objects.ml_prediction import MLPrediction
+from backend.domain.value_objects.ml_prediction import MLPrediction, SHAPEntry
 
 _logger = logging.getLogger(__name__)
 
@@ -16,13 +18,25 @@ _MODELS_DIR = Path(__file__).resolve().parents[3] / "models"
 _LATEST_MODEL = _MODELS_DIR / "return_predictor_latest.joblib"
 _LATEST_META = _MODELS_DIR / "return_predictor_latest.json"
 
-# Modul-Level-Cache: Modell wird beim ersten Aufruf einmal geladen
 _model_cache: Any = None
 _model_type_cache: str = "unknown"
 
+_FEATURE_LABELS: dict[str, str] = {
+    "quant_score": "Quant-Gesamtscore",
+    "score_rendite": "Score Rendite",
+    "score_sicherheit": "Score Sicherheit",
+    "score_wachstum": "Score Wachstum",
+    "score_substanz": "Score Substanz",
+    "return_12m": "12M Return",
+    "vol_30d": "30-Tage Volatilität",
+    "rsi_14": "RSI (14)",
+    "snb_rate": "SNB Leitzins",
+    "chf_eur": "CHF/EUR Kurs",
+}
+_TOP_N_SHAP = 8
+
 
 def _load_model() -> tuple[Any, str]:
-    """Lädt das Modell-Artifact einmalig (lazy singleton)."""
     global _model_cache, _model_type_cache
     if _model_cache is not None:
         return _model_cache, _model_type_cache
@@ -49,6 +63,58 @@ def _load_model() -> tuple[Any, str]:
     return _model_cache, _model_type_cache
 
 
+def _build_shap_entries(
+    model: Any,
+    x: np.ndarray,
+    feature_names: list[str],
+    features_dict: dict[str, float],
+    predicted_class: int,
+) -> tuple[list[SHAPEntry], float]:
+    """Berechnet SHAP-Werte für den predicted_class und gibt Top-N zurück.
+
+    Gibt leere Liste zurück wenn SHAP-Berechnung fehlschlägt.
+    """
+    try:
+        import shap
+
+        explainer = shap.TreeExplainer(model)
+        raw = explainer.shap_values(x)
+
+        if isinstance(raw, list) and len(raw) > predicted_class:
+            class_shap = raw[predicted_class][0]
+            expected_value = float(
+                explainer.expected_value[predicted_class]
+                if hasattr(explainer.expected_value, "__len__")
+                else explainer.expected_value
+            )
+        else:
+            class_shap = np.array(raw).flatten()
+            expected_value = float(
+                explainer.expected_value
+                if not hasattr(explainer.expected_value, "__len__")
+                else explainer.expected_value[0]
+            )
+
+        indexed = sorted(
+            enumerate(class_shap), key=lambda t: abs(t[1]), reverse=True
+        )[:_TOP_N_SHAP]
+
+        entries = [
+            SHAPEntry(
+                feature=feature_names[i],
+                shap_value=round(float(v), 4),
+                feature_value=round(features_dict.get(feature_names[i], 0.0), 4),
+                label=_FEATURE_LABELS.get(feature_names[i], feature_names[i]),
+            )
+            for i, v in indexed
+        ]
+        return entries, round(expected_value, 4)
+
+    except Exception:
+        _logger.warning("SHAP-Berechnung fehlgeschlagen — wird übersprungen", exc_info=True)
+        return [], 0.0
+
+
 class MLPredictionService:
     """Führt Inferenz mit dem Return-Predictor-Modell durch."""
 
@@ -56,13 +122,11 @@ class MLPredictionService:
         self._feature_service = feature_service or MLFeatureService()
 
     async def predict(self, ticker: str) -> MLPrediction | None:
-        """Gibt eine ML-Vorhersage für den Ticker zurück.
+        """Gibt eine ML-Vorhersage mit SHAP-Erklärung zurück.
 
-        Returns None wenn Features nicht verfügbar (z.B. kein Marktdaten-Feed).
-        Raises FileNotFoundError wenn kein trainiertes Modell vorhanden.
+        Returns None wenn Features nicht verfügbar.
+        Raises FileNotFoundError wenn kein Modell vorhanden.
         """
-        import numpy as np
-
         feature_vector = await self._feature_service.build_features(ticker)
         if feature_vector is None:
             return None
@@ -85,6 +149,13 @@ class MLPredictionService:
 
         confidence = max(prob_bottom, prob_mid, prob_top)
 
+        if model_type in ("xgboost", "lightgbm"):
+            shap_entries, shap_expected = _build_shap_entries(
+                model, x, feature_names, features_dict, pred_class
+            )
+        else:
+            shap_entries, shap_expected = [], 0.0
+
         return MLPrediction(
             ticker=ticker.upper(),
             snapshot_date=date.today(),
@@ -96,4 +167,6 @@ class MLPredictionService:
             confidence=round(confidence, 4),
             model_type=model_type,
             features=features_dict,
+            shap_values=shap_entries,
+            shap_expected_value=shap_expected,
         )

@@ -10,7 +10,7 @@ import pytest
 
 from backend.application.services.ml_prediction_service import MLPredictionService
 from backend.domain.value_objects.ml_feature_vector import MLFeatureVector
-from backend.domain.value_objects.ml_prediction import MLPrediction
+from backend.domain.value_objects.ml_prediction import MLPrediction, SHAPEntry
 
 
 def _make_feature_vector(ticker: str = "NESN") -> MLFeatureVector:
@@ -140,3 +140,59 @@ def test_signal_for_class() -> None:
     assert MLPrediction.signal_for_class(1) == "NEUTRAL"
     assert MLPrediction.signal_for_class(2) == "OUTPERFORM"
     assert MLPrediction.signal_for_class(99) == "NEUTRAL"
+
+
+# --- SHAP Tests ---
+
+def _make_shap_explainer_mock(shap_matrix: list[list[float]]) -> MagicMock:
+    import numpy as np
+    explainer = MagicMock()
+    explainer.shap_values.return_value = [
+        np.zeros_like(shap_matrix),
+        np.zeros_like(shap_matrix),
+        np.array(shap_matrix),
+    ]
+    explainer.expected_value = [0.05, 0.1, 0.15]
+    return explainer
+
+
+@pytest.mark.asyncio
+async def test_predict_includes_shap_values() -> None:
+    """predict() gibt shap_values zurück wenn Modell XGBoost ist."""
+    feature_svc = AsyncMock()
+    feature_svc.build_features.return_value = _make_feature_vector()
+    model = _make_mock_model(predicted_class=2)
+
+    with (
+        patch("backend.application.services.ml_prediction_service._load_model",
+              return_value=(model, "xgboost")),
+        patch("backend.application.services.ml_prediction_service._build_shap_entries",
+              return_value=(
+                  [SHAPEntry("roe_zscore", 0.3, 1.2, "Return on Equity")],
+                  0.15,
+              )),
+    ):
+        service = MLPredictionService(feature_service=feature_svc)
+        result = await service.predict("NESN")
+
+    assert result is not None
+    assert len(result.shap_values) == 1
+    assert result.shap_values[0].feature == "roe_zscore"
+    assert result.shap_expected_value == 0.15
+
+
+@pytest.mark.asyncio
+async def test_predict_shap_empty_on_non_xgboost() -> None:
+    """Bei model_type != xgboost/lightgbm: shap_values bleibt leer."""
+    feature_svc = AsyncMock()
+    feature_svc.build_features.return_value = _make_feature_vector()
+    model = _make_mock_model(predicted_class=1)
+
+    with patch("backend.application.services.ml_prediction_service._load_model",
+               return_value=(model, "unknown")):
+        service = MLPredictionService(feature_service=feature_svc)
+        result = await service.predict("NESN")
+
+    assert result is not None
+    assert result.shap_values == []
+    assert result.shap_expected_value == 0.0

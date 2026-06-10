@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 
@@ -109,7 +110,10 @@ function exportDecisionCsv(signals: DecisionSignal[]) {
 }
 
 export function DecisionClient() {
-  const [selectedUniverse, setSelectedUniverse] = useState<string>('');
+  const searchParams = useSearchParams();
+  const [selectedUniverse, setSelectedUniverse] = useState<string>(
+    () => searchParams.get('universe') ?? '',
+  );
   const [signalFilter, setSignalFilter] = useState<SignalType | ''>('');
   const [eligibleOnly, setEligibleOnly] = useState(false);
   const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>('confidence');

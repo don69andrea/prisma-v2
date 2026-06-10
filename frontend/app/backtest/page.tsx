@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +35,30 @@ const METRIC_ROWS: Array<{ label: string; key: keyof PortfolioMetrics; pct: bool
   { label: 'Sharpe Ratio',  key: 'sharpe',       pct: false },
   { label: 'Max. Drawdown', key: 'max_drawdown', pct: true  },
 ];
+
+function exportMetricsCsv(
+  prisma: PortfolioMetrics,
+  universum: PortfolioMetrics,
+  benchmark: PortfolioMetrics,
+) {
+  const rows = [
+    ['Metrik', 'PRISMA', 'Universum', 'Benchmark'],
+    ...METRIC_ROWS.map(({ label, key, pct }) => [
+      label,
+      fmtMetric(prisma[key], pct),
+      fmtMetric(universum[key], pct),
+      fmtMetric(benchmark[key], pct),
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backtest-metriken-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 function fmtMetric(v: string, pct: boolean): string {
   const n = parseFloat(v);
@@ -215,8 +240,16 @@ function BacktestContent() {
 
       {result && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle>Performance-Vergleich</CardTitle>
+            <button
+              onClick={() => exportMetricsCsv(result.prisma_metrics, result.universe_metrics, result.benchmark_metrics)}
+              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+              data-testid="backtest-metrics-csv-btn"
+            >
+              <Download className="h-3 w-3" />
+              CSV
+            </button>
           </CardHeader>
           <CardContent className="space-y-6">
             <div data-testid="backtest-chart" className="h-80">

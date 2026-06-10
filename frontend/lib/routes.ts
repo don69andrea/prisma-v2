@@ -6,6 +6,7 @@ export const ROUTES = {
   decision: '/decision',
   alerts: '/alerts',
   portfolio: '/portfolio',
+  simulator: '/portfolio/simulator',
   fonds: '/fonds',
   stocks: '/stocks',
   news: '/news',

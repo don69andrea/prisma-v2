@@ -133,7 +133,10 @@ export function ResearchClient() {
   const [ticker, setTicker] = useState(
     () => searchParams.get('ticker')?.toUpperCase() ?? loadStoredResearch()?.ticker ?? '',
   );
-  const [swissLang, setSwissLang] = useState<'' | 'de' | 'en' | 'fr'>('');
+  const [swissLang, setSwissLang] = useState<'' | 'de' | 'en' | 'fr'>(() => {
+    const lang = searchParams.get('lang');
+    return (lang === 'de' || lang === 'en' || lang === 'fr') ? lang : '';
+  });
   const [swissResults, setSwissResults] = useState<SwissChunkResult[] | null>(null);
   const [secResults, setSecResults] = useState<SecChunkResult[] | null>(null);
 

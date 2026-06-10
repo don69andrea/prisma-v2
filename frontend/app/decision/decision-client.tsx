@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
@@ -109,15 +109,34 @@ function exportDecisionCsv(signals: DecisionSignal[]) {
   URL.revokeObjectURL(url);
 }
 
+const LS_DECISION_KEY = 'prisma_decision_filters';
+
+function loadStoredDecision() {
+  try {
+    const raw = localStorage.getItem(LS_DECISION_KEY);
+    if (raw) return JSON.parse(raw) as {
+      signalFilter: SignalType | '';
+      eligibleOnly: boolean;
+      minConfidence: number;
+      sortKey: 'confidence' | 'quant_score' | 'ml_score' | 'ticker';
+    };
+  } catch {}
+  return null;
+}
+
 export function DecisionClient() {
   const searchParams = useSearchParams();
   const [selectedUniverse, setSelectedUniverse] = useState<string>(
     () => searchParams.get('universe') ?? '',
   );
-  const [signalFilter, setSignalFilter] = useState<SignalType | ''>('');
-  const [eligibleOnly, setEligibleOnly] = useState(false);
-  const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>('confidence');
-  const [minConfidence, setMinConfidence] = useState(0);
+  const [signalFilter, setSignalFilter] = useState<SignalType | ''>(() => loadStoredDecision()?.signalFilter ?? '');
+  const [eligibleOnly, setEligibleOnly] = useState(() => loadStoredDecision()?.eligibleOnly ?? false);
+  const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>(() => loadStoredDecision()?.sortKey ?? 'confidence');
+  const [minConfidence, setMinConfidence] = useState(() => loadStoredDecision()?.minConfidence ?? 0);
+
+  useEffect(() => {
+    localStorage.setItem(LS_DECISION_KEY, JSON.stringify({ signalFilter, eligibleOnly, minConfidence, sortKey }));
+  }, [signalFilter, eligibleOnly, minConfidence, sortKey]);
 
   const hasActiveFilters = signalFilter !== '' || eligibleOnly || minConfidence > 0;
 

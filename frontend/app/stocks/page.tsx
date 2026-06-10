@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { StocksListClient } from './stocks-list-client';
 
@@ -11,7 +12,9 @@ export default function StocksPage() {
         Alle Aktien im PRISMA-Universum — klicke für das Factsheet
       </p>
       <div className="pt-4">
-        <StocksListClient />
+        <Suspense>
+          <StocksListClient />
+        </Suspense>
       </div>
     </div>
   );

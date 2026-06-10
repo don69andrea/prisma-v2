@@ -87,6 +87,7 @@ export function DecisionClient() {
   const [selectedUniverse, setSelectedUniverse] = useState<string>('');
   const [signalFilter, setSignalFilter] = useState<SignalType | ''>('');
   const [eligibleOnly, setEligibleOnly] = useState(false);
+  const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>('confidence');
 
   const { data: universesData, isLoading: uLoading } = useQuery({
     queryKey: ['universes'],
@@ -119,6 +120,13 @@ export function DecisionClient() {
   });
 
   const signals = decisionsData?.items ?? [];
+
+  const sortedSignals = useMemo(() => {
+    return [...signals].sort((a, b) => {
+      if (sortKey === 'ticker') return a.ticker.localeCompare(b.ticker);
+      return b[sortKey] - a[sortKey];
+    });
+  }, [signals, sortKey]);
 
   const counts = useMemo(() => {
     const all = decisionsAllData?.items ?? [];
@@ -174,6 +182,21 @@ export function DecisionClient() {
             Nur 3a-eligible
           </label>
         </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">Sortierung</label>
+          <select
+            className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
+            data-testid="decision-sort-select"
+          >
+            <option value="confidence">Confidence ↓</option>
+            <option value="quant_score">Quant-Score ↓</option>
+            <option value="ml_score">ML-Score ↓</option>
+            <option value="ticker">Ticker A–Z</option>
+          </select>
+        </div>
       </div>
 
       {/* Signal-Zusammenfassung */}
@@ -228,19 +251,19 @@ export function DecisionClient() {
         </div>
       )}
 
-      {selectedUniverse && !dLoading && !isError && signals.length === 0 && (
+      {selectedUniverse && !dLoading && !isError && sortedSignals.length === 0 && (
         <p className="text-sm text-muted-foreground py-8 text-center">
           Keine Signale gefunden (Marktdaten werden berechnet oder Filter zu eng).
         </p>
       )}
 
-      {signals.length > 0 && (
+      {sortedSignals.length > 0 && (
         <>
           <p className="text-xs text-muted-foreground">
-            {signals.length} Signal{signals.length !== 1 ? 'e' : ''} gefunden
+            {sortedSignals.length} Signal{sortedSignals.length !== 1 ? 'e' : ''} gefunden
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {signals.map((item) => (
+            {sortedSignals.map((item) => (
               <SignalCard key={item.ticker} item={item} />
             ))}
           </div>

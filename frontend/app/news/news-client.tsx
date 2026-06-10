@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
+import { Download, Search } from 'lucide-react';
 
 import { retrieveNews, type NewsChunkResult } from '@/lib/api/news';
 import { Button } from '@/components/ui/button';
@@ -60,6 +60,28 @@ function NewsResultCard({ item }: { item: NewsChunkResult }) {
       </p>
     </div>
   );
+}
+
+function exportNewsCsv(items: NewsChunkResult[], queryText: string) {
+  const rows = [
+    ['Titel', 'Quelle', 'Datum', 'Ähnlichkeit%', 'Tickers', 'Inhalt'],
+    ...items.map((r) => [
+      r.title,
+      SOURCE_LABEL[r.source] ?? r.source,
+      r.published_at ? new Date(r.published_at).toLocaleDateString('de-CH', { dateStyle: 'short' }) : '',
+      Math.round(r.similarity * 100).toString(),
+      r.tickers.join(' '),
+      r.content.slice(0, 200),
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `news-${queryText.replace(/\s+/g, '-').slice(0, 30)}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function NewsClient() {
@@ -187,21 +209,31 @@ export function NewsClient() {
                 <p className="text-xs text-muted-foreground">
                   {displayResults.length} Ergebnis{displayResults.length !== 1 ? 'se' : ''}
                 </p>
-                <div className="flex items-center gap-1">
-                  {(['relevance', 'date'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setSortMode(mode)}
-                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                        sortMode === mode
-                          ? 'bg-foreground text-background'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                      data-testid={`news-sort-${mode}`}
-                    >
-                      {mode === 'relevance' ? 'Relevanz' : 'Datum ↓'}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {(['relevance', 'date'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setSortMode(mode)}
+                        className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                          sortMode === mode
+                            ? 'bg-foreground text-background'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        data-testid={`news-sort-${mode}`}
+                      >
+                        {mode === 'relevance' ? 'Relevanz' : 'Datum ↓'}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => exportNewsCsv(displayResults, query)}
+                    className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                    data-testid="news-csv-export-btn"
+                  >
+                    <Download className="h-3 w-3" />
+                    CSV
+                  </button>
                 </div>
               </div>
               {displayResults.map((r) => (

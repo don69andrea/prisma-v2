@@ -113,6 +113,7 @@ export function DecisionClient() {
   const [signalFilter, setSignalFilter] = useState<SignalType | ''>('');
   const [eligibleOnly, setEligibleOnly] = useState(false);
   const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>('confidence');
+  const [minConfidence, setMinConfidence] = useState(0);
 
   const { data: universesData, isLoading: uLoading } = useQuery({
     queryKey: ['universes'],
@@ -146,12 +147,17 @@ export function DecisionClient() {
 
   const signals = decisionsData?.items ?? [];
 
+  const filteredSignals = useMemo(() => {
+    if (minConfidence === 0) return signals;
+    return signals.filter((s) => s.confidence * 100 >= minConfidence);
+  }, [signals, minConfidence]);
+
   const sortedSignals = useMemo(() => {
-    return [...signals].sort((a, b) => {
+    return [...filteredSignals].sort((a, b) => {
       if (sortKey === 'ticker') return a.ticker.localeCompare(b.ticker);
       return b[sortKey] - a[sortKey];
     });
-  }, [signals, sortKey]);
+  }, [filteredSignals, sortKey]);
 
   const counts = useMemo(() => {
     const all = decisionsAllData?.items ?? [];
@@ -206,6 +212,20 @@ export function DecisionClient() {
           <label htmlFor="eligible-only" className="text-sm select-none cursor-pointer">
             Nur 3a-eligible
           </label>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">Min. Konfidenz (%)</label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={5}
+            value={minConfidence}
+            onChange={(e) => setMinConfidence(Number(e.target.value))}
+            className="h-9 w-24 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            data-testid="decision-min-confidence-input"
+          />
         </div>
 
         <div className="flex flex-col gap-1">

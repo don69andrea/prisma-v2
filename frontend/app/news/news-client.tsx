@@ -184,8 +184,10 @@ export function NewsClient() {
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  {displayResults.length} Ergebnis{displayResults.length !== 1 ? 'se' : ''}
+                <p className="text-xs text-muted-foreground" data-testid="news-results-count">
+                  {sourceFilter !== 'all' && displayResults.length !== results!.length
+                    ? `${displayResults.length} von ${results!.length} Ergebnissen`
+                    : `${displayResults.length} Ergebnis${displayResults.length !== 1 ? 'se' : ''}`}
                 </p>
                 <div className="flex items-center gap-1">
                   {(['relevance', 'date'] as const).map((mode) => (

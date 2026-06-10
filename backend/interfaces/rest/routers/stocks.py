@@ -5,12 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.stock_service import StockNotFound, StockService
 from backend.application.services.swiss_market_service import SwissMarketService
-from backend.domain.ports.fundamentals_provider import FundamentalsProvider
+from backend.domain.errors import SwissDataUnavailableError
+from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.interfaces.rest.dependencies import (
     get_factsheet_service,
-    get_fundamentals_provider,
     get_stock_service,
     get_swiss_market_service,
+    get_yfinance_adapter,
 )
 from backend.interfaces.rest.schemas.langfrist import LangfristScoreResponse
 from backend.interfaces.rest.schemas.stock import (
@@ -110,23 +111,21 @@ _FUNDAMENTALS_DISCLAIMER = "Stub-Daten für Demo-Zwecke. Kein Anlageberatung."
 )
 async def get_stock_fundamentals(
     ticker: str,
-    stock_service: StockService = Depends(get_stock_service),
-    fundamentals_provider: FundamentalsProvider = Depends(get_fundamentals_provider),
+    adapter: YFinanceSwissAdapter = Depends(get_yfinance_adapter),
 ) -> FundamentalsRead:
-    stock = await stock_service.get_by_ticker(ticker)
-    if stock is None:
+    try:
+        data = await adapter.get_fundamentals(ticker.upper())
+    except SwissDataUnavailableError:
         raise HTTPException(
-            status_code=404, detail=f"Stock '{ticker.upper()}' nicht gefunden"
+            status_code=404, detail=f"Fundamentaldaten für '{ticker.upper()}' nicht verfügbar"
         ) from None
-    data = await fundamentals_provider.get_fundamentals([stock.ticker])
-    f = data.get(stock.ticker, {})
+    dy = data.dividend_yield
     return FundamentalsRead(
-        ticker=stock.ticker,
-        pe_ratio=f.get("pe_ratio"),
-        pb_ratio=f.get("pb_ratio"),
-        fcf_yield=f.get("fcf_yield"),
-        operating_margin=f.get("operating_margin"),
-        dividend_yield=f.get("dividend_yield"),
+        ticker=ticker.upper(),
+        pe_ratio=data.pe_ratio,
+        pb_ratio=data.pb_ratio,
+        eps_chf=data.eps_chf,
+        dividend_yield_pct=round(dy * 100, 4) if dy is not None else None,
         disclaimer=_FUNDAMENTALS_DISCLAIMER,
     )
 
@@ -142,19 +141,16 @@ _ELIGIBILITY_DISCLAIMER = "Regelbasiert – keine Anlageberatung."
 )
 async def get_3a_eligibility(
     ticker: str,
-    service: StockService = Depends(get_stock_service),
+    service: SwissMarketService = Depends(get_swiss_market_service),
 ) -> EligibilityRead:
-    stock = await service.get_by_ticker(ticker)
-    if stock is None:
-        raise HTTPException(
-            status_code=404, detail=f"Stock '{ticker.upper()}' nicht gefunden"
-        ) from None
-    eligible = stock.country == "CH"
-    reasons: list[str] = [] if eligible else ["Nicht an anerkannter Börse kotiert (SIX/BX Swiss)"]
+    try:
+        result = await service.check_3a_eligibility(ticker)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return EligibilityRead(
-        ticker=stock.ticker,
-        eligible=eligible,
-        reasons=reasons,
+        ticker=result.ticker,
+        eligible=result.eligible,
+        reasons=[r.value for r in result.reasons],
         disclaimer=_ELIGIBILITY_DISCLAIMER,
     )
 

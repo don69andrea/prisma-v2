@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import Link from 'next/link';
 import { TrendingUp, TrendingDown, Minus, Plus, Trash2, Download } from 'lucide-react';
 
 import {
@@ -65,7 +66,15 @@ function RebalancingStepRow({ step }: { step: RebalancingStep }) {
   const cfg = ACTION_CONFIG[step.action];
   return (
     <tr className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-      <td className="py-2 px-3 font-medium">{step.ticker}</td>
+      <td className="py-2 px-3 font-medium">
+        <Link
+          href={`/stocks/${step.ticker}`}
+          className="hover:underline"
+          data-testid={`rebalancing-ticker-${step.ticker}`}
+        >
+          {step.ticker}
+        </Link>
+      </td>
       <td className="py-2 px-3">
         <span className={cn('flex items-center gap-1 font-semibold text-sm', cfg.color)}>
           {cfg.icon} {cfg.label}

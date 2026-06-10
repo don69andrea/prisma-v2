@@ -60,6 +60,26 @@ function exportMetricsCsv(
   URL.revokeObjectURL(url);
 }
 
+function exportSeriesCsv(result: BacktestResult) {
+  const rows = [
+    ['Datum', 'PRISMA%', 'Universum%', 'Benchmark%'],
+    ...result.series.dates.map((d, i) => [
+      d,
+      `${((parseFloat(result.series.prisma[i]) - 1) * 100).toFixed(2)}`,
+      `${((parseFloat(result.series.universe[i]) - 1) * 100).toFixed(2)}`,
+      `${((parseFloat(result.series.benchmark[i]) - 1) * 100).toFixed(2)}`,
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backtest-zeitreihe-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function fmtMetric(v: string, pct: boolean): string {
   const n = parseFloat(v);
   if (isNaN(n)) return '—';
@@ -242,14 +262,24 @@ function BacktestContent() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle>Performance-Vergleich</CardTitle>
-            <button
-              onClick={() => exportMetricsCsv(result.prisma_metrics, result.universe_metrics, result.benchmark_metrics)}
-              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
-              data-testid="backtest-metrics-csv-btn"
-            >
-              <Download className="h-3 w-3" />
-              CSV
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportSeriesCsv(result)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                data-testid="backtest-series-csv-btn"
+              >
+                <Download className="h-3 w-3" />
+                Zeitreihe CSV
+              </button>
+              <button
+                onClick={() => exportMetricsCsv(result.prisma_metrics, result.universe_metrics, result.benchmark_metrics)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                data-testid="backtest-metrics-csv-btn"
+              >
+                <Download className="h-3 w-3" />
+                CSV
+              </button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div data-testid="backtest-chart" className="h-80">

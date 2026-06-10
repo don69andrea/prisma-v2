@@ -66,3 +66,10 @@ class FundamentalsRead(BaseModel):
     operating_margin: float | None
     dividend_yield: float | None
     disclaimer: str
+
+
+class EligibilityRead(BaseModel):
+    ticker: str
+    eligible: bool
+    reasons: list[str]
+    disclaimer: str

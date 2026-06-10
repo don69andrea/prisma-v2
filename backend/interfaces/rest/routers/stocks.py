@@ -11,6 +11,7 @@ from backend.interfaces.rest.dependencies import (
     get_stock_service,
 )
 from backend.interfaces.rest.schemas.stock import (
+    EligibilityRead,
     FundamentalsRead,
     LatestRankingSnapshot,
     PricePoint,
@@ -104,6 +105,34 @@ async def get_stock_fundamentals(
         operating_margin=f.get("operating_margin"),
         dividend_yield=f.get("dividend_yield"),
         disclaimer=_FUNDAMENTALS_DISCLAIMER,
+    )
+
+
+_ELIGIBILITY_DISCLAIMER = "Regelbasiert – keine Anlageberatung."
+
+
+@router.get(
+    "/stocks/{ticker}/3a-eligibility",
+    response_model=EligibilityRead,
+    summary="3a-Eignung abrufen",
+    description="Gibt an, ob eine Aktie die BVV2-Kriterien für Säule-3a erfüllt (regelbasierter Stub).",
+)
+async def get_3a_eligibility(
+    ticker: str,
+    service: StockService = Depends(get_stock_service),
+) -> EligibilityRead:
+    stock = await service.get_by_ticker(ticker)
+    if stock is None:
+        raise HTTPException(
+            status_code=404, detail=f"Stock '{ticker.upper()}' nicht gefunden"
+        ) from None
+    eligible = stock.country == "CH"
+    reasons: list[str] = [] if eligible else ["Nicht an anerkannter Börse kotiert (SIX/BX Swiss)"]
+    return EligibilityRead(
+        ticker=stock.ticker,
+        eligible=eligible,
+        reasons=reasons,
+        disclaimer=_ELIGIBILITY_DISCLAIMER,
     )
 
 

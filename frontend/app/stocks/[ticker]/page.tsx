@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,8 @@ import { generateMemo, type Memo } from '@/lib/api/memos';
 import { apiFetch } from '@/lib/api/client';
 import { getFundamentals } from '@/lib/api/fundamentals';
 import { FundamentalsCard } from '@/components/FundamentalsCard';
-import { useState } from 'react';
+import { getEligibility } from '@/lib/api/eligibility';
+import { EligibilityPanel } from '@/components/EligibilityPanel';
 
 interface StockDetail {
   id: string;
@@ -42,6 +43,12 @@ function FactsheetContent() {
     queryKey: ['fundamentals', symbol],
     queryFn: () => getFundamentals(symbol),
     staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: eligibility, isLoading: eligibilityLoading } = useQuery({
+    queryKey: ['3a-eligibility', symbol],
+    queryFn: () => getEligibility(symbol),
+    staleTime: 30 * 60 * 1000,
   });
 
   const handleRequestMemo = async () => {
@@ -90,6 +97,12 @@ function FactsheetContent() {
         <Skeleton className="h-48 w-full rounded-xl" />
       ) : fundamentals ? (
         <FundamentalsCard data={fundamentals} />
+      ) : null}
+
+      {eligibilityLoading ? (
+        <Skeleton className="h-24 w-full rounded-xl" />
+      ) : eligibility ? (
+        <EligibilityPanel data={eligibility} />
       ) : null}
 
       {memo && (

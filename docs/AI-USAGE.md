@@ -998,6 +998,14 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Nachbearbeitung nötig bei**: Echte Fundamentaldaten-Quelle (yfinance/finnhub) wenn Stub ersetzt wird.
 - **Autor**: Andrea Petretta (mit Claude Code)
 
+## 2026-06-10 · 3a-Eignung Panel auf Factsheet (#63)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `GET /api/v1/stocks/{ticker}/3a-eligibility` + `EligibilityPanel` React-Komponente auf `/stocks/[ticker]`. Stub-Regelwerk: country='CH' → eligible, sonst nicht.
+- **Was gut lief**: Bestehende http_client-Fixture aus conftest.py (NESN/AAPL/NOVN) deckt CH- und Non-CH-Cases direkt ab — kein eigenes Fixture nötig.
+- **Was nicht klappte**: Nichts wesentliches.
+- **Nachbearbeitung nötig bei**: Echte BVV2-Whitelist wenn FINMA-Daten verfügbar.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
 ## 2026-05-26 · RAG-Kontext in NarrativeService + CI-Debugging (Issues #138, PR #146)
 - **Agent**: Claude Code (Sonnet 4.6) — systematic-debugging skill
 - **Scope**: Issue #138 DoD: NarrativeService.generate_memo() ruft RetrievalService.retrieve() auf, bettet 3–5 SEC-Filing-Chunks als `rag_context` in den LLM-Prompt ein. DI-Chain verdrahtet RetrievalService wenn VOYAGE_API_KEY gesetzt; graceful degradation bei Fehler. Gleichzeitig: 6 CI-Runs debuggt bis PR #146 grün war.

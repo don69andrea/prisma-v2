@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 const SOURCE_LABEL: Record<string, string> = {
   nzz: 'NZZ',
@@ -39,7 +40,18 @@ function NewsResultCard({ item }: { item: NewsChunkResult }) {
         {item.tickers.length > 0 && (
           <>
             <span>·</span>
-            <span>{item.tickers.join(', ')}</span>
+            <span className="flex items-center gap-1 flex-wrap">
+              {item.tickers.map((t) => (
+                <Link
+                  key={t}
+                  href={`/stocks/${t}`}
+                  className="font-mono hover:underline text-foreground"
+                  data-testid={`news-ticker-link-${t}`}
+                >
+                  {t}
+                </Link>
+              ))}
+            </span>
           </>
         )}
       </div>

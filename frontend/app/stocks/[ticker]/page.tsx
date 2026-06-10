@@ -188,7 +188,15 @@ function FactsheetContent() {
             {factsheet?.stock?.sector && (
               <>
                 <dt className="text-muted-foreground">Sektor</dt>
-                <dd>{factsheet.stock.sector}</dd>
+                <dd>
+                  <Link
+                    href={`/stocks?sector=${encodeURIComponent(factsheet.stock.sector)}`}
+                    className="hover:underline"
+                    data-testid="factsheet-sector-link"
+                  >
+                    {factsheet.stock.sector}
+                  </Link>
+                </dd>
               </>
             )}
             {factsheet?.stock?.market_cap_chf && (

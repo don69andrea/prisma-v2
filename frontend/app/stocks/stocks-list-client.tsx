@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -37,6 +37,23 @@ const EXCHANGE_OPTIONS = [
 
 type SortKey = 'ticker' | 'market_cap' | 'sector';
 type SortDir = 'asc' | 'desc';
+type CapFilter = 'all' | 'large' | 'mid' | 'small';
+
+const CAP_LABELS: Record<CapFilter, string> = {
+  all: 'Alle',
+  large: 'Large',
+  mid: 'Mid',
+  small: 'Small',
+};
+
+function matchesCap(stock: StockRead, cap: CapFilter): boolean {
+  if (cap === 'all') return true;
+  const v = stock.market_cap_chf ? parseFloat(stock.market_cap_chf) : null;
+  if (v === null) return cap === 'small';
+  if (cap === 'large') return v >= 10e9;
+  if (cap === 'mid')   return v >= 2e9 && v < 10e9;
+  return v < 2e9;
+}
 
 export function sortStocks(
   items: StockRead[],
@@ -100,14 +117,29 @@ function SortableTh({
   );
 }
 
+const LS_STOCKS_KEY = 'prisma_stocks_filters';
+
+function loadStoredStocksFilters() {
+  try {
+    const raw = localStorage.getItem(LS_STOCKS_KEY);
+    if (raw) return JSON.parse(raw) as { exchange: string; sector: string; only3a: boolean };
+  } catch {}
+  return null;
+}
+
 export function StocksListClient() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
-  const [exchange, setExchange] = useState('');
-  const [sector, setSector] = useState(searchParams.get('sector') ?? '');
-  const [only3a, setOnly3a] = useState(false);
+  const [exchange, setExchange] = useState(() => loadStoredStocksFilters()?.exchange ?? '');
+  const [sector, setSector] = useState(() => searchParams.get('sector') ?? loadStoredStocksFilters()?.sector ?? '');
+  const [only3a, setOnly3a] = useState(() => loadStoredStocksFilters()?.only3a ?? false);
+  const [capFilter, setCapFilter] = useState<CapFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  useEffect(() => {
+    localStorage.setItem(LS_STOCKS_KEY, JSON.stringify({ exchange, sector, only3a }));
+  }, [exchange, sector, only3a]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['stocks-list', exchange],
@@ -121,6 +153,15 @@ export function StocksListClient() {
     return Array.from(s).sort();
   }, [data]);
 
+  const capCounts = useMemo(() => {
+    const items = data?.items ?? [];
+    return {
+      large: items.filter((s) => matchesCap(s, 'large')).length,
+      mid:   items.filter((s) => matchesCap(s, 'mid')).length,
+      small: items.filter((s) => matchesCap(s, 'small')).length,
+    };
+  }, [data]);
+
   const filteredAndSorted = useMemo(() => {
     if (!data) return [];
     const q = search.trim().toLowerCase();
@@ -128,10 +169,11 @@ export function StocksListClient() {
       if (q && !s.ticker.toLowerCase().includes(q) && !s.name.toLowerCase().includes(q)) return false;
       if (sector && s.sector !== sector) return false;
       if (only3a && !is3aEligible(s)) return false;
+      if (!matchesCap(s, capFilter)) return false;
       return true;
     });
     return sortStocks(filtered, sortKey, sortDir);
-  }, [data, search, sector, only3a, sortKey, sortDir]);
+  }, [data, search, sector, only3a, capFilter, sortKey, sortDir]);
 
   function exportCsv() {
     const rows = [
@@ -153,6 +195,15 @@ export function StocksListClient() {
     a.download = `aktien-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  const hasActiveFilters = search !== '' || exchange !== '' || sector !== '' || only3a;
+
+  function resetFilters() {
+    setSearch('');
+    setExchange('');
+    setSector('');
+    setOnly3a(false);
   }
 
   function handleSort(key: SortKey) {
@@ -209,6 +260,15 @@ export function StocksListClient() {
           />
           Nur 3a-geeignet
         </label>
+        {hasActiveFilters && (
+          <button
+            onClick={resetFilters}
+            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            data-testid="stocks-reset-filters-btn"
+          >
+            Filter zurücksetzen
+          </button>
+        )}
         <button
           onClick={exportCsv}
           disabled={filteredAndSorted.length === 0}
@@ -219,6 +279,30 @@ export function StocksListClient() {
           CSV
         </button>
       </div>
+
+      {data && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {(['all', 'large', 'mid', 'small'] as const).map((cap) => {
+            const count = cap === 'all' ? data.items.length : capCounts[cap];
+            const active = capFilter === cap;
+            return (
+              <button
+                key={cap}
+                onClick={() => setCapFilter(cap)}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? 'border-transparent bg-foreground text-background'
+                    : 'bg-background hover:bg-muted'
+                }`}
+                data-testid={`stocks-cap-filter-${cap}`}
+              >
+                {CAP_LABELS[cap]}
+                <span className="tabular-nums">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {isLoading && (
         <div className="space-y-2">

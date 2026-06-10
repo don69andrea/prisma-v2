@@ -980,6 +980,14 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 <!-- Neue Einträge oben an die Liste anfügen. -->
 
+## 2026-06-10 · Rankings CSV-Export – Backend-Endpoint (#65)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `GET /api/v1/runs/{run_id}/export?format=csv` — Response mit CSV-Header, Stock-Anreicherung (name/sector) via StockService, Content-Disposition-Header; 5 Integrationstests.
+- **Was gut lief**: Merge mit develop-Version: develop hatte sauberere Struktur (Response, OpenAPI-Docs, pattern-Validierung), meine Version hatte StockService-Anreicherung — Kombination ergibt vollständigstes Resultat.
+- **Was nicht klappte**: Merge-Konflikt bei Rebase auf develop (Content- + Add-Add-Conflict in 3 Files). Resolve: develop-Struktur als Basis, eigene Ergänzungen integriert.
+- **Nachbearbeitung nötig bei**: Noch keine.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
 ## 2026-06-09 · PRISMA V2 Swiss Intelligence Layer — Issues #16–#23 (PRs #45–#52)
 
 - **Agent**: Claude Code (Sonnet 4.6) — multi-issue batch, direkte Implementierung ohne Subagent-Dispatching

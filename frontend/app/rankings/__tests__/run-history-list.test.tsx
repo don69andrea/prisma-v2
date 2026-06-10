@@ -154,7 +154,8 @@ describe('<RunHistoryList />', () => {
     ]);
     renderWithClient(<RunHistoryList />);
     await waitFor(() => {
-      expect(screen.getByText('Abgeschlossen')).toBeInTheDocument();
+      // status filter dropdown also contains these labels, so getAllByText
+      expect(screen.getAllByText('Abgeschlossen').length).toBeGreaterThan(0);
       expect(screen.getByText('Ausstehend')).toBeInTheDocument();
       expect(screen.getByText('Läuft…')).toBeInTheDocument();
       expect(screen.getByText('Fehlgeschlagen')).toBeInTheDocument();

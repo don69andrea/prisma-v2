@@ -12,9 +12,11 @@ from backend.application.services.ranking_run_service import (
     RankingRunService,
     UniverseNotFound,
 )
+from backend.application.services.stock_service import StockService
 from backend.domain.repositories.universe_repository import UniverseRepository
 from backend.interfaces.rest.dependencies import (
     get_ranking_run_service,
+    get_stock_service,
     get_universe_repository,
     require_api_key,
 )
@@ -90,8 +92,8 @@ async def get_rankings(
     "/{run_id}/export",
     summary="Rankings als CSV exportieren",
     description=(
-        "Gibt alle Rankings eines abgeschlossenen Runs als CSV-Datei zurück. "
-        "Spalten: rank, ticker, weighted_avg, is_sweet_spot sowie eine Spalte "
+        "Gibt alle Rankings eines abgeschlossenen Runs als CSV-Datei zurueck. "
+        "Spalten: rank, ticker, name, sector, weighted_avg, is_sweet_spot sowie eine Spalte "
         "pro Modell aus per_model_ranks."
     ),
     response_class=Response,
@@ -101,6 +103,7 @@ async def export_rankings_csv(
     run_id: UUID,
     export_format: str = Query("csv", alias="format", pattern="^csv$"),
     service: RankingRunService = Depends(get_ranking_run_service),
+    stock_service: StockService = Depends(get_stock_service),
 ) -> Response:
     try:
         results = await service.get_rankings(run_id)
@@ -112,12 +115,17 @@ async def export_rankings_csv(
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["rank", "ticker", "weighted_avg", "is_sweet_spot", *all_models])
+    writer.writerow(
+        ["rank", "ticker", "name", "sector", "weighted_avg", "is_sweet_spot", *all_models]
+    )
     for item in items:
+        stock = await stock_service.get_by_ticker(item.ticker)
         writer.writerow(
             [
                 item.total_rank if item.total_rank is not None else "",
                 item.ticker,
+                stock.name if stock else "",
+                (stock.sector or "") if stock else "",
                 f"{item.weighted_avg:.4f}" if item.weighted_avg is not None else "",
                 "true" if item.is_sweet_spot else "false",
                 *[item.per_model_ranks.get(m) or "" for m in all_models],

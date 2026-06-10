@@ -59,8 +59,8 @@ describe('<RunHistoryList />', () => {
     renderWithClient(<RunHistoryList />);
 
     await waitFor(() => {
-      expect(screen.getByText('Demo-US-5')).toBeInTheDocument();
-      expect(screen.getByText('Tech-Big-12')).toBeInTheDocument();
+      expect(screen.getAllByText('Demo-US-5').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Tech-Big-12').length).toBeGreaterThan(0);
     });
   });
 

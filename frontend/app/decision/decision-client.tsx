@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 
@@ -124,7 +125,10 @@ function loadStoredDecision() {
 }
 
 export function DecisionClient() {
-  const [selectedUniverse, setSelectedUniverse] = useState<string>('');
+  const searchParams = useSearchParams();
+  const [selectedUniverse, setSelectedUniverse] = useState<string>(
+    () => searchParams.get('universe') ?? '',
+  );
   const [signalFilter, setSignalFilter] = useState<SignalType | ''>(() => loadStoredDecision()?.signalFilter ?? '');
   const [eligibleOnly, setEligibleOnly] = useState(() => loadStoredDecision()?.eligibleOnly ?? false);
   const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>(() => loadStoredDecision()?.sortKey ?? 'confidence');

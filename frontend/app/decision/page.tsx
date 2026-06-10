@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
 import { DecisionClient } from './decision-client';
@@ -15,7 +16,9 @@ export default function DecisionPage() {
           BUY / HOLD / WATCH Signale — Quant 45% + ML 35% + Macro 20%
         </p>
       </div>
-      <DecisionClient />
+      <Suspense>
+        <DecisionClient />
+      </Suspense>
     </div>
   );
 }

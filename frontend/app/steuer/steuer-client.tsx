@@ -13,6 +13,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+const LS_STEUER_KEY = 'prisma_steuer_config';
+
+function loadStoredSteuer() {
+  try {
+    const raw = localStorage.getItem(LS_STEUER_KEY);
+    if (raw) return JSON.parse(raw) as { ticker: string; profil: Anlegerprofil; halteperiode: number };
+  } catch {}
+  return null;
+}
+
 const PROFIL_OPTIONS: { value: Anlegerprofil; label: string }[] = [
   { value: 'privatperson',  label: 'Privatperson' },
   { value: 'vorsorge_3a',   label: 'Säule 3a' },
@@ -115,15 +125,18 @@ function SteuerResult({ data }: { data: SteuerEinschaetzungResponse }) {
 }
 
 export function SteuerClient() {
-  const [ticker, setTicker] = useState('NESN');
-  const [profil, setProfil] = useState<Anlegerprofil>('vorsorge_3a');
-  const [halteperiode, setHalteperiode] = useState(30);
+  const [ticker, setTicker] = useState(() => loadStoredSteuer()?.ticker ?? 'NESN');
+  const [profil, setProfil] = useState<Anlegerprofil>(() => loadStoredSteuer()?.profil ?? 'vorsorge_3a');
+  const [halteperiode, setHalteperiode] = useState(() => loadStoredSteuer()?.halteperiode ?? 30);
   const [result, setResult] = useState<SteuerEinschaetzungResponse | null>(null);
 
   const mutation = useMutation({
     mutationFn: () =>
       getSteuerEinschaetzung({ ticker, anlegerprofil: profil, halteperiode_jahre: halteperiode }),
-    onSuccess: (data) => setResult(data),
+    onSuccess: (data) => {
+      localStorage.setItem(LS_STEUER_KEY, JSON.stringify({ ticker, profil, halteperiode }));
+      setResult(data);
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {

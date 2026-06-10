@@ -6,6 +6,7 @@ import json
 import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from typing import Any, cast
 
 _logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class ChatMessage:
 class ChatService:
     """Orchestriert Claude mit PRISMA-Tools für Konversations-Interface."""
 
-    def _get_tool_definitions(self) -> list[dict]:
+    def _get_tool_definitions(self) -> list[dict[str, Any]]:
         return [
             {
                 "name": "search_stocks",
@@ -132,8 +133,8 @@ class ChatService:
                 system=[
                     {"type": "text", "text": _SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}
                 ],
-                tools=self._get_tool_definitions(),
-                messages=api_messages,
+                tools=cast(Any, self._get_tool_definitions()),
+                messages=cast(Any, api_messages),
             ) as stream:
                 async for event in stream:
                     if hasattr(event, "type"):
@@ -184,7 +185,7 @@ class ChatService:
                             "cache_control": {"type": "ephemeral"},
                         }
                     ],
-                    messages=continuation_messages,
+                    messages=cast(Any, continuation_messages),
                 ) as stream2:
                     async for event in stream2:
                         if (
@@ -201,104 +202,148 @@ class ChatService:
         yield _sse("done", {})
 
 
-def _sse(event_type: str, data: dict) -> str:
+def _sse(event_type: str, data: dict[str, Any]) -> str:
     return f"data: {json.dumps({'type': event_type, **data})}\n\n"
 
 
-async def _dispatch_tool(name: str, inputs: dict) -> str:
+async def _dispatch_tool(name: str, inputs: dict[str, Any]) -> str:
     """Leitet Tool-Call an entsprechenden Application Service weiter."""
     try:
         if name == "search_stocks":
-            svc = _get_stock_service()
-            results = await svc.search(inputs.get("query", ""))
-            return json.dumps([{"ticker": s.ticker, "name": s.name} for s in results[:10]])
-
-        if name == "filter_stocks":
             from backend.application.services.swiss_market_service import SwissMarketService
-            from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
-
-            svc = SwissMarketService(adapter=YFinanceSwissAdapter())
-            stocks = await svc.list_stocks(
-                signal=inputs.get("signal"),
-                eligible_3a=inputs.get("eligible_3a"),
-            )
-            min_score = inputs.get("min_score", 0)
-            filtered = [s for s in stocks if (s.quant_score or 0) >= min_score]
-            return json.dumps(
-                [
-                    {"ticker": s.ticker, "signal": s.signal, "score": s.quant_score}
-                    for s in filtered[:15]
-                ]
-            )
-
-        if name == "get_factsheet":
-            from backend.application.services.factsheet_service import FactsheetService
             from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
                 SQLASwissStockRepository,
             )
             from backend.infrastructure.persistence.session import get_session_factory
 
-            repo = SQLASwissStockRepository(session_factory=get_session_factory())
-            svc = FactsheetService(swiss_stock_repo=repo)
-            data = await svc.get(inputs["ticker"])
+            query = (inputs.get("query") or "").lower()
+            async with get_session_factory()() as _session:
+                repo = SQLASwissStockRepository(session=_session)
+                svc = SwissMarketService(repo=repo)
+                all_stocks = await svc.list_smi_stocks()
+            results = [
+                s
+                for s in all_stocks
+                if query in s.ticker.lower() or query in (s.name or "").lower()
+            ]
+            return json.dumps([{"ticker": s.ticker, "name": s.name} for s in results[:10]])
+
+        if name == "filter_stocks":
+            from backend.application.services.swiss_market_service import SwissMarketService
+            from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
+                SQLASwissStockRepository,
+            )
+            from backend.infrastructure.persistence.session import get_session_factory
+
+            async with get_session_factory()() as _session:
+                repo = SQLASwissStockRepository(session=_session)
+                svc = SwissMarketService(repo=repo)
+                stocks = await svc.list_smi_stocks()
+            signal_filter = inputs.get("signal")
+            eligible_filter = inputs.get("eligible_3a")
+            min_score = inputs.get("min_score", 0)
+            filtered = [
+                s
+                for s in stocks
+                if (not signal_filter or getattr(s, "signal", None) == signal_filter)
+                and (not eligible_filter or getattr(s, "eligible_3a", False))
+                and (getattr(s, "quant_score", None) or 0) >= min_score
+            ]
+            return json.dumps(
+                [
+                    {
+                        "ticker": s.ticker,
+                        "signal": getattr(s, "signal", None),
+                        "score": getattr(s, "quant_score", None),
+                    }
+                    for s in filtered[:15]
+                ]
+            )
+
+        if name == "get_factsheet":
+            from backend.application.services.swiss_market_service import SwissMarketService
+            from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
+                SQLASwissStockRepository,
+            )
+            from backend.infrastructure.persistence.session import get_session_factory
+
+            async with get_session_factory()() as _session:
+                repo = SQLASwissStockRepository(session=_session)
+                svc = SwissMarketService(repo=repo)
+                data = await svc.get_swiss_stock(inputs["ticker"])
             if data is None:
                 return f"Keine Daten für {inputs['ticker']} gefunden."
             return json.dumps(
                 {
                     "ticker": data.ticker,
-                    "signal": data.signal,
-                    "quant_score": data.quant_score,
-                    "eligible_3a": data.eligible_3a,
+                    "signal": getattr(data, "signal", None),
+                    "quant_score": getattr(data, "quant_score", None),
+                    "eligible_3a": getattr(data, "eligible_3a", None),
                 }
             )
 
         if name == "get_macro_context":
             from backend.application.services.macro_service import MacroService
 
-            svc = MacroService()
-            ctx = await svc.get_context()
+            macro_svc = MacroService()
+            ctx = await macro_svc.get_context()
             return json.dumps(
                 {
-                    "snb_rate": ctx.snb_rate,
+                    "snb_rate": ctx.leitzins,
                     "chf_eur": ctx.chf_eur,
                     "inflation_ch": ctx.inflation_ch,
                 }
             )
 
         if name == "compare_stocks":
-            from backend.application.services.factsheet_service import FactsheetService
+            from backend.application.services.swiss_market_service import SwissMarketService
             from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
                 SQLASwissStockRepository,
             )
             from backend.infrastructure.persistence.session import get_session_factory
 
-            repo = SQLASwissStockRepository(session_factory=get_session_factory())
-            svc = FactsheetService(swiss_stock_repo=repo)
-            a = await svc.get(inputs["ticker_a"])
-            b = await svc.get(inputs["ticker_b"])
+            async with get_session_factory()() as _session:
+                repo = SQLASwissStockRepository(session=_session)
+                svc = SwissMarketService(repo=repo)
+                a = await svc.get_swiss_stock(inputs["ticker_a"])
+                b = await svc.get_swiss_stock(inputs["ticker_b"])
             return json.dumps(
                 {
                     inputs["ticker_a"]: {
-                        "signal": a.signal if a else None,
-                        "score": a.quant_score if a else None,
+                        "signal": getattr(a, "signal", None) if a else None,
+                        "score": getattr(a, "quant_score", None) if a else None,
                     },
                     inputs["ticker_b"]: {
-                        "signal": b.signal if b else None,
-                        "score": b.quant_score if b else None,
+                        "signal": getattr(b, "signal", None) if b else None,
+                        "score": getattr(b, "quant_score", None) if b else None,
                     },
                 }
             )
 
         if name == "get_ranking":
             from backend.application.services.swiss_market_service import SwissMarketService
-            from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
+            from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
+                SQLASwissStockRepository,
+            )
+            from backend.infrastructure.persistence.session import get_session_factory
 
-            svc = SwissMarketService(adapter=YFinanceSwissAdapter())
-            stocks = await svc.list_stocks()
+            async with get_session_factory()() as _session:
+                repo = SQLASwissStockRepository(session=_session)
+                svc = SwissMarketService(repo=repo)
+                stocks = await svc.list_smi_stocks()
             top_n = inputs.get("top_n", 5)
-            ranked = sorted(stocks, key=lambda s: s.quant_score or 0, reverse=True)[:top_n]
+            ranked = sorted(
+                stocks, key=lambda s: getattr(s, "quant_score", None) or 0, reverse=True
+            )[:top_n]
             return json.dumps(
-                [{"ticker": s.ticker, "signal": s.signal, "score": s.quant_score} for s in ranked]
+                [
+                    {
+                        "ticker": s.ticker,
+                        "signal": getattr(s, "signal", None),
+                        "score": getattr(s, "quant_score", None),
+                    }
+                    for s in ranked
+                ]
             )
 
         return json.dumps({"error": f"Tool '{name}' unbekannt."})
@@ -306,11 +351,3 @@ async def _dispatch_tool(name: str, inputs: dict) -> str:
     except Exception as exc:
         _logger.warning("Tool dispatch error: %s — %s", name, exc)
         return json.dumps({"error": str(exc)})
-
-
-def _get_stock_service():
-    from backend.application.services.stock_service import StockService
-    from backend.infrastructure.persistence.repositories.stock_repository import SQLAStockRepository
-    from backend.infrastructure.persistence.session import get_session_factory
-
-    return StockService(stock_repo=SQLAStockRepository(session_factory=get_session_factory()))

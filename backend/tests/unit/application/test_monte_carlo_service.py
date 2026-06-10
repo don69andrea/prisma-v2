@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import numpy as np
@@ -18,8 +19,8 @@ from backend.application.services.monte_carlo_service import (
 pytestmark = pytest.mark.unit
 
 
-def _make_input(**kwargs) -> MonteCarloInput:
-    defaults = dict(
+def _make_input(**kwargs: Any) -> MonteCarloInput:
+    defaults: dict[str, Any] = dict(
         holdings=[HoldingWeight("NESN.SW", 0.6), HoldingWeight("NOVN.SW", 0.4)],
         monthly_contribution=588.0,
         years=30,
@@ -30,7 +31,7 @@ def _make_input(**kwargs) -> MonteCarloInput:
     return MonteCarloInput(**defaults)
 
 
-def _mock_params(n: int = 2):
+def _mock_params(n: int = 2) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return (
         np.array([0.0005] * n),
         np.array([0.012] * n),

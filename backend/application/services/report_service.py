@@ -7,6 +7,7 @@ import logging
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Any, cast
 
 _logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class ReportData:
     weighted_avg_score: float
     ml_signal: str
     ml_confidence: float
-    shap_top5: list
+    shap_top5: list[Any]
     shap_expected_value: float
     price_chf: float | None
     market_cap_chf: float | None
@@ -60,12 +61,13 @@ class ReportService:
         from backend.infrastructure.persistence.session import get_session_factory
 
         session_factory = get_session_factory()
-        swiss_repo = SQLASwissStockRepository(session_factory=session_factory)
-        factsheet_svc = FactsheetService(swiss_stock_repo=swiss_repo)
+        async with session_factory() as _session:
+            swiss_repo = SQLASwissStockRepository(session=_session)
+            factsheet_svc = FactsheetService(swiss_stock_repo=swiss_repo)  # type: ignore[call-arg]
         ml_svc = MLPredictionService()
 
         factsheet, ml_prediction = await asyncio.gather(
-            factsheet_svc.get(ticker),
+            factsheet_svc.get_factsheet(ticker),
             ml_svc.predict(ticker),
             return_exceptions=True,
         )
@@ -137,7 +139,7 @@ class ReportService:
     def _render_pdf(self, html: str) -> bytes:
         import weasyprint
 
-        return weasyprint.HTML(string=html).write_pdf()
+        return cast(bytes, weasyprint.HTML(string=html).write_pdf())
 
     async def _cache_get(self, ticker: str) -> bytes | None:
         try:

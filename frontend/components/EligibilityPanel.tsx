@@ -2,10 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { EligibilityRead } from '@/lib/api/eligibility';
+import type { EligibilityResponse } from '@/lib/api/eligibility';
 
 interface EligibilityPanelProps {
-  data: EligibilityRead;
+  data: EligibilityResponse;
 }
 
 export function EligibilityPanel({ data }: EligibilityPanelProps) {
@@ -31,7 +31,6 @@ export function EligibilityPanel({ data }: EligibilityPanelProps) {
             ))}
           </ul>
         )}
-        <p className="text-xs text-muted-foreground border-t pt-2">{data.disclaimer}</p>
       </CardContent>
     </Card>
   );

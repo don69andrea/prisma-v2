@@ -89,11 +89,7 @@ async def get_3a_eligibility(
             status_code=404, detail=f"Stock '{ticker.upper()}' nicht gefunden"
         ) from None
     eligible = stock.country == "CH"
-    reasons: list[str] = (
-        []
-        if eligible
-        else ["Nicht an anerkannter Börse kotiert (SIX/BX Swiss)"]
-    )
+    reasons: list[str] = [] if eligible else ["Nicht an anerkannter Börse kotiert (SIX/BX Swiss)"]
     return EligibilityRead(
         ticker=stock.ticker,
         eligible=eligible,

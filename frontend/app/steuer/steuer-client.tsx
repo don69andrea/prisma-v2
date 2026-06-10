@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Check, Copy } from 'lucide-react';
 
 import {
   getSteuerEinschaetzung,
@@ -37,13 +37,53 @@ function ResultSection({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+function buildClipboardText(data: SteuerEinschaetzungResponse): string {
+  const lines: string[] = [
+    `Steuer-Einschätzung: ${data.ticker} | ${data.anlegerprofil} | ${data.halteperiode_jahre} Jahre`,
+    '',
+  ];
+  if (data.steuerarten.length > 0) {
+    lines.push('Steuerarten:', ...data.steuerarten.map((s) => `• ${s}`), '');
+  }
+  if (data.pflichten.length > 0) {
+    lines.push('Pflichten:', ...data.pflichten.map((s) => `• ${s}`), '');
+  }
+  if (data.hinweise.length > 0) {
+    lines.push('Hinweise:', ...data.hinweise.map((s) => `• ${s}`), '');
+  }
+  lines.push(`Modell: ${data.model_version}`);
+  return lines.join('\n');
+}
+
 function SteuerResult({ data }: { data: SteuerEinschaetzungResponse }) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(buildClipboardText(data)).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">
-          {data.ticker} · {data.anlegerprofil} · {data.halteperiode_jahre} Jahre
-        </CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base">
+            {data.ticker} · {data.anlegerprofil} · {data.halteperiode_jahre} Jahre
+          </CardTitle>
+          <button
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            data-testid="steuer-copy-btn"
+            aria-label="Ergebnis kopieren"
+          >
+            {copied
+              ? <><Check className="h-3 w-3 text-emerald-500" /> Kopiert</>
+              : <><Copy className="h-3 w-3" /> Kopieren</>
+            }
+          </button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-5">
         <ResultSection title="Steuerarten" items={data.steuerarten} />

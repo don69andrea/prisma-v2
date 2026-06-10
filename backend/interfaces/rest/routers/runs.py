@@ -115,7 +115,9 @@ async def export_rankings_csv(
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["rank", "ticker", "name", "sector", "weighted_avg", "is_sweet_spot", *all_models])
+    writer.writerow(
+        ["rank", "ticker", "name", "sector", "weighted_avg", "is_sweet_spot", *all_models]
+    )
     for item in items:
         stock = await stock_service.get_by_ticker(item.ticker)
         writer.writerow(

@@ -37,8 +37,16 @@ _RANKINGS = [
 ]
 
 _STOCKS = {
-    "NESN": Stock(id=uuid.uuid4(), ticker="NESN", name="Nestlé S.A.", sector="Consumer Staples", currency="CHF"),
-    "NOVN": Stock(id=uuid.uuid4(), ticker="NOVN", name="Novartis AG", sector="Healthcare", currency="CHF"),
+    "NESN": Stock(
+        id=uuid.uuid4(),
+        ticker="NESN",
+        name="Nestlé S.A.",
+        sector="Consumer Staples",
+        currency="CHF",
+    ),
+    "NOVN": Stock(
+        id=uuid.uuid4(), ticker="NOVN", name="Novartis AG", sector="Healthcare", currency="CHF"
+    ),
 }
 
 
@@ -56,8 +64,10 @@ def _make_service_not_found() -> RankingRunService:
 
 def _make_stock_service() -> StockService:
     svc = AsyncMock(spec=StockService)
+
     async def _get(ticker: str) -> Stock | None:
         return _STOCKS.get(ticker.upper())
+
     svc.get_by_ticker = _get
     return svc
 

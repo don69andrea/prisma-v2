@@ -2,23 +2,6 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-
-const LS_FONDS_KEY = 'prisma_fonds_config';
-
-const DEFAULT_FONDS_POSITIONS = [
-  { ticker: 'NESN', weight: '30' },
-  { ticker: 'NOVN', weight: '25' },
-  { ticker: 'ROG',  weight: '20' },
-  { ticker: 'ABBN', weight: '25' },
-];
-
-function loadStoredFonds() {
-  try {
-    const raw = localStorage.getItem(LS_FONDS_KEY);
-    if (raw) return JSON.parse(raw) as { selectedFonds: string; positions: Array<{ ticker: string; weight: string }> };
-  } catch {}
-  return null;
-}
 import { Download, Plus, Trash2 } from 'lucide-react';
 
 import {
@@ -131,6 +114,16 @@ const DEFAULT_FONDS_POSITIONS: Position[] = [
   { ticker: 'ROG',  weight: '20' },
   { ticker: 'ABBN', weight: '25' },
 ];
+
+const LS_FONDS_KEY = 'prisma_fonds_config';
+
+function loadStoredFonds() {
+  try {
+    const raw = localStorage.getItem(LS_FONDS_KEY);
+    if (raw) return JSON.parse(raw) as { selectedFonds: string; positions: Array<{ ticker: string; weight: string }> };
+  } catch {}
+  return null;
+}
 
 export function FondsClient() {
   const [selectedFonds, setSelectedFonds] = useState(() => loadStoredFonds()?.selectedFonds ?? '');

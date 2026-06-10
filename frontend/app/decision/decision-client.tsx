@@ -119,6 +119,14 @@ export function DecisionClient() {
   const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>('confidence');
   const [minConfidence, setMinConfidence] = useState(0);
 
+  const hasActiveFilters = signalFilter !== '' || eligibleOnly || minConfidence > 0;
+
+  function resetFilters() {
+    setSignalFilter('');
+    setEligibleOnly(false);
+    setMinConfidence(0);
+  }
+
   const { data: universesData, isLoading: uLoading } = useQuery({
     queryKey: ['universes'],
     queryFn: listUniverses,
@@ -246,6 +254,15 @@ export function DecisionClient() {
             <option value="ticker">Ticker A–Z</option>
           </select>
         </div>
+        {hasActiveFilters && (
+          <button
+            onClick={resetFilters}
+            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors self-end"
+            data-testid="decision-reset-filters-btn"
+          >
+            Alle Filter zurücksetzen
+          </button>
+        )}
       </div>
 
       {/* Signal-Zusammenfassung */}

@@ -115,7 +115,7 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
 
       {!is404 && runQuery.data && (
         <Card>
-          <CardContent className="py-4 flex items-center gap-4 text-sm">
+          <CardContent className="py-4 flex items-center gap-4 text-sm flex-wrap">
             <span>
               <span className="text-muted-foreground">Universe:</span>{' '}
               <span className="font-medium">{universeQuery.data?.name ?? runQuery.data.universe_id}</span>
@@ -134,6 +134,14 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
             <span className="text-muted-foreground">
               {new Date(runQuery.data.created_at).toLocaleString('de-CH')}
             </span>
+            {rankingsQuery.data && (
+              <span data-testid="run-sweet-spot-count">
+                <span className="text-muted-foreground">Sweet Spots:</span>{' '}
+                <span className="font-medium">
+                  {rankingsQuery.data.filter((r) => r.is_sweet_spot).length}
+                </span>
+              </span>
+            )}
           </CardContent>
         </Card>
       )}

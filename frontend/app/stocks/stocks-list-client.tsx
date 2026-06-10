@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Download, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 
 import { listStocks, type StockRead } from '@/lib/api/stocks';
 import { Input } from '@/components/ui/input';
@@ -131,6 +131,28 @@ export function StocksListClient() {
     return sortStocks(filtered, sortKey, sortDir);
   }, [data, search, sector, only3a, sortKey, sortDir]);
 
+  function exportCsv() {
+    const rows = [
+      ['Ticker', 'Name', 'Sektor', 'Marktkap. (CHF)', 'Börse', '3a-geeignet'],
+      ...filteredAndSorted.map((s) => [
+        s.ticker,
+        s.name ?? '',
+        s.sector ?? '',
+        s.market_cap_chf ? formatMarketCap(s.market_cap_chf) : '',
+        s.exchange ?? '',
+        is3aEligible(s) ? 'ja' : 'nein',
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aktien-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function handleSort(key: SortKey) {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -185,6 +207,15 @@ export function StocksListClient() {
           />
           Nur 3a-geeignet
         </label>
+        <button
+          onClick={exportCsv}
+          disabled={filteredAndSorted.length === 0}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40"
+          data-testid="stocks-csv-export-btn"
+        >
+          <Download className="h-4 w-4" />
+          CSV
+        </button>
       </div>
 
       {isLoading && (

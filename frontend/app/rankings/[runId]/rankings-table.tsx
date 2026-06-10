@@ -134,6 +134,7 @@ export function RankingsTable({ items, runId, swissTickers }: RankingsTableProps
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [filter, setFilter] = useState('');
   const [exchangeFilter, setExchangeFilter] = useState<'all' | 'xswx'>('all');
+  const [sweetSpotOnly, setSweetSpotOnly] = useState(false);
   const [selectedStock, setSelectedStock] = useState<{ stockId: string; ticker: string } | null>(null);
 
   function handleSort(key: SortKey) {
@@ -150,6 +151,9 @@ export function RankingsTable({ items, runId, swissTickers }: RankingsTableProps
     if (exchangeFilter === 'xswx' && swissTickers) {
       result = result.filter((item) => swissTickers.has(item.ticker));
     }
+    if (sweetSpotOnly) {
+      result = result.filter((item) => item.is_sweet_spot);
+    }
     const filtered = result.filter((item) =>
       item.ticker.toLowerCase().includes(filter.toLowerCase()),
     );
@@ -162,7 +166,7 @@ export function RankingsTable({ items, runId, swissTickers }: RankingsTableProps
       if (bv === Infinity) return -1;
       return sortDir === 'asc' ? av - bv : bv - av;
     });
-  }, [items, filter, sortKey, sortDir, exchangeFilter, swissTickers]);
+  }, [items, filter, sortKey, sortDir, exchangeFilter, sweetSpotOnly, swissTickers]);
 
   return (
     <div className="space-y-3">
@@ -182,6 +186,14 @@ export function RankingsTable({ items, runId, swissTickers }: RankingsTableProps
         >
           <Download className="mr-1 h-4 w-4" />
           CSV
+        </Button>
+        <Button
+          variant={sweetSpotOnly ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setSweetSpotOnly((v) => !v)}
+          data-testid="rankings-sweet-spot-filter"
+        >
+          ✦ Sweet Spots
         </Button>
         {swissTickers !== undefined && (
           <div className="flex gap-1 ml-auto">

@@ -183,6 +183,15 @@ export function StocksListClient() {
     URL.revokeObjectURL(url);
   }
 
+  const hasActiveFilters = search !== '' || exchange !== '' || sector !== '' || only3a;
+
+  function resetFilters() {
+    setSearch('');
+    setExchange('');
+    setSector('');
+    setOnly3a(false);
+  }
+
   function handleSort(key: SortKey) {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -237,6 +246,15 @@ export function StocksListClient() {
           />
           Nur 3a-geeignet
         </label>
+        {hasActiveFilters && (
+          <button
+            onClick={resetFilters}
+            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            data-testid="stocks-reset-filters-btn"
+          >
+            Filter zurücksetzen
+          </button>
+        )}
         <button
           onClick={exportCsv}
           disabled={filteredAndSorted.length === 0}

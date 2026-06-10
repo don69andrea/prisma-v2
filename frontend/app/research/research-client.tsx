@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { Search, ExternalLink } from 'lucide-react';
 
 import {
@@ -37,7 +38,13 @@ function SwissResultCard({ item }: { item: SwissChunkResult }) {
     <div className="rounded-lg border bg-card p-4 space-y-2">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono font-semibold text-sm">{item.ticker}</span>
+          <Link
+            href={`/stocks/${item.ticker}`}
+            className="font-mono font-semibold text-sm hover:underline"
+            data-testid={`research-result-ticker-${item.ticker}`}
+          >
+            {item.ticker}
+          </Link>
           <Badge variant="outline" className="text-[10px]">{item.doc_type}</Badge>
           <Badge variant="outline" className="text-[10px]">{item.language.toUpperCase()}</Badge>
         </div>
@@ -71,7 +78,13 @@ function SecResultCard({ item }: { item: SecChunkResult }) {
     <div className="rounded-lg border bg-card p-4 space-y-2">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="font-mono font-semibold text-sm">{item.ticker}</span>
+          <Link
+            href={`/stocks/${item.ticker}`}
+            className="font-mono font-semibold text-sm hover:underline"
+            data-testid={`research-result-ticker-${item.ticker}`}
+          >
+            {item.ticker}
+          </Link>
           <Badge variant="outline" className="text-[10px]">{item.doc_type}</Badge>
         </div>
         <SimilarityBadge value={item.similarity} />

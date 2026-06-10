@@ -16,6 +16,15 @@ const SOURCE_LABEL: Record<string, string> = {
   srf: 'SRF',
 };
 
+const LS_KEY = 'prisma_news_last_search';
+function loadStoredSearch() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw) as { query: string; ticker: string };
+  } catch {}
+  return null;
+}
+
 function NewsResultCard({ item }: { item: NewsChunkResult }) {
   const similarityPct = Math.round(item.similarity * 100);
 
@@ -85,8 +94,8 @@ function exportNewsCsv(items: NewsChunkResult[], queryText: string) {
 }
 
 export function NewsClient() {
-  const [query, setQuery] = useState('');
-  const [ticker, setTicker] = useState('');
+  const [query, setQuery] = useState(() => loadStoredSearch()?.query ?? '');
+  const [ticker, setTicker] = useState(() => loadStoredSearch()?.ticker ?? '');
   const [results, setResults] = useState<NewsChunkResult[] | null>(null);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'nzz' | 'srf'>('all');
   const [sortMode, setSortMode] = useState<'relevance' | 'date'>('relevance');
@@ -96,6 +105,7 @@ export function NewsClient() {
       retrieveNews({ query, k: 10, ticker: ticker.trim() || undefined }),
     onSuccess: (data) => {
       setResults(data.results);
+      try { localStorage.setItem(LS_KEY, JSON.stringify({ query, ticker })); } catch {}
       setSourceFilter('all');
       setSortMode('relevance');
     },

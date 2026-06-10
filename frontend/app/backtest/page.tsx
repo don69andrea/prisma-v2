@@ -122,13 +122,29 @@ function MetricsTable({
 function BacktestContent() {
   const searchParams = useSearchParams();
   const [runId, setRunId] = useState(searchParams.get('run_id') ?? '');
-  const [startDate, setStartDate] = useState('2025-01-01');
-  const [endDate, setEndDate] = useState('2025-12-31');
-  const [topN, setTopN] = useState(3);
-  const [benchmark, setBenchmark] = useState('^SSMI');
+  const [startDate, setStartDate] = useState(searchParams.get('start') ?? '2025-01-01');
+  const [endDate, setEndDate] = useState(searchParams.get('end') ?? '2025-12-31');
+  const [topN, setTopN] = useState(Number(searchParams.get('top_n') ?? '3'));
+  const [benchmark, setBenchmark] = useState(searchParams.get('benchmark') ?? '^SSMI');
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  function handleShare() {
+    const params = new URLSearchParams({
+      ...(runId ? { run_id: runId } : {}),
+      start: startDate,
+      end: endDate,
+      top_n: String(topN),
+      benchmark,
+    });
+    const url = `${window.location.origin}/backtest?${params.toString()}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    });
+  }
 
   const runsQuery = useQuery({
     queryKey: ['runs', 'backtest'],
@@ -243,7 +259,7 @@ function BacktestContent() {
                 data-testid="backtest-benchmark"
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <Button
                 type="submit"
                 disabled={loading || !runId}
@@ -252,6 +268,15 @@ function BacktestContent() {
               >
                 {loading ? 'Läuft…' : 'Backtest starten'}
               </Button>
+              <button
+                type="button"
+                onClick={handleShare}
+                disabled={!runId}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm hover:bg-muted transition-colors disabled:opacity-40"
+                data-testid="backtest-share-btn"
+              >
+                {shareCopied ? 'Kopiert!' : 'Link teilen'}
+              </button>
             </div>
           </form>
           {error && <p className="mt-4 text-sm text-destructive">{error}</p>}

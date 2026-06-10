@@ -989,6 +989,15 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 <!-- Neue Einträge oben an die Liste anfügen. -->
 
+## 2026-06-10 · Fundamentaldaten-Widget auf Factsheet (#68)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `GET /api/v1/stocks/{ticker}/fundamentals` + `FundamentalsRead` Pydantic-Schema + `FundamentalsCard` React-Komponente auf `/stocks/[ticker]`. StubFundamentalsProvider liefert Demo-Daten für 13 Ticker; 8 Integrationstests.
+- **Was gut lief**: `StubFundamentalsProvider` war bereits vollständig implementiert — kein neuer Provider-Code nötig. React Fragment Key-Bug (`<>` statt `<React.Fragment key={...}>`) in FundamentalsCard durch Code-Review entdeckt und behoben.
+- **Was nicht klappte**: Initialer Fragment-Key-Fehler: `key` auf `<dt>`/`<dd>` statt auf das Fragment gesetzt — React-Warning im Browser. Fix: `<React.Fragment key={key}>` statt `<>`.
+- **Lektion**: Bei `Array.map()` mit mehreren Root-Elementen immer `<React.Fragment key={...}>` verwenden statt `<>` — `<>` akzeptiert kein `key`-Prop.
+- **Nachbearbeitung nötig bei**: Echte Fundamentaldaten-Quelle (yfinance/finnhub) wenn Stub ersetzt wird.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
 ## 2026-06-10 · 3a-Eignung Panel auf Factsheet (#63)
 - **Agent**: Claude Code (Sonnet 4.6)
 - **Scope**: `GET /api/v1/stocks/{ticker}/3a-eligibility` + `EligibilityPanel` React-Komponente auf `/stocks/[ticker]`. Stub-Regelwerk: country='CH' → eligible, sonst nicht.

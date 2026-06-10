@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Download, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
@@ -100,9 +101,10 @@ function SortableTh({
 }
 
 export function StocksListClient() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [exchange, setExchange] = useState('');
-  const [sector, setSector] = useState('');
+  const [sector, setSector] = useState(searchParams.get('sector') ?? '');
   const [only3a, setOnly3a] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');

@@ -30,6 +30,7 @@ export function RunHistoryList() {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
   const [universeFilter, setUniverseFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const runsQuery = useQuery({
     queryKey: ['runs', 'history'],
@@ -42,9 +43,11 @@ export function RunHistoryList() {
   }, [runsQuery.data]);
 
   const visibleRuns = useMemo(() => {
-    const all = runsQuery.data ?? [];
-    return universeFilter ? all.filter((r) => r.universe_name === universeFilter) : all;
-  }, [runsQuery.data, universeFilter]);
+    let all = runsQuery.data ?? [];
+    if (universeFilter) all = all.filter((r) => r.universe_name === universeFilter);
+    if (statusFilter) all = all.filter((r) => r.status === statusFilter);
+    return all;
+  }, [runsQuery.data, universeFilter, statusFilter]);
 
   function toggle(runId: string) {
     setSelected((prev) => {
@@ -78,6 +81,17 @@ export function RunHistoryList() {
                 ))}
               </select>
             )}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-8 rounded-md border bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+              data-testid="run-history-status-filter"
+            >
+              <option value="">Alle Status</option>
+              <option value="completed">Abgeschlossen</option>
+              <option value="running">Läuft</option>
+              <option value="failed">Fehler</option>
+            </select>
             <Button
               size="sm"
               onClick={onCompare}

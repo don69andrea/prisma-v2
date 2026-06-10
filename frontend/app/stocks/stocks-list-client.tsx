@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Download, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
@@ -110,9 +111,10 @@ function loadStoredStocksFilters() {
 }
 
 export function StocksListClient() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
   const [exchange, setExchange] = useState(() => loadStoredStocksFilters()?.exchange ?? '');
-  const [sector, setSector] = useState(() => loadStoredStocksFilters()?.sector ?? '');
+  const [sector, setSector] = useState(() => searchParams.get('sector') ?? loadStoredStocksFilters()?.sector ?? '');
   const [only3a, setOnly3a] = useState(() => loadStoredStocksFilters()?.only3a ?? false);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');

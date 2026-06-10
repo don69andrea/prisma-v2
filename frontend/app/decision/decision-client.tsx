@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 
@@ -108,12 +108,39 @@ function exportDecisionCsv(signals: DecisionSignal[]) {
   URL.revokeObjectURL(url);
 }
 
+const LS_DECISION_KEY = 'prisma_decision_filters';
+
+function loadStoredDecision() {
+  try {
+    const raw = localStorage.getItem(LS_DECISION_KEY);
+    if (raw) return JSON.parse(raw) as {
+      signalFilter: SignalType | '';
+      eligibleOnly: boolean;
+      minConfidence: number;
+      sortKey: 'confidence' | 'quant_score' | 'ml_score' | 'ticker';
+    };
+  } catch {}
+  return null;
+}
+
 export function DecisionClient() {
   const [selectedUniverse, setSelectedUniverse] = useState<string>('');
-  const [signalFilter, setSignalFilter] = useState<SignalType | ''>('');
-  const [eligibleOnly, setEligibleOnly] = useState(false);
-  const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>('confidence');
-  const [minConfidence, setMinConfidence] = useState(0);
+  const [signalFilter, setSignalFilter] = useState<SignalType | ''>(() => loadStoredDecision()?.signalFilter ?? '');
+  const [eligibleOnly, setEligibleOnly] = useState(() => loadStoredDecision()?.eligibleOnly ?? false);
+  const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>(() => loadStoredDecision()?.sortKey ?? 'confidence');
+  const [minConfidence, setMinConfidence] = useState(() => loadStoredDecision()?.minConfidence ?? 0);
+
+  useEffect(() => {
+    localStorage.setItem(LS_DECISION_KEY, JSON.stringify({ signalFilter, eligibleOnly, minConfidence, sortKey }));
+  }, [signalFilter, eligibleOnly, minConfidence, sortKey]);
+
+  const hasActiveFilters = signalFilter !== '' || eligibleOnly || minConfidence > 0;
+
+  function resetFilters() {
+    setSignalFilter('');
+    setEligibleOnly(false);
+    setMinConfidence(0);
+  }
 
   const { data: universesData, isLoading: uLoading } = useQuery({
     queryKey: ['universes'],
@@ -242,6 +269,15 @@ export function DecisionClient() {
             <option value="ticker">Ticker A–Z</option>
           </select>
         </div>
+        {hasActiveFilters && (
+          <button
+            onClick={resetFilters}
+            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors self-end"
+            data-testid="decision-reset-filters-btn"
+          >
+            Alle Filter zurücksetzen
+          </button>
+        )}
       </div>
 
       {/* Signal-Zusammenfassung */}
@@ -305,8 +341,10 @@ export function DecisionClient() {
       {sortedSignals.length > 0 && (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              {sortedSignals.length} Signal{sortedSignals.length !== 1 ? 'e' : ''} gefunden
+            <p className="text-xs text-muted-foreground" data-testid="decision-signals-count">
+              {sortedSignals.length !== signals.length
+                ? `${sortedSignals.length} von ${signals.length} Signalen`
+                : `${sortedSignals.length} Signal${sortedSignals.length !== 1 ? 'e' : ''} gefunden`}
             </p>
             <button
               onClick={() => exportDecisionCsv(sortedSignals)}

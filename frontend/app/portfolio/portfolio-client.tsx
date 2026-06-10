@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { TrendingUp, TrendingDown, Minus, Plus, Trash2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Plus, Trash2, Download } from 'lucide-react';
 
 import {
   computeRebalancingPlan,
@@ -35,6 +35,30 @@ function chfFormat(v: number): string {
 
 function pctFormat(v: number): string {
   return (v * 100).toFixed(1) + '%';
+}
+
+function exportRebalancingCsv(plan: RebalancingPlan) {
+  const rows = [
+    ['Ticker', 'Aktion', 'Ist-Gewicht%', 'Soll-Gewicht%', 'Delta%', 'CHF-Wert', 'Transaktionskosten', '3a-eligible'],
+    ...plan.steps.map((s) => [
+      s.ticker,
+      s.action,
+      (s.current_weight * 100).toFixed(1),
+      (s.target_weight * 100).toFixed(1),
+      (s.delta_weight * 100).toFixed(1),
+      s.estimated_value_chf.toFixed(2),
+      s.transaction_cost_chf.toFixed(2),
+      s.is_3a_eligible ? 'ja' : 'nein',
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `rebalancing-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function RebalancingStepRow({ step }: { step: RebalancingStep }) {
@@ -73,6 +97,7 @@ function PlanResult({ plan }: { plan: RebalancingPlan }) {
 
   return (
     <div className="space-y-4" data-testid="rebalancing-result">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
       <div className="flex flex-wrap gap-3">
         <div className="rounded-lg border bg-card px-4 py-2 text-sm">
           <p className="text-muted-foreground text-xs">Portfoliowert</p>
@@ -100,6 +125,15 @@ function PlanResult({ plan }: { plan: RebalancingPlan }) {
             <Badge variant="secondary">3a BVV2</Badge>
           </div>
         )}
+      </div>
+      <button
+        onClick={() => exportRebalancingCsv(plan)}
+        className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors shrink-0"
+        data-testid="portfolio-csv-export-btn"
+      >
+        <Download className="h-3.5 w-3.5" />
+        CSV
+      </button>
       </div>
 
       <div className="overflow-x-auto rounded-lg border">

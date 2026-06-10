@@ -54,3 +54,15 @@ class PriceSeriesResponse(BaseModel):
 
     ticker: str
     prices: list[PricePoint]
+
+
+class FundamentalsRead(BaseModel):
+    """Fundamentaldaten-Snapshot für einen Ticker (Stub-Daten)."""
+
+    ticker: str
+    pe_ratio: float | None
+    pb_ratio: float | None
+    fcf_yield: float | None
+    operating_margin: float | None
+    dividend_yield: float | None
+    disclaimer: str

@@ -1,7 +1,8 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,8 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { generateMemo, type Memo } from '@/lib/api/memos';
 import { apiFetch } from '@/lib/api/client';
+import { getFundamentals } from '@/lib/api/fundamentals';
+import { FundamentalsCard } from '@/components/FundamentalsCard';
+import { useState } from 'react';
 
 interface StockDetail {
   id: string;
@@ -32,6 +37,12 @@ function FactsheetContent() {
   const [memo, setMemo] = useState<Memo | null>(null);
   const [memoLoading, setMemoLoading] = useState(false);
   const [memoError, setMemoError] = useState<string | null>(null);
+
+  const { data: fundamentals, isLoading: fundsLoading } = useQuery({
+    queryKey: ['fundamentals', symbol],
+    queryFn: () => getFundamentals(symbol),
+    staleTime: 10 * 60 * 1000,
+  });
 
   const handleRequestMemo = async () => {
     setMemoLoading(true);
@@ -75,13 +86,18 @@ function FactsheetContent() {
         </CardContent>
       </Card>
 
+      {fundsLoading ? (
+        <Skeleton className="h-48 w-full rounded-xl" />
+      ) : fundamentals ? (
+        <FundamentalsCard data={fundamentals} />
+      ) : null}
+
       {memo && (
         <Card data-testid="memo-card">
           <CardHeader>
             <CardTitle>Research-Memo</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* stub display — replaced by MemoPanel in Task 10 */}
             <p className="whitespace-pre-wrap text-sm" data-testid="memo-content">
               {memo.one_liner}
             </p>

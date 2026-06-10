@@ -275,9 +275,24 @@ export function RankingsTable({ items, runId, swissTickers }: RankingsTableProps
                   <Link
                     href={ROUTES.factsheet(runId, item.ticker)}
                     onClick={(e) => e.stopPropagation()}
-                    className="block w-full"
+                    className="flex items-center gap-1.5"
                   >
-                    {formatNumber(item.total_rank)}
+                    {item.total_rank === 1 && (
+                      <span className="text-[10px] font-bold text-amber-500" data-testid="rank-medal-1">🥇</span>
+                    )}
+                    {item.total_rank === 2 && (
+                      <span className="text-[10px] font-bold text-slate-400" data-testid="rank-medal-2">🥈</span>
+                    )}
+                    {item.total_rank === 3 && (
+                      <span className="text-[10px] font-bold text-orange-400" data-testid="rank-medal-3">🥉</span>
+                    )}
+                    <span className={
+                      item.total_rank === 1 ? 'text-amber-600 font-bold dark:text-amber-400' :
+                      item.total_rank === 2 ? 'text-slate-500 font-semibold dark:text-slate-300' :
+                      item.total_rank === 3 ? 'text-orange-500 font-semibold dark:text-orange-400' : ''
+                    }>
+                      {formatNumber(item.total_rank)}
+                    </span>
                   </Link>
                 </TableCell>
                 <TableCell className="font-mono">

@@ -19,6 +19,16 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
+const LS_ALERT_FORM_KEY = 'prisma_alert_form_config';
+
+function loadStoredAlertForm() {
+  try {
+    const raw = localStorage.getItem(LS_ALERT_FORM_KEY);
+    if (raw) return JSON.parse(raw) as { triggerType: TriggerType; threshold: string; channel: ChannelType; target: string };
+  } catch {}
+  return null;
+}
+
 const TRIGGER_LABELS: Record<TriggerType, string> = {
   PRICE_CHANGE: 'Kursänderung',
   SIGNAL_CHANGE: 'Signalwechsel',
@@ -88,15 +98,16 @@ function AlertRow({ alert, onDelete }: { alert: Alert; onDelete: () => void }) {
 
 function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => void; initialTicker?: string }) {
   const [ticker, setTicker] = useState(initialTicker);
-  const [triggerType, setTriggerType] = useState<TriggerType>('PRICE_CHANGE');
-  const [threshold, setThreshold] = useState('5');
-  const [channel, setChannel] = useState<ChannelType>('EMAIL');
-  const [target, setTarget] = useState('');
+  const [triggerType, setTriggerType] = useState<TriggerType>(() => loadStoredAlertForm()?.triggerType ?? 'PRICE_CHANGE');
+  const [threshold, setThreshold] = useState(() => loadStoredAlertForm()?.threshold ?? '5');
+  const [channel, setChannel] = useState<ChannelType>(() => loadStoredAlertForm()?.channel ?? 'EMAIL');
+  const [target, setTarget] = useState(() => loadStoredAlertForm()?.target ?? '');
   const [error, setError] = useState('');
 
   const mutation = useMutation({
     mutationFn: createAlert,
     onSuccess: () => {
+      localStorage.setItem(LS_ALERT_FORM_KEY, JSON.stringify({ triggerType, threshold, channel, target }));
       setTicker('');
       setThreshold('5');
       setTarget('');

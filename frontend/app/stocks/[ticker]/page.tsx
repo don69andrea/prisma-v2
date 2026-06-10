@@ -86,14 +86,12 @@ function FactsheetContent() {
   const [memoLoading, setMemoLoading] = useState(false);
   const [memoError, setMemoError] = useState<string | null>(null);
 
-  // Optional: load full factsheet for Swiss fields (badge, SIX link, market_cap_chf)
   const { data: factsheet } = useQuery({
     queryKey: ['factsheet', symbol],
     queryFn: () => getFactsheet(symbol),
     retry: false,
   });
 
-  // Optional: load Langfrist-Score for Swiss stocks
   const { data: langfrist } = useQuery({
     queryKey: ['langfrist-score', symbol],
     queryFn: () => getLangfristScore(symbol),
@@ -113,7 +111,6 @@ function FactsheetContent() {
     retry: false,
     staleTime: 5 * 60 * 1_000,
   });
-
 
   const { data: prices } = useQuery({
     queryKey: ['prices', symbol],
@@ -188,7 +185,15 @@ function FactsheetContent() {
             {factsheet?.stock?.sector && (
               <>
                 <dt className="text-muted-foreground">Sektor</dt>
-                <dd>{factsheet.stock.sector}</dd>
+                <dd>
+                  <Link
+                    href={`/stocks?sector=${encodeURIComponent(factsheet.stock.sector)}`}
+                    className="hover:underline"
+                    data-testid="factsheet-sector-link"
+                  >
+                    {factsheet.stock.sector}
+                  </Link>
+                </dd>
               </>
             )}
             {factsheet?.stock?.market_cap_chf && (
@@ -256,7 +261,6 @@ function FactsheetContent() {
       <AuditPanel ticker={symbol} />
 
       <EligibilityPanel ticker={symbol} />
-
 
       {memo && (
         <Card data-testid="memo-card">

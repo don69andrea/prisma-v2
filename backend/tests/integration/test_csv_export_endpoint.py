@@ -1,4 +1,4 @@
-"""Integrationstests für GET /api/v1/runs/{run_id}/export?format=csv."""
+"""Integrationstests fuer GET /api/v1/runs/{run_id}/export?format=csv."""
 
 from __future__ import annotations
 
@@ -10,8 +10,10 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from backend.application.services.ranking_run_service import RankingRunNotFound, RankingRunService
+from backend.application.services.stock_service import StockService
+from backend.domain.entities.stock import Stock
 from backend.interfaces.rest.app import create_app
-from backend.interfaces.rest.dependencies import get_ranking_run_service
+from backend.interfaces.rest.dependencies import get_ranking_run_service, get_stock_service
 
 pytestmark = pytest.mark.integration
 
@@ -34,6 +36,11 @@ _RANKINGS = [
     },
 ]
 
+_STOCKS = {
+    "NESN": Stock(id=uuid.uuid4(), ticker="NESN", name="Nestlé S.A.", sector="Consumer Staples", currency="CHF"),
+    "NOVN": Stock(id=uuid.uuid4(), ticker="NOVN", name="Novartis AG", sector="Healthcare", currency="CHF"),
+}
+
 
 def _make_service(rankings: list[Any]) -> RankingRunService:
     svc = AsyncMock(spec=RankingRunService)
@@ -47,19 +54,27 @@ def _make_service_not_found() -> RankingRunService:
     return svc
 
 
+def _make_stock_service() -> StockService:
+    svc = AsyncMock(spec=StockService)
+    async def _get(ticker: str) -> Stock | None:
+        return _STOCKS.get(ticker.upper())
+    svc.get_by_ticker = _get
+    return svc
+
+
 @pytest.fixture
 def app_with_rankings() -> Any:
-    mock = _make_service(_RANKINGS)
     application = create_app()
-    application.dependency_overrides[get_ranking_run_service] = lambda: mock
+    application.dependency_overrides[get_ranking_run_service] = lambda: _make_service(_RANKINGS)
+    application.dependency_overrides[get_stock_service] = lambda: _make_stock_service()
     return application
 
 
 @pytest.fixture
 def app_not_found() -> Any:
-    mock = _make_service_not_found()
     application = create_app()
-    application.dependency_overrides[get_ranking_run_service] = lambda: mock
+    application.dependency_overrides[get_ranking_run_service] = lambda: _make_service_not_found()
+    application.dependency_overrides[get_stock_service] = lambda: _make_stock_service()
     return application
 
 
@@ -85,13 +100,25 @@ async def test_csv_export_content(app_with_rankings: Any) -> None:
     header = lines[0]
     assert "rank" in header
     assert "ticker" in header
+    assert "name" in header
+    assert "sector" in header
     assert "weighted_avg" in header
     assert "is_sweet_spot" in header
-    # NESN is rank 1 — should appear in first data row
     assert "NESN" in lines[1]
     assert "true" in lines[1]
     assert "NOVN" in lines[2]
     assert "false" in lines[2]
+
+
+@pytest.mark.asyncio
+async def test_csv_export_name_sector_enrichment(app_with_rankings: Any) -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_rankings), base_url="http://test"
+    ) as client:
+        resp = await client.get(f"/api/v1/runs/{_RUN_ID}/export?format=csv")
+    body = resp.text
+    assert "Nestlé S.A." in body
+    assert "Consumer Staples" in body
 
 
 @pytest.mark.asyncio

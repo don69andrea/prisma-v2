@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -100,14 +100,28 @@ function SortableTh({
   );
 }
 
+const LS_STOCKS_KEY = 'prisma_stocks_filters';
+
+function loadStoredStocksFilters() {
+  try {
+    const raw = localStorage.getItem(LS_STOCKS_KEY);
+    if (raw) return JSON.parse(raw) as { exchange: string; sector: string; only3a: boolean };
+  } catch {}
+  return null;
+}
+
 export function StocksListClient() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
-  const [exchange, setExchange] = useState('');
-  const [sector, setSector] = useState(searchParams.get('sector') ?? '');
-  const [only3a, setOnly3a] = useState(false);
+  const [exchange, setExchange] = useState(() => loadStoredStocksFilters()?.exchange ?? '');
+  const [sector, setSector] = useState(() => searchParams.get('sector') ?? loadStoredStocksFilters()?.sector ?? '');
+  const [only3a, setOnly3a] = useState(() => loadStoredStocksFilters()?.only3a ?? false);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  useEffect(() => {
+    localStorage.setItem(LS_STOCKS_KEY, JSON.stringify({ exchange, sector, only3a }));
+  }, [exchange, sector, only3a]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['stocks-list', exchange],
@@ -153,6 +167,15 @@ export function StocksListClient() {
     a.download = `aktien-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  const hasActiveFilters = search !== '' || exchange !== '' || sector !== '' || only3a;
+
+  function resetFilters() {
+    setSearch('');
+    setExchange('');
+    setSector('');
+    setOnly3a(false);
   }
 
   function handleSort(key: SortKey) {
@@ -209,6 +232,15 @@ export function StocksListClient() {
           />
           Nur 3a-geeignet
         </label>
+        {hasActiveFilters && (
+          <button
+            onClick={resetFilters}
+            className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            data-testid="stocks-reset-filters-btn"
+          >
+            Filter zurücksetzen
+          </button>
+        )}
         <button
           onClick={exportCsv}
           disabled={filteredAndSorted.length === 0}

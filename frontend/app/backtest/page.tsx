@@ -60,6 +60,26 @@ function exportMetricsCsv(
   URL.revokeObjectURL(url);
 }
 
+function exportSeriesCsv(result: BacktestResult) {
+  const rows = [
+    ['Datum', 'PRISMA%', 'Universum%', 'Benchmark%'],
+    ...result.series.dates.map((d, i) => [
+      d,
+      `${((parseFloat(result.series.prisma[i]) - 1) * 100).toFixed(2)}`,
+      `${((parseFloat(result.series.universe[i]) - 1) * 100).toFixed(2)}`,
+      `${((parseFloat(result.series.benchmark[i]) - 1) * 100).toFixed(2)}`,
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `backtest-zeitreihe-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function fmtMetric(v: string, pct: boolean): string {
   const n = parseFloat(v);
   if (isNaN(n)) return '—';
@@ -99,13 +119,23 @@ function MetricsTable({
   );
 }
 
+const LS_KEY = 'prisma_backtest_config';
+
+function loadStoredConfig() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw) as { startDate: string; endDate: string; topN: number; benchmark: string };
+  } catch {}
+  return null;
+}
+
 function BacktestContent() {
   const searchParams = useSearchParams();
   const [runId, setRunId] = useState(searchParams.get('run_id') ?? '');
-  const [startDate, setStartDate] = useState(searchParams.get('start') ?? '2025-01-01');
-  const [endDate, setEndDate] = useState(searchParams.get('end') ?? '2025-12-31');
-  const [topN, setTopN] = useState(Number(searchParams.get('top_n') ?? '3'));
-  const [benchmark, setBenchmark] = useState(searchParams.get('benchmark') ?? '^SSMI');
+  const [startDate, setStartDate] = useState(() => searchParams.get('start') ?? loadStoredConfig()?.startDate ?? '2025-01-01');
+  const [endDate, setEndDate] = useState(() => searchParams.get('end') ?? loadStoredConfig()?.endDate ?? '2025-12-31');
+  const [topN, setTopN] = useState(() => Number(searchParams.get('top_n') ?? String(loadStoredConfig()?.topN ?? 3)));
+  const [benchmark, setBenchmark] = useState(() => searchParams.get('benchmark') ?? loadStoredConfig()?.benchmark ?? '^SSMI');
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +179,7 @@ function BacktestContent() {
         benchmark_ticker: benchmark,
       });
       setResult(data);
+      try { localStorage.setItem(LS_KEY, JSON.stringify({ startDate, endDate, topN, benchmark })); } catch {}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Backtest-Fehler');
     } finally {
@@ -272,14 +303,24 @@ function BacktestContent() {
                 {startDate} – {endDate} · Top {topN} · {benchmark}
               </CardDescription>
             </div>
-            <button
-              onClick={() => exportMetricsCsv(result.prisma_metrics, result.universe_metrics, result.benchmark_metrics)}
-              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
-              data-testid="backtest-metrics-csv-btn"
-            >
-              <Download className="h-3 w-3" />
-              CSV
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportSeriesCsv(result)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                data-testid="backtest-series-csv-btn"
+              >
+                <Download className="h-3 w-3" />
+                Zeitreihe CSV
+              </button>
+              <button
+                onClick={() => exportMetricsCsv(result.prisma_metrics, result.universe_metrics, result.benchmark_metrics)}
+                className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                data-testid="backtest-metrics-csv-btn"
+              >
+                <Download className="h-3 w-3" />
+                CSV
+              </button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div data-testid="backtest-chart" className="h-80">

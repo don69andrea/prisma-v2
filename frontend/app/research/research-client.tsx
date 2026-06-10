@@ -4,7 +4,39 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, ExternalLink } from 'lucide-react';
+import { Search, ExternalLink, Download } from 'lucide-react';
+
+const LS_RESEARCH_KEY = 'prisma_research_last_search';
+
+function loadStoredResearch() {
+  try {
+    const raw = localStorage.getItem(LS_RESEARCH_KEY);
+    if (raw) return JSON.parse(raw) as { query: string; ticker: string };
+  } catch {}
+  return null;
+}
+
+function exportResearchCsv(results: Array<{ ticker?: string; doc_type?: string; form?: string; filing_date?: string; filed_at?: string; similarity: number; source?: string; company?: string; content: string }>, filename: string) {
+  const rows = [
+    ['Ticker', 'Typ', 'Datum', 'Ähnlichkeit%', 'Quelle/Unternehmen', 'Inhalt'],
+    ...results.map((r) => [
+      r.ticker ?? r.company ?? '',
+      r.doc_type ?? r.form ?? '',
+      r.filing_date ?? r.filed_at ?? '',
+      Math.round(r.similarity * 100).toString(),
+      r.source ?? r.company ?? '',
+      (r.content ?? '').slice(0, 200),
+    ]),
+  ];
+  const csv = rows.map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 import {
   retrieveSecFilings,
@@ -97,11 +129,14 @@ function SecResultCard({ item }: { item: SecChunkResult }) {
 export function ResearchClient() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<TabType>('swiss');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => loadStoredResearch()?.query ?? '');
   const [ticker, setTicker] = useState(
-    () => searchParams.get('ticker')?.toUpperCase() ?? '',
+    () => searchParams.get('ticker')?.toUpperCase() ?? loadStoredResearch()?.ticker ?? '',
   );
-  const [swissLang, setSwissLang] = useState<'' | 'de' | 'en' | 'fr'>('');
+  const [swissLang, setSwissLang] = useState<'' | 'de' | 'en' | 'fr'>(() => {
+    const lang = searchParams.get('lang');
+    return (lang === 'de' || lang === 'en' || lang === 'fr') ? lang : '';
+  });
   const [swissResults, setSwissResults] = useState<SwissChunkResult[] | null>(null);
   const [secResults, setSecResults] = useState<SecChunkResult[] | null>(null);
 
@@ -113,13 +148,19 @@ export function ResearchClient() {
         ticker: ticker.trim() || undefined,
         language: swissLang || undefined,
       }),
-    onSuccess: (data) => setSwissResults(data.results),
+    onSuccess: (data) => {
+      setSwissResults(data.results);
+      try { localStorage.setItem(LS_RESEARCH_KEY, JSON.stringify({ query, ticker })); } catch {}
+    },
   });
 
   const secMutation = useMutation({
     mutationFn: () =>
       retrieveSecFilings({ query, k: 10, ticker: ticker.trim() || undefined }),
-    onSuccess: (data) => setSecResults(data.results),
+    onSuccess: (data) => {
+      setSecResults(data.results);
+      try { localStorage.setItem(LS_RESEARCH_KEY, JSON.stringify({ query, ticker })); } catch {}
+    },
   });
 
   const isPending = tab === 'swiss' ? swissMutation.isPending : secMutation.isPending;
@@ -217,9 +258,20 @@ export function ResearchClient() {
             </p>
           ) : (
             <>
-              <p className="text-xs text-muted-foreground">
-                {results.length} Treffer
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">{results.length} Treffer</p>
+                <button
+                  onClick={() => exportResearchCsv(
+                    results as Parameters<typeof exportResearchCsv>[0],
+                    `research-${tab}-${new Date().toISOString().slice(0, 10)}.csv`,
+                  )}
+                  className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+                  data-testid="research-csv-export-btn"
+                >
+                  <Download className="h-3 w-3" />
+                  CSV
+                </button>
+              </div>
               {tab === 'swiss'
                 ? (swissResults ?? []).map((r) => (
                     <SwissResultCard key={r.chunk_id} item={r} />

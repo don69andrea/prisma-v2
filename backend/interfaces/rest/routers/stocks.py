@@ -5,13 +5,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.stock_service import StockNotFound, StockService
 from backend.application.services.swiss_market_service import SwissMarketService
+from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.interfaces.rest.dependencies import (
     get_factsheet_service,
+    get_fundamentals_provider,
     get_stock_service,
     get_swiss_market_service,
 )
 from backend.interfaces.rest.schemas.langfrist import LangfristScoreResponse
 from backend.interfaces.rest.schemas.stock import (
+    EligibilityRead,
+    FundamentalsRead,
     LatestRankingSnapshot,
     PricePoint,
     PriceSeriesResponse,
@@ -93,6 +97,66 @@ async def get_factsheet(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     snapshot = LatestRankingSnapshot.model_validate(raw) if raw is not None else None
     return StockFactsheet(stock=StockRead.model_validate(stock), latest_ranking=snapshot)
+
+
+_FUNDAMENTALS_DISCLAIMER = "Stub-Daten für Demo-Zwecke. Kein Anlageberatung."
+
+
+@router.get(
+    "/stocks/{ticker}/fundamentals",
+    response_model=FundamentalsRead,
+    summary="Fundamentaldaten abrufen",
+    description="Gibt Fundamentalkennzahlen (P/E, P/B, FCF-Rendite, …) für einen Ticker zurück.",
+)
+async def get_stock_fundamentals(
+    ticker: str,
+    stock_service: StockService = Depends(get_stock_service),
+    fundamentals_provider: FundamentalsProvider = Depends(get_fundamentals_provider),
+) -> FundamentalsRead:
+    stock = await stock_service.get_by_ticker(ticker)
+    if stock is None:
+        raise HTTPException(
+            status_code=404, detail=f"Stock '{ticker.upper()}' nicht gefunden"
+        ) from None
+    data = await fundamentals_provider.get_fundamentals([stock.ticker])
+    f = data.get(stock.ticker, {})
+    return FundamentalsRead(
+        ticker=stock.ticker,
+        pe_ratio=f.get("pe_ratio"),
+        pb_ratio=f.get("pb_ratio"),
+        fcf_yield=f.get("fcf_yield"),
+        operating_margin=f.get("operating_margin"),
+        dividend_yield=f.get("dividend_yield"),
+        disclaimer=_FUNDAMENTALS_DISCLAIMER,
+    )
+
+
+_ELIGIBILITY_DISCLAIMER = "Regelbasiert – keine Anlageberatung."
+
+
+@router.get(
+    "/stocks/{ticker}/3a-eligibility",
+    response_model=EligibilityRead,
+    summary="3a-Eignung abrufen",
+    description="Gibt an, ob eine Aktie die BVV2-Kriterien für Säule-3a erfüllt (regelbasierter Stub).",
+)
+async def get_3a_eligibility(
+    ticker: str,
+    service: StockService = Depends(get_stock_service),
+) -> EligibilityRead:
+    stock = await service.get_by_ticker(ticker)
+    if stock is None:
+        raise HTTPException(
+            status_code=404, detail=f"Stock '{ticker.upper()}' nicht gefunden"
+        ) from None
+    eligible = stock.country == "CH"
+    reasons: list[str] = [] if eligible else ["Nicht an anerkannter Börse kotiert (SIX/BX Swiss)"]
+    return EligibilityRead(
+        ticker=stock.ticker,
+        eligible=eligible,
+        reasons=reasons,
+        disclaimer=_ELIGIBILITY_DISCLAIMER,
+    )
 
 
 @router.get(

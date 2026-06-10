@@ -86,6 +86,7 @@ function FactsheetContent() {
   const [memoLoading, setMemoLoading] = useState(false);
   const [memoError, setMemoError] = useState<string | null>(null);
 
+<<<<<<< HEAD
   // Optional: load full factsheet for Swiss fields (badge, SIX link, market_cap_chf)
   const { data: factsheet } = useQuery({
     queryKey: ['factsheet', symbol],
@@ -120,6 +121,18 @@ function FactsheetContent() {
     queryFn: () => getPrices(symbol),
     staleTime: 5 * 60 * 1000,
     retry: false,
+=======
+  const { data: fundamentals, isLoading: fundsLoading } = useQuery({
+    queryKey: ['fundamentals', symbol],
+    queryFn: () => getFundamentals(symbol),
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: eligibility, isLoading: eligibilityLoading } = useQuery({
+    queryKey: ['3a-eligibility', symbol],
+    queryFn: () => getEligibility(symbol),
+    staleTime: 30 * 60 * 1000,
+>>>>>>> origin/main
   });
 
   const handleRequestMemo = async () => {
@@ -237,6 +250,7 @@ function FactsheetContent() {
         </CardContent>
       </Card>
 
+<<<<<<< HEAD
       {langfrist && <LangfristCard score={langfrist} />}
 
       {fundamentalsData && <FundamentalsCard data={fundamentalsData} />}
@@ -257,6 +271,19 @@ function FactsheetContent() {
 
       <EligibilityPanel ticker={symbol} />
 
+=======
+      {fundsLoading ? (
+        <Skeleton className="h-48 w-full rounded-xl" />
+      ) : fundamentals ? (
+        <FundamentalsCard data={fundamentals} />
+      ) : null}
+
+      {eligibilityLoading ? (
+        <Skeleton className="h-24 w-full rounded-xl" />
+      ) : eligibility ? (
+        <EligibilityPanel data={eligibility} />
+      ) : null}
+>>>>>>> origin/main
 
       {memo && (
         <Card data-testid="memo-card">
@@ -264,10 +291,14 @@ function FactsheetContent() {
             <CardTitle>Research-Memo</CardTitle>
           </CardHeader>
           <CardContent>
+<<<<<<< HEAD
             <p
               className="whitespace-pre-wrap text-sm"
               data-testid="memo-content"
             >
+=======
+            <p className="whitespace-pre-wrap text-sm" data-testid="memo-content">
+>>>>>>> origin/main
               {memo.one_liner}
             </p>
           </CardContent>

@@ -172,19 +172,34 @@ function PlanResult({ plan }: { plan: RebalancingPlan }) {
   );
 }
 
+const LS_PORTFOLIO_KEY = 'prisma_portfolio_positions';
+
+const DEFAULT_POSITIONS: PositionRow[] = [
+  { ticker: 'NESN', current: '30', target: '25' },
+  { ticker: 'NOVN', current: '25', target: '30' },
+  { ticker: 'ROG',  current: '20', target: '20' },
+  { ticker: 'ABBN', current: '25', target: '25' },
+];
+
+function loadStoredPortfolio() {
+  try {
+    const raw = localStorage.getItem(LS_PORTFOLIO_KEY);
+    if (raw) return JSON.parse(raw) as { totalValue: string; is3a: boolean; positions: PositionRow[] };
+  } catch {}
+  return null;
+}
+
 export function PortfolioClient() {
-  const [totalValue, setTotalValue] = useState('100000');
-  const [is3a, setIs3a] = useState(false);
-  const [positions, setPositions] = useState<PositionRow[]>([
-    { ticker: 'NESN', current: '30', target: '25' },
-    { ticker: 'NOVN', current: '25', target: '30' },
-    { ticker: 'ROG',  current: '20', target: '20' },
-    { ticker: 'ABBN', current: '25', target: '25' },
-  ]);
+  const [totalValue, setTotalValue] = useState(() => loadStoredPortfolio()?.totalValue ?? '100000');
+  const [is3a, setIs3a] = useState(() => loadStoredPortfolio()?.is3a ?? false);
+  const [positions, setPositions] = useState<PositionRow[]>(() => loadStoredPortfolio()?.positions ?? DEFAULT_POSITIONS);
   const [error, setError] = useState('');
 
   const mutation = useMutation({
     mutationFn: computeRebalancingPlan,
+    onSuccess: () => {
+      try { localStorage.setItem(LS_PORTFOLIO_KEY, JSON.stringify({ totalValue, is3a, positions })); } catch {}
+    },
     onError: () => setError('Rebalancing konnte nicht berechnet werden.'),
   });
 

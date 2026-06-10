@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { LatestRankingSnapshot, StockRead } from '@/lib/api/stocks';
 import { SwissBadge } from '@/components/ui/swiss-badge';
+import { ExportReportButton } from './ExportReportButton';
 
 function formatMarketCap(value: string): string {
   const n = parseFloat(value);
@@ -64,15 +65,18 @@ export function StockHeader({ stock, ranking }: Props) {
             </div>
           </div>
 
-          {/* Right: total rank */}
-          {ranking?.total_rank != null && (
-            <div className="text-right">
-              <div className="text-4xl font-bold tabular-nums">
-                #{ranking.total_rank}
+          {/* Right: total rank + export */}
+          <div className="flex flex-col items-end gap-3">
+            {ranking?.total_rank != null && (
+              <div className="text-right">
+                <div className="text-4xl font-bold tabular-nums">
+                  #{ranking.total_rank}
+                </div>
+                <div className="text-xs text-muted-foreground">Gesamtrang</div>
               </div>
-              <div className="text-xs text-muted-foreground">Gesamtrang</div>
-            </div>
-          )}
+            )}
+            <ExportReportButton ticker={stock.ticker} />
+          </div>
         </div>
         {stock.market_cap_chf != null && (
           <div className="mt-2 text-sm text-muted-foreground">

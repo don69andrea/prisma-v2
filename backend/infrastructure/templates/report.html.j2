@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 15mm 18mm 15mm 18mm;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: #0a0a14;
+    color: #e2e8f0;
+    font-size: 10pt;
+    line-height: 1.5;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6mm;
+    padding-bottom: 4mm;
+    border-bottom: 2px solid #7c3aed;
+  }
+
+  .header-left .brand {
+    font-size: 7pt;
+    color: #7c3aed;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .header-left .company {
+    font-size: 18pt;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+  }
+
+  .header-left .ticker-exchange {
+    font-size: 10pt;
+    color: #94a3b8;
+    font-family: monospace;
+  }
+
+  .header-right {
+    text-align: right;
+    color: #64748b;
+    font-size: 8pt;
+  }
+
+  .signal-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4mm 6mm;
+    border-radius: 3mm;
+    margin-bottom: 5mm;
+  }
+
+  .signal-banner.OUTPERFORM   { background: #052e16; border: 1px solid #16a34a; }
+  .signal-banner.NEUTRAL      { background: #1c1408; border: 1px solid #d97706; }
+  .signal-banner.UNDERPERFORM { background: #1a0a0a; border: 1px solid #dc2626; }
+
+  .signal-label {
+    font-size: 16pt;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+
+  .signal-banner.OUTPERFORM   .signal-label { color: #4ade80; }
+  .signal-banner.NEUTRAL      .signal-label { color: #fbbf24; }
+  .signal-banner.UNDERPERFORM .signal-label { color: #f87171; }
+
+  .signal-meta { text-align: right; color: #94a3b8; font-size: 9pt; }
+
+  .conf-bar-container {
+    width: 60mm;
+    height: 4px;
+    background: #1e293b;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 2mm;
+  }
+
+  .conf-bar { height: 100%; border-radius: 2px; }
+  .signal-banner.OUTPERFORM   .conf-bar { background: #4ade80; }
+  .signal-banner.NEUTRAL      .conf-bar { background: #fbbf24; }
+  .signal-banner.UNDERPERFORM .conf-bar { background: #f87171; }
+
+  .two-col { display: flex; gap: 5mm; margin-bottom: 5mm; }
+  .col-left  { flex: 1; }
+  .col-right { flex: 1; }
+
+  .card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 3mm;
+    padding: 4mm;
+    margin-bottom: 4mm;
+  }
+
+  .card-title {
+    font-size: 7pt;
+    color: #7c3aed;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 3mm;
+  }
+
+  .fund-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+
+  .fund-item {
+    background: #0f172a;
+    border-radius: 2mm;
+    padding: 2.5mm 3mm;
+  }
+
+  .fund-label { font-size: 7pt; color: #64748b; }
+  .fund-value { font-size: 11pt; font-weight: 700; color: #e2e8f0; }
+
+  .shap-row { display: flex; align-items: center; gap: 2mm; margin-bottom: 1.5mm; }
+  .shap-label { width: 35mm; font-size: 8pt; color: #94a3b8; text-align: right; }
+
+  .shap-bar-pos {
+    height: 5px;
+    border-radius: 0 2px 2px 0;
+    background: linear-gradient(90deg, #16a34a, #4ade80);
+  }
+
+  .shap-bar-neg {
+    height: 5px;
+    border-radius: 2px 0 0 2px;
+    background: linear-gradient(270deg, #dc2626, #f87171);
+  }
+
+  .shap-value {
+    font-size: 8pt;
+    font-family: monospace;
+    width: 15mm;
+    text-align: left;
+    color: #64748b;
+  }
+
+  .badge-3a {
+    display: inline-block;
+    padding: 1mm 3mm;
+    border-radius: 2mm;
+    font-size: 8pt;
+    font-weight: 700;
+  }
+
+  .badge-3a.eligible   { background: #052e16; color: #4ade80; border: 1px solid #16a34a; }
+  .badge-3a.ineligible { background: #1a0a0a; color: #f87171; border: 1px solid #dc2626; }
+
+  .narrative {
+    font-style: italic;
+    color: #cbd5e1;
+    font-size: 9pt;
+    line-height: 1.6;
+    border-left: 2px solid #7c3aed;
+    padding-left: 3mm;
+  }
+
+  .footer {
+    border-top: 1px solid #1e293b;
+    padding-top: 3mm;
+    font-size: 7pt;
+    color: #334155;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="brand">PRISMA V2</div>
+    <div class="company">{{ company_name }}</div>
+    <div class="ticker-exchange">{{ ticker }} · {{ exchange }}</div>
+  </div>
+  <div class="header-right">
+    <div>Investment Report</div>
+    <div>{{ generated_at }}</div>
+    <div style="margin-top:1mm; color: #475569">Quantitative Analysis</div>
+  </div>
+</div>
+
+<div class="signal-banner {{ ml_signal }}">
+  <div>
+    <div style="font-size:8pt; color:#94a3b8; margin-bottom:1mm;">ML-PREDICTION</div>
+    <div class="signal-label">{{ ml_signal }}</div>
+  </div>
+  <div class="signal-meta">
+    <div>Konfidenz</div>
+    <div style="font-size:12pt; font-weight:700;">{{ (ml_confidence * 100) | round(0) | int }}%</div>
+    <div class="conf-bar-container">
+      <div class="conf-bar" style="width: {{ (ml_confidence * 100) | round(0) | int }}%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="col-left">
+    <div class="card">
+      <div class="card-title">Quant Scores</div>
+      {% for name, score in quant_scores.items() %}
+      <div style="display:flex; justify-content:space-between; font-size:8pt; margin-bottom:1.5mm;">
+        <span style="color:#94a3b8;">{{ name }}</span>
+        <span style="font-weight:700; color:{% if score >= 70 %}#4ade80{% elif score >= 40 %}#fbbf24{% else %}#f87171{% endif %};">{{ score | round(1) }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="card">
+      <div class="card-title">3a Eignung (FINMA)</div>
+      <span class="badge-3a {% if eligible_3a %}eligible{% else %}ineligible{% endif %}">
+        {% if eligible_3a %}&#x2713; 3a-geeignet{% else %}&#x2717; Nicht 3a-geeignet{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <div class="col-right">
+    <div class="card">
+      <div class="card-title">Fundamentaldaten</div>
+      <div class="fund-grid">
+        <div class="fund-item">
+          <div class="fund-label">KGV (P/E)</div>
+          <div class="fund-value">{% if pe_ratio %}{{ pe_ratio | round(1) }}x{% else %}—{% endif %}</div>
+        </div>
+        <div class="fund-item">
+          <div class="fund-label">KBV (P/B)</div>
+          <div class="fund-value">{% if pb_ratio %}{{ pb_ratio | round(1) }}x{% else %}—{% endif %}</div>
+        </div>
+        <div class="fund-item">
+          <div class="fund-label">Dividendenrendite</div>
+          <div class="fund-value">{% if dividend_yield %}{{ (dividend_yield * 100) | round(2) }}%{% else %}—{% endif %}</div>
+        </div>
+        <div class="fund-item">
+          <div class="fund-label">Market Cap</div>
+          <div class="fund-value">{% if market_cap_chf %}CHF {{ (market_cap_chf / 1000000000) | round(1) }}Mrd{% else %}—{% endif %}</div>
+        </div>
+      </div>
+    </div>
+
+    {% if shap_top5 %}
+    <div class="card">
+      <div class="card-title">Warum {{ ml_signal }}? (SHAP)</div>
+      {% set max_abs = namespace(val=0.001) %}
+      {% for entry in shap_top5 %}
+        {% if entry.shap_value | abs > max_abs.val %}{% set max_abs.val = entry.shap_value | abs %}{% endif %}
+      {% endfor %}
+      {% for entry in shap_top5 %}
+      {% set bar_w = ((entry.shap_value | abs) / max_abs.val * 40) | round(1) %}
+      <div class="shap-row">
+        <div class="shap-label">{{ entry.label[:18] }}</div>
+        {% if entry.shap_value >= 0 %}
+          <div style="width:1px; height:8px; background:#334155; margin:0 1mm;"></div>
+          <div class="shap-bar-pos" style="width:{{ bar_w }}mm;"></div>
+        {% else %}
+          <div class="shap-bar-neg" style="width:{{ bar_w }}mm;"></div>
+          <div style="width:1px; height:8px; background:#334155; margin:0 1mm;"></div>
+        {% endif %}
+        <div class="shap-value" style="color:{% if entry.shap_value >= 0 %}#4ade80{% else %}#f87171{% endif %};">
+          {% if entry.shap_value >= 0 %}+{% endif %}{{ entry.shap_value | round(3) }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if narrative_summary %}
+<div class="card">
+  <div class="card-title">Research-Zusammenfassung</div>
+  <div class="narrative">{{ narrative_summary }}</div>
+</div>
+{% endif %}
+
+<div class="footer">
+  Generiert von PRISMA V2 &mdash; Quantitative Stock Intelligence Platform &middot; {{ generated_at }} &middot;
+  <strong>Keine Anlageberatung.</strong> Alle Daten ohne Gewähr. FHNW BI Module 2026.
+</div>
+
+</body>
+</html>

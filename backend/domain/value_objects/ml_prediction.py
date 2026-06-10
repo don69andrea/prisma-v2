@@ -2,9 +2,24 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from typing import ClassVar
+
+
+@dataclass(frozen=True)
+class SHAPEntry:
+    """Ein Feature-Beitrag aus SHAP TreeExplainer.
+
+    shap_value: SHAP-Wert (positiv = Richtung OUTPERFORM, negativ = Richtung UNDERPERFORM)
+    feature_value: Roher Feature-Wert (z.B. 0.18 für ROE)
+    label: Human-readable Name für UI-Anzeige
+    """
+
+    feature: str
+    shap_value: float
+    feature_value: float
+    label: str
 
 
 @dataclass(frozen=True)
@@ -15,6 +30,8 @@ class MLPrediction:
     signal: "UNDERPERFORM" | "NEUTRAL" | "OUTPERFORM"
     probabilities: Wahrscheinlichkeit je Klasse (0–1, Summe ≈ 1)
     confidence: max(probabilities) als Konfidenz-Maß
+    shap_values: Top-8 Feature-Contributions sortiert nach |shap_value|
+    shap_expected_value: Modell-Baseline (Durchschnitt über Trainingsdaten)
     """
 
     ticker: str
@@ -27,6 +44,8 @@ class MLPrediction:
     confidence: float
     model_type: str
     features: dict[str, float]
+    shap_values: list[SHAPEntry] = field(default_factory=list)
+    shap_expected_value: float = 0.0
 
     _CLASS_TO_SIGNAL: ClassVar[dict[int, str]] = {0: "UNDERPERFORM", 1: "NEUTRAL", 2: "OUTPERFORM"}
 

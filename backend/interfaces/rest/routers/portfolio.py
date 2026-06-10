@@ -7,6 +7,11 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.application.agents.portfolio_agent import PortfolioAgent
+from backend.application.services.monte_carlo_service import (
+    HoldingWeight,
+    MonteCarloInput,
+    MonteCarloService,
+)
 from backend.application.services.ranking_run_service import RankingRunNotFound, RankingRunService
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
@@ -15,6 +20,7 @@ from backend.interfaces.rest.dependencies import (
     get_ranking_run_service,
     get_swiss_stock_repository,
 )
+from backend.interfaces.rest.schemas.monte_carlo import MonteCarloRequest, MonteCarloResponse
 from backend.interfaces.rest.schemas.portfolio import (
     PortfolioAllocateRequest,
     PortfolioAllocationResponse,
@@ -86,4 +92,38 @@ async def allocate_portfolio(
         computed_at=allocation.computed_at,
         eligible_only=allocation.eligible_only,
         total_positions=len(allocation.positions),
+    )
+
+
+@router.post(
+    "/monte-carlo",
+    response_model=MonteCarloResponse,
+    summary="Monte Carlo 3a Retirement Simulator",
+    description="Simuliert N Wealth-Paths (GBM) für ein Portfolio über 1–40 Jahre. Keine Anlageberatung.",
+)
+async def monte_carlo(req: MonteCarloRequest) -> MonteCarloResponse:
+    svc = MonteCarloService()
+    inp = MonteCarloInput(
+        holdings=[HoldingWeight(ticker=h.ticker, weight=h.weight) for h in req.holdings],
+        monthly_contribution=req.monthly_contribution,
+        years=req.years,
+        initial_value=req.initial_value,
+        n_simulations=req.n_simulations,
+    )
+    try:
+        result = await svc.simulate(inp)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
+
+    return MonteCarloResponse(
+        p5=result.p5,
+        p50=result.p50,
+        p95=result.p95,
+        final_distribution=result.final_distribution,
+        prob_positive_return=result.prob_positive_return,
+        prob_500k=result.prob_500k,
+        contribution_total=result.contribution_total,
+        months=result.months,
     )

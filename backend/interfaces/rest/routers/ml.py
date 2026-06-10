@@ -7,7 +7,11 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.application.services.ml_prediction_service import MLPredictionService
-from backend.interfaces.rest.schemas.ml_predict import MLPredictRequest, MLPredictResponse
+from backend.interfaces.rest.schemas.ml_predict import (
+    MLPredictRequest,
+    MLPredictResponse,
+    SHAPEntryResponse,
+)
 
 router = APIRouter(prefix="/api/v1/ml", tags=["ml"])
 _logger = logging.getLogger(__name__)
@@ -63,4 +67,14 @@ async def predict(
         confidence=result.confidence,
         model_type=result.model_type,
         features=result.features,
+        shap_values=[
+            SHAPEntryResponse(
+                feature=e.feature,
+                shap_value=e.shap_value,
+                feature_value=e.feature_value,
+                label=e.label,
+            )
+            for e in result.shap_values
+        ],
+        shap_expected_value=result.shap_expected_value,
     )

@@ -14,6 +14,7 @@ const navLinks = [
   { href: ROUTES.decision,  label: 'Signale' },
   { href: ROUTES.alerts,    label: 'Alerts' },
   { href: ROUTES.portfolio, label: 'Portfolio' },
+  { href: ROUTES.simulator, label: '3a Sim' },
   { href: ROUTES.fonds,     label: 'Fonds' },
   { href: ROUTES.stocks,    label: 'Aktien' },
   { href: ROUTES.news,      label: 'News' },

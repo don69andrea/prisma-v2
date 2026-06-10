@@ -1,0 +1,38 @@
+"""REST Router: PRISMA Chat — SSE Streaming via Claude Tool Use."""
+
+from __future__ import annotations
+
+import logging
+
+from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
+
+from backend.application.services.chat_service import ChatMessage, ChatService
+from backend.interfaces.rest.schemas.chat import ChatRequest
+
+router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
+_logger = logging.getLogger(__name__)
+
+
+@router.post(
+    "",
+    summary="PRISMA Chat — Natursprache-Query mit Claude Tool Use",
+    description=(
+        "Streamt SSE-Events: token | tool_call | tool_result | done | error. "
+        "Nutzt Claude mit PRISMA-Tools (search_stocks, filter_stocks, get_factsheet, "
+        "get_macro_context, compare_stocks, get_ranking)."
+    ),
+)
+async def chat(req: ChatRequest) -> StreamingResponse:
+    svc = ChatService()
+    messages = [ChatMessage(role=m.role, content=m.content) for m in req.history]
+    messages.append(ChatMessage(role="user", content=req.message))
+
+    return StreamingResponse(
+        svc.stream(messages),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )

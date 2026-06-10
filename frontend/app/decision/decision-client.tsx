@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 
 import Link from 'next/link';
 import { listUniverses } from '@/lib/api/universes';
@@ -81,6 +82,30 @@ function SignalCard({ item }: { item: DecisionSignal }) {
       </div>
     </div>
   );
+}
+
+function exportDecisionCsv(signals: DecisionSignal[]) {
+  const rows = [
+    ['Ticker', 'Signal', 'Confidence%', 'Quant-Score', 'ML-Score', 'Macro-Score', '3a-eligible', 'Datum'],
+    ...signals.map((s) => [
+      s.ticker,
+      s.signal,
+      Math.round(s.confidence * 100).toString(),
+      s.quant_score.toFixed(1),
+      s.ml_score.toFixed(0),
+      s.macro_score.toFixed(0),
+      s.is_3a_eligible ? 'ja' : 'nein',
+      new Date(s.snapshot_date).toLocaleDateString('de-CH', { dateStyle: 'short' }),
+    ]),
+  ];
+  const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `signale-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function DecisionClient() {
@@ -259,9 +284,19 @@ export function DecisionClient() {
 
       {sortedSignals.length > 0 && (
         <>
-          <p className="text-xs text-muted-foreground">
-            {sortedSignals.length} Signal{sortedSignals.length !== 1 ? 'e' : ''} gefunden
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              {sortedSignals.length} Signal{sortedSignals.length !== 1 ? 'e' : ''} gefunden
+            </p>
+            <button
+              onClick={() => exportDecisionCsv(sortedSignals)}
+              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"
+              data-testid="decision-csv-export-btn"
+            >
+              <Download className="h-3 w-3" />
+              CSV
+            </button>
+          </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {sortedSignals.map((item) => (
               <SignalCard key={item.ticker} item={item} />

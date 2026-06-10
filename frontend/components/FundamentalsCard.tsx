@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { FundamentalsRead } from '@/lib/api/fundamentals';
 
@@ -29,14 +30,12 @@ export function FundamentalsCard({ data }: FundamentalsCardProps) {
       <CardContent className="space-y-3">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           {ROWS.map(({ label, key, format }) => (
-            <>
-              <dt key={`dt-${key}`} className="text-muted-foreground">
-                {label}
-              </dt>
-              <dd key={`dd-${key}`} className="font-mono font-medium tabular-nums">
+            <React.Fragment key={key}>
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="font-mono font-medium tabular-nums">
                 {format(data[key] as number | null)}
               </dd>
-            </>
+            </React.Fragment>
           ))}
         </dl>
         <p className="text-xs text-muted-foreground border-t pt-2">{data.disclaimer}</p>

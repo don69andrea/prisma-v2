@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -13,17 +13,37 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.asyncio
 async def test_dispatch_tool_search_stocks() -> None:
-    mock_stock_service = AsyncMock()
-    mock_stock_service.search.return_value = []
+    nesn = MagicMock()
+    nesn.ticker = "NESN"
+    nesn.name = "Nestlé S.A."
+    novn = MagicMock()
+    novn.ticker = "NOVN"
+    novn.name = "Novartis AG"
 
-    with patch(
-        "backend.application.services.chat_service._get_stock_service",
-        return_value=mock_stock_service,
+    mock_ctx = AsyncMock()
+    mock_ctx.__aenter__ = AsyncMock(return_value=AsyncMock())
+    mock_ctx.__aexit__ = AsyncMock(return_value=False)
+
+    mock_svc = AsyncMock()
+    mock_svc.list_smi_stocks = AsyncMock(return_value=[nesn, novn])
+
+    with (
+        patch(
+            "backend.infrastructure.persistence.session.get_session_factory",
+            return_value=MagicMock(return_value=mock_ctx),
+        ),
+        patch(
+            "backend.application.services.swiss_market_service.SwissMarketService",
+            return_value=mock_svc,
+        ),
+        patch(
+            "backend.infrastructure.persistence.repositories.swiss_stock_repository.SQLASwissStockRepository",
+        ),
     ):
-        result = await _dispatch_tool("search_stocks", {"query": "Nestlé"})
+        result = await _dispatch_tool("search_stocks", {"query": "nestlé"})
 
-    mock_stock_service.search.assert_called_once_with("Nestlé")
     assert isinstance(result, str)
+    mock_svc.list_smi_stocks.assert_called_once()
 
 
 @pytest.mark.asyncio

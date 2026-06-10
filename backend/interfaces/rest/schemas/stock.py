@@ -54,3 +54,10 @@ class PriceSeriesResponse(BaseModel):
 
     ticker: str
     prices: list[PricePoint]
+
+
+class EligibilityRead(BaseModel):
+    ticker: str
+    eligible: bool
+    reasons: list[str]
+    disclaimer: str

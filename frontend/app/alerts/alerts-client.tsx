@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -200,6 +200,8 @@ export function AlertsClient() {
   const searchParams = useSearchParams();
   const initialTicker = searchParams.get('ticker')?.toUpperCase() ?? '';
   const queryClient = useQueryClient();
+  const [triggerFilter, setTriggerFilter] = useState<'all' | TriggerType>('all');
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['alerts'],
     queryFn: listAlerts,
@@ -214,9 +216,44 @@ export function AlertsClient() {
     queryClient.invalidateQueries({ queryKey: ['alerts'] });
   }
 
+  const triggerCounts = useMemo(() => ({
+    PRICE_CHANGE:  data?.alerts.filter((a) => a.trigger_type === 'PRICE_CHANGE').length  ?? 0,
+    SIGNAL_CHANGE: data?.alerts.filter((a) => a.trigger_type === 'SIGNAL_CHANGE').length ?? 0,
+  }), [data]);
+
+  const visibleAlerts = useMemo(() => {
+    if (!data) return [];
+    if (triggerFilter === 'all') return data.alerts;
+    return data.alerts.filter((a) => a.trigger_type === triggerFilter);
+  }, [data, triggerFilter]);
+
   return (
     <div className="space-y-6">
       <CreateAlertForm onCreated={handleCreated} initialTicker={initialTicker} />
+
+      {data && data.alerts.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {([
+            { key: 'all',           label: 'Alle',          count: data.alerts.length },
+            { key: 'PRICE_CHANGE',  label: 'Kursänderung',  count: triggerCounts.PRICE_CHANGE },
+            { key: 'SIGNAL_CHANGE', label: 'Signalwechsel', count: triggerCounts.SIGNAL_CHANGE },
+          ] as const).map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setTriggerFilter(key)}
+              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                triggerFilter === key
+                  ? 'border-transparent bg-foreground text-background'
+                  : 'bg-background hover:bg-muted'
+              }`}
+              data-testid={key === 'all' ? 'alerts-filter-all' : key === 'PRICE_CHANGE' ? 'alerts-filter-price' : 'alerts-filter-signal'}
+            >
+              {label}
+              <span className="tabular-nums">{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-2">
         {isLoading && (
@@ -235,13 +272,18 @@ export function AlertsClient() {
             Keine Alerts konfiguriert.
           </p>
         )}
-        {data?.alerts.map((alert) => (
+        {visibleAlerts.map((alert) => (
           <AlertRow
             key={alert.id}
             alert={alert}
             onDelete={() => deleteMutation.mutate(alert.id)}
           />
         ))}
+        {data && data.alerts.length > 0 && visibleAlerts.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Keine Alerts für diesen Trigger-Typ.
+          </p>
+        )}
       </div>
 
       <p className="text-xs text-muted-foreground border-t pt-3">

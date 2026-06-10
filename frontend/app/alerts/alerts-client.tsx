@@ -243,6 +243,15 @@ export function AlertsClient() {
       <CreateAlertForm onCreated={handleCreated} initialTicker={initialTicker} />
 
       {data && data.alerts.length > 0 && (
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold">Meine Alerts</h2>
+          <Badge variant="secondary" className="text-xs" data-testid="alerts-count-badge">
+            {data.alerts.length}
+          </Badge>
+        </div>
+      )}
+
+      {data && data.alerts.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           {([
             { key: 'all',           label: 'Alle',          count: data.alerts.length },

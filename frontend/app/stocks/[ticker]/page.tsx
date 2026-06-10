@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,8 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { generateMemo, type Memo } from '@/lib/api/memos';
 import { apiFetch } from '@/lib/api/client';
+import { getEligibility } from '@/lib/api/eligibility';
+import { EligibilityPanel } from '@/components/EligibilityPanel';
 
 interface StockDetail {
   id: string;
@@ -32,6 +36,12 @@ function FactsheetContent() {
   const [memo, setMemo] = useState<Memo | null>(null);
   const [memoLoading, setMemoLoading] = useState(false);
   const [memoError, setMemoError] = useState<string | null>(null);
+
+  const { data: eligibility, isLoading: eligibilityLoading } = useQuery({
+    queryKey: ['3a-eligibility', symbol],
+    queryFn: () => getEligibility(symbol),
+    staleTime: 30 * 60 * 1000,
+  });
 
   const handleRequestMemo = async () => {
     setMemoLoading(true);
@@ -74,6 +84,12 @@ function FactsheetContent() {
           {memoError && <p className="text-sm text-destructive">{memoError}</p>}
         </CardContent>
       </Card>
+
+      {eligibilityLoading ? (
+        <Skeleton className="h-24 w-full rounded-xl" />
+      ) : eligibility ? (
+        <EligibilityPanel data={eligibility} />
+      ) : null}
 
       {memo && (
         <Card data-testid="memo-card">

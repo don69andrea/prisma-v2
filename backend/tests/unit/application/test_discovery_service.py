@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -48,7 +49,7 @@ def _make_service(stocks: list[SwissStock], composite: float = 75.0) -> Discover
     return service
 
 
-def _make_profile(**kwargs) -> InvestorProfile:
+def _make_profile(**kwargs: Any) -> InvestorProfile:
     defaults = {"session_id": "test-sess"}
     defaults.update(kwargs)
     return InvestorProfile(**defaults)

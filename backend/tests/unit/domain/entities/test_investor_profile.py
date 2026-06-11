@@ -1,5 +1,6 @@
 """Unit-Tests für InvestorProfile Domain Entity."""
 
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -10,7 +11,7 @@ from backend.domain.entities.investor_profile import InvestorProfile
 pytestmark = pytest.mark.unit
 
 
-def _make_profile(**overrides) -> InvestorProfile:
+def _make_profile(**overrides: Any) -> InvestorProfile:
     defaults = {"session_id": "test-session-abc"}
     defaults.update(overrides)
     return InvestorProfile(**defaults)

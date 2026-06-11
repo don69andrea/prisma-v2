@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -115,7 +116,7 @@ class TestClassifyTurn4:
 
 
 class TestCalculateConfidence:
-    def _profile(self, **kwargs) -> InvestorProfile:
+    def _profile(self, **kwargs: Any) -> InvestorProfile:
         return InvestorProfile(session_id="s", **kwargs)
 
     def test_empty_profile_is_zero(self) -> None:

@@ -19,11 +19,11 @@ from backend.infrastructure.persistence.models.embedding import (  # noqa: F401
     DocumentORM,
     EmbeddingChunkORM,
 )
-from backend.infrastructure.persistence.models.memo_batch_job import (  # noqa: F401
-    MemoBatchJobORM,
-)
 from backend.infrastructure.persistence.models.investor_profile import (  # noqa: F401
     InvestorProfileORM,
+)
+from backend.infrastructure.persistence.models.memo_batch_job import (  # noqa: F401
+    MemoBatchJobORM,
 )
 from backend.infrastructure.persistence.models.research_memo import ResearchMemoORM  # noqa: F401
 

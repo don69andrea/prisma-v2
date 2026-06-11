@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import { Download, ChevronDown, ChevronUp } from 'lucide-react';
 
 import Link from 'next/link';
 import { listUniverses } from '@/lib/api/universes';
@@ -37,8 +37,52 @@ function ConfidenceBar({ value }: { value: number }) {
   );
 }
 
+function AuditTrail({ item }: { item: DecisionSignal }) {
+  const quantContrib = item.quant_score * 0.45;
+  const mlContrib    = item.ml_score    * 0.35;
+  const macroContrib = item.macro_score * 0.20;
+
+  const rows = [
+    { label: 'Quant-Score',  score: item.quant_score,  weight: 45, contrib: quantContrib },
+    { label: 'ML-Predictor', score: item.ml_score,     weight: 35, contrib: mlContrib    },
+    { label: 'Makro-Score',  score: item.macro_score,  weight: 20, contrib: macroContrib },
+  ];
+
+  return (
+    <div className="rounded-md bg-muted/50 p-3 space-y-2 text-[11px]">
+      <p className="text-muted-foreground font-medium uppercase tracking-wider text-[10px]">
+        Audit-Trail — Signal-Herleitung
+      </p>
+      <div className="space-y-1.5">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center gap-2">
+            <span className="w-24 text-muted-foreground shrink-0">{r.label}</span>
+            <span className="w-8 tabular-nums text-right font-medium">{r.score.toFixed(1)}</span>
+            <span className="text-muted-foreground">×{r.weight}%</span>
+            <div className="flex-1 h-1 rounded-full bg-border overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary/60 transition-all"
+                style={{ width: `${Math.min(r.contrib, 100)}%` }}
+              />
+            </div>
+            <span className="w-8 tabular-nums text-right">{r.contrib.toFixed(1)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between border-t border-border pt-1.5 font-semibold">
+        <span className="text-muted-foreground">Gesamt-Score</span>
+        <span>{item.weighted_score.toFixed(2)}</span>
+      </div>
+      <p className="text-muted-foreground text-[10px]">
+        BUY ≥ 65 · HOLD 40–64 · WATCH &lt; 40
+      </p>
+    </div>
+  );
+}
+
 function SignalCard({ item }: { item: DecisionSignal }) {
   const cfg = SIGNAL_CONFIG[item.signal] ?? SIGNAL_CONFIG.WATCH;
+  const [auditOpen, setAuditOpen] = useState(false);
 
   return (
     <div className="rounded-lg border bg-card p-4 space-y-3 hover:shadow-sm transition-shadow">
@@ -81,6 +125,17 @@ function SignalCard({ item }: { item: DecisionSignal }) {
           <p className="font-medium">{item.macro_score.toFixed(0)}</p>
         </div>
       </div>
+
+      <button
+        onClick={() => setAuditOpen((v) => !v)}
+        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors w-full"
+        aria-expanded={auditOpen}
+      >
+        {auditOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        {auditOpen ? 'Audit-Trail schliessen' : 'Audit-Trail anzeigen'}
+      </button>
+
+      {auditOpen && <AuditTrail item={item} />}
     </div>
   );
 }

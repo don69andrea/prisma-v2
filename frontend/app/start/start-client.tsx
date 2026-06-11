@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createDiscoverySession, submitAnswer, completeDiscovery } from '@/lib/api/discovery';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -627,10 +629,21 @@ export function StartClient() {
   const [risiko, setRisiko] = useState<Risiko | null>(null);
   const [brands, setBrands] = useState<string[]>([]);
   const [kennerMode, setKennerMode] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  function handleEntdecker() {
+  async function handleEntdecker() {
     setKennerMode(false);
+    setIsLoading(true);
+    try {
+      const session = await createDiscoverySession();
+      setSessionId(session.session_id);
+    } catch {
+      // Proceed without session — fallback to local-only flow
+    } finally {
+      setIsLoading(false);
+    }
     setStep('beruf');
   }
 
@@ -638,34 +651,77 @@ export function StartClient() {
     setKennerMode(true);
   }
 
-  function handleBeruf(value: string) {
+  async function handleBeruf(value: string) {
     setBeruf(value);
+    if (sessionId) {
+      try {
+        await submitAnswer(sessionId, 1, value);
+      } catch {
+        // Non-blocking — continue local flow
+      }
+    }
     setStep('ziel');
   }
 
-  function handleZiel(value: Ziel) {
+  async function handleZiel(value: Ziel) {
     setZiel(value);
+    if (sessionId) {
+      try {
+        await submitAnswer(sessionId, 2, value);
+      } catch {
+        // Non-blocking — continue local flow
+      }
+    }
     setStep('risiko');
   }
 
-  function handleRisiko(value: Risiko) {
+  async function handleRisiko(value: Risiko) {
     setRisiko(value);
+    if (sessionId) {
+      try {
+        await submitAnswer(sessionId, 3, value);
+      } catch {
+        // Non-blocking — continue local flow
+      }
+    }
     setStep('brands');
   }
 
-  function handleBrands(value: string[]) {
+  async function handleBrands(value: string[]) {
     setBrands(value);
+    if (sessionId) {
+      setIsLoading(true);
+      try {
+        await submitAnswer(sessionId, 4, value);
+        await completeDiscovery(sessionId);
+        localStorage.setItem('prisma_session_id', sessionId);
+        router.push('/stocks');
+        return;
+      } catch {
+        // Fallback to local reveal view on error
+      } finally {
+        setIsLoading(false);
+      }
+    }
     setStep('reveal');
   }
 
   function handleContinue() {
-    router.push('/decision');
+    router.push('/stocks');
   }
 
   if (kennerMode) {
     return (
       <div className="min-h-[60vh]">
         <KennerSearch onBack={() => setKennerMode(false)} />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <LoadingState type="discover" />
       </div>
     );
   }

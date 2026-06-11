@@ -808,11 +808,23 @@ export function StartClient() {
         const discovery = await getPersonalizedStocks(profile.session_id);
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(discovery));
       } catch {
-        // Backend noch nicht verfügbar — lokales Profil reicht für Demo
+        // Backend nicht verfügbar — Fallback aus Brand-Auswahl aufbauen damit
+        // /discover nicht als EmptyState endet (Demo-Flow muss durchgehend funktionieren)
+        const defaultTickers = ['NESN', 'ROG', 'NOVN', 'ABBN', 'UBSG', 'LOGN', 'CFR', 'ZURN'];
+        const stocksToShow = knownBrandObjs.length > 0
+          ? knownBrandObjs
+          : BRANDS.filter((b) => defaultTickers.includes(b.ticker));
+
         const fallback = {
           session_id: sessionId,
-          total: 0,
-          stocks: [],
+          total: stocksToShow.length,
+          stocks: stocksToShow.map((b) => ({
+            ticker: b.ticker,
+            name: b.name,
+            sector: CATEGORY_TO_SECTOR[b.category] ?? null,
+            market_cap_chf: null,
+            exchange: 'XSWX',
+          })),
         };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(fallback));
       }

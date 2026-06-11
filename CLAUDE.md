@@ -24,13 +24,13 @@ Kurzkontext für Claude Code. **Quelle der Wahrheit ist `AGENTS.md`** — dieses
 
 ## Projekt in einem Satz
 
-PRISMA V2 = quantitative Stock-Intelligence-Plattform für den Schweizer Markt (SMI/SMIM/SPI), Swiss Quant Scoring Engine + Claude-Narrative-Engine + VIAC 3a-Entscheidungsunterstützung. FHNW Capstone FS 2026.
+PRISMA V2 = quantitative Stock-Intelligence-Plattform für den Schweizer Markt (SMI/SMIM/SPI), Swiss Quant Scoring Engine + Claude-Narrative-Engine + VIAC 3a-Entscheidungsunterstützung. FHNW BI Module FS 2026 — Gruppenarbeit Andrea, Helin, Aurelius.
 
 ## Vor jeder Aufgabe lesen
 
-1. `AGENTS.md` — verbindliche Konventionen (Goldene Regeln, Security, Gitflow)
-2. `docs/superpowers/plans/` — aktueller Implementierungsplan wenn vorhanden
-3. `docs/superpowers/specs/` — Design-Docs für laufende Features
+1. `AGENTS.md` — Coding-Konventionen (Python, TypeScript, Tests, Architecture)
+2. `CLAUDE.md` STATUS-Block oben — wer macht was, was ist DONE
+3. Den aktuellen Task aus dem STATUS-Block nehmen und starten
 
 ## Swiss Market Kontext
 
@@ -64,8 +64,8 @@ pytest backend/tests/unit/domain/test_swiss_quant_scorer.py -v
 
 ## Claude-Code-spezifische Regeln
 
-### Spec-First
-Wenn der User eine neue Feature-Arbeit verlangt, **schreibe zuerst den Plan** nach `docs/superpowers/plans/YYYY-MM-DD-*.md`, committe ihn, und führe dann aus. Nutze `superpowers:brainstorming` → `superpowers:writing-plans` → `superpowers:subagent-driven-development`.
+### Neue Features
+Wenn der User eine neue Aufgabe verlangt: kurz den Plan skizzieren (in Chat), Freigabe abwarten, dann direkt implementieren. Kein separates Spec-File nötig.
 
 ### TDD-Pflicht
 Für Domain-Code, Quant-Modelle, Application Services: Tests schreiben **bevor** die Implementierung existiert (Red-Green-Refactor). `pytestmark = pytest.mark.unit` in allen Unit-Test-Files.

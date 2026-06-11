@@ -142,11 +142,11 @@ function FactsheetContent() {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <Link
-          href={runId ? `/rankings/${runId}` : '/rankings'}
+          href={runId ? `/rankings/${runId}` : '/discover'}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-1 h-4 w-4" />
-          Zurück
+          {runId ? 'Zurück' : 'Mein Universe'}
         </Link>
         <div className="flex items-center gap-3">
           <Link

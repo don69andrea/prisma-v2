@@ -12,7 +12,7 @@
 
 ## PRISMA V2 — Evolutionsplan
 
-PRISMA startete als Capstone-Projekt (FHNW FS 2026): ein quantitatives Stock-Selection-Tool mit LLM-Narrativen und Multi-Agent-Pipeline. V2 ist die konsequente Weiterentwicklung mit zwei Zielen:
+PRISMA V2 ist eine quantitative Stock-Intelligence-Plattform für den Schweizer Markt — entwickelt im Rahmen des BI-Moduls (FHNW FS 2026) als Gruppenarbeit von Andrea, Helin und Aurelius. Zwei Ziele:
 
 **ZIEL 1 — FHNW BI Module (Gruppenarbeit):** Den BI-Layer auf PRISMA aufbauen — echtes ML (XGBoost Return Prediction), Portfolio Intelligence Agent (5. Agent), Macro Intelligence Agent (SNB/CHF), und ein Decision Intelligence Dashboard mit BUY/HOLD/WATCH Signalen. Jede Entscheidung ist begründet, auditierbar, erklärbar.
 
@@ -20,19 +20,16 @@ PRISMA startete als Capstone-Projekt (FHNW FS 2026): ein quantitatives Stock-Sel
 
 ---
 
-## DAS CAPSTONE-FUNDAMENT — WAS BEREITS EXISTIERT
+## PRISMA V2 — WAS BEREITS EXISTIERT
 
-| | | |
-|---|---|---|
-| **Quant Core** | **Narrative Engine** | **Multi-Agent Deep-Dive** |
-| 5 Modelle: Quality Classic, Quality Alpha, Trend Momentum/EWMA, Value Alpha Potential, Diversification (Ledoit-Wolf) | Claude Sonnet + Tool-Use + Pydantic. Strukturierte Research-Memos pro Aktie: Stärken, Risiken, Modell-Widersprüche, Analyst-One-Liner | Fundamentals-Agent + Sentiment-Agent + Synthesizer-Agent — parallelisierte Dossiers für Top-N Picks |
-| `Quant` | `AI` | `Agent` |
-
-| | | |
-|---|---|---|
-| **MCP-Server** | **Backtest** | **Run-Vergleich** |
-| PRISMA direkt aus Claude Desktop per Natursprache nutzbar: *"Zeig mir Top-20% Quality + Trend Titel"* | Benchmark-Vergleich (S&P 500, SMI) mit Sharpe, MaxDrawdown, annualisierter Rendite | Side-by-Side zweier Runs mit Δ Rank + Δ Score. Cross-Universe-Modus |
-| `MCP` | `Analyse` | `Dashboard` |
+| Komponente | Beschreibung |
+|---|---|
+| **Quant Core** | 5 Scoring-Modelle: Quality, Trend Momentum, Value, Diversification (Ledoit-Wolf) — SMI-kalibriert |
+| **Narrative Engine** | Claude Sonnet + Tool-Use + Pydantic. Research-Memos: Stärken, Risiken, One-Liner |
+| **Multi-Agent Pipeline** | Fundamentals-Agent + Sentiment-Agent + Synthesizer-Agent |
+| **Discovery Engine** | 5-Schritt-Onboarding: Beruf → Ziel → Risiko-Feeling-Test → Brands → Profil-Reveal |
+| **MCP-Server** | PRISMA aus Claude Desktop per Natursprache nutzbar |
+| **Backtest** | Benchmark-Vergleich (SMI) mit Sharpe, MaxDrawdown, annualisierter Rendite |
 
 ---
 
@@ -240,17 +237,14 @@ npx playwright test         # E2E (Frontend)
 ## ENTWICKLUNGS-WORKFLOW
 
 ```
-Brainstorming → Spec-First → Plan-as-Contract → Subagent-Driven Execution → Two-Stage Review → Reflexion
+feature/andrea-* ──┐
+feature/helin-*  ──┼──► develop ──► main
+feature/aurelius-* ─┘
 ```
 
-1. **Brainstorming** — Architekturentscheidungen mit dem Team durchspielen, eine Frage pro Turn
-2. **Spec-First** — Jedes Feature startet mit `docs/specs/YYYY-MM-DD-*.md`. Kein Code ohne freigegebene Spec
-3. **Plan-as-Contract** — Detaillierte Implementationspläne (800–1500 Zeilen) als verbindlicher Vertrag
-4. **Subagent-Driven Execution** — Frischer Subagent pro Task, kein Kontext-Spill zwischen Tasks
-5. **Two-Stage Review** — Spec-Compliance-Review + Code-Quality-Review als separate Subagents
-6. **Reflexion** — Jeder PR mit AI-Beteiligung landet in `docs/AI-USAGE.md`
+Jede Person arbeitet auf ihrem Feature-Branch. PRs gehen nach `develop`, kein direkter Push auf `main`. Commit-Format: Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`).
 
-Der Agent-Vertrag für alle Coding-Agents: [`AGENTS.md`](./AGENTS.md)
+Der Coding-Konventions-Vertrag für alle Agents: [`AGENTS.md`](./AGENTS.md)
 
 ---
 
@@ -269,19 +263,10 @@ Der Agent-Vertrag für alle Coding-Agents: [`AGENTS.md`](./AGENTS.md)
 
 | Dokument | Inhalt |
 |---|---|
-| [`AGENTS.md`](./AGENTS.md) | Verbindlicher Verhaltensvertrag für alle Coding-Agents |
-| [`docs/specs/`](./docs/specs) | Spec-First: ein .md pro Feature, vor erstem Commit |
-| [`docs/superpowers/plans/`](./docs/superpowers/plans) | Implementationspläne (Plan-as-Contract) |
-| [`docs/adr/`](./docs/adr) | Architecture Decision Records mit Status-Feld |
-| [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) | AI-Nutzungs-Reflexion pro PR |
+| [`CLAUDE.md`](./CLAUDE.md) | Kontext für Claude Code Agents — Status, Tasks, Swiss Market Regeln |
+| [`AGENTS.md`](./AGENTS.md) | Technische Coding-Konventionen (Python, TypeScript, Tests) |
 
 ---
-
-## CAPSTONE-URSPRUNG
-
-PRISMA V2 baut auf dem Capstone-Projekt *AI-assisted Software Development* auf (BSc Business Artificial Intelligence, FHNW Hochschule für Wirtschaft, FS 2026). Das ursprüngliche Repo: [SheylaSam/prisma-capstone](https://github.com/SheylaSam/prisma-capstone).
-
-Das Capstone lieferte das Fundament: Clean Architecture, 5 Quant-Modelle, Narrative Engine, Multi-Agent-Pipeline, MCP-Server, Backtest, CI/CD. V2 baut darauf auf — ohne das Fundament zu brechen.
 
 ---
 

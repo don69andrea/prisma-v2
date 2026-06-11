@@ -980,6 +980,19 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 <!-- Neue Einträge oben an die Liste anfügen. -->
 
+## 2026-06-11 · Navigation Restructure Spec + Plan (R2.4-4)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: Spec `docs/specs/2026-06-11-navigation-restructure.md` + Plan
+  `docs/superpowers/plans/2026-06-11-navigation-plan.md` für Navigation-Restrukturierung
+  in 5 semantische Bereiche (ENTDECKEN, ANALYSIEREN, VERGLEICHEN, ENTSCHEIDEN, PORTFOLIO).
+  Kein Implementierungscode — nur Spec + Plan gemäss AGENTS.md §2.1/2.2.
+- **Was gut lief**: Bestehende `nav-links.tsx` und `routes.ts` gelesen, bevor die Spec
+  geschrieben wurde (Reality-Check-Pattern P2). Alle 14 Links inventarisiert und in neue
+  Gruppen verteilt ohne eine Route zu verlieren.
+- **Was nicht klappte**: Noch keine — Implementierung steht aus (wartet auf Spec-Freigabe).
+- **Nachbearbeitung nötig bei**: Implementation nach User-Freigabe der Spec.
+- **Autor**: Helin Koyuncu (mit Claude Code)
+
 ## 2026-06-10 · Rankings CSV-Export – Backend-Endpoint (#65)
 - **Agent**: Claude Code (Sonnet 4.6)
 - **Scope**: `GET /api/v1/runs/{run_id}/export?format=csv` — Response mit CSV-Header, Stock-Anreicherung (name/sector) via StockService, Content-Disposition-Header; 5 Integrationstests.

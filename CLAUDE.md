@@ -10,11 +10,11 @@
 | R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Helin | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.3-5 | Backend: InvestorProfile Model + DB Migration | Aurelius | `feature/aurelius-investorprofile` | ✅ DONE | — |
 | R2.3-6 | Backend: DiscoveryService + API Endpoints | Aurelius | `feature/aurelius-investorprofile` | ✅ DONE | — |
-| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns | Andrea | `feature/helin-discovery-ui-clean` | ✅ DONE | — |
-| R2.4-2 | /start: Brand Logo Grid + Risk-Feeling-Test + ProfileReveal | Helin | `feature/helin-discovery-ui-clean` | ✅ DONE | — |
+| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns | Andrea | `feature/helin-discovery-ui` | ✅ DONE | — |
+| R2.4-2 | /start: Brand Logo Grid + Risk-Feeling-Test + ProfileReveal | Helin | `feature/helin-discovery-ui` | ✅ DONE | — |
 | R2.4-3 | Haiku-Klassifikation + Session-State + Konfidenz-Score | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE | — |
 | R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Helin | `feature/helin-navigation` | ✅ DONE | — |
-| R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui-clean` | ✅ DONE | — |
+| R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui` | ✅ DONE | — |
 | R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE | — |
 | R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ NEXT | — |
 

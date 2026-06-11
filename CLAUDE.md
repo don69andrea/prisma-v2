@@ -4,18 +4,18 @@
 
 | # | Aufgabe | Person | Branch | Status | Blockiert durch |
 |---|---------|--------|--------|--------|-----------------|
-| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | 🔄 IN PROGRESS | — |
-| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | ⬜ NEXT | R2.3-1 |
-| R2.3-3 | Frontend: SignalBadge + PrismaScore + ExplainButton | Helin | `feature/helin-ux-components` | 🔄 IN PROGRESS | — |
-| R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Helin | `feature/helin-ux-components` | ⬜ NEXT | — |
+| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | — |
+| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | 🔄 IN PROGRESS | — |
+| R2.3-3 | Frontend: SignalBadge + PrismaScore + ExplainButton | Helin | `feature/helin-ux-components` | ✅ DONE | — |
+| R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Helin | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.3-5 | Backend: InvestorProfile Model + DB Migration | Aurelius | `feature/aurelius-investorprofile` | ✅ DONE | — |
 | R2.3-6 | Backend: DiscoveryService + API Endpoints | Aurelius | `feature/aurelius-investorprofile` | ✅ DONE | — |
-| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns | Andrea | `feature/andrea-discovery-engine` | ⬜ NEXT | — |
+| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns | Andrea | `feature/andrea-discovery-engine` | 🔄 IN PROGRESS | — |
 | R2.4-2 | /start: Brand Logo Grid + Risk-Feeling-Test + ProfileReveal | Helin | `feature/helin-discovery-ui` | ⬜ BLOCKED | R2.4-1 |
 | R2.4-3 | Haiku-Klassifikation + Session-State + Konfidenz-Score | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE | — |
-| R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Helin | `feature/helin-navigation` | ⬜ NEXT | — |
+| R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Helin | `feature/helin-navigation` | ✅ DONE | — |
 | R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui` | ⬜ BLOCKED | R2.4-2 |
-| R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | 🔄 IN PROGRESS | RAG-Teil wartet auf R2.3-1 |
+| R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | 🔄 IN PROGRESS | RAG-Endpoint läuft — offen: REST-Endpoint |
 | R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ BLOCKED | Alle R2.4 |
 
 ---

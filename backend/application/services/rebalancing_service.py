@@ -105,7 +105,7 @@ class RebalancingService:
 
     async def _resolve_eligibility(self, tickers: set[str], is_3a_account: bool) -> dict[str, bool]:
         if not is_3a_account or self._stock_repo is None:
-            return {ticker: not is_3a_account for ticker in tickers}
+            return {ticker: False for ticker in tickers}
 
         result: dict[str, bool] = {}
         for ticker in tickers:

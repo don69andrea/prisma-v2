@@ -73,7 +73,7 @@ def _risk_parity(
             continue
         returns = hist["Close"].pct_change().dropna()
         vol = float(returns.std()) * (252**0.5)
-        raw[ticker] = 1.0 / max(vol, 0.01)
+        raw[ticker] = 1.0 / max(vol, 0.05)
     return _normalize_weights(raw)
 
 

@@ -66,7 +66,11 @@ class ProfileClassifier:
             messages=[{"role": "user", "content": f"Beruf: {profession_text}"}],
         )
         raw = response.content[0].text.strip()
-        return Turn1Classification.model_validate(json.loads(raw))
+        try:
+            return Turn1Classification.model_validate(json.loads(raw))
+        except (json.JSONDecodeError, ValueError) as exc:
+            _logger.error("LLM returned invalid JSON for Turn1Classification: %r — %s", raw[:200], exc)
+            raise
 
     @staticmethod
     def classify_turn2(goal_selection: str) -> tuple[str, str]:

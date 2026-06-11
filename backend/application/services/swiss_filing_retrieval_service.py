@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -29,7 +30,7 @@ class SwissFilingRetrievalService:
         ticker: str | None = None,
         language: str | None = None,
     ) -> list[SwissFilingRetrievalResult]:
-        result = self._voyage.embed([query], model=_VOYAGE_MODEL)
+        result = await asyncio.to_thread(self._voyage.embed, [query], model=_VOYAGE_MODEL)
         query_embedding: list[float] = result.embeddings[0]
         return await self._repo.find_nearest(
             query_embedding=query_embedding,

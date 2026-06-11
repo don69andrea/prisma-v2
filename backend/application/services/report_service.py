@@ -63,7 +63,7 @@ class ReportService:
         session_factory = get_session_factory()
         async with session_factory() as _session:
             swiss_repo = SQLASwissStockRepository(session=_session)
-            factsheet_svc = FactsheetService(swiss_stock_repo=swiss_repo)  # type: ignore[call-arg]
+            factsheet_svc = FactsheetService(stock_repo=swiss_repo)
         ml_svc = MLPredictionService()
 
         factsheet, ml_prediction = await asyncio.gather(

@@ -3,14 +3,14 @@
 ## 🚦 LIVE STATUS — WER MACHT WAS
 
 | # | Aufgabe | Person | Branch | Status | Blockiert durch |
-|---|---------|--------|--------|--------|-----------------|
-| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | 🔄 IN PROGRESS | — |
-| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | ⬜ NEXT | R2.3-1 |
+|---|---|---|---|---|---|
+| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | — |
+| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | — |
 | R2.3-3 | Frontend: SignalBadge + PrismaScore + ExplainButton | Andrea (übernimmt Helin) | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Andrea (übernimmt Helin) | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.3-5 | Backend: InvestorProfile Model + DB Migration | Aurelius | `feature/aurelius-investorprofile` | ✅ DONE | — |
 | R2.3-6 | Backend: DiscoveryService + API Endpoints | Aurelius | `feature/aurelius-investorprofile` | ✅ DONE | — |
-| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns (Sektion 4b) | Andrea | `feature/andrea-discovery-engine` | ✅ DONE | — |
+| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns + API-Anbindung | Andrea | `feature/helin-discovery-ui` | ✅ DONE | — |
 | R2.4-2 | /start: Brand Logo Grid (24 Logos) + Risk-Feeling-Test + ProfileReveal | Helin | `feature/helin-discovery-ui` | ✅ DONE | — |
 | R2.4-3 | Haiku-Klassifikation + Session-State (Redis) + Konfidenz-Score | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE | — |
 | R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Andrea (übernimmt Helin) | `feature/helin-ux-components` | ✅ DONE | — |

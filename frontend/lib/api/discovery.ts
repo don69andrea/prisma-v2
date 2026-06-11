@@ -1,63 +1,49 @@
 import { apiFetch } from './client';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+export interface InvestorProfilePayload {
+  session_id: string;
+  risk_profile: 'conservative' | 'moderate' | 'aggressive';
+  sector_affinity: string[];
+  time_horizon: 'short' | 'medium' | 'long';
+  investment_goal: 'housing' | 'retirement' | 'freedom' | 'beat_savings' | 'other';
+  profession?: string;
+  known_tickers: string[];
+}
 
 export interface InvestorProfileResponse {
-  beruf: string;
-  ziel: 'housing' | 'retirement' | 'freedom' | 'beat_savings';
-  risiko: 'conservative' | 'moderate' | 'aggressive';
-  brands: string[];
+  session_id: string;
+  risk_profile: string;
+  sector_affinity: string[];
+  time_horizon: string;
+  investment_goal: string;
+  confidence_score: number;
+  onboarding_complete: boolean;
 }
 
 export interface DiscoveredStock {
   ticker: string;
   name: string;
-  score: number;
-  reason: string;
+  sector: string | null;
+  market_cap_chf: string | null;
+  exchange: string;
 }
 
-export interface SessionResponse {
+export interface DiscoveryResponse {
   session_id: string;
+  total: number;
+  stocks: DiscoveredStock[];
 }
 
-export interface AnswerResponse {
-  session_id: string;
-  next_turn: number | null;
-  confidence: number;
-  partial_profile: InvestorProfileResponse;
-}
-
-export interface CompleteResponse {
-  profile: InvestorProfileResponse;
-  recommended_stocks: DiscoveredStock[];
-}
-
-// ---------------------------------------------------------------------------
-// API functions
-// ---------------------------------------------------------------------------
-
-export function createDiscoverySession(): Promise<SessionResponse> {
-  return apiFetch<SessionResponse>('/api/v1/discovery/session', {
+export async function saveProfile(
+  payload: InvestorProfilePayload,
+): Promise<InvestorProfileResponse> {
+  return apiFetch<InvestorProfileResponse>('/api/v1/profile', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   });
 }
 
-export function submitAnswer(
-  sessionId: string,
-  turn: number,
-  answer: string | string[],
-): Promise<AnswerResponse> {
-  return apiFetch<AnswerResponse>('/api/v1/discovery/answer', {
-    method: 'POST',
-    body: JSON.stringify({ session_id: sessionId, turn, answer }),
-  });
-}
-
-export function completeDiscovery(sessionId: string): Promise<CompleteResponse> {
-  return apiFetch<CompleteResponse>('/api/v1/discovery/complete', {
-    method: 'POST',
-    body: JSON.stringify({ session_id: sessionId }),
-  });
+export async function getPersonalizedStocks(sessionId: string): Promise<DiscoveryResponse> {
+  return apiFetch<DiscoveryResponse>(`/api/v1/discover?session_id=${encodeURIComponent(sessionId)}`);
 }

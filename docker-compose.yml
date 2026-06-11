@@ -25,6 +25,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://prisma:prisma@db:5432/prisma
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       ENVIRONMENT: development
       CORS_ORIGINS: http://localhost:3000
     ports:

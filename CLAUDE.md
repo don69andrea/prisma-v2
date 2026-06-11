@@ -7,6 +7,76 @@
 
 ---
 
+## 🚦 LIVE STATUS — WER MACHT WAS (bei jedem Start prüfen & updaten)
+
+> **Pflicht:** Jeder Agent updated diesen Block sobald er eine Aufgabe startet (`🔄`) oder abschliesst (`✅`).
+> So weiss jeder sofort was blockiert ist, was frei ist, und wo man aufhören kann.
+
+### Aktuelle Aufgaben
+
+| # | Aufgabe | Person | Branch | Status | Blockiert durch |
+|---|---|---|---|---|---|
+| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | 🔄 IN PROGRESS | — |
+| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | ⬜ NEXT | R2.3-1 |
+| R2.3-3 | Frontend: SignalBadge + PrismaScore + ExplainButton | Helin | `feature/helin-ux-components` | 🔄 IN PROGRESS | — |
+| R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Helin | `feature/helin-ux-components` | ⬜ NEXT | — |
+| R2.3-5 | Backend: InvestorProfile Model + DB Migration | Aurelius | `feature/aurelius-investorprofile` | 🔄 IN PROGRESS | — |
+| R2.3-6 | Backend: DiscoveryService + API Endpoints | Aurelius | `feature/aurelius-investorprofile` | ⬜ NEXT | R2.3-5 |
+| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns (Sektion 4b) | Andrea | `feature/andrea-discovery-engine` | ⬜ BLOCKED | R2.3-5, R2.3-6 |
+| R2.4-2 | /start: Brand Logo Grid (24 Logos) + Risk-Feeling-Test + ProfileReveal | Helin | `feature/helin-discovery-ui` | ⬜ BLOCKED | R2.4-1 |
+| R2.4-3 | Haiku-Klassifikation + Session-State (Redis) + Konfidenz-Score | Aurelius | `feature/aurelius-discovery-agent` | ⬜ BLOCKED | R2.3-5 |
+| R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Helin | `feature/helin-navigation` | ⬜ NEXT | — |
+| R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui` | ⬜ BLOCKED | R2.4-2 |
+| R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ⬜ BLOCKED | R2.3-1 |
+| R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ BLOCKED | Alle R2.4 |
+
+### Branch-Übersicht
+
+```
+develop (Hauptbranch — nie direkt pushen)
+│
+├── feature/andrea-datenpipeline          ← Andrea, aktiv
+├── feature/andrea-discovery-engine       ← Andrea, startet nach R2.3
+│
+├── feature/helin-ux-components           ← Helin, aktiv
+├── feature/helin-discovery-ui            ← Helin, startet nach R2.4-1
+├── feature/helin-navigation              ← Helin, kann jetzt starten
+│
+├── feature/aurelius-investorprofile       ← Aurelius, aktiv
+├── feature/aurelius-discovery-agent      ← Aurelius, startet nach R2.3-5
+│
+└── feature/presentation                  ← Alle gemeinsam, zuletzt
+```
+
+### Merge-Reihenfolge (kritisch einhalten)
+
+```
+1. feature/aurelius-investorprofile   → develop   (Backend-Fundament zuerst)
+2. feature/andrea-datenpipeline       → develop   (Daten + Signale)
+3. feature/helin-ux-components        → develop   (Komponenten)
+4. feature/helin-navigation           → develop   (kann unabhängig)
+5. feature/aurelius-discovery-agent   → develop   (Agent-Logik)
+6. feature/andrea-discovery-engine    → develop   (Frontend braucht 5)
+7. feature/helin-discovery-ui         → develop   (UI braucht 6)
+8. feature/presentation               → develop   (alles zusammen)
+```
+
+### Wie du den Status updatest
+
+```bash
+# Am Anfang deiner Session:
+git pull origin develop
+# Status-Block oben in CLAUDE.md updaten: deine Aufgabe auf 🔄 setzen
+git add CLAUDE.md && git commit -m "chore: update status — [dein name] startet [aufgabe]"
+
+# Wenn du fertig bist:
+# Status-Block: deine Aufgabe auf ✅ setzen
+git add CLAUDE.md && git commit -m "chore: update status — [aufgabe] abgeschlossen"
+# Pull Request erstellen: feature/[dein-branch] → develop
+```
+
+---
+
 ## 0 · KRITISCHE RAHMENBEDINGUNGEN — LIES ZUERST
 
 ```
@@ -929,9 +999,859 @@ curl https://prisma-v2-backend.onrender.com/api/v1/stocks/NESN.SW/signal
 
 ---
 
-## 14 · SESSION STARTEN — FÜR ANDREA & TEAMKOLLEGEN
+---
 
-### Schritt 1: CLAUDE.md ins Repo pushen (einmalig)
+## 14 · DETAILLIERTE AUFGABENPLÄNE PRO PERSON
+
+> Jede Aufgabe ist so beschrieben, dass der Claude Code Agent **ohne Rückfragen** beginnen kann.
+> Dateipfade, Modelle, API-Signaturen — alles ist hier. Kein Raten, kein Erfinden.
+
+---
+
+### 👤 ANDREA — Release 2.3 & 2.4
+
+#### Branch: `feature/andrea-datenpipeline`
+
+##### Aufgabe R2.3-1: Datenpipeline ausführen
+
+**Ziel:** Echte Schweizer Aktien in der DB, XGBoost-Modell trainiert und gespeichert.
+
+**Schritt-für-Schritt:**
+```bash
+# 1. Backend-Umgebung aktivieren
+cd /Users/andreapetretta/prisma-v2/backend
+source .venv/bin/activate  # oder: conda activate prisma
+
+# 2. DB-Verbindung prüfen
+python -c "from app.infrastructure.database import engine; print('DB OK')"
+
+# 3. SMI-20 seeden
+python scripts/seed_smi_universe.py
+# Erwartete Ausgabe: "Seeded 20 SMI stocks successfully"
+
+# 4. SMIM-30 seeden
+python scripts/seed_smim_universe.py
+# Erwartete Ausgabe: "Seeded 30 SMIM stocks successfully"
+
+# 5. Historische Preisdaten laden (yfinance, .SW Suffix)
+python scripts/fetch_price_history.py --years 5
+# Ticker Format: NESN.SW, ROG.SW, NOVN.SW etc.
+# Erwartete Ausgabe: "Fetched price history for [N] stocks"
+
+# 6. XGBoost trainieren
+python scripts/train_return_predictor.py \
+  --universe smi_smim \
+  --validate walk_forward \
+  --output models/return_predictor_v1.pkl
+# Walk-Forward Validation ist PFLICHT — kein einfacher Train/Test-Split
+# Erwartete Ausgabe: Accuracy > 45%, F1-Score pro Klasse, Model saved to models/
+
+# 7. Verify
+python -c "
+import pickle
+model = pickle.load(open('models/return_predictor_v1.pkl', 'rb'))
+print('Model loaded OK, features:', model.feature_names_in_)
+"
+```
+
+**Was wenn ein Script fehlt oder crashed:**
+- Fehlende Abhängigkeiten: `pip install yfinance xgboost lightgbm scikit-learn --break-system-packages`
+- DB-Fehler: `.env` prüfen, `DATABASE_URL` korrekt gesetzt?
+- yfinance Timeout: `--limit 10` Flag für kleineres Batch zuerst testen
+
+---
+
+##### Aufgabe R2.3-2: /decision echte Signale (nach R2.3-1)
+
+**Ziel:** `GET /api/v1/stocks/{ticker}/signal` gibt echtes BUY/HOLD/WATCH zurück, nicht NEUTRAL.
+
+**Dateien die angepasst werden müssen:**
+```
+backend/app/application/services/decision_service.py
+backend/app/infrastructure/ml/return_predictor.py
+```
+
+**Gewünschte API-Response:**
+```json
+{
+  "ticker": "NESN.SW",
+  "signal": "BUY",
+  "confidence": 0.74,
+  "components": {
+    "quant_score": 82,
+    "quant_weight": 0.45,
+    "ml_prediction": "top_quartile",
+    "ml_probability": 0.71,
+    "ml_weight": 0.35,
+    "macro_score": 68,
+    "macro_weight": 0.20
+  },
+  "reasoning": "Starke Qualität (82/100), ML sieht Top-Quartil-Rendite (71%), SNB-neutral.",
+  "top_factors": ["quality_score", "trend_momentum", "price_to_book"],
+  "audit_trail": {
+    "model_version": "v1",
+    "data_as_of": "2026-06-11",
+    "quant_calculated_at": "...",
+    "ml_predicted_at": "..."
+  }
+}
+```
+
+**Fallback-Logik (wenn ML nicht verfügbar):**
+```python
+# NICHT: return Signal.NEUTRAL
+# SONDERN:
+if ml_prediction is None:
+    signal = quant_only_signal(quant_score)
+    confidence = 0.45  # niedrigere Konfidenz signalisieren
+    reasoning += " (ML nicht verfügbar — Quant-Only)"
+```
+
+---
+
+#### Branch: `feature/andrea-discovery-engine` (startet nach R2.3)
+
+##### Aufgabe R2.4-1: /start Conversational Discovery Engine
+
+**Ziel:** Neue Next.js Seite `/start` mit vollständigem 5-Turn Gesprächsflow.
+Vollständige Spezifikation in **Sektion 4b** dieses Dokuments.
+
+**Neue Dateien erstellen:**
+```
+frontend/app/start/page.tsx                    ← Haupt-Seite
+frontend/app/start/components/
+  ├── ConversationFlow.tsx                     ← Gesprächs-Container
+  ├── TurnProfession.tsx                       ← Turn 1: Beruf (Freitext)
+  ├── TurnGoal.tsx                             ← Turn 2: Ziel (4 Optionen)
+  ├── TurnRiskFeeling.tsx                      ← Turn 3: Chart –25% + 3 Emojis
+  ├── TurnBrandMapping.tsx                     ← Turn 4: 24 Logo-Grid
+  ├── ProfileReveal.tsx                        ← Turn 5: Prisma-Animation + Summary
+  └── FastLane.tsx                             ← Direkteinstieg für Kenner
+```
+
+**API-Calls die die Seite braucht (Aurelius baut das Backend):**
+```typescript
+// Session starten
+POST /api/v1/discovery/session
+→ { session_id: string }
+
+// Antwort senden, nächste Frage erhalten
+POST /api/v1/discovery/answer
+Body: { session_id, turn: number, answer: string | string[] }
+→ { next_turn: number | null, partial_profile: InvestorProfile, confidence: float }
+
+// Profil abschliessen + personalisierte Titel holen
+POST /api/v1/discovery/complete
+Body: { session_id }
+→ { profile: InvestorProfile, recommended_stocks: Stock[] }
+```
+
+**UX-Regeln für diese Seite (aus Sektion 4):**
+- Jede Frage erscheint mit Fade-In Animation (Framer Motion)
+- Fortschrittsbalken oben: Schritt 1/5 → 2/5 etc.
+- "Überspringen" Link bei jeder Frage (klein, grau — nie aufdringlich)
+- Nach letzter Antwort: Prisma-Kristall-Animation bevor Dashboard erscheint
+- Alle Texte auf Deutsch
+
+---
+
+### 👤 HELIN — Release 2.3 & 2.4
+
+#### Branch: `feature/helin-ux-components`
+
+##### Aufgabe R2.3-3: Neue Frontend-Komponenten
+
+**Neue Dateien:**
+```
+frontend/components/ui/
+  ├── SignalBadge.tsx
+  ├── PrismaScore.tsx
+  └── ExplainButton.tsx
+```
+
+**SignalBadge.tsx — exakte Spezifikation:**
+```tsx
+// Props
+interface SignalBadgeProps {
+  signal: 'BUY' | 'HOLD' | 'WATCH' | 'SELL'
+  confidence?: number  // 0.0 – 1.0, optional
+  size?: 'sm' | 'md' | 'lg'
+  animated?: boolean   // Puls-Animation bei BUY
+}
+
+// Visuell:
+// BUY  → grüner Hintergrund (#0d2d1a), grüner Text (#7ee787),
+//         grüner Box-Shadow-Glow, ↑ Pfeil-Icon, optional pulse animation
+// HOLD → oranger Hintergrund (#2d1a0d), oranger Text (#ffa657),
+//         horizontaler Strich-Icon
+// WATCH → blauer Hintergrund (#0d1f3c), blauer Text (#58a6ff),
+//          Fernglas-Icon (oder Auge-Icon)
+// SELL → roter Hintergrund (#2d0d0d), roter Text (#f85149)
+
+// BUY Glow-Effekt:
+// box-shadow: 0 0 20px rgba(126, 231, 135, 0.4),
+//             0 0 40px rgba(126, 231, 135, 0.15)
+```
+
+**PrismaScore.tsx — exakte Spezifikation:**
+```tsx
+// Props
+interface PrismaScoreProps {
+  label: string           // "Quality", "Trend", "Value", "Makro"
+  score: number           // 0 – 100
+  color?: 'green' | 'blue' | 'purple' | 'orange'
+  showExplain?: boolean   // zeigt "?" Button
+  onExplain?: () => void  // Callback für ExplainButton
+}
+
+// Visuell: Gradient-Bar von links nach rechts
+// Score 0–40:   rot/orange Gradient
+// Score 40–70:  gelb/orange Gradient
+// Score 70–100: grün Gradient
+//
+// Beispiel (Score 82, Quality):
+// [████████░░] 82   (?)
+// Label links, Score rechts, Gradient-Fill, "?" am Ende
+```
+
+**ExplainButton.tsx — exakte Spezifikation:**
+```tsx
+// Props
+interface ExplainButtonProps {
+  context: string         // Was erklärt werden soll: "quality_score" | "trend_score" | etc.
+  ticker?: string         // Optional: für ticker-spezifische Erklärung
+  label?: string          // Default: "?"
+}
+
+// Verhalten:
+// 1. Klick → Modal/Popover öffnet sich
+// 2. API-Call: POST /api/v1/explain { context, ticker }
+// 3. Response streamt rein (Server-Sent Events oder fetch streaming)
+// 4. Text erscheint buchstabenweise (typewriter effect, CSS animation)
+// 5. Quelle wird am Ende angezeigt: "Erklärt von Claude Haiku"
+//
+// Immer auf Deutsch antworten.
+// Max 3 Sätze — keine Essays.
+```
+
+---
+
+##### Aufgabe R2.3-4: Glassmorphism Cards + Loading-States
+
+**Dateien anpassen:**
+```
+frontend/app/stocks/[ticker]/page.tsx    ← Glassmorphism Cards einbauen
+frontend/components/ui/LoadingState.tsx  ← NEU: smarte Loading-Messages
+frontend/styles/globals.css             ← CSS-Variablen + .glass-card Klasse
+```
+
+**globals.css — CSS-Variablen und Glassmorphism:**
+```css
+:root {
+  --background: #0d1117;
+  --surface: #161b22;
+  --border: #21262d;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --accent-blue: #58a6ff;
+  --accent-green: #7ee787;
+  --accent-orange: #ffa657;
+  --accent-red: #f85149;
+  --accent-purple: #bc8cff;
+}
+
+.glass-card {
+  background: rgba(22, 27, 34, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(88, 166, 255, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+```
+
+**LoadingState.tsx — smarte Nachrichten:**
+```tsx
+const LOADING_MESSAGES: Record<string, string[]> = {
+  stock:    ["PRISMA analysiert {ticker}...", "Quant-Scores werden berechnet...", "ML-Modell läuft..."],
+  rag:      ["PRISMA liest den Jahresbericht...", "Relevante Abschnitte werden gesucht..."],
+  signal:   ["Signal wird berechnet...", "Makro-Kontext wird einbezogen..."],
+  discover: ["PRISMA kuratiert dein Universe...", "Titel werden nach deinem Profil gefiltert..."],
+  explain:  ["PRISMA erklärt..."]
+}
+// Nie: "Loading..." oder "Please wait..."
+```
+
+---
+
+#### Branch: `feature/helin-navigation`
+
+##### Aufgabe R2.4-4: Navigation umstrukturieren
+
+**Datei:**
+```
+frontend/components/layout/Navigation.tsx  (oder wo die Nav aktuell ist)
+```
+
+**Neue Struktur (5 Gruppen, nicht 13 Links):**
+```
+ENTDECKEN
+  ├── /start          "Mein Einstieg"
+  ├── /discover       "Mein Universe"
+  └── /rankings       "Rankings"
+
+VERSTEHEN
+  ├── /stocks/[ticker] "Titel analysieren"  ← Suchfeld in der Nav
+  ├── /research        "Research"
+  └── /news            "News"
+
+VERGLEICHEN
+  ├── /backtest        "Backtest"
+  └── /fonds           "Fonds vs. Aktien"
+
+ENTSCHEIDEN
+  ├── /decision        "Signale"
+  ├── /signale         "Alle Signale"
+  └── /alerts          "Alerts"
+
+MEIN PORTFOLIO
+  ├── /portfolio       "Portfolio"
+  └── /3a-sim          "3a Simulator"
+```
+
+**Visuell:**
+- Gruppenname in Kleinbuchstaben, grau (#8b949e), 11px, Letter-Spacing
+- Active State: blauer linker Border + heller Text
+- Collapsed auf Mobile: Hamburger → Bottom-Sheet
+
+---
+
+#### Branch: `feature/helin-discovery-ui` (startet nach R2.4-1)
+
+##### Aufgabe R2.4-2: Brand Logo Grid + Risk-Feeling-Test
+
+**TurnBrandMapping.tsx:**
+```tsx
+// 24 Firmen mit Logos (SVG oder PNG aus /public/brands/)
+const SWISS_BRANDS = [
+  // Alltag/Konsum
+  { name: "Nestlé",          ticker: "NESN.SW", sector: "consumer",   fact: "Nespresso, KitKat, Maggi" },
+  { name: "Lindt",           ticker: "LISP.SW", sector: "consumer",   fact: "Schweizer Schokolade seit 1845" },
+  { name: "Barry Callebaut", ticker: "BARN.SW", sector: "consumer",   fact: "Grösster Kakaoverarbeiter der Welt" },
+  { name: "Givaudan",        ticker: "GIVN.SW", sector: "consumer",   fact: "Duftstoffe in jedem zweiten Parfüm" },
+  // Pharma
+  { name: "Roche",      ticker: "ROG.SW",  sector: "pharma",    fact: "Basel. Weltführend in Onkologie" },
+  { name: "Novartis",   ticker: "NOVN.SW", sector: "pharma",    fact: "Basel. Voltaren, Ritalin, Entresto" },
+  { name: "Lonza",      ticker: "LONN.SW", sector: "pharma",    fact: "Produziert mRNA für Pfizer/BioNTech" },
+  { name: "Straumann",  ticker: "STMN.SW", sector: "pharma",    fact: "Weltmarktführer Dentalimplantate" },
+  // Finanzen
+  { name: "UBS",            ticker: "UBSG.SW", sector: "finance",   fact: "Grösste Schweizer Bank" },
+  { name: "Partners Group", ticker: "PGHN.SW", sector: "finance",   fact: "Private Equity aus Baar" },
+  { name: "Zurich Insurance",ticker: "ZURN.SW", sector: "finance",  fact: "Globaler Versicherungskonzern" },
+  { name: "Swiss Life",     ticker: "SLHN.SW", sector: "finance",   fact: "Lebensversicherung Nr. 1 CH" },
+  // Industrie
+  { name: "ABB",           ticker: "ABBN.SW", sector: "industrial", fact: "Robotik und Elektrifizierung" },
+  { name: "Georg Fischer", ticker: "GF.SW",   sector: "industrial", fact: "Rohrsysteme + Leichtmetallguss" },
+  { name: "Schindler",     ticker: "SCHP.SW", sector: "industrial", fact: "Jeder 4. Aufzug weltweit" },
+  { name: "Kühne+Nagel",   ticker: "KNIN.SW", sector: "industrial", fact: "Grösster Seefrachtspediteur" },
+  // Tech/Precision
+  { name: "Logitech", ticker: "LOGN.SW", sector: "tech", fact: "Maus, Tastatur, Webcam — Apples Zubehör" },
+  { name: "u-blox",   ticker: "UBXN.SW", sector: "tech", fact: "GPS-Chips in Millionen Autos" },
+  { name: "VAT Group",ticker: "VACN.SW", sector: "tech", fact: "Vakuumventile für Chipfabriken" },
+  { name: "Inficon",  ticker: "IFCN.SW", sector: "tech", fact: "Sensoren für Halbleitertechnik" },
+  // Luxus/Lifestyle
+  { name: "Swatch",         ticker: "UHR.SW",  sector: "luxury", fact: "Omega, Longines, Tissot — alles Swatch" },
+  { name: "Richemont",      ticker: "CFR.SW",  sector: "luxury", fact: "Cartier, IWC, Jaeger-LeCoultre" },
+  { name: "Flughafen ZH",   ticker: "FHZN.SW", sector: "luxury", fact: "Zürich Airport — der pünktlichste" },
+  { name: "Givaudan",       ticker: "GIVN.SW", sector: "luxury", fact: "Duftstoffe in Chanel No. 5" },
+]
+
+// Verhalten beim Klicken:
+// 1. Logo leuchtet auf (border-color: var(--accent-green), box-shadow glow)
+// 2. Tooltip erscheint unter dem Logo:
+//    "Nestlé S.A. · NESN.SW · SMI"
+//    "Nespresso, KitKat, Maggi — alles Nestlé."
+// 3. Counter oben rechts: "3 Firmen ausgewählt"
+// 4. Ab 3 Klicks: "Du kennst bereits [N] investierbare Firmen." erscheint
+```
+
+**TurnRiskFeeling.tsx — Risk-Feeling-Test:**
+```tsx
+// Ein animierter Chart (Recharts LineChart) der von +5% auf -25% fällt
+// Animation: 2 Sekunden, dann Freeze
+// Darunter drei grosse Buttons:
+
+const RISK_OPTIONS = [
+  {
+    emoji: "😱",
+    label: "Fehler gemacht. Alles raus.",
+    sublabel: "Ich will das Risiko minimieren.",
+    value: "conservative",
+    color: "#f85149"
+  },
+  {
+    emoji: "😐",
+    label: "Das ist normal. Ich warte.",
+    sublabel: "Kurzfristige Schwankungen gehören dazu.",
+    value: "moderate",
+    color: "#ffa657"
+  },
+  {
+    emoji: "😎",
+    label: "Jetzt kaufe ich mehr.",
+    sublabel: "Günstige Gelegenheit.",
+    value: "aggressive",
+    color: "#7ee787"
+  }
+]
+
+// Text darunter (klein, grau):
+// "Es gibt keine falsche Antwort. Deine ehrliche Reaktion hilft PRISMA
+//  dir die richtigen Titel zu zeigen."
+```
+
+**ProfileReveal.tsx — Das Profil-Reveal:**
+```tsx
+// Animationssequenz (Framer Motion):
+// 1. Screen wird dunkel (0.5s)
+// 2. Prisma-Kristall erscheint in der Mitte, rotiert langsam (1s)
+// 3. Kristall "bricht" — Licht strahlt in 5 Farben aus (0.8s)
+// 4. Profil-Card fährt von unten ein (0.5s)
+
+// Profil-Card:
+// ┌─────────────────────────────────────────────────────┐
+// │  DEIN INVESTORPROFIL                                │
+// │                                                     │
+// │  Typ:      [Dynamisch generiert von Agent]          │
+// │  Horizont: [aus Turn 2]                             │
+// │  Risiko:   [aus Turn 3]                             │
+// │  Affinität:[aus Turn 4 — Sektoren]                  │
+// │                                                     │
+// │  Du kennst bereits:                                 │
+// │  [Brand 1] · [Brand 2] · [Brand 3]                 │
+// │                                                     │
+// │  ─────────────────────────────────────────────────  │
+// │  PRISMA hat [N] Titel für dich ausgewählt.          │
+// │  [ Zeig mir mein personalisiertes Dashboard → ]     │
+// └─────────────────────────────────────────────────────┘
+
+// Typ-Generierung (Haiku, 3 Wörter max):
+// conservative + long horizon  → "Stabiler Langzeitinvestor"
+// moderate + consumer brands   → "Schweizer Qualitätsinvestor"
+// aggressive + tech brands     → "Wachstumsorientierter Technikfan"
+```
+
+---
+
+### 👤 AURELIUS — Release 2.3 & 2.4
+
+#### Branch: `feature/aurelius-investorprofile`
+
+##### Aufgabe R2.3-5: InvestorProfile Model + DB Migration
+
+**Neue Dateien:**
+```
+backend/app/domain/entities/investor_profile.py
+backend/app/infrastructure/database/models/investor_profile_model.py
+backend/alembic/versions/XXXX_add_investor_profiles.py
+```
+
+**Domain Entity:**
+```python
+# backend/app/domain/entities/investor_profile.py
+from pydantic import BaseModel, Field
+from typing import Literal, List
+from uuid import UUID, uuid4
+from datetime import datetime
+
+class InvestorProfile(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    session_id: str  # Redis-Key für den Gesprächs-State
+
+    # Turn 1 — Beruf & Wissensstand
+    profession: str | None = None
+    financial_knowledge: Literal["low", "medium", "high"] = "low"
+
+    # Turn 2 — Ziel
+    investment_goal: Literal[
+        "housing",       # Neue Wohnung
+        "retirement",    # Altersvorsorge
+        "freedom",       # Finanzielle Freiheit
+        "beat_savings",  # Besser als Sparkonto
+        "other"
+    ] = "beat_savings"
+
+    # Turn 3 — Risiko-Feeling
+    time_horizon: Literal["short", "medium", "long"] = "medium"
+    # short  = < 3 Jahre
+    # medium = 3–10 Jahre
+    # long   = > 10 Jahre
+
+    risk_profile: Literal["conservative", "moderate", "aggressive"] = "moderate"
+
+    # Turn 4 — Brand-Mapping
+    sector_affinity: List[str] = []
+    # Mögliche Werte: "consumer", "pharma", "finance", "industrial", "tech", "luxury"
+    known_tickers: List[str] = []
+    # Ticker die der Nutzer durch Brand-Mapping identifiziert hat
+    # Beispiel: ["NESN.SW", "ROG.SW", "LOGN.SW"]
+
+    # Meta
+    confidence_score: float = 0.0  # 0.0 – 1.0
+    # < 0.6 = weitere Fragen stellen
+    # ≥ 0.8 = Profil komplett, Discovery starten
+
+    onboarding_complete: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Abgeleitetes Feld — wird von DiscoveryService genutzt
+    @property
+    def risk_label(self) -> str:
+        labels = {
+            "conservative": "Konservativ — Stabilität über Wachstum",
+            "moderate":     "Ausgewogen — Stabilität und Wachstum",
+            "aggressive":   "Wachstumsorientiert — Rendite über Stabilität"
+        }
+        return labels[self.risk_profile]
+
+    class Config:
+        use_enum_values = True
+```
+
+**SQLAlchemy Model:**
+```python
+# backend/app/infrastructure/database/models/investor_profile_model.py
+from sqlalchemy import Column, String, Float, Boolean, DateTime, ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from app.infrastructure.database import Base
+import uuid
+
+class InvestorProfileModel(Base):
+    __tablename__ = "investor_profiles"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    session_id = Column(String, unique=True, nullable=False, index=True)
+    profession = Column(String, nullable=True)
+    financial_knowledge = Column(String, default="low")
+    investment_goal = Column(String, default="beat_savings")
+    time_horizon = Column(String, default="medium")
+    risk_profile = Column(String, default="moderate")
+    sector_affinity = Column(ARRAY(String), default=[])
+    known_tickers = Column(ARRAY(String), default=[])
+    confidence_score = Column(Float, default=0.0)
+    onboarding_complete = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+```
+
+**Alembic Migration:**
+```bash
+cd backend
+alembic revision --autogenerate -m "add investor_profiles table"
+alembic upgrade head
+```
+
+---
+
+##### Aufgabe R2.3-6: DiscoveryService + API Endpoints
+
+**Neue Datei:**
+```
+backend/app/application/services/discovery_service.py
+backend/app/interfaces/api/v1/discovery.py
+```
+
+**DiscoveryService:**
+```python
+# backend/app/application/services/discovery_service.py
+from app.domain.entities.investor_profile import InvestorProfile
+from app.domain.entities.stock import Stock
+from typing import List
+
+class DiscoveryService:
+
+    def get_personalized_universe(
+        self,
+        profile: InvestorProfile,
+        max_results: int = 10
+    ) -> List[Stock]:
+        """
+        Gibt personalisierte Titelliste basierend auf Investorprofil zurück.
+        KEINE LLM-Entscheide hier — reine Regel-Logik.
+        """
+
+        query = db.query(StockModel)
+
+        # 1. Sektor-Filter basierend auf Brand-Affinität
+        if profile.sector_affinity:
+            query = query.filter(StockModel.sector.in_(profile.sector_affinity))
+
+        # 2. Quant-Quality-Filter — nur Titel mit Score > 50
+        query = query.filter(StockModel.quality_score > 50)
+
+        # 3. Risiko-Filter — Volatilitäts-Cap
+        volatility_caps = {
+            "conservative": 15.0,  # Max 15% annualisierte Volatilität
+            "moderate":     25.0,
+            "aggressive":   40.0
+        }
+        max_vol = volatility_caps[profile.risk_profile]
+        query = query.filter(StockModel.annualized_volatility <= max_vol)
+
+        # 4. Horizont-Filter
+        if profile.time_horizon == "short":
+            # Kurzfristig: Dividenden-Fokus, niedrige Schulden
+            query = query.filter(StockModel.dividend_yield > 2.0)
+
+        # 5. Brand-Boost: geklickte Marken nach oben priorisieren
+        results = query.order_by(
+            case(
+                (StockModel.ticker.in_(profile.known_tickers), 1),
+                else_=2
+            ),
+            StockModel.quality_score.desc()
+        ).limit(max_results).all()
+
+        return [Stock.from_orm(r) for r in results]
+```
+
+**API Endpoints:**
+```python
+# backend/app/interfaces/api/v1/discovery.py
+from fastapi import APIRouter, Depends
+from app.application.services.discovery_service import DiscoveryService
+
+router = APIRouter(prefix="/discovery", tags=["discovery"])
+
+@router.post("/session")
+async def create_session():
+    """Neue Discovery-Session starten"""
+    session_id = str(uuid4())
+    # Leeres Profil in Redis speichern
+    redis.setex(f"session:{session_id}", 3600, InvestorProfile(session_id=session_id).json())
+    return {"session_id": session_id}
+
+@router.post("/answer")
+async def submit_answer(session_id: str, turn: int, answer: str | list[str]):
+    """Antwort einreichen, Profil updaten, nächste Frage oder Abschluss"""
+    # Profil aus Redis laden
+    profile = InvestorProfile.parse_raw(redis.get(f"session:{session_id}"))
+    # Haiku klassifiziert Antwort → profile update (siehe Aurelius Aufgabe R2.4-3)
+    updated_profile = await classify_and_update(profile, turn, answer)
+    # Zurück in Redis
+    redis.setex(f"session:{session_id}", 3600, updated_profile.json())
+    return {
+        "next_turn": turn + 1 if updated_profile.confidence_score < 0.8 else None,
+        "partial_profile": updated_profile,
+        "confidence": updated_profile.confidence_score
+    }
+
+@router.post("/complete")
+async def complete_discovery(session_id: str, discovery_service: DiscoveryService = Depends()):
+    """Profil abschliessen + personalisierte Titelliste zurückgeben"""
+    profile = InvestorProfile.parse_raw(redis.get(f"session:{session_id}"))
+    profile.onboarding_complete = True
+    # In DB persistieren
+    db_profile = save_profile_to_db(profile)
+    # Personalisierte Titel
+    stocks = discovery_service.get_personalized_universe(profile)
+    return {"profile": profile, "recommended_stocks": stocks}
+```
+
+---
+
+#### Branch: `feature/aurelius-discovery-agent` (startet nach R2.3-5)
+
+##### Aufgabe R2.4-3: Haiku-Klassifikation + Session-State + Konfidenz
+
+**Ziel:** Freitext-Antworten des Nutzers werden von Claude Haiku in Profil-Dimensionen klassifiziert.
+
+**Neue Datei:**
+```
+backend/app/application/services/profile_classifier.py
+```
+
+```python
+# backend/app/application/services/profile_classifier.py
+import anthropic
+from app.domain.entities.investor_profile import InvestorProfile
+from pydantic import BaseModel
+from typing import Literal
+
+client = anthropic.Anthropic()
+
+class Turn1Classification(BaseModel):
+    """Ergebnis der Haiku-Klassifikation für Turn 1 (Beruf)"""
+    financial_knowledge: Literal["low", "medium", "high"]
+    # low    = Kindergärtnerin, Handwerker, Student
+    # medium = IT, Ingenieur, Lehrer, Verwaltung
+    # high   = Banker, Analyst, Buchhalter, Ökonom
+    sector_hint: str | None  # z.B. "tech" wenn Softwareentwickler
+
+class Turn2Classification(BaseModel):
+    """Turn 2: Ziel"""
+    investment_goal: Literal["housing", "retirement", "freedom", "beat_savings", "other"]
+    time_horizon: Literal["short", "medium", "long"]
+
+async def classify_turn1(profession_text: str) -> Turn1Classification:
+    """Beruf-Text → Wissenslevel + Sektor-Hinweis"""
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",  # Haiku: schnell + günstig
+        max_tokens=200,
+        system="""Du klassifizierst Berufsbezeichnungen für einen Investment-App Onboarding-Flow.
+Antworte NUR mit einem JSON-Objekt. Kein Text davor oder danach.
+Schema: {"financial_knowledge": "low|medium|high", "sector_hint": "consumer|pharma|finance|industrial|tech|null"}
+Beispiele:
+- "Softwareentwickler" → {"financial_knowledge": "medium", "sector_hint": "tech"}
+- "Bankangestellter" → {"financial_knowledge": "high", "sector_hint": "finance"}
+- "Pflegefachfrau" → {"financial_knowledge": "low", "sector_hint": "pharma"}
+- "Schreiner" → {"financial_knowledge": "low", "sector_hint": null}""",
+        messages=[{"role": "user", "content": f"Beruf: {profession_text}"}]
+    )
+    return Turn1Classification.parse_raw(response.content[0].text)
+
+async def classify_turn2(goal_selection: str) -> Turn2Classification:
+    """Ziel-Auswahl → investment_goal + time_horizon"""
+    GOAL_MAP = {
+        "Neue Wohnung":            ("housing",      "short"),
+        "Altersvorsorge":          ("retirement",   "long"),
+        "Finanzielle Freiheit":    ("freedom",      "medium"),
+        "Besser als Konto":        ("beat_savings", "medium"),
+    }
+    goal, horizon = GOAL_MAP.get(goal_selection, ("other", "medium"))
+    return Turn2Classification(investment_goal=goal, time_horizon=horizon)
+
+def classify_turn3(emoji_choice: str) -> str:
+    """Risk-Feeling → risk_profile"""
+    RISK_MAP = {
+        "conservative": "conservative",
+        "moderate":     "moderate",
+        "aggressive":   "aggressive"
+    }
+    return RISK_MAP.get(emoji_choice, "moderate")
+
+def classify_turn4(clicked_tickers: list[str], brand_data: dict) -> tuple[list[str], list[str]]:
+    """Brand-Klicks → sector_affinity + known_tickers"""
+    sectors = list({brand_data[t]["sector"] for t in clicked_tickers if t in brand_data})
+    return sectors, clicked_tickers
+
+def calculate_confidence(profile: InvestorProfile) -> float:
+    """Wie vollständig ist das Profil? 0.0 – 1.0"""
+    score = 0.0
+    if profile.financial_knowledge != "low" or profile.profession: score += 0.2
+    if profile.investment_goal != "beat_savings":                   score += 0.2
+    if profile.risk_profile != "moderate":                          score += 0.3
+    if len(profile.known_tickers) >= 2:                             score += 0.2
+    if len(profile.sector_affinity) >= 1:                           score += 0.1
+    return min(score, 1.0)
+```
+
+##### Aufgabe R2.4-6: Makro-Agent + RAG verifizieren
+
+**Makro-Agent aktivieren:**
+```python
+# Prüfe ob MacroIntelligenceAgent bereits implementiert ist:
+# backend/app/application/agents/macro_agent.py
+# Falls ja: sicherstellen dass SNB-Daten geladen werden
+# Falls nein: minimale Implementation:
+
+class MacroIntelligenceAgent:
+    """Holt SNB-Daten und berechnet Makro-Score für CH-Aktien"""
+
+    async def get_macro_score(self, ticker: str) -> dict:
+        # SNB API: https://data.snb.ch/api/
+        # Leitzins, CHF/EUR, Inflation CH
+        # Gibt Score 0–100 zurück basierend auf:
+        # - Leitzins < 1%: gut für Wachstumstitel (+20)
+        # - CHF stark: gut für Import-Firmen, schlecht für Exporteure
+        # - Inflation < 2%: stabil (+10)
+        ...
+```
+
+**RAG verifizieren:**
+```bash
+# Test-Query auf Swiss Filings
+curl -X POST http://localhost:8000/api/v1/rag/query \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Was macht Nestlé mit seinen Gewinnen?", "ticker": "NESN.SW"}'
+
+# Erwartete Response:
+# {
+#   "answer": "Laut dem Geschäftsbericht 2023 von Nestlé...",
+#   "sources": [{"document": "Nestlé Annual Report 2023", "page": 42, "section": "Capital Allocation"}],
+#   "model": "claude-haiku-4-5-20251001"
+# }
+
+# Falls Corpus leer: ingest_swiss_filings.py ausführen (Koordination mit Andrea)
+```
+
+---
+
+---
+
+## 15 · STARTPROMPTS PRO PERSON — KOPIEREN & EINFÜGEN
+
+### Startprompt Andrea
+```
+Lies CLAUDE.md vollständig — besonders Sektion 0 (Rahmenbedingungen) und den STATUS-Block ganz oben.
+
+Prüfe den Status-Block: Was ist meine aktuelle Aufgabe?
+Falls kein Branch existiert: git checkout -b feature/andrea-datenpipeline
+
+Mein Fokus heute (Release 2.3):
+- Aufgabe R2.3-1: Datenpipeline ausführen (Sektion 14 → Andrea → R2.3-1, alle Befehle dort)
+- Aufgabe R2.3-2: /decision echte Signale (nach R2.3-1)
+Danach (Release 2.4):
+- Aufgabe R2.4-1: /start Conversational Discovery Engine (Sektion 4b + 14 → Andrea → R2.4-1)
+
+Update den STATUS-Block in CLAUDE.md sobald du eine Aufgabe startest (🔄) oder abschliesst (✅).
+Starte mit: Analysiere den aktuellen DB-Stand — welche Stocks sind bereits vorhanden?
+```
+
+### Startprompt Helin
+```
+Lies CLAUDE.md vollständig — besonders Sektion 0, den STATUS-Block, Sektion 4 (UX Design Language) und Sektion 4b (Discovery Engine UX).
+
+Prüfe den Status-Block: Was ist meine aktuelle Aufgabe?
+Falls kein Branch existiert: git checkout -b feature/helin-ux-components
+
+Mein Fokus heute (Release 2.3):
+- Aufgabe R2.3-3: SignalBadge + PrismaScore + ExplainButton (Sektion 14 → Helin → R2.3-3)
+- Aufgabe R2.3-4: Glassmorphism Cards + Loading-States (Sektion 14 → Helin → R2.3-4)
+- Aufgabe R2.4-4: Navigation umstrukturieren — 5 Bereiche (kann parallel, Sektion 3 + 14)
+Danach (Release 2.4, nach Andrea's R2.4-1):
+- Aufgabe R2.4-2: Brand Logo Grid + Risk-Feeling-Test + ProfileReveal (Sektion 14 → Helin)
+- Aufgabe R2.4-5: AuditTrail Komponente
+
+Update den STATUS-Block in CLAUDE.md sobald du eine Aufgabe startest (🔄) oder abschliesst (✅).
+Starte mit: Zeig mir die aktuelle Navigation-Komponente — wie sieht sie jetzt aus?
+```
+
+### Startprompt Aurelius
+```
+Lies CLAUDE.md vollständig — besonders Sektion 0, den STATUS-Block, Sektion 4b (Discovery Engine Architektur) und Sektion 11 (Next Release Analyse).
+
+Prüfe den Status-Block: Was ist meine aktuelle Aufgabe?
+Falls kein Branch existiert: git checkout -b feature/aurelius-investorprofile
+
+Mein Fokus heute (Release 2.3):
+- Aufgabe R2.3-5: InvestorProfile Model + DB Migration (Sektion 14 → Aurelius → R2.3-5)
+- Aufgabe R2.3-6: DiscoveryService + API Endpoints (Sektion 14 → Aurelius → R2.3-6)
+Danach (Release 2.4):
+- Aufgabe R2.4-3: Haiku-Klassifikation + Session-State Redis + Konfidenz (Sektion 14 → Aurelius)
+- Aufgabe R2.4-6: Makro-Agent + RAG verifizieren
+
+Update den STATUS-Block in CLAUDE.md sobald du eine Aufgabe startest (🔄) oder abschliesst (✅).
+Starte mit: Prüfe ob die Tabelle investor_profiles bereits in der DB existiert.
+```
+
+---
+
+## 16 · SESSION STARTEN — SETUP & REPO
+
+### Repo klonen (für Helin & Aurelius — einmalig)
 ```bash
 # Im prisma-v2 Repo-Ordner:
 cp "/Users/andreapetretta/Desktop/Business Intelligence/PRISMA_V2_CLAUDE.md" ./CLAUDE.md

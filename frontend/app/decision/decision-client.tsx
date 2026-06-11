@@ -11,6 +11,7 @@ import { listDecisions, type DecisionSignal, type SignalType } from '@/lib/api/d
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SignalBadge } from '@/components/ui/SignalBadge';
+import { AuditTrail } from '@/components/ui/AuditTrail';
 import { cn } from '@/lib/utils';
 
 const FILTER_CHIP_CONFIG: Record<
@@ -37,43 +38,6 @@ function ConfidenceBar({ value }: { value: number }) {
   );
 }
 
-function AuditTrail({ item }: { item: DecisionSignal }) {
-  const rows = [
-    { label: 'Quant-Score',   score: item.quant_score,  weight: 0.45, contribution: item.quant_score  * 0.45 },
-    { label: 'ML-Prediction', score: item.ml_score,     weight: 0.35, contribution: item.ml_score     * 0.35 },
-    { label: 'Makro-Kontext', score: item.macro_score,  weight: 0.20, contribution: item.macro_score  * 0.20 },
-  ];
-  const total = rows.reduce((s, r) => s + r.contribution, 0);
-  const signalThreshold = item.signal === 'BUY' ? '≥ 65' : item.signal === 'HOLD' ? '40–64' : '< 40';
-
-  return (
-    <div className="mt-1 pt-2 border-t border-[#21262d] space-y-2 text-[11px]">
-      <p className="text-[10px] text-[#8b949e] font-medium uppercase tracking-wide">
-        Audit-Trail — Signal-Herleitung
-      </p>
-      {rows.map((r) => (
-        <div key={r.label} className="flex items-center gap-2">
-          <span className="text-[#8b949e] w-28 shrink-0">{r.label}</span>
-          <div className="flex-1 h-1.5 rounded-full bg-[#21262d] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[#58a6ff]/60"
-              style={{ width: `${Math.min(r.score, 100)}%` }}
-            />
-          </div>
-          <span className="text-[#e6edf3] w-6 text-right tabular-nums">{r.score.toFixed(0)}</span>
-          <span className="text-[#8b949e]">×{r.weight}</span>
-          <span className="text-[#bc8cff] w-7 text-right tabular-nums">{r.contribution.toFixed(1)}</span>
-        </div>
-      ))}
-      <div className="flex justify-between pt-1 border-t border-[#21262d] font-semibold">
-        <span className="text-[#8b949e]">Gesamt-Score</span>
-        <span className="text-[#e6edf3]">
-          {total.toFixed(1)} → {item.signal} ({signalThreshold})
-        </span>
-      </div>
-    </div>
-  );
-}
 
 function SignalCard({ item }: { item: DecisionSignal }) {
   const [auditOpen, setAuditOpen] = useState(false);
@@ -133,7 +97,16 @@ function SignalCard({ item }: { item: DecisionSignal }) {
         Audit-Trail {auditOpen ? 'schliessen' : 'anzeigen'}
       </button>
 
-      {auditOpen && <AuditTrail item={item} />}
+      {auditOpen && (
+        <AuditTrail
+          quantScore={item.quant_score}
+          mlScore={item.ml_score}
+          macroScore={item.macro_score}
+          signal={item.signal}
+          snapshotDate={item.snapshot_date}
+          className="mt-1 pt-2 border-t border-[#21262d]"
+        />
+      )}
     </div>
   );
 }

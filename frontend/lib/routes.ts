@@ -1,4 +1,5 @@
 export const ROUTES = {
+  start: '/start',
   dashboard: '/',
   universes: '/universes',
   rankings: '/rankings',

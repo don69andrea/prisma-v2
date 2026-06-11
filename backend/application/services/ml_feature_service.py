@@ -152,7 +152,7 @@ class MLFeatureService:
         """
         import yfinance as yf
 
-        end_date = pd.Timestamp.now(tz="UTC").normalize()
+        end_date = pd.Timestamp.now().normalize()  # timezone-naive für konsistente Vergleiche
         start_date = end_date - pd.DateOffset(years=years + 1)  # +1 Jahr für Forward-Return
 
         rows: list[dict[str, Any]] = []

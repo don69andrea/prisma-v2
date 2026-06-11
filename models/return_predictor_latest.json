@@ -1,0 +1,61 @@
+{
+  "model_path": "/Users/andreapetretta/prisma-v2/models/return_predictor_xgboost_20260611_165331.joblib",
+  "model_type": "xgboost",
+  "trained_at": "20260611_165331",
+  "tickers": [
+    "NESN",
+    "NOVN",
+    "ROG",
+    "ABBN",
+    "ZURN",
+    "UHR",
+    "GIVN",
+    "SIKA",
+    "LONN",
+    "AMS",
+    "BAER",
+    "SLHN",
+    "SCMN",
+    "GEBN",
+    "CSGN",
+    "UBSG",
+    "CFR",
+    "CLTN",
+    "DUFN",
+    "KNIN"
+  ],
+  "years": 3,
+  "train_rows": 306,
+  "val_rows": 204,
+  "val_accuracy": 0.3775,
+  "val_top_quartile_recall": 0.3611,
+  "feature_names": [
+    "quant_score",
+    "score_rendite",
+    "score_sicherheit",
+    "score_wachstum",
+    "score_substanz",
+    "return_12m",
+    "vol_30d",
+    "rsi_14",
+    "snb_rate",
+    "chf_eur"
+  ],
+  "feature_importance": {
+    "score_wachstum": 0.3246,
+    "score_substanz": 0.1518,
+    "quant_score": 0.1222,
+    "return_12m": 0.1084,
+    "vol_30d": 0.086,
+    "chf_eur": 0.0738,
+    "snb_rate": 0.0675,
+    "rsi_14": 0.0657,
+    "score_sicherheit": 0.0,
+    "score_rendite": 0.0
+  },
+  "class_distribution": {
+    "0": 180,
+    "1": 150,
+    "2": 180
+  }
+}

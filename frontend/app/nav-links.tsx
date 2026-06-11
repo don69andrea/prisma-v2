@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
 
 const navLinks = [
+  { href: ROUTES.start,     label: '✦ Start' },
   { href: ROUTES.dashboard, label: 'Dashboard' },
   { href: ROUTES.universes, label: 'Universen' },
   { href: ROUTES.rankings,  label: 'Rankings' },

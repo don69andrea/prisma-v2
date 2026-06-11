@@ -98,17 +98,13 @@ class TestClassifyTurn4:
             "NESN.SW": {"sector": "consumer"},
             "LOGN.SW": {"sector": "tech"},
         }
-        sectors, tickers = ProfileClassifier.classify_turn4(
-            ["NESN.SW", "LOGN.SW"], brand_data
-        )
+        sectors, tickers = ProfileClassifier.classify_turn4(["NESN.SW", "LOGN.SW"], brand_data)
         assert set(sectors) == {"consumer", "tech"}
         assert set(tickers) == {"NESN.SW", "LOGN.SW"}
 
     def test_missing_tickers_skipped(self) -> None:
         brand_data = {"NESN.SW": {"sector": "consumer"}}
-        sectors, tickers = ProfileClassifier.classify_turn4(
-            ["NESN.SW", "UNKNOWN.SW"], brand_data
-        )
+        sectors, tickers = ProfileClassifier.classify_turn4(["NESN.SW", "UNKNOWN.SW"], brand_data)
         assert sectors == ["consumer"]
         assert "UNKNOWN.SW" in tickers  # ticker stays, just no sector entry
 

@@ -17,9 +17,9 @@ class InvestorProfileCreateRequest(BaseModel):
     risk_profile: Literal["conservative", "moderate", "aggressive"]
     sector_affinity: list[str] = Field(default_factory=list)
     time_horizon: Literal["short", "medium", "long"] = "medium"
-    investment_goal: Literal[
-        "housing", "retirement", "freedom", "beat_savings", "other"
-    ] = "beat_savings"
+    investment_goal: Literal["housing", "retirement", "freedom", "beat_savings", "other"] = (
+        "beat_savings"
+    )
     profession: str | None = None
     known_tickers: list[str] = Field(default_factory=list)
 

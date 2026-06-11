@@ -1,7 +1,7 @@
 # OPEN ITEMS — PRISMA V2
 
 > Lebendiges Planungsdokument. Wird nach jeder Arbeitssession aktualisiert.
-> Zuletzt aktualisiert: 2026-06-12 (Claude Code Session — Exhaustive Multi-Agent Analysis)
+> Zuletzt aktualisiert: 2026-06-12 (Claude Code Session — Sprint 1+2 abgeschlossen)
 
 ---
 
@@ -19,9 +19,9 @@
 
 ## 1 · FEATURE-LÜCKEN
 
-### 🟠 R2.4-1 — Conversational Discovery Engine nicht vollständig verdrahtet
+### ✅ R2.4-1 — Conversational Discovery Engine verdrahtet
 
-**Status:** PARTIAL  
+**Status:** DONE (Commit `0bdeb48`)  
 **Offizielle Anforderung:** `/start` Conversational Discovery Engine — 5 Turns mit Haiku-Klassifikation
 
 **Problem:**  
@@ -65,9 +65,9 @@ Die API-Client-Funktionen (`createDiscoverySession`, `submitAnswer`, `completeDi
 
 ---
 
-### 🟠 Memo-Button für Discovery-User deaktiviert
+### ✅ Memo-Button für Discovery-User deaktiviert
 
-**Status:** Bug / UX-Blocker  
+**Status:** DONE (Commit `0bdeb48`)  
 **Betroffen:** `frontend/app/stocks/[ticker]/page.tsx:237`
 
 **Problem:**  
@@ -122,7 +122,7 @@ disabled={memoLoading}
 
 **TDD-Pflicht gemäss AGENTS.md:** Für alle Application-Services müssen Unit-Tests vor oder zusammen mit der Implementierung existieren.
 
-#### 2.1 `factsheet_service.py` — kein Unit-Test
+#### ✅ 2.1 `factsheet_service.py` — Unit-Tests vorhanden (10 Tests, Commit `0bdeb48`)
 
 **Datei:** `backend/application/services/factsheet_service.py`  
 **Was zu testen ist:**
@@ -134,7 +134,7 @@ disabled={memoLoading}
 
 **Test-Datei zu erstellen:** `backend/tests/unit/application/test_factsheet_service.py`
 
-#### 2.2 `news_retrieval_service.py` — kein Unit-Test
+#### ✅ 2.2 `news_retrieval_service.py` — Unit-Tests vorhanden (15 Tests, Commit `0bdeb48`)
 
 **Datei:** `backend/application/services/news_retrieval_service.py`  
 **Was zu testen ist:**
@@ -145,7 +145,7 @@ disabled={memoLoading}
 
 **Test-Datei zu erstellen:** `backend/tests/unit/application/test_news_retrieval_service.py`
 
-#### 2.3 `ranking_run_service.py` — kein Unit-Test
+#### ✅ 2.3 `ranking_run_service.py` — Unit-Tests vorhanden (18 Tests, Commit `0bdeb48`)
 
 **Datei:** `backend/application/services/ranking_run_service.py`  
 **Was zu testen ist:**

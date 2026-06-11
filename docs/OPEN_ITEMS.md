@@ -160,7 +160,7 @@ disabled={memoLoading}
 
 ---
 
-### 🟡 E2E-Tests — Aktualität prüfen
+### ✅ E2E-Tests — aktualisiert (Commit `e5f683e`)
 
 **Pfad:** `frontend/e2e/` (12 Test-Dateien)
 

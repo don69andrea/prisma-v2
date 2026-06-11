@@ -25,10 +25,26 @@ logging.basicConfig(level=logging.INFO)
 _logger = logging.getLogger(__name__)
 
 SMI_TICKERS = [
-    "NESN", "NOVN", "ROG", "ABBN", "ZURN",
-    "UBSG", "UHR", "GEBN", "GIVN", "LONN",
-    "SREN", "SGKN", "SLHN", "SCMN", "BALN",
-    "HOLN", "PGHN", "KRIN", "CFR", "STMN",
+    "NESN",
+    "NOVN",
+    "ROG",
+    "ABBN",
+    "ZURN",
+    "UBSG",
+    "UHR",
+    "GEBN",
+    "GIVN",
+    "LONN",
+    "SREN",
+    "SGKN",
+    "SLHN",
+    "SCMN",
+    "BALN",
+    "HOLN",
+    "PGHN",
+    "KRIN",
+    "CFR",
+    "STMN",
 ]
 
 
@@ -48,7 +64,8 @@ async def update(session: AsyncSession) -> None:
                 """),
                 {
                     "market_cap_chf": float(fundamentals.market_cap_chf)
-                    if fundamentals.market_cap_chf is not None else None,
+                    if fundamentals.market_cap_chf is not None
+                    else None,
                     "ticker": ticker,
                 },
             )

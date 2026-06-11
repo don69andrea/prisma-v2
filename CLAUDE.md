@@ -16,18 +16,18 @@
 
 | # | Aufgabe | Person | Branch | Status | Blockiert durch |
 |---|---|---|---|---|---|
-| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `develop` (direkt) | ✅ DONE 2026-06-11 | — |
-| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale + Audit-Trail | Andrea | `feature/andrea-datenpipeline` | ✅ DONE 2026-06-11 | — |
+| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | 🔄 IN PROGRESS | — |
+| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | ⬜ NEXT | R2.3-1 |
 | R2.3-3 | Frontend: SignalBadge + PrismaScore + ExplainButton | Helin | `feature/helin-ux-components` | 🔄 IN PROGRESS | — |
 | R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Helin | `feature/helin-ux-components` | ⬜ NEXT | — |
 | R2.3-5 | Backend: InvestorProfile Model + DB Migration | Aurelius | `feature/aurelius-investorprofile` | 🔄 IN PROGRESS | — |
 | R2.3-6 | Backend: DiscoveryService + API Endpoints | Aurelius | `feature/aurelius-investorprofile` | ⬜ NEXT | R2.3-5 |
-| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns (Sektion 4b) | Andrea | `develop` (direkt, Frontend-Shell ✅) | ✅ DONE 2026-06-11 | Backend-Integration wartet auf R2.3-5/6 |
-| R2.4-2 | /start: Brand Logo Grid (24 Logos) + Risk-Feeling-Test + ProfileReveal | Helin | `feature/helin-discovery-ui` | ⬜ BLOCKED | R2.4-1 Backend |
+| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns (Sektion 4b) | Andrea | `feature/andrea-discovery-engine` | ⬜ BLOCKED | R2.3-5, R2.3-6 |
+| R2.4-2 | /start: Brand Logo Grid (24 Logos) + Risk-Feeling-Test + ProfileReveal | Helin | `feature/helin-discovery-ui` | ⬜ BLOCKED | R2.4-1 |
 | R2.4-3 | Haiku-Klassifikation + Session-State (Redis) + Konfidenz-Score | Aurelius | `feature/aurelius-discovery-agent` | ⬜ BLOCKED | R2.3-5 |
 | R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Helin | `feature/helin-navigation` | ⬜ NEXT | — |
 | R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui` | ⬜ BLOCKED | R2.4-2 |
-| R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ⬜ NEXT | ~~R2.3-1~~ unblocked |
+| R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ⬜ BLOCKED | R2.3-1 |
 | R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ BLOCKED | Alle R2.4 |
 
 ### Branch-Übersicht

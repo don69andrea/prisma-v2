@@ -16,8 +16,8 @@
 
 | # | Aufgabe | Person | Branch | Status | Blockiert durch |
 |---|---|---|---|---|---|
-| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | 🔄 IN PROGRESS | — |
-| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | ⬜ NEXT | R2.3-1 |
+| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | — |
+| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | R2.3-1 |
 | R2.3-3 | Frontend: SignalBadge + PrismaScore + ExplainButton | Andrea (übernimmt Helin) | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Andrea (übernimmt Helin) | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.3-5 | Backend: InvestorProfile Model + DB Migration | Aurelius | `feature/aurelius-investorprofile` | 🔄 IN PROGRESS | — |
@@ -27,7 +27,7 @@
 | R2.4-3 | Haiku-Klassifikation + Session-State (Redis) + Konfidenz-Score | Aurelius | `feature/aurelius-discovery-agent` | ⬜ BLOCKED | R2.3-5 |
 | R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Andrea (übernimmt Helin) | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui` | ⬜ BLOCKED | R2.4-2 |
-| R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ⬜ BLOCKED | R2.3-1 |
+| R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE (RAG verifiziert von Andrea) | R2.3-1 |
 | R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ BLOCKED | Alle R2.4 |
 
 ### Branch-Übersicht

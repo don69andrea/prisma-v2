@@ -13,6 +13,19 @@ export interface MacroContextResponse {
   narrative_en: string;
 }
 
+export interface MacroScoreResponse {
+  ticker: string;
+  score: number;
+  leitzins: number;
+  chf_eur: number;
+  climate: MacroClimate;
+  rag_context_used: boolean;
+}
+
 export async function getMacroContext(): Promise<MacroContextResponse> {
   return apiFetch<MacroContextResponse>('/api/v1/macro/context');
+}
+
+export async function getMacroScore(ticker: string): Promise<MacroScoreResponse> {
+  return apiFetch<MacroScoreResponse>(`/api/v1/macro/score/${encodeURIComponent(ticker)}`);
 }

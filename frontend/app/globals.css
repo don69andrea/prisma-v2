@@ -74,3 +74,47 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── PRISMA Design Tokens ─────────────────────────────── */
+:root {
+  --prisma-bg:        #0d1117;
+  --prisma-surface:   #161b22;
+  --prisma-border:    #21262d;
+  --prisma-text:      #e6edf3;
+  --prisma-muted:     #8b949e;
+  --prisma-blue:      #58a6ff;
+  --prisma-green:     #7ee787;
+  --prisma-orange:    #ffa657;
+  --prisma-red:       #f85149;
+  --prisma-purple:    #bc8cff;
+}
+
+/* ── Glassmorphism Card ───────────────────────────────── */
+.glass-card {
+  background: rgba(22, 27, 34, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(88, 166, 255, 0.15);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ── BUY Glow Pulse ───────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(126, 231, 135, 0.4), 0 0 40px rgba(126, 231, 135, 0.15); }
+  50%       { box-shadow: 0 0 28px rgba(126, 231, 135, 0.6), 0 0 56px rgba(126, 231, 135, 0.25); }
+}
+
+/* ── Typewriter Cursor ────────────────────────────────── */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── Fade-In für Loading-States ──────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}

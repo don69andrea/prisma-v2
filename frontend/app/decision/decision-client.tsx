@@ -8,59 +8,60 @@ import { Download } from 'lucide-react';
 import Link from 'next/link';
 import { listUniverses } from '@/lib/api/universes';
 import { listDecisions, type SignalType, type DecisionSignal } from '@/lib/api/decisions';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SignalBadge } from '@/components/ui/SignalBadge';
 import { cn } from '@/lib/utils';
 
-const SIGNAL_CONFIG: Record<
-  SignalType,
-  { label: string; variant: 'success' | 'warning' | 'outline'; dot: string }
+const FILTER_CHIP_CONFIG: Record<
+  'BUY' | 'HOLD' | 'WATCH',
+  { label: string; dot: string }
 > = {
-  BUY:   { label: 'BUY',   variant: 'success',  dot: 'bg-emerald-500' },
-  HOLD:  { label: 'HOLD',  variant: 'warning',   dot: 'bg-amber-500'   },
-  WATCH: { label: 'WATCH', variant: 'outline',   dot: 'bg-slate-400'   },
+  BUY:   { label: 'BUY',   dot: 'bg-[#7ee787]' },
+  HOLD:  { label: 'HOLD',  dot: 'bg-[#ffa657]' },
+  WATCH: { label: 'WATCH', dot: 'bg-[#8b949e]'  },
 };
 
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   const color =
-    pct >= 65 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-slate-400';
+    pct >= 65 ? 'bg-[#7ee787]' : pct >= 40 ? 'bg-[#ffa657]' : 'bg-[#8b949e]';
 
   return (
     <div className="w-full" title={`${pct}%`}>
-      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-[#21262d] overflow-hidden">
         <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
       </div>
-      <p className="text-[10px] text-muted-foreground mt-0.5 text-right">{pct}%</p>
+      <p className="text-[10px] text-[#8b949e] mt-0.5 text-right">{pct}%</p>
     </div>
   );
 }
 
 function SignalCard({ item }: { item: DecisionSignal }) {
-  const cfg = SIGNAL_CONFIG[item.signal] ?? SIGNAL_CONFIG.WATCH;
-
   return (
-    <div className="rounded-lg border bg-card p-4 space-y-3 hover:shadow-sm transition-shadow">
+    <div className="glass-card p-4 space-y-3 hover:border-[#58a6ff]/30 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div>
           <Link
             href={`/stocks/${item.ticker}`}
-            className="font-semibold text-base leading-none hover:underline"
+            className="font-semibold text-base leading-none text-[#e6edf3] hover:text-[#58a6ff] transition-colors"
           >
             {item.ticker}
           </Link>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-[#8b949e] mt-0.5">
             {new Date(item.snapshot_date).toLocaleDateString('de-CH', { dateStyle: 'short' })}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Badge variant={cfg.variant} className="flex items-center gap-1">
-            <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
-            {cfg.label}
-          </Badge>
+          <SignalBadge
+            signal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
+            confidence={item.confidence}
+            animated={item.signal === 'BUY'}
+          />
           {item.is_3a_eligible && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">3a</Badge>
+            <span className="text-[10px] text-[#8b949e] border border-[#21262d] rounded px-1.5 py-0.5">
+              3a
+            </span>
           )}
         </div>
       </div>
@@ -69,15 +70,15 @@ function SignalCard({ item }: { item: DecisionSignal }) {
 
       <div className="grid grid-cols-3 gap-1 text-[11px]">
         <div className="text-center">
-          <p className="text-muted-foreground">Quant</p>
-          <p className="font-medium">{item.quant_score.toFixed(1)}</p>
+          <p className="text-[#8b949e]">Quant</p>
+          <p className="font-medium text-[#e6edf3]">{item.quant_score.toFixed(1)}</p>
         </div>
         <div className="text-center">
-          <p className="text-muted-foreground">ML</p>
-          <p className="font-medium">{item.ml_score.toFixed(0)}</p>
+          <p className="text-[#8b949e]">ML</p>
+          <p className="font-medium text-[#e6edf3]">{item.ml_score.toFixed(0)}</p>
         </div>
         <div className="text-center">
-          <p className="text-muted-foreground">Macro</p>
+          <p className="text-[#8b949e]">Macro</p>
           <p className="font-medium">{item.macro_score.toFixed(0)}</p>
         </div>
       </div>
@@ -288,7 +289,7 @@ export function DecisionClient() {
       {selectedUniverse && decisionsAllData && (
         <div className="flex flex-wrap gap-2" data-testid="signal-summary">
           {(['BUY', 'HOLD', 'WATCH'] as const).map((sig) => {
-            const cfg = SIGNAL_CONFIG[sig];
+            const cfg = FILTER_CHIP_CONFIG[sig];
             const active = signalFilter === sig;
             return (
               <button

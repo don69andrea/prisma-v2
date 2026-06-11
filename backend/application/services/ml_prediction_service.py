@@ -96,7 +96,8 @@ def _build_shap_entries(
             )
 
         indexed = [
-            (i, v) for i, v in sorted(enumerate(class_shap), key=lambda t: abs(t[1]), reverse=True)
+            (i, v)
+            for i, v in sorted(enumerate(class_shap), key=lambda t: abs(t[1]), reverse=True)
             if i < len(feature_names)
         ][:_TOP_N_SHAP]
 

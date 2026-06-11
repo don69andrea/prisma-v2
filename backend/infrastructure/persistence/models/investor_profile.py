@@ -23,9 +23,7 @@ class InvestorProfileORM(Base):
     sector_affinity: Mapped[list[str]] = mapped_column(
         ARRAY(String()), nullable=False, default=list
     )
-    known_tickers: Mapped[list[str]] = mapped_column(
-        ARRAY(String()), nullable=False, default=list
-    )
+    known_tickers: Mapped[list[str]] = mapped_column(ARRAY(String()), nullable=False, default=list)
     confidence_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     onboarding_complete: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(

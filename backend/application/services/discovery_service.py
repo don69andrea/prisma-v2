@@ -19,8 +19,8 @@ _logger = logging.getLogger(__name__)
 # Risk-Profile → Mindest-Composite-Score
 _RISK_MIN_COMPOSITE: dict[str, float] = {
     "conservative": 70.0,  # nur BUY-Signal
-    "moderate": 40.0,      # BUY + HOLD
-    "aggressive": 0.0,     # alle Signale
+    "moderate": 40.0,  # BUY + HOLD
+    "aggressive": 0.0,  # alle Signale
 }
 
 

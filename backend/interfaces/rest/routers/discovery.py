@@ -144,7 +144,8 @@ async def submit_answer(
     elif body.turn == 4:
         tickers = answer if isinstance(answer, list) else [answer]
         sector_affinity, known_tickers = classifier.classify_turn4(
-            tickers, {}  # brand_data wird vom Frontend mitgeliefert
+            tickers,
+            {},  # brand_data wird vom Frontend mitgeliefert
         )
         updates["sector_affinity"] = sector_affinity
         updates["known_tickers"] = known_tickers

@@ -70,7 +70,15 @@ ignore_missing_imports = true
 exclude = ["backend/alembic/"]
 
 [[tool.mypy.overrides]]
-module = ["backend.tests.*", "backend.tests.unit.*", "backend.tests.integration.*"]
+module = [
+    "backend.tests.*",
+    "backend.tests.unit.*",
+    "backend.tests.unit.application.*",
+    "backend.tests.unit.domain.*",
+    "backend.tests.unit.domain.entities.*",
+    "backend.tests.integration.*",
+    "backend.tests.integration.*.*",
+]
 disallow_untyped_defs = false
 disallow_untyped_decorators = false
 

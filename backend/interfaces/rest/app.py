@@ -15,9 +15,9 @@ from backend.interfaces.rest.routers import (
     admin,
     alerts,
     backtests,
-    chat,
     decision_audit,
     decisions,
+    discovery,
     dividends,
     eligibility,
     fonds_vergleich,
@@ -30,7 +30,6 @@ from backend.interfaces.rest.routers import (
     portfolio,
     rag,
     rebalancing,
-    reports,
     runs,
     steuer,
     stocks,
@@ -115,6 +114,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(BudgetCapExceeded, handle_budget_cap_exceeded)  # type: ignore[arg-type]
 
     app.include_router(health.router)
+    app.include_router(discovery.router)
     app.include_router(stocks.router)
     app.include_router(eligibility.router)
     app.include_router(dividends.router)
@@ -133,8 +133,6 @@ def create_app() -> FastAPI:
     app.include_router(macro.router)
     app.include_router(portfolio.router)
     app.include_router(fonds_vergleich.router)
-    app.include_router(reports.router)
-    app.include_router(chat.router)
     app.include_router(rebalancing.router)
     app.include_router(alerts.router)
 

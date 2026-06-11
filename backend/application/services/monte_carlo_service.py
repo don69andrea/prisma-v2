@@ -121,7 +121,7 @@ def _run_gbm(
     n_months = inp.years * 12
     n_sim = inp.n_simulations
     weights = np.array([h.weight for h in inp.holdings])
-    dt = 21
+    dt = 21  # 21 trading days per month
 
     try:
         L = np.linalg.cholesky(corr_matrix)

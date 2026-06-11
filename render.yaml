@@ -4,6 +4,7 @@ databases:
     user: prisma_v2
     plan: free
     postgresMajorVersion: "16"
+    # pgvector extension must be enabled after first deploy: CREATE EXTENSION vector;
 
 services:
   - type: web

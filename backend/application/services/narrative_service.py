@@ -572,11 +572,11 @@ class NarrativeService:
                     ticker=stock.ticker,
                 )
                 rag_context = "\n\n---\n\n".join(c.content for c in chunks)
-            except Exception:
+            except Exception as exc:
                 self._logger.warning(
                     "RAG retrieval fuer %s fehlgeschlagen — Memo ohne SEC-Kontext",
                     stock.ticker,
-                    exc_info=True,
+                    exc_info=exc,
                 )
 
         # 3b. Prompts rendern

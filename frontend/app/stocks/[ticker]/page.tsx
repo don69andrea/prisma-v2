@@ -285,9 +285,36 @@ function FactsheetContent() {
   );
 }
 
+export function generateMetadata({
+  params,
+}: {
+  params: { ticker: string };
+}) {
+  const symbol = params.ticker.toUpperCase();
+  return {
+    title: `${symbol} Factsheet`,
+    description: `PRISMA Factsheet für ${symbol} — quantitative Analyse`,
+  };
+}
+
+function FactsheetSkeleton() {
+  return (
+    <div className="mx-auto max-w-2xl space-y-4">
+      <div className="h-5 w-32 rounded bg-muted animate-pulse" />
+      <div className="h-36 rounded-xl bg-muted animate-pulse" />
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-10 rounded-md bg-muted animate-pulse" />
+        ))}
+      </div>
+      <div className="h-64 rounded-xl bg-muted animate-pulse" />
+    </div>
+  );
+}
+
 export default function StockFactsheetPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<FactsheetSkeleton />}>
       <FactsheetContent />
     </Suspense>
   );

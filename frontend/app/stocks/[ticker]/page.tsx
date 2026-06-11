@@ -129,7 +129,7 @@ function FactsheetContent() {
       const stockId =
         factsheet?.stock?.id ??
         (await apiFetch<{ id: string }>(`/api/v1/stocks/${symbol}`)).id;
-      const result = await generateMemo(stockId, runId);
+      const result = await generateMemo(stockId, runId || null);
       setMemo(result);
     } catch (err) {
       setMemoError(err instanceof Error ? err.message : 'Memo-Fehler');
@@ -234,7 +234,7 @@ function FactsheetContent() {
 
           <Button
             onClick={handleRequestMemo}
-            disabled={memoLoading || !runId}
+            disabled={memoLoading}
             data-testid="request-memo-btn"
           >
             {memoLoading ? 'Memo wird erstellt…' : 'Memo anfordern'}

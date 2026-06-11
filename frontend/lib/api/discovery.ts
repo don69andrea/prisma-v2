@@ -59,8 +59,9 @@ export interface CompleteDiscoveryResponse {
   recommended_stocks: Array<{
     ticker: string;
     name: string;
-    score: number;
-    reason: string;
+    sector: string | null;
+    market_cap_chf: string | null;
+    exchange: string;
   }>;
 }
 

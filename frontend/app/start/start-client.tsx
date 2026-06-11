@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { getPersonalizedStocks, saveProfile } from '@/lib/api/discovery';
+import { completeDiscovery, createDiscoverySession, submitAnswer } from '@/lib/api/discovery';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -787,36 +787,28 @@ export function StartClient() {
 
   const handleContinue = useCallback(
     async (finalBrands: string[], finalZiel: Ziel, finalRisiko: Risiko) => {
-      const sessionId = crypto.randomUUID();
-
       const knownBrandObjs = BRANDS.filter((b) => finalBrands.includes(b.ticker));
-      const sectorSet = new Set(
-        knownBrandObjs.map((b) => CATEGORY_TO_SECTOR[b.category]).filter(Boolean),
-      );
 
       try {
-        const profile = await saveProfile({
-          session_id:     sessionId,
-          risk_profile:   finalRisiko,
-          sector_affinity: Array.from(sectorSet),
-          time_horizon:   ZIEL_TO_HORIZON[finalZiel],
-          investment_goal: finalZiel,
-          profession:     beruf || undefined,
-          known_tickers:  finalBrands,
-        });
-
-        const discovery = await getPersonalizedStocks(profile.session_id);
+        const { session_id: sessionId } = await createDiscoverySession();
+        await submitAnswer(sessionId, 1, beruf || '');
+        await submitAnswer(sessionId, 2, finalZiel);
+        await submitAnswer(sessionId, 3, finalRisiko);
+        await submitAnswer(sessionId, 4, finalBrands);
+        const result = await completeDiscovery(sessionId);
+        const discovery = {
+          session_id: sessionId,
+          total: result.recommended_stocks.length,
+          stocks: result.recommended_stocks,
+        };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(discovery));
       } catch {
-        // Backend nicht verfügbar — Fallback aus Brand-Auswahl aufbauen damit
-        // /discover nicht als EmptyState endet (Demo-Flow muss durchgehend funktionieren)
         const defaultTickers = ['NESN', 'ROG', 'NOVN', 'ABBN', 'UBSG', 'LOGN', 'CFR', 'ZURN'];
         const stocksToShow = knownBrandObjs.length > 0
           ? knownBrandObjs
           : BRANDS.filter((b) => defaultTickers.includes(b.ticker));
-
         const fallback = {
-          session_id: sessionId,
+          session_id: crypto.randomUUID(),
           total: stocksToShow.length,
           stocks: stocksToShow.map((b) => ({
             ticker: b.ticker,

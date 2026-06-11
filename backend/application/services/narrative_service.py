@@ -183,7 +183,7 @@ class NarrativeService:
     async def generate_memo(
         self,
         stock_id: UUID,
-        model_run_id: UUID,
+        model_run_id: UUID | None,
         *,
         language: Literal["de", "en"] = "de",
         force_regenerate: bool = False,
@@ -499,7 +499,7 @@ class NarrativeService:
     async def _generate_memo_isolated(
         self,
         stock_id: UUID,
-        model_run_id: UUID,
+        model_run_id: UUID | None,
         *,
         language: Literal["de", "en"] = "de",
         force_regenerate: bool = False,
@@ -511,9 +511,13 @@ class NarrativeService:
         Public generate_memo nutzt Service-eigene Repos. Background-Worker
         (_execute_batch in Task 8) nutzt isolated Repos via session_factory
         pro Worker (B1-Lehre — geteilte AsyncSession ist nicht concurrent-safe).
+
+        model_run_id=None: Discovery-User-Pfad — kein Ranking-Kontext verfügbar.
+        Memo wird ohne Run-Kontext generiert; ranking_interpretation wird als
+        Stub gesetzt ("Kein Ranking-Kontext verfügbar").
         """
-        # 1. Cache check
-        if not force_regenerate:
+        # 1. Cache check (nur wenn run_id bekannt — ohne run_id kein Cache-Key)
+        if model_run_id is not None and not force_regenerate:
             existing = await self._memo_repo.get(stock_id, model_run_id, language=language)
             if existing is not None:
                 return existing
@@ -525,16 +529,38 @@ class NarrativeService:
         stock = await stock_repo.get(stock_id)
         if stock is None:
             raise LookupError(f"Stock {stock_id} not found")
-        results = await run_repo.get_results(model_run_id)
-        if results is None:
-            raise LookupError(f"Run {model_run_id} not found")
 
-        try:
-            ranking = _extract_ranking_for_ticker(results, ticker=stock.ticker)
-        except KeyError as exc:
-            raise LookupError(f"Stock {stock.ticker} not in run {model_run_id}") from exc
-
-        universe_context = _build_universe_context(results)
+        # Ranking-Kontext: nur laden wenn run_id vorhanden (Discovery-Pfad hat keinen).
+        if model_run_id is not None:
+            results = await run_repo.get_results(model_run_id)
+            if results is None:
+                raise LookupError(f"Run {model_run_id} not found")
+            try:
+                ranking = _extract_ranking_for_ticker(results, ticker=stock.ticker)
+            except KeyError as exc:
+                raise LookupError(f"Stock {stock.ticker} not in run {model_run_id}") from exc
+            universe_context = _build_universe_context(results)
+            prompt_run_id = str(model_run_id)
+            prompt_rankings = _rankings_for_template(ranking)
+            prompt_total_rank = ranking["total_rank"]
+            prompt_sweet_spot = ranking["is_sweet_spot"]
+            prompt_n_stocks = universe_context.n_stocks
+            prompt_median_rank = universe_context.median_rank
+            prompt_top20_threshold = universe_context.top20_threshold
+        else:
+            # Discovery-Pfad: kein Ranking-Kontext — Stub-Werte für den Prompt.
+            ranking = {
+                "total_rank": None,
+                "is_sweet_spot": False,
+                "per_model_ranks": {},
+            }
+            prompt_run_id = "n/a"
+            prompt_rankings = {}
+            prompt_total_rank = None
+            prompt_sweet_spot = False
+            prompt_n_stocks = 0
+            prompt_median_rank = 0
+            prompt_top20_threshold = 0
 
         # 3a. RAG-Kontext abrufen (optional — graceful degradation wenn nicht konfiguriert)
         rag_context = ""
@@ -562,14 +588,14 @@ class NarrativeService:
                 "name": stock.name,
                 "sector": stock.sector,
                 "country": stock.country,
-                "run_id": str(model_run_id),
+                "run_id": prompt_run_id,
                 "universe_name": "Universe",
-                "n_stocks": universe_context.n_stocks,
-                "median_rank": universe_context.median_rank,
-                "top20_threshold": universe_context.top20_threshold,
-                "rankings": _rankings_for_template(ranking),
-                "total_rank": ranking["total_rank"],
-                "sweet_spot": ranking["is_sweet_spot"],
+                "n_stocks": prompt_n_stocks,
+                "median_rank": prompt_median_rank,
+                "top20_threshold": prompt_top20_threshold,
+                "rankings": prompt_rankings,
+                "total_rank": prompt_total_rank,
+                "sweet_spot": prompt_sweet_spot,
                 "weights": "equal-weighted (0.20 each)",
                 "rag_context": rag_context,
             },
@@ -599,9 +625,10 @@ class NarrativeService:
         )
 
         # 5. Tool-use Antwort → Pydantic-Validate (oder Error-Memo-Pfad)
+        log_run_id = model_run_id if model_run_id is not None else uuid4()
         memo_schema = self._try_validate_tool_response(response)
         if memo_schema is None:
-            self._dump_malformed_response(response, stock_id=stock_id, run_id=model_run_id)
+            self._dump_malformed_response(response, stock_id=stock_id, run_id=log_run_id)
             memo_schema = self._build_error_memo_schema(stock=stock, ranking=ranking)
 
         # 6. Persist
@@ -615,11 +642,18 @@ class NarrativeService:
                 memo_schema, stock_id=stock_id, model_run_id=model_run_id, language=language
             )
         except ValidationError:
-            self._dump_malformed_response(response, stock_id=stock_id, run_id=model_run_id)
+            self._dump_malformed_response(response, stock_id=stock_id, run_id=log_run_id)
             error_schema = self._build_error_memo_schema(stock=stock, ranking=ranking)
             memo_entity = self._build_memo_entity(
                 error_schema, stock_id=stock_id, model_run_id=model_run_id, language=language
             )
+        # Discovery-Pfad (model_run_id=None): nicht persistieren — DB-Column
+        # model_run_id ist nullable=False mit FK zu ranking_runs. Ohne gültigen
+        # Run-Key wäre der INSERT ein Constraint-Fehler. Memo wird in-memory
+        # zurückgegeben (kein Caching, aber kein Crash).
+        if model_run_id is None:
+            return memo_entity
+
         await self._memo_repo.save(memo_entity)
 
         # UPSERT behaelt bei Konflikt die Original-id und Original-created_at
@@ -638,7 +672,7 @@ class NarrativeService:
         schema: Any,
         *,
         stock_id: UUID,
-        model_run_id: UUID,
+        model_run_id: UUID | None,
         language: Literal["de", "en"],
     ) -> ResearchMemo:
         return ResearchMemo(

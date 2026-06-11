@@ -16,7 +16,7 @@
 | R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Andrea (übernimmt Helin) | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui` | ✅ DONE | — |
 | R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE | — |
-| R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ BLOCKED | R2.5-1 |
+| R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ NEXT | — |
 
 ---
 

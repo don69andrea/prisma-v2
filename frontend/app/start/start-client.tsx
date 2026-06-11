@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+
+import { getPersonalizedStocks, saveProfile } from '@/lib/api/discovery';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -97,6 +99,24 @@ const ZIEL_HORIZON: Record<Ziel, string> = {
   freedom:      '5–10 Jahre',
   beat_savings: 'Flexibel',
 };
+
+const ZIEL_TO_HORIZON: Record<Ziel, 'short' | 'medium' | 'long'> = {
+  housing:      'short',
+  retirement:   'long',
+  freedom:      'medium',
+  beat_savings: 'medium',
+};
+
+const CATEGORY_TO_SECTOR: Record<string, string> = {
+  Konsum:    'consumer',
+  Pharma:    'pharma',
+  Finanzen:  'finance',
+  Industrie: 'industrial',
+  Tech:      'tech',
+  Lifestyle: 'luxury',
+};
+
+export const DISCOVER_STORAGE_KEY = 'prisma_discover_result';
 
 // ---------------------------------------------------------------------------
 // DownChart SVG — Risk-Feeling-Test
@@ -757,13 +777,50 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
 // ---------------------------------------------------------------------------
 
 export function StartClient() {
-  const [step, setStep]         = useState<Step>('landing');
-  const [beruf, setBeruf]       = useState('');
-  const [ziel, setZiel]         = useState<Ziel | null>(null);
-  const [risiko, setRisiko]     = useState<Risiko | null>(null);
-  const [brands, setBrands]     = useState<string[]>([]);
+  const [step, setStep]             = useState<Step>('landing');
+  const [beruf, setBeruf]           = useState('');
+  const [ziel, setZiel]             = useState<Ziel | null>(null);
+  const [risiko, setRisiko]         = useState<Risiko | null>(null);
+  const [brands, setBrands]         = useState<string[]>([]);
   const [kennerMode, setKennerMode] = useState(false);
   const router = useRouter();
+
+  const handleContinue = useCallback(
+    async (finalBrands: string[], finalZiel: Ziel, finalRisiko: Risiko) => {
+      const sessionId = crypto.randomUUID();
+
+      const knownBrandObjs = BRANDS.filter((b) => finalBrands.includes(b.ticker));
+      const sectorSet = new Set(
+        knownBrandObjs.map((b) => CATEGORY_TO_SECTOR[b.category]).filter(Boolean),
+      );
+
+      try {
+        const profile = await saveProfile({
+          session_id:     sessionId,
+          risk_profile:   finalRisiko,
+          sector_affinity: Array.from(sectorSet),
+          time_horizon:   ZIEL_TO_HORIZON[finalZiel],
+          investment_goal: finalZiel,
+          profession:     beruf || undefined,
+          known_tickers:  finalBrands,
+        });
+
+        const discovery = await getPersonalizedStocks(profile.session_id);
+        localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(discovery));
+      } catch {
+        // Backend noch nicht verfügbar — lokales Profil reicht für Demo
+        const fallback = {
+          session_id: sessionId,
+          total: 0,
+          stocks: [],
+        };
+        localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(fallback));
+      }
+
+      router.push('/discover');
+    },
+    [beruf, router],
+  );
 
   if (kennerMode) {
     return <div className="min-h-[60vh]"><KennerSearch onBack={() => setKennerMode(false)} /></div>;
@@ -777,14 +834,14 @@ export function StartClient() {
           onKenner={() => setKennerMode(true)}
         />
       )}
-      {step === 'beruf' && <StepBeruf  onNext={(v) => { setBeruf(v); setStep('ziel'); }} />}
-      {step === 'ziel'  && <StepZiel   onNext={(v) => { setZiel(v);  setStep('risiko'); }} />}
-      {step === 'risiko' && <StepRisiko onNext={(v) => { setRisiko(v); setStep('brands'); }} />}
-      {step === 'brands' && <StepBrands onNext={(v) => { setBrands(v); setStep('reveal'); }} />}
+      {step === 'beruf'   && <StepBeruf  onNext={(v) => { setBeruf(v);   setStep('ziel'); }} />}
+      {step === 'ziel'    && <StepZiel   onNext={(v) => { setZiel(v);    setStep('risiko'); }} />}
+      {step === 'risiko'  && <StepRisiko onNext={(v) => { setRisiko(v);  setStep('brands'); }} />}
+      {step === 'brands'  && <StepBrands onNext={(v) => { setBrands(v);  setStep('reveal'); }} />}
       {step === 'reveal' && ziel && risiko && (
         <StepReveal
           profile={{ beruf, ziel, risiko, brands }}
-          onContinue={() => router.push('/decision')}
+          onContinue={() => handleContinue(brands, ziel, risiko)}
         />
       )}
     </div>

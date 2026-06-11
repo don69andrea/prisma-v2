@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -82,7 +82,7 @@ class ProfileClassifier:
     @staticmethod
     def classify_turn4(
         clicked_tickers: list[str],
-        brand_data: dict[str, dict],
+        brand_data: dict[str, dict[str, Any]],
     ) -> tuple[list[str], list[str]]:
         """Brand-Klicks → (sector_affinity, known_tickers).
 

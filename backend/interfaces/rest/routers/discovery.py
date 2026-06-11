@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -118,7 +119,7 @@ async def submit_answer(
         )
 
     answer = body.answer
-    updates: dict = {"updated_at": datetime.now(UTC)}
+    updates: dict[str, Any] = {"updated_at": datetime.now(UTC)}
 
     if body.turn == 1:
         profession_text = answer if isinstance(answer, str) else str(answer)

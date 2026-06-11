@@ -11,7 +11,7 @@ const NAV_GROUPS = [
     label: 'ENTDECKEN',
     links: [
       { href: ROUTES.start,    label: 'Einstieg' },
-      { href: ROUTES.universes, label: 'Universe' },
+      { href: ROUTES.universes, label: 'Universen' },
       { href: ROUTES.rankings, label: 'Rankings' },
     ],
   },

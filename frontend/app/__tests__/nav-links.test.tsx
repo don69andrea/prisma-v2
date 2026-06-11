@@ -48,9 +48,10 @@ describe('NavLinks', () => {
     expect(screen.getByRole('link', { name: 'Rankings' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('Signale-Link ist vorhanden', () => {
+  it('Universen- und Signale-Link sind vorhanden', () => {
     vi.mocked(usePathname).mockReturnValue('/');
     render(<NavLinks />);
+    expect(screen.getByRole('link', { name: 'Universen' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Signale' })).toBeInTheDocument();
   });
 

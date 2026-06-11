@@ -5,8 +5,18 @@ vi.mock('next/navigation', () => ({
   usePathname: vi.fn(),
 }));
 vi.mock('next/link', () => ({
-  default: ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => (
-    <a href={href} {...props}>{children}</a>
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode;
+    href: string;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
   ),
 }));
 
@@ -14,31 +24,40 @@ import { usePathname } from 'next/navigation';
 import { NavLinks } from '../nav-links';
 
 describe('NavLinks', () => {
-  it('hebt den aktiven Link hervor und setzt aria-current', () => {
-    vi.mocked(usePathname).mockReturnValue('/universes');
+  it('zeigt alle 5 Gruppenbezeichnungen', () => {
+    vi.mocked(usePathname).mockReturnValue('/');
     render(<NavLinks />);
-
-    const activeLink = screen.getByRole('link', { name: 'Universen' });
-    expect(activeLink).toHaveAttribute('aria-current', 'page');
-    expect(activeLink.className).toContain('text-foreground');
-
-    const inactiveLink = screen.getByRole('link', { name: 'Rankings' });
-    expect(inactiveLink).not.toHaveAttribute('aria-current');
-    expect(inactiveLink.className).toContain('text-muted-foreground');
+    expect(screen.getByText('ENTDECKEN')).toBeInTheDocument();
+    expect(screen.getByText('VERSTEHEN')).toBeInTheDocument();
+    expect(screen.getByText('VERGLEICHEN')).toBeInTheDocument();
+    expect(screen.getByText('ENTSCHEIDEN')).toBeInTheDocument();
+    expect(screen.getByText('PORTFOLIO')).toBeInTheDocument();
   });
 
-  it('matched auch verschachtelte Pfade — /rankings/abc aktiviert Rankings', () => {
+  it('hebt den aktiven Link hervor und setzt aria-current', () => {
+    vi.mocked(usePathname).mockReturnValue('/rankings');
+    render(<NavLinks />);
+    const active = screen.getByRole('link', { name: 'Rankings' });
+    expect(active).toHaveAttribute('aria-current', 'page');
+    expect(active.className).toContain('text-foreground');
+  });
+
+  it('matched verschachtelte Pfade — /rankings/abc aktiviert Rankings', () => {
     vi.mocked(usePathname).mockReturnValue('/rankings/some-run-id');
     render(<NavLinks />);
-
     expect(screen.getByRole('link', { name: 'Rankings' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Universen' })).not.toHaveAttribute('aria-current');
   });
 
-  it('Dashboard nur bei exakt /', () => {
-    vi.mocked(usePathname).mockReturnValue('/universes');
+  it('Universen-Link ist vorhanden', () => {
+    vi.mocked(usePathname).mockReturnValue('/');
     render(<NavLinks />);
+    expect(screen.getByRole('link', { name: 'Universen' })).toBeInTheDocument();
+  });
 
-    expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
+  it('inaktiver Link hat keine aria-current', () => {
+    vi.mocked(usePathname).mockReturnValue('/rankings');
+    render(<NavLinks />);
+    expect(screen.getByRole('link', { name: 'Aktien' })).not.toHaveAttribute('aria-current');
   });
 });

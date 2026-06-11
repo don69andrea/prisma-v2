@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from backend.application.agents.macro_agent import MacroScore
+from backend.application.agents.macro_agent import MacroIntelligenceAgent, MacroScore
 from backend.application.services.macro_service import MacroService
 from backend.application.services.retrieval_service import RetrievalService
 from backend.config import Settings, get_settings
@@ -41,7 +41,7 @@ _UNKNOWN_TICKER_SCORE = MacroScore(
 
 def _build_test_app(
     macro_score: MacroScore = _DEFAULT_MACRO_SCORE,
-    rag_results: list | None = None,
+    rag_results: list[object] | None = None,
     rag_raises: bool = False,
 ) -> tuple[FastAPI, TestClient]:
     """Erstellt eine isolierte FastAPI-Testapp mit gemockten Services."""
@@ -63,16 +63,13 @@ def _build_test_app(
     app.dependency_overrides[get_macro_service] = _mock_get_macro_service
 
     # Patch MacroIntelligenceAgent.get_macro_score im Modul
-    import backend.interfaces.rest.routers.macro as macro_router_module
-    from backend.application.agents.macro_agent import MacroIntelligenceAgent
-
     original_init = MacroIntelligenceAgent.__init__
 
     def _patched_init(self: MacroIntelligenceAgent, macro_service: MacroService) -> None:
         original_init(self, macro_service)
         self.get_macro_score = AsyncMock(return_value=macro_score)  # type: ignore[method-assign]
 
-    macro_router_module.MacroIntelligenceAgent.__init__ = _patched_init  # type: ignore[method-assign]
+    MacroIntelligenceAgent.__init__ = _patched_init  # type: ignore[method-assign]
 
     # Mock RetrievalService
     mock_retrieval = AsyncMock(spec=RetrievalService)

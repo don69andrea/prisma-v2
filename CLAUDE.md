@@ -17,7 +17,7 @@
 | # | Aufgabe | Person | Branch | Status | Blockiert durch |
 |---|---|---|---|---|---|
 | R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `develop` (direkt) | ✅ DONE 2026-06-11 | — |
-| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | 🔄 IN PROGRESS | — |
+| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale + Audit-Trail | Andrea | `feature/andrea-datenpipeline` | ✅ DONE 2026-06-11 | — |
 | R2.3-3 | Frontend: SignalBadge + PrismaScore + ExplainButton | Helin | `feature/helin-ux-components` | 🔄 IN PROGRESS | — |
 | R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Helin | `feature/helin-ux-components` | ⬜ NEXT | — |
 | R2.3-5 | Backend: InvestorProfile Model + DB Migration | Aurelius | `feature/aurelius-investorprofile` | 🔄 IN PROGRESS | — |

@@ -34,6 +34,62 @@ export interface DiscoveryResponse {
   stocks: DiscoveredStock[];
 }
 
+// --- Conversational Discovery Session API ---
+
+export interface DiscoverySessionResponse {
+  session_id: string;
+}
+
+export interface PartialProfile {
+  beruf?: string;
+  ziel?: 'housing' | 'retirement' | 'freedom' | 'beat_savings' | 'other';
+  risiko?: 'conservative' | 'moderate' | 'aggressive';
+  brands?: string[];
+}
+
+export interface AnswerResponse {
+  session_id: string;
+  next_turn: number | null;
+  confidence: number;
+  partial_profile: PartialProfile;
+}
+
+export interface CompleteDiscoveryResponse {
+  profile: PartialProfile;
+  recommended_stocks: Array<{
+    ticker: string;
+    name: string;
+    score: number;
+    reason: string;
+  }>;
+}
+
+export async function createDiscoverySession(): Promise<DiscoverySessionResponse> {
+  return apiFetch<DiscoverySessionResponse>('/api/v1/discovery/session', {
+    method: 'POST',
+  });
+}
+
+export async function submitAnswer(
+  sessionId: string,
+  turn: number,
+  answer: string | string[],
+): Promise<AnswerResponse> {
+  return apiFetch<AnswerResponse>('/api/v1/discovery/answer', {
+    method: 'POST',
+    body: JSON.stringify({ session_id: sessionId, turn, answer }),
+  });
+}
+
+export async function completeDiscovery(sessionId: string): Promise<CompleteDiscoveryResponse> {
+  return apiFetch<CompleteDiscoveryResponse>('/api/v1/discovery/complete', {
+    method: 'POST',
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+}
+
+// --- Legacy profile save / personalized stocks ---
+
 export async function saveProfile(
   payload: InvestorProfilePayload,
 ): Promise<InvestorProfileResponse> {

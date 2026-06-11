@@ -1,6 +1,7 @@
 export const ROUTES = {
   start: '/start',
   dashboard: '/',
+  discover: '/discover',
   universes: '/universes',
   rankings: '/rankings',
   backtest: '/backtest',

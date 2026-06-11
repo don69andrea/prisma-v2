@@ -120,12 +120,16 @@ class SignalAggregationService:
 
     async def get_signals(self, tickers: list[str]) -> list[DecisionSignal]:
         """Berechnet Signale für eine Liste von Tickern (fehlgeschlagene werden übersprungen)."""
+        import asyncio
+
+        raw = await asyncio.gather(
+            *[self.get_signal(ticker) for ticker in tickers],
+            return_exceptions=True,
+        )
         results: list[DecisionSignal] = []
-        for ticker in tickers:
-            try:
-                signal = await self.get_signal(ticker)
-                if signal is not None:
-                    results.append(signal)
-            except Exception:
-                _logger.exception("Signal-Berechnung fehlgeschlagen für %s", ticker)
+        for ticker, outcome in zip(tickers, raw):
+            if isinstance(outcome, BaseException):
+                _logger.exception("Signal-Berechnung fehlgeschlagen für %s", ticker, exc_info=outcome)
+            elif outcome is not None:
+                results.append(outcome)
         return results

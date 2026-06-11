@@ -37,7 +37,7 @@ interface Brand {
 const BRANDS: Brand[] = [
   // Consumer
   { ticker: 'NESN', name: 'Nestlé', abbr: 'NES', category: 'Konsum', fact: 'Nespresso, KitKat, Maggi — alles Nestlé.', color: '#7ee787' },
-  { ticker: 'LISP', name: 'Lindt & Sprüngli', abbr: 'LIN', category: 'Konsum', fact: 'Der bekannteste Schweizer Schokoladenhersteller.', color: '#7ee787' },
+  { ticker: 'LISN', name: 'Lindt & Sprüngli', abbr: 'LIN', category: 'Konsum', fact: 'Der bekannteste Schweizer Schokoladenhersteller.', color: '#7ee787' },
   { ticker: 'GIVN', name: 'Givaudan', abbr: 'GIV', category: 'Konsum', fact: 'Aromenhersteller hinter tausenden Parfüms und Lebensmitteln.', color: '#7ee787' },
   { ticker: 'BARN', name: 'Barry Callebaut', abbr: 'BAR', category: 'Konsum', fact: 'Grösster Schokoladenproduzent der Welt (B2B).', color: '#7ee787' },
   // Pharma

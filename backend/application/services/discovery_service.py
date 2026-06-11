@@ -5,6 +5,7 @@ Regelbasierter Filter ohne LLM: Sektor-Affinität, Risk-Profile, Quant-Score-Sch
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from backend.domain.entities.investor_profile import InvestorProfile
@@ -43,6 +44,20 @@ class DiscoveryService:
         self._scorer = SwissQuantScorer()
         self._eligibility = EligibilityFilter()
 
+    async def _score_stock(
+        self, stock: SwissStock, risk_floor: float
+    ) -> tuple[SwissStock, float] | None:
+        """Berechnet Quant-Score für einen Titel. Gibt None zurück wenn nicht verfügbar oder < risk_floor."""
+        try:
+            fundamentals = await self._market_data.get_fundamentals(stock.ticker)
+            quant_score = self._scorer.score(stock.ticker, fundamentals)
+        except Exception:
+            _logger.debug("Quant-Score für %s nicht verfügbar — übersprungen", stock.ticker)
+            return None
+        if quant_score.composite < risk_floor:
+            return None
+        return (stock, quant_score.composite)
+
     async def get_personalized_universe(self, profile: InvestorProfile) -> list[SwissStock]:
         """Gibt die gefilterte Titelliste für das übergebene Profil zurück."""
         all_stocks = await self._repo.list_by_exchange(exchange="XSWX", limit=200)
@@ -58,20 +73,14 @@ class DiscoveryService:
 
         risk_floor = _RISK_MIN_COMPOSITE.get(profile.risk_profile, 0.0)
 
-        scored: list[tuple[SwissStock, float]] = []
-        for stock in candidates:
-            # 2. Quant-Score-Filter
-            try:
-                fundamentals = await self._market_data.get_fundamentals(stock.ticker)
-                quant_score = self._scorer.score(stock.ticker, fundamentals)
-            except Exception:
-                _logger.debug("Quant-Score für %s nicht verfügbar — übersprungen", stock.ticker)
-                continue
-
-            if quant_score.composite < risk_floor:
-                continue
-
-            scored.append((stock, quant_score.composite))
+        # 2. Quant-Score-Filter — alle Titel parallel bewerten
+        raw = await asyncio.gather(
+            *[self._score_stock(stock, risk_floor) for stock in candidates],
+            return_exceptions=True,
+        )
+        scored: list[tuple[SwissStock, float]] = [
+            r for r in raw if isinstance(r, tuple)
+        ]
 
         # 3. Bekannte Titel zuerst, dann nach Composite-Score absteigend
         known = {t.upper() for t in profile.known_tickers}

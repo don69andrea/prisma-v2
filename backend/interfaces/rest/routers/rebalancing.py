@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from backend.application.services.rebalancing_service import RebalancingService
+from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
+from backend.interfaces.rest.dependencies import get_swiss_stock_repository
 from backend.interfaces.rest.schemas.rebalancing import (
     RebalancingPlanResponse,
     RebalancingRequest,
@@ -27,8 +29,12 @@ router = APIRouter(prefix="/api/v1/portfolio", tags=["rebalancing"])
 )
 async def compute_rebalancing_plan(
     body: RebalancingRequest,
+    swiss_repo: SwissStockRepository = Depends(get_swiss_stock_repository),
 ) -> RebalancingPlanResponse:
-    service = RebalancingService(transaction_cost_rate=body.transaction_cost_rate)
+    service = RebalancingService(
+        transaction_cost_rate=body.transaction_cost_rate,
+        stock_repo=swiss_repo,
+    )
     plan = await service.compute_plan(
         total_portfolio_value_chf=body.total_portfolio_value_chf,
         current_weights=body.current_weights,

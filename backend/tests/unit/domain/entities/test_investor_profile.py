@@ -12,7 +12,7 @@ pytestmark = pytest.mark.unit
 
 
 def _make_profile(**overrides: Any) -> InvestorProfile:
-    defaults = {"session_id": "test-session-abc"}
+    defaults: dict[str, Any] = {"session_id": "test-session-abc"}
     defaults.update(overrides)
     return InvestorProfile(**defaults)
 

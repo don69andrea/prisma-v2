@@ -50,7 +50,7 @@ def _make_service(stocks: list[SwissStock], composite: float = 75.0) -> Discover
 
 
 def _make_profile(**kwargs: Any) -> InvestorProfile:
-    defaults = {"session_id": "test-sess"}
+    defaults: dict[str, Any] = {"session_id": "test-sess"}
     defaults.update(kwargs)
     return InvestorProfile(**defaults)
 

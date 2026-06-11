@@ -7,7 +7,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Legacy: POST /api/v1/profile + GET /api/v1/discover
 # ---------------------------------------------------------------------------

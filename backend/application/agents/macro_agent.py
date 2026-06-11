@@ -11,39 +11,43 @@ from backend.application.services.macro_service import MacroService
 _logger = logging.getLogger(__name__)
 
 # SMI/SMIM-Exporteure (Auslandumsatz >80%) — starker CHF = Gegenwind
-_EXPORT_HEAVY: frozenset[str] = frozenset({
-    "NESN.SW",    # Nestlé — >98% Auslandumsatz
-    "ROG.SW",     # Roche — Pharma, global
-    "NOVN.SW",    # Novartis — Pharma, global
-    "LONN.SW",    # Lonza — Pharma/Biotech, global
-    "LOGN.SW",    # Logitech — Tech, global
-    "BARN.SW",    # Barry Callebaut — Schokolade, global
-    "GIVN.SW",    # Givaudan — Aromen/Duftstoffe, global
-    "ABBN.SW",    # ABB — Industrieausrüstung, global
-    "KNIN.SW",    # Kuehne+Nagel — Logistik, global
-    "SCHP.SW",    # Schindler — Aufzüge, global
-    "LISN.SW",    # Lindt & Sprüngli — Schokolade, global
-    "GEBN.SW",    # Geberit — Sanitärtechnik, europäisch
-    "CFR.SW",     # Richemont — Uhren/Luxus, global
-    "SREN.SW",    # Swiss Re — Rückversicherung, global
-    "STMN.SW",    # Straumann — Dental, global
-    "VACN.SW",    # VAT Group — Tech, global
-})
+_EXPORT_HEAVY: frozenset[str] = frozenset(
+    {
+        "NESN.SW",  # Nestlé — >98% Auslandumsatz
+        "ROG.SW",  # Roche — Pharma, global
+        "NOVN.SW",  # Novartis — Pharma, global
+        "LONN.SW",  # Lonza — Pharma/Biotech, global
+        "LOGN.SW",  # Logitech — Tech, global
+        "BARN.SW",  # Barry Callebaut — Schokolade, global
+        "GIVN.SW",  # Givaudan — Aromen/Duftstoffe, global
+        "ABBN.SW",  # ABB — Industrieausrüstung, global
+        "KNIN.SW",  # Kuehne+Nagel — Logistik, global
+        "SCHP.SW",  # Schindler — Aufzüge, global
+        "LISN.SW",  # Lindt & Sprüngli — Schokolade, global
+        "GEBN.SW",  # Geberit — Sanitärtechnik, europäisch
+        "CFR.SW",  # Richemont — Uhren/Luxus, global
+        "SREN.SW",  # Swiss Re — Rückversicherung, global
+        "STMN.SW",  # Straumann — Dental, global
+        "VACN.SW",  # VAT Group — Tech, global
+    }
+)
 
 # Inlandsfokussierte Titel (CHF-Stärke weniger relevant)
-_DOMESTIC_FOCUS: frozenset[str] = frozenset({
-    "UBSG.SW",    # UBS — Bankwesen, Schweizer Heimbasis
-    "SLHN.SW",    # Swiss Life — CH Versicherung
-    "BAER.SW",    # Julius Bär — Wealth Management, CHF-Erlöse
-    "PGHN.SW",    # Partners Group — CH domiziliert
-})
+_DOMESTIC_FOCUS: frozenset[str] = frozenset(
+    {
+        "UBSG.SW",  # UBS — Bankwesen, Schweizer Heimbasis
+        "SLHN.SW",  # Swiss Life — CH Versicherung
+        "BAER.SW",  # Julius Bär — Wealth Management, CHF-Erlöse
+        "PGHN.SW",  # Partners Group — CH domiziliert
+    }
+)
 
 # Sektoren die per se exportlastig sind (Sektor-Hint aus InvestorProfile)
 _EXPORT_SECTORS: frozenset[str] = frozenset({"pharma", "tech", "luxury", "industrial", "chemical"})
 
 # chf_eur = 1 CHF in EUR (Fallback: 0.93). Höher = stärkerer CHF.
-_CHF_STRONG_THRESHOLD = 0.95   # CHF stark → schadet Exporteuren
-_CHF_WEAK_THRESHOLD = 0.91     # CHF schwach → begünstigt Exporteure
+_CHF_STRONG_THRESHOLD = 0.95  # CHF stark → schadet Exporteuren
+_CHF_WEAK_THRESHOLD = 0.91  # CHF schwach → begünstigt Exporteure
 
 
 class MacroScore(BaseModel):
@@ -107,9 +111,8 @@ class MacroIntelligenceAgent:
 
         # --- CHF-Stärke-Anpassung (per Ticker) ---
         # chf_eur = 1 CHF in EUR; höherer Wert = stärkerer CHF
-        is_exporter = (
-            ticker.upper() in _EXPORT_HEAVY
-            or (sector is not None and sector.lower() in _EXPORT_SECTORS)
+        is_exporter = ticker.upper() in _EXPORT_HEAVY or (
+            sector is not None and sector.lower() in _EXPORT_SECTORS
         )
         is_domestic = ticker.upper() in _DOMESTIC_FOCUS
 
@@ -120,15 +123,11 @@ class MacroIntelligenceAgent:
             if is_exporter:
                 score -= 15
                 chf_impact = "NEGATIV"
-                reasons.append(
-                    f"Starker CHF ({ctx.chf_eur:.4f}/EUR) belastet Exportumsätze"
-                )
+                reasons.append(f"Starker CHF ({ctx.chf_eur:.4f}/EUR) belastet Exportumsätze")
             elif is_domestic:
                 score += 5
                 chf_impact = "POSITIV"
-                reasons.append(
-                    f"Starker CHF ({ctx.chf_eur:.4f}/EUR) begünstigt Inlandstitel"
-                )
+                reasons.append(f"Starker CHF ({ctx.chf_eur:.4f}/EUR) begünstigt Inlandstitel")
             else:
                 reasons.append(f"CHF stark ({ctx.chf_eur:.4f}/EUR) — Sektor-neutral")
         elif ctx.chf_eur < _CHF_WEAK_THRESHOLD:
@@ -136,9 +135,7 @@ class MacroIntelligenceAgent:
             if is_exporter:
                 score += 10
                 chf_impact = "POSITIV"
-                reasons.append(
-                    f"Schwacher CHF ({ctx.chf_eur:.4f}/EUR) begünstigt Exportumsätze"
-                )
+                reasons.append(f"Schwacher CHF ({ctx.chf_eur:.4f}/EUR) begünstigt Exportumsätze")
             else:
                 reasons.append(f"CHF schwach ({ctx.chf_eur:.4f}/EUR) — Sektor-neutral")
         else:

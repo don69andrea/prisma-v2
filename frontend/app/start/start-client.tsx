@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { getPersonalizedStocks, saveProfile } from '@/lib/api/discovery';
+import { completeDiscovery, createDiscoverySession, submitAnswer } from '@/lib/api/discovery';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -787,32 +787,34 @@ export function StartClient() {
 
   const handleContinue = useCallback(
     async (finalBrands: string[], finalZiel: Ziel, finalRisiko: Risiko) => {
-      const sessionId = crypto.randomUUID();
-
       const knownBrandObjs = BRANDS.filter((b) => finalBrands.includes(b.ticker));
-      const sectorSet = new Set(
-        knownBrandObjs.map((b) => CATEGORY_TO_SECTOR[b.category]).filter(Boolean),
-      );
 
       try {
-        const profile = await saveProfile({
-          session_id:     sessionId,
-          risk_profile:   finalRisiko,
-          sector_affinity: Array.from(sectorSet),
-          time_horizon:   ZIEL_TO_HORIZON[finalZiel],
-          investment_goal: finalZiel,
-          profession:     beruf || undefined,
-          known_tickers:  finalBrands,
-        });
-
-        const discovery = await getPersonalizedStocks(profile.session_id);
+        const { session_id: sessionId } = await createDiscoverySession();
+        await submitAnswer(sessionId, 1, beruf || '');
+        await submitAnswer(sessionId, 2, finalZiel);
+        await submitAnswer(sessionId, 3, finalRisiko);
+        await submitAnswer(sessionId, 4, finalBrands);
+        const result = await completeDiscovery(sessionId);
+        const discovery = {
+          session_id: sessionId,
+          total: result.recommended_stocks.length,
+          stocks: result.recommended_stocks,
+        };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(discovery));
       } catch {
-        // Backend noch nicht verfügbar — lokales Profil reicht für Demo
+        // Fallback: bekannte Marken direkt als Universe nutzen
+        const sessionId = crypto.randomUUID();
         const fallback = {
           session_id: sessionId,
-          total: 0,
-          stocks: [],
+          total: knownBrandObjs.length,
+          stocks: knownBrandObjs.map((b) => ({
+            ticker: b.ticker,
+            name: b.name,
+            sector: b.category,
+            market_cap_chf: null,
+            exchange: 'XSWX',
+          })),
         };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(fallback));
       }

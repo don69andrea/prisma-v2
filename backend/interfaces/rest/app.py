@@ -99,10 +99,14 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json",
     )
 
+    cors_origins = settings.cors_origins
+    # Wenn nur localhost konfiguriert ist (kein Prod-Wert gesetzt), alle Origins erlauben.
+    # Verhindert CORS-Blackout wenn CORS_ORIGINS auf Render nicht gesetzt wird.
+    allow_all = cors_origins == ["http://localhost:3000"]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
+        allow_origins=["*"] if allow_all else cors_origins,
+        allow_credentials=False if allow_all else True,
         allow_methods=["*"],
         allow_headers=["*"],
     )

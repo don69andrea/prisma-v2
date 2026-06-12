@@ -980,6 +980,19 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 <!-- Neue Einträge oben an die Liste anfügen. -->
 
+## 2026-06-11 · Navigation Restructure Spec + Plan (R2.4-4)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: Spec `docs/specs/2026-06-11-navigation-restructure.md` + Plan
+  `docs/superpowers/plans/2026-06-11-navigation-plan.md` für Navigation-Restrukturierung
+  in 5 semantische Bereiche (ENTDECKEN, ANALYSIEREN, VERGLEICHEN, ENTSCHEIDEN, PORTFOLIO).
+  Kein Implementierungscode — nur Spec + Plan gemäss AGENTS.md §2.1/2.2.
+- **Was gut lief**: Bestehende `nav-links.tsx` und `routes.ts` gelesen, bevor die Spec
+  geschrieben wurde (Reality-Check-Pattern P2). Alle 14 Links inventarisiert und in neue
+  Gruppen verteilt ohne eine Route zu verlieren.
+- **Was nicht klappte**: Noch keine — Implementierung steht aus (wartet auf Spec-Freigabe).
+- **Nachbearbeitung nötig bei**: Implementation nach User-Freigabe der Spec.
+- **Autor**: Helin Koyuncu (mit Claude Code)
+
 ## 2026-06-10 · Rankings CSV-Export – Backend-Endpoint (#65)
 - **Agent**: Claude Code (Sonnet 4.6)
 - **Scope**: `GET /api/v1/runs/{run_id}/export?format=csv` — Response mit CSV-Header, Stock-Anreicherung (name/sector) via StockService, Content-Disposition-Header; 5 Integrationstests.
@@ -1012,3 +1025,12 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Was gut lief**: Erkannt dass Slice 1 >50% Infra bereits lieferte. Focused auf fehlende Teile. TDD natural. Subagent-Driven mit fresh context pro Task optimal für unabhängige Tasks.
 - **Was nicht klappte**: Anfängliches Code-Reading zu spät. Initial Branch-Organisation (commits auf falschen Branch). Ingestion-Script nur Stub-Level.
 - **Nachbearbeitung nötig bei**: Voyage-API-Integrationstests, Postgres halfvec-Casting robustness, E2E-Smoke gegen echtes EDGAR.
+
+## 2026-06-11 · Conversational Discovery Engine Spec + Plan — R2.4-1
+
+- **Agent**: Claude Code (Sonnet 4.6) — spec-first workflow, kein Implementierungscode
+- **Scope**: Spec `docs/specs/2026-06-11-conversational-discovery-engine.md` und Plan `docs/superpowers/plans/2026-06-11-discovery-engine-plan.md` für R2.4-1 `/start` Conversational Discovery Engine (5 Turns). Branch: `feature/andrea-discovery-engine`.
+- **Was gut lief**: Aurelius' bestehende Arbeit (InvestorProfile Entity, ProfileClassifier, bestehende REST-Endpoints, DB-Migration 0019, discover-router) systematisch analysiert bevor Spec geschrieben wurde — ergibt präzise Abgrenzung ohne Dopplungen. Offene Fragen explizit in Spec dokumentiert statt angenommen.
+- **Was nicht klappte**: Keine Implementierung in diesem Task — reine Spec/Plan-Session.
+- **Nachbearbeitung nötig bei**: Vor Implementierungsstart klären: Alembic-Migration-Strategie für `macro_sensitivity` (0020 oder Inline-ALTER), Turn-5-Skip-Logik bei hohem Konfidenz-Score, sessionStorage vs. HttpOnly-Cookie für Mobile.
+- **Autor**: Andrea Petretta (mit Claude Code)

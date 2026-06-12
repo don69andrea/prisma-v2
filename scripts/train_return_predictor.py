@@ -78,9 +78,10 @@ def walk_forward_split(
     """
     df = df.copy()
     df["snapshot_date"] = pd.to_datetime(df["snapshot_date"])
-    cutoff = df["snapshot_date"].max() - pd.DateOffset(months=val_months)
-    train = df[df["snapshot_date"] <= cutoff]
-    val = df[df["snapshot_date"] > cutoff]
+    max_date = df["snapshot_date"].max()
+    cutoff = (max_date - pd.DateOffset(months=val_months)).to_pydatetime()
+    train = df[df["snapshot_date"] <= pd.Timestamp(cutoff)]
+    val = df[df["snapshot_date"] > pd.Timestamp(cutoff)]
     return train, val
 
 

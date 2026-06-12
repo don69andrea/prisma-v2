@@ -36,14 +36,14 @@ router = APIRouter(prefix="/memos", tags=["memos"])
 
 class GenerateMemoRequest(BaseModel):
     stock_id: UUID
-    model_run_id: UUID
+    model_run_id: UUID | None = None
     language: Literal["de", "en"] = "de"
 
 
 class MemoResponse(BaseModel):
     id: UUID
     stock_id: UUID
-    model_run_id: UUID
+    model_run_id: UUID | None
     language: Literal["de", "en"]
     one_liner: str
     ranking_interpretation: str

@@ -1,3 +1,6 @@
+# Copy .env.example → .env and fill in secrets before running `docker compose up`.
+# The env_file directive on the backend service loads that file automatically.
+
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -22,9 +25,12 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     container_name: prisma-backend
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql+asyncpg://prisma:prisma@db:5432/prisma
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       ENVIRONMENT: development
       CORS_ORIGINS: http://localhost:3000
     ports:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from backend.application.agents.macro_agent import MacroIntelligenceAgent
 from backend.application.services.ml_feature_service import MLFeatureService
 from backend.application.services.ml_prediction_service import MLPredictionService
 from backend.domain.services.eligibility_filter import EligibilityFilter
@@ -48,12 +49,14 @@ class SignalAggregationService:
         feature_service: MLFeatureService | None = None,
         prediction_service: MLPredictionService | None = None,
         swiss_stock_repo: object | None = None,
+        macro_agent: MacroIntelligenceAgent | None = None,
     ) -> None:
         self._feature_service = feature_service or MLFeatureService()
         self._prediction_service = prediction_service or MLPredictionService(
             feature_service=self._feature_service
         )
         self._swiss_stock_repo = swiss_stock_repo
+        self._macro_agent = macro_agent
         self._eligibility = EligibilityFilter()
 
     async def _check_3a_eligible(self, ticker: str) -> bool:
@@ -88,7 +91,16 @@ class SignalAggregationService:
         except Exception:
             _logger.exception("ML-Prediction fehlgeschlagen für %s — Fallback NEUTRAL", ticker)
 
-        macro_score = _snb_macro_score(features.snb_rate)
+        # Per-Ticker Macro-Score wenn MacroIntelligenceAgent verfügbar, sonst global
+        if self._macro_agent is not None:
+            try:
+                ticker_macro = await self._macro_agent.get_macro_score(ticker)
+                macro_score = ticker_macro.score
+            except Exception:
+                _logger.warning("MacroAgent fehlgeschlagen für %s — Fallback auf SNB-Score", ticker)
+                macro_score = _snb_macro_score(features.snb_rate)
+        else:
+            macro_score = _snb_macro_score(features.snb_rate)
         weighted_score = _W_QUANT * quant_score + _W_ML * ml_score + _W_MACRO * macro_score
         signal = DecisionSignal.signal_for_score(weighted_score)
         confidence = round(weighted_score / 100.0, 4)
@@ -108,12 +120,16 @@ class SignalAggregationService:
 
     async def get_signals(self, tickers: list[str]) -> list[DecisionSignal]:
         """Berechnet Signale für eine Liste von Tickern (fehlgeschlagene werden übersprungen)."""
+        import asyncio
+
+        raw = await asyncio.gather(
+            *[self.get_signal(ticker) for ticker in tickers],
+            return_exceptions=True,
+        )
         results: list[DecisionSignal] = []
-        for ticker in tickers:
-            try:
-                signal = await self.get_signal(ticker)
-                if signal is not None:
-                    results.append(signal)
-            except Exception:
-                _logger.exception("Signal-Berechnung fehlgeschlagen für %s", ticker)
+        for ticker, outcome in zip(tickers, raw):
+            if isinstance(outcome, BaseException):
+                _logger.exception("Signal-Berechnung fehlgeschlagen für %s", ticker, exc_info=outcome)
+            elif outcome is not None:
+                results.append(outcome)
         return results

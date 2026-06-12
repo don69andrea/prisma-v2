@@ -50,8 +50,9 @@ def get_portfolio_agent(
     summary="Portfolio-Allokation aus Ranking-Run",
     description=(
         "Berechnet eine gewichtete Portfolio-Allokation aus den Top-N-Picks "
-        "eines abgeschlossenen Ranking-Runs. Methoden: score_weighted (default) "
-        "oder risk_parity (basierend auf 30d-Volatilität). "
+        "eines abgeschlossenen Ranking-Runs. Methoden: score_weighted (default), "
+        "risk_parity (basierend auf 30d-Volatilität) oder mean_variance "
+        "(Markowitz Mean-Variance mit Ledoit-Wolf Shrinkage, maximiert Sharpe Ratio). "
         "LLM-Narrative Pydantic-validiert. Keine Anlageberatung."
     ),
 )

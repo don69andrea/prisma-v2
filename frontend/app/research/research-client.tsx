@@ -262,7 +262,7 @@ export function ResearchClient() {
                 <p className="text-xs text-muted-foreground">{results.length} Treffer</p>
                 <button
                   onClick={() => exportResearchCsv(
-                    results as Parameters<typeof exportResearchCsv>[0],
+                    results ?? [],
                     `research-${tab}-${new Date().toISOString().slice(0, 10)}.csv`,
                   )}
                   className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-muted transition-colors"

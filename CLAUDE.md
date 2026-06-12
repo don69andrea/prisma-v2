@@ -1,16 +1,36 @@
 # CLAUDE.md
 
+## 🚦 LIVE STATUS — WER MACHT WAS
+
+| # | Aufgabe | Person | Branch | Status | Blockiert durch |
+|---|---------|--------|--------|--------|-----------------|
+| R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | — |
+| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | — |
+| R2.3-3 | Frontend: SignalBadge + PrismaScore + ExplainButton | Helin | `feature/helin-ux-components` | ✅ DONE | — |
+| R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Helin | `feature/helin-ux-components` | ✅ DONE | — |
+| R2.3-5 | Backend: InvestorProfile Model + DB Migration | Aurelius | `feature/aurelius-investorprofile` | ✅ DONE | — |
+| R2.3-6 | Backend: DiscoveryService + API Endpoints | Aurelius | `feature/aurelius-investorprofile` | ✅ DONE | — |
+| R2.4-1 | /start: Conversational Discovery Engine — 5 Turns | Andrea | `feature/helin-discovery-ui` | ✅ DONE | — |
+| R2.4-2 | /start: Brand Logo Grid + Risk-Feeling-Test + ProfileReveal | Helin | `feature/helin-discovery-ui` | ✅ DONE | — |
+| R2.4-3 | Haiku-Klassifikation + Session-State + Konfidenz-Score | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE | — |
+| R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Helin | `feature/helin-navigation` | ✅ DONE | — |
+| R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui` | ✅ DONE | — |
+| R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE | — |
+| R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ NEXT | — |
+
+---
+
 Kurzkontext für Claude Code. **Quelle der Wahrheit ist `AGENTS.md`** — dieses File ergänzt nur Claude-spezifische Hinweise.
 
 ## Projekt in einem Satz
 
-PRISMA V2 = quantitative Stock-Intelligence-Plattform für den Schweizer Markt (SMI/SMIM/SPI), Swiss Quant Scoring Engine + Claude-Narrative-Engine + VIAC 3a-Entscheidungsunterstützung. FHNW Capstone FS 2026.
+PRISMA V2 = quantitative Stock-Intelligence-Plattform für den Schweizer Markt (SMI/SMIM/SPI), Swiss Quant Scoring Engine + Claude-Narrative-Engine + VIAC 3a-Entscheidungsunterstützung. FHNW BI Module FS 2026 — Gruppenarbeit Andrea, Helin, Aurelius.
 
 ## Vor jeder Aufgabe lesen
 
-1. `AGENTS.md` — verbindliche Konventionen (Goldene Regeln, Security, Gitflow)
-2. `docs/superpowers/plans/` — aktueller Implementierungsplan wenn vorhanden
-3. `docs/superpowers/specs/` — Design-Docs für laufende Features
+1. `AGENTS.md` — Coding-Konventionen (Python, TypeScript, Tests, Architecture)
+2. `CLAUDE.md` STATUS-Block oben — wer macht was, was ist DONE
+3. Den aktuellen Task aus dem STATUS-Block nehmen und starten
 
 ## Swiss Market Kontext
 
@@ -44,8 +64,8 @@ pytest backend/tests/unit/domain/test_swiss_quant_scorer.py -v
 
 ## Claude-Code-spezifische Regeln
 
-### Spec-First
-Wenn der User eine neue Feature-Arbeit verlangt, **schreibe zuerst den Plan** nach `docs/superpowers/plans/YYYY-MM-DD-*.md`, committe ihn, und führe dann aus. Nutze `superpowers:brainstorming` → `superpowers:writing-plans` → `superpowers:subagent-driven-development`.
+### Neue Features
+Wenn der User eine neue Aufgabe verlangt: kurz den Plan skizzieren (in Chat), Freigabe abwarten, dann direkt implementieren. Kein separates Spec-File nötig.
 
 ### TDD-Pflicht
 Für Domain-Code, Quant-Modelle, Application Services: Tests schreiben **bevor** die Implementierung existiert (Red-Green-Refactor). `pytestmark = pytest.mark.unit` in allen Unit-Test-Files.

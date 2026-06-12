@@ -129,7 +129,7 @@ function FactsheetContent() {
       const stockId =
         factsheet?.stock?.id ??
         (await apiFetch<{ id: string }>(`/api/v1/stocks/${symbol}`)).id;
-      const result = await generateMemo(stockId, runId);
+      const result = await generateMemo(stockId, runId || null);
       setMemo(result);
     } catch (err) {
       setMemoError(err instanceof Error ? err.message : 'Memo-Fehler');
@@ -142,11 +142,11 @@ function FactsheetContent() {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <Link
-          href={runId ? `/rankings/${runId}` : '/rankings'}
+          href={runId ? `/rankings/${runId}` : '/discover'}
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-1 h-4 w-4" />
-          Zurück
+          {runId ? 'Zurück' : 'Mein Universe'}
         </Link>
         <div className="flex items-center gap-3">
           <Link
@@ -234,7 +234,7 @@ function FactsheetContent() {
 
           <Button
             onClick={handleRequestMemo}
-            disabled={memoLoading || !runId}
+            disabled={memoLoading}
             data-testid="request-memo-btn"
           >
             {memoLoading ? 'Memo wird erstellt…' : 'Memo anfordern'}
@@ -285,9 +285,36 @@ function FactsheetContent() {
   );
 }
 
+export function generateMetadata({
+  params,
+}: {
+  params: { ticker: string };
+}) {
+  const symbol = params.ticker.toUpperCase();
+  return {
+    title: `${symbol} Factsheet`,
+    description: `PRISMA Factsheet für ${symbol} — quantitative Analyse`,
+  };
+}
+
+function FactsheetSkeleton() {
+  return (
+    <div className="mx-auto max-w-2xl space-y-4">
+      <div className="h-5 w-32 rounded bg-muted animate-pulse" />
+      <div className="h-36 rounded-xl bg-muted animate-pulse" />
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-10 rounded-md bg-muted animate-pulse" />
+        ))}
+      </div>
+      <div className="h-64 rounded-xl bg-muted animate-pulse" />
+    </div>
+  );
+}
+
 export default function StockFactsheetPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<FactsheetSkeleton />}>
       <FactsheetContent />
     </Suspense>
   );

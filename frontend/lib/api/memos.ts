@@ -11,7 +11,7 @@ export interface ContradictionItem {
 export interface Memo {
   id: string;
   stock_id: string;
-  model_run_id: string;
+  model_run_id: string | null;
   language: 'de' | 'en';
   one_liner: string;
   ranking_interpretation: string;
@@ -38,11 +38,15 @@ export async function getMemo(stockId: string, runId: string): Promise<Memo | nu
 
 export function generateMemo(
   stockId: string,
-  modelRunId: string,
+  modelRunId: string | null,
   language: 'de' | 'en' = 'de',
 ): Promise<Memo> {
   return apiFetch<Memo>('/api/v1/memos/generate', {
     method: 'POST',
-    body: JSON.stringify({ stock_id: stockId, model_run_id: modelRunId, language }),
+    body: JSON.stringify({
+      stock_id: stockId,
+      ...(modelRunId ? { model_run_id: modelRunId } : {}),
+      language,
+    }),
   });
 }

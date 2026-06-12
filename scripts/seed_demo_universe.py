@@ -29,11 +29,46 @@ DATABASE_URL = os.environ.get(
 )
 
 STOCKS = [
-    {"ticker": "AAPL",  "name": "Apple Inc.",          "isin": "US0378331005", "sector": "Technology",       "country": "US", "currency": "USD"},
-    {"ticker": "MSFT",  "name": "Microsoft Corp.",      "isin": "US5949181045", "sector": "Technology",       "country": "US", "currency": "USD"},
-    {"ticker": "GOOGL", "name": "Alphabet Inc.",        "isin": "US02079K3059", "sector": "Communication",    "country": "US", "currency": "USD"},
-    {"ticker": "NVDA",  "name": "NVIDIA Corp.",         "isin": "US67066G1040", "sector": "Technology",       "country": "US", "currency": "USD"},
-    {"ticker": "JPM",   "name": "JPMorgan Chase & Co.", "isin": "US46625H1005", "sector": "Financial",        "country": "US", "currency": "USD"},
+    {
+        "ticker": "AAPL",
+        "name": "Apple Inc.",
+        "isin": "US0378331005",
+        "sector": "Technology",
+        "country": "US",
+        "currency": "USD",
+    },
+    {
+        "ticker": "MSFT",
+        "name": "Microsoft Corp.",
+        "isin": "US5949181045",
+        "sector": "Technology",
+        "country": "US",
+        "currency": "USD",
+    },
+    {
+        "ticker": "GOOGL",
+        "name": "Alphabet Inc.",
+        "isin": "US02079K3059",
+        "sector": "Communication",
+        "country": "US",
+        "currency": "USD",
+    },
+    {
+        "ticker": "NVDA",
+        "name": "NVIDIA Corp.",
+        "isin": "US67066G1040",
+        "sector": "Technology",
+        "country": "US",
+        "currency": "USD",
+    },
+    {
+        "ticker": "JPM",
+        "name": "JPMorgan Chase & Co.",
+        "isin": "US46625H1005",
+        "sector": "Financial",
+        "country": "US",
+        "currency": "USD",
+    },
 ]
 
 UNIVERSE_NAME = "Demo-US-5"
@@ -43,9 +78,7 @@ UNIVERSE_REGION = "US"
 async def seed(session: AsyncSession) -> None:
     seeded_stocks = 0
     for data in STOCKS:
-        exists = await session.execute(
-            select(StockORM).where(StockORM.ticker == data["ticker"])
-        )
+        exists = await session.execute(select(StockORM).where(StockORM.ticker == data["ticker"]))
         if exists.scalar_one_or_none() is None:
             session.add(StockORM(id=uuid.uuid4(), **data))
             seeded_stocks += 1
@@ -55,12 +88,14 @@ async def seed(session: AsyncSession) -> None:
     )
     seeded_universe = 0
     if universe_exists.scalar_one_or_none() is None:
-        session.add(UniverseORM(
-            id=uuid.uuid4(),
-            name=UNIVERSE_NAME,
-            region=UNIVERSE_REGION,
-            tickers=[s["ticker"] for s in STOCKS],
-        ))
+        session.add(
+            UniverseORM(
+                id=uuid.uuid4(),
+                name=UNIVERSE_NAME,
+                region=UNIVERSE_REGION,
+                tickers=[s["ticker"] for s in STOCKS],
+            )
+        )
         seeded_universe = 1
 
     await session.commit()

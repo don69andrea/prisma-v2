@@ -7,10 +7,16 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from backend.application.agents.macro_agent import MacroIntelligenceAgent
+from backend.application.services.macro_service import MacroService
 from backend.application.services.signal_aggregation_service import SignalAggregationService
 from backend.application.services.universe_service import UniverseNotFound, UniverseService
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
-from backend.interfaces.rest.dependencies import get_swiss_stock_repository, get_universe_service
+from backend.interfaces.rest.dependencies import (
+    get_llm_client,
+    get_swiss_stock_repository,
+    get_universe_service,
+)
 from backend.interfaces.rest.schemas.decision import DecisionListResponse, DecisionSignalResponse
 
 router = APIRouter(prefix="/api/v1/decisions", tags=["decisions"])
@@ -19,8 +25,10 @@ _logger = logging.getLogger(__name__)
 
 def get_signal_aggregation_service(
     swiss_stock_repo: SwissStockRepository = Depends(get_swiss_stock_repository),
+    llm_client: object = Depends(get_llm_client),
 ) -> SignalAggregationService:
-    return SignalAggregationService(swiss_stock_repo=swiss_stock_repo)
+    macro_agent = MacroIntelligenceAgent(macro_service=MacroService(llm_client=llm_client))
+    return SignalAggregationService(swiss_stock_repo=swiss_stock_repo, macro_agent=macro_agent)
 
 
 @router.get(

@@ -6,7 +6,11 @@ test.describe('PRISMA E2E', () => {
   test('1. Startseite lädt und zeigt Navigation', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveTitle(/PRISMA|Dashboard/);
+    // Navigation includes both existing and new links
     await expect(page.getByRole('link', { name: /Universen/i })).toBeVisible();
+    // /discover ("Mein Universe") and /start ("Einstieg") were added to nav
+    await expect(page.getByRole('link', { name: /Mein Universe/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Einstieg/i })).toBeVisible();
   });
 
   test('2. Universe-Flow: neues Universum anlegen', async ({ page }) => {

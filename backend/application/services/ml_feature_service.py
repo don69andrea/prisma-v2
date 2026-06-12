@@ -1,7 +1,8 @@
 """Application Service: ML Feature Engineering für Swiss Quant ML-Layer.
 
 Berechnet Feature-Vektoren für Training (build_dataset) und Inferenz (build_features).
-Features: 5 Quant-Scores, 12M-Return, Vol(30d), RSI(14), SNB-Rate, CHF/EUR.
+Features: 5 Quant-Scores, 12M/6M/3M-Return, Vol(30d/90d), RSI(14),
+          Price-to-52W-High, Volume-Trend, SNB-Rate, CHF/EUR.
 """
 
 from __future__ import annotations
@@ -113,6 +114,8 @@ class MLFeatureService:
 
         score = self._scorer.score(ticker_upper, fundamentals)
         today = date.today()
+        close = prices["Close"].squeeze()
+        volume = prices["Volume"].squeeze() if "Volume" in prices.columns else None
 
         return MLFeatureVector(
             ticker=ticker_upper,
@@ -123,8 +126,13 @@ class MLFeatureService:
             score_wachstum=_score_wachstum(fundamentals),
             score_substanz=score.value_score,
             return_12m=_return_12m(prices),
+            return_6m=_return_nm_from_series(close, 126),
+            return_3m=_return_nm_from_series(close, 63),
             vol_30d=_vol_30d(prices),
-            rsi_14=_compute_rsi(prices["Close"].squeeze()),
+            vol_90d=_vol_nd_from_series(close, 90),
+            rsi_14=_compute_rsi(close),
+            price_to_52w_high=_price_to_52w_high_from_series(close),
+            vol_trend=_vol_trend_from_series(volume),
             snb_rate=_snb_rate_on(today),
             chf_eur=_current_chf_eur(),
             forward_return_12m=None,
@@ -152,13 +160,16 @@ class MLFeatureService:
         """
         import yfinance as yf
 
-        end_date = pd.Timestamp.now(tz="UTC").normalize()
+        end_date = pd.Timestamp.now().normalize()  # timezone-naive für konsistente Vergleiche
         start_date = end_date - pd.DateOffset(years=years + 1)  # +1 Jahr für Forward-Return
 
         rows: list[dict[str, Any]] = []
 
+        _YF_OVERRIDES = {"ROG": "RO.SW"}
+
         for ticker in tickers:
-            yf_ticker = ticker.upper() + ".SW"
+            t = ticker.upper()
+            yf_ticker = _YF_OVERRIDES.get(t, f"{t}.SW")
             try:
                 hist = yf.download(yf_ticker, start=start_date, end=end_date, progress=False)
                 if hist is None or len(hist) < 60:
@@ -196,8 +207,17 @@ class MLFeatureService:
 
                 fwd_ret = float((future_prices.iloc[-1] / future_prices.iloc[0]) - 1)
                 ret_12m = _return_12m_from_series(past_prices)
+                ret_6m = _return_nm_from_series(past_prices, 126)
+                ret_3m = _return_nm_from_series(past_prices, 63)
                 vol = _vol_30d_from_series(past_prices)
+                vol90 = _vol_nd_from_series(past_prices, 90)
                 rsi = _compute_rsi(past_prices.tail(30))
+                p52wh = _price_to_52w_high_from_series(past_prices)
+                # Volume-Trend aus hist["Volume"] wenn vorhanden
+                vol_col = hist["Volume"].squeeze() if "Volume" in hist.columns else None
+                vol_t = _vol_trend_from_series(
+                    vol_col[mask_past].tail(400) if vol_col is not None else None
+                )
                 snap_date = snap.date()
 
                 rows.append(
@@ -210,8 +230,13 @@ class MLFeatureService:
                         "score_wachstum": s_wachstum,
                         "score_substanz": score.value_score,
                         "return_12m": ret_12m,
+                        "return_6m": ret_6m,
+                        "return_3m": ret_3m,
                         "vol_30d": vol,
+                        "vol_90d": vol90,
                         "rsi_14": rsi,
+                        "price_to_52w_high": p52wh,
+                        "vol_trend": vol_t,
                         "snb_rate": _snb_rate_on(snap_date),
                         "chf_eur": _chf_eur_on(snap),
                         "forward_return_12m": fwd_ret,
@@ -275,6 +300,43 @@ def _current_chf_eur() -> float:
     except Exception:
         pass
     return 0.93  # Fallback: ca. CHF 0.93 per EUR
+
+
+def _return_nm_from_series(close: pd.Series, n_days: int) -> float:
+    """N-Tage-Return (z.B. 126 ≈ 6 Monate, 63 ≈ 3 Monate)."""
+    if len(close) < n_days:
+        return 0.0
+    return float((close.iloc[-1] / close.iloc[-n_days]) - 1)
+
+
+def _vol_nd_from_series(close: pd.Series, n_days: int) -> float:
+    """N-Tage-Volatilität annualisiert."""
+    if len(close) < n_days:
+        return 0.0
+    ret = close.pct_change().dropna()
+    return float(ret.tail(n_days).std() * np.sqrt(252))
+
+
+def _price_to_52w_high_from_series(close: pd.Series) -> float:
+    """Aktueller Preis / 52-Wochen-Hoch. Gibt 0.0 zurück bei fehlenden Daten."""
+    if len(close) < 2:
+        return 0.0
+    lookback = min(len(close), 252)
+    high_52w = close.tail(lookback).max()
+    if high_52w <= 0 or pd.isna(high_52w):
+        return 0.0
+    return float(close.iloc[-1] / high_52w)
+
+
+def _vol_trend_from_series(volume: pd.Series | None) -> float:
+    """Avg-Volumen 20d / Avg-Volumen 60d. Gibt 1.0 (neutral) zurück bei fehlenden Daten."""
+    if volume is None or len(volume) < 60:
+        return 1.0
+    avg_20 = volume.tail(20).mean()
+    avg_60 = volume.tail(60).mean()
+    if avg_60 <= 0 or pd.isna(avg_60) or pd.isna(avg_20):
+        return 1.0
+    return float(avg_20 / avg_60)
 
 
 def _chf_eur_on(snap_dt: pd.Timestamp) -> float:

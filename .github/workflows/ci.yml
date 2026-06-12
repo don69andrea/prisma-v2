@@ -140,7 +140,7 @@ jobs:
         run: npm run lint
 
       - name: Unit Tests
-        run: npm test -- --coverage --reporter=json --outputFile=coverage/coverage.json
+        run: npm test -- --coverage
 
       - name: Upload frontend coverage
         if: always()

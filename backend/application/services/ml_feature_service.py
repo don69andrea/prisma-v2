@@ -165,8 +165,11 @@ class MLFeatureService:
 
         rows: list[dict[str, Any]] = []
 
+        _YF_OVERRIDES = {"ROG": "RO.SW"}
+
         for ticker in tickers:
-            yf_ticker = ticker.upper() + ".SW"
+            t = ticker.upper()
+            yf_ticker = _YF_OVERRIDES.get(t, f"{t}.SW")
             try:
                 hist = yf.download(yf_ticker, start=start_date, end=end_date, progress=False)
                 if hist is None or len(hist) < 60:

@@ -30,9 +30,15 @@ _BASE_DELAY = 1.0
 class YFinanceSwissAdapter(SwissMarketDataProvider):
     """Adapter für Swiss Market Data via yfinance (.SW-Suffix für SIX-Tickers)."""
 
+    # yfinance verwendet für einige SIX-Titel abweichende Ticker-Symbole
+    _YF_OVERRIDES: dict[str, str] = {
+        "ROG": "RO.SW",   # Roche Holding AG — yfinance nutzt RO statt ROG
+    }
+
     def build_yf_ticker(self, ticker: str) -> str:
         """Konvertiert PRISMA-Ticker in yfinance-Format: 'NESN' → 'NESN.SW'."""
-        return f"{ticker.upper()}.SW"
+        t = ticker.upper()
+        return self._YF_OVERRIDES.get(t, f"{t}.SW")
 
     async def get_fundamentals(self, ticker: str) -> SwissFundamentals:
         info = await self._fetch_info(ticker)

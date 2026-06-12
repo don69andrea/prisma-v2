@@ -33,6 +33,10 @@ class MLFeatureVector:
     rsi_14: float  # RSI über 14 Tage (0–100)
     price_to_52w_high: float  # Preis / 52-Wochen-Hoch (0–1)
     vol_trend: float  # Avg-Volumen 20d / Avg-Volumen 60d (Volume-Momentum)
+    macd_hist: float  # MACD histogram price-normalized (EMA12-EMA26 minus EMA9 signal line)
+    bb_position: float  # position in Bollinger Bands: (price - lower) / (upper - lower), 0-1
+    return_1m: float  # 1-month return (21 trading days)
+    drawdown_12m: float  # max drawdown last 12 months (0 to -1, e.g. -0.25 = 25%)
 
     # Makro-Features
     snb_rate: float  # SNB Leitzins (%)
@@ -58,6 +62,10 @@ class MLFeatureVector:
             "rsi_14": self.rsi_14,
             "price_to_52w_high": self.price_to_52w_high,
             "vol_trend": self.vol_trend,
+            "macd_hist": self.macd_hist,
+            "bb_position": self.bb_position,
+            "return_1m": self.return_1m,
+            "drawdown_12m": self.drawdown_12m,
             "snb_rate": self.snb_rate,
             "chf_eur": self.chf_eur,
         }
@@ -76,6 +84,10 @@ class MLFeatureVector:
         "rsi_14",
         "price_to_52w_high",
         "vol_trend",
+        "macd_hist",
+        "bb_position",
+        "return_1m",
+        "drawdown_12m",
         "snb_rate",
         "chf_eur",
     )

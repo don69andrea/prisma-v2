@@ -280,45 +280,58 @@ export function DecisionClient() {
       {isLiveMode && (
         <>
           <style>{`
-            @keyframes livePulse {
-              0%, 100% { box-shadow: 0 0 4px 1px rgba(88,166,255,0.5), 0 0 0 0 rgba(88,166,255,0.4); }
-              50%       { box-shadow: 0 0 10px 3px rgba(88,166,255,0.85), 0 0 18px 6px rgba(88,166,255,0.25); }
+            @keyframes liveDotBlue {
+              0%, 100% { box-shadow: 0 0 4px 2px #58a6ff; }
+              50%       { box-shadow: 0 0 9px 4px #58a6ff; }
             }
-            @keyframes liveDot {
-              0%, 100% { opacity: 1; box-shadow: 0 0 4px 1px #58a6ff; }
-              50%       { opacity: 0.55; box-shadow: 0 0 8px 3px #58a6ff; }
+            @keyframes liveGlowBlue {
+              0%, 100% { box-shadow: 0 0 4px 1px rgba(88,166,255,0.35); }
+              50%       { box-shadow: 0 0 10px 3px rgba(88,166,255,0.7); }
+            }
+            @keyframes liveDotOrange {
+              0%, 100% { box-shadow: 0 0 4px 2px #f59e0b; }
+              50%       { box-shadow: 0 0 9px 4px #f59e0b; }
+            }
+            @keyframes liveGlowOrange {
+              0%, 100% { box-shadow: 0 0 4px 1px rgba(245,158,11,0.35); }
+              50%       { box-shadow: 0 0 10px 3px rgba(245,158,11,0.7); }
             }
           `}</style>
-          <div
-            className="rounded-xl px-4 py-3 flex items-center justify-between gap-4"
-            style={{
-              background: 'rgba(88,166,255,0.06)',
-              border: '1px solid rgba(88,166,255,0.25)',
-              animation: 'livePulse 2.4s ease-in-out infinite',
-            }}
-          >
-            <div className="flex items-center gap-3">
-              {/* LIVE badge */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
               <span
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#58a6ff]/40 bg-[#58a6ff]/10 px-2.5 py-0.5 text-[11px] font-bold tracking-widest text-[#58a6ff]"
+                className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-[11px] font-bold tracking-widest"
+                style={
+                  isLoading
+                    ? {
+                        color: '#f59e0b',
+                        borderColor: 'rgba(245,158,11,0.45)',
+                        background: 'rgba(245,158,11,0.08)',
+                        animation: 'liveGlowOrange 1.4s ease-in-out infinite',
+                      }
+                    : {
+                        color: '#58a6ff',
+                        borderColor: 'rgba(88,166,255,0.45)',
+                        background: 'rgba(88,166,255,0.08)',
+                        animation: 'liveGlowBlue 2s ease-in-out infinite',
+                      }
+                }
               >
                 <span
-                  className="h-1.5 w-1.5 rounded-full bg-[#58a6ff]"
-                  style={{ animation: 'liveDot 1.2s ease-in-out infinite' }}
+                  className="h-2 w-2 rounded-full"
+                  style={
+                    isLoading
+                      ? { background: '#f59e0b', animation: 'liveDotOrange 1s ease-in-out infinite' }
+                      : { background: '#58a6ff', animation: 'liveDotBlue 1.4s ease-in-out infinite' }
+                  }
                 />
-                LIVE
+                {isLoading ? 'LADEN' : 'LIVE'}
               </span>
-              <div>
-                <p className="text-sm font-medium text-[#e6edf3]">Dein persönliches Universe</p>
-                <p className="text-xs text-[#8b949e]">
-                  {liveTickers!.length} Titel · {liveTickers!.join(', ')}
-                </p>
-              </div>
+              <span className="text-[11px] text-[#8b949e]">
+                {liveTickers!.length} Titel · {liveTickers!.join(', ')}
+              </span>
             </div>
-            <Link
-              href="/discover"
-              className="text-xs text-[#58a6ff] hover:underline whitespace-nowrap"
-            >
+            <Link href="/discover" className="text-xs text-[#58a6ff] hover:underline whitespace-nowrap">
               Zurück →
             </Link>
           </div>

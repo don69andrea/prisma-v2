@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
 from backend.domain.errors import BudgetCapExceeded
-from backend.interfaces.rest.exception_handlers import handle_budget_cap_exceeded
+from backend.interfaces.rest.exception_handlers import handle_budget_cap_exceeded, handle_unhandled_exception
 from backend.interfaces.rest.routers import (
     admin,
     alerts,
@@ -114,6 +114,7 @@ def create_app() -> FastAPI:
     # Signatur nicht akzeptiert. Laufzeit funktioniert korrekt; das ist ein
     # bekanntes Sticky-Problem im Starlette/FastAPI-Type-Stub.
     app.add_exception_handler(BudgetCapExceeded, handle_budget_cap_exceeded)  # type: ignore[arg-type]
+    app.add_exception_handler(Exception, handle_unhandled_exception)  # type: ignore[arg-type]
 
     app.include_router(health.router)
     app.include_router(chat.router)

@@ -145,6 +145,44 @@ In diesem Fall fällt `build_dataset()` auf `_stub_fundamentals()` zurück (aktu
 
 ---
 
+## Nachtrag: SimFin Free-Tier-Einschränkungen (2026-06-12)
+
+Bei der Implementierung wurde festgestellt, dass der SimFin Free-Tier das `derived`-Dataset (fertig berechnete P/E, P/B, EPS, Dividend Yield) **nicht** enthält — es ist Premium-only ("upgrade to at least a BASIC subscription").
+
+### Verfügbarkeit SimFin Free Tier
+
+| Dataset | Free Tier | Märkte |
+|---------|-----------|--------|
+| `derived/quarterly` (P/E, P/B, EPS) | ❌ Premium | — |
+| `income/quarterly` | ✅ | US: ~47'000 Zeilen; DE: ~94 Zeilen; CH: nicht vorhanden |
+| `balance/quarterly` | ✅ | US: ~47'000 Zeilen; analog wie income |
+| `shareprices/daily` | ✅ | US: ~6'200'000 Zeilen; EU/CH: nicht vorhanden |
+
+### Angepasste Strategie: P/E und P/B aus Rohdaten berechnen
+
+Da `derived` nicht verfügbar ist, berechnet der `SimFinAdapter` die Fundamentaldaten aus den Rohdaten:
+
+```
+P/E  = Adj. Close / EPS_TTM
+       EPS_TTM = Σ(Net Income letzter 4 Quartale) / Shares (Diluted)
+P/B  = Adj. Close / Buchwert pro Aktie
+       Buchwert pro Aktie = Total Equity / Shares (Diluted)
+Div% = Σ(Dividenden letzte 12 Monate) / Adj. Close
+```
+
+**Scope**: Nur US-Ticker profitieren von echten Point-in-Time Daten (45 von 163 Trainingstiteln = 28%). CH- und EU-Ticker fallen weiterhin auf den yfinance-Stub zurück.
+
+**Point-in-Time Korrektheit**: Es wird ausschliesslich `Publish Date` verwendet (nicht `Report Date`). Ein Q3-Bericht mit Report Date 30. September wird typischerweise erst 6–8 Wochen später publiziert. Nur der Publish Date ist point-in-time-korrekt und vermeidet Look-Ahead Bias.
+
+**Plausibilitätsfilter**: P/E > 500 und P/B > 100 werden als Datenfehler/Ausreisser verworfen (→ None → Stub-Fallback für diesen Datenpunkt).
+
+**Effekt auf Trainingsqualität**:
+- US-Trainingszeilen (~4'000 von ~14'600): Point-in-Time korrekte Fundamentaldaten
+- CH/EU-Trainingszeilen: weiterhin yfinance-Stub (aktueller Stand als historischer Wert)
+- Netto: Verbesserung für ~28% der Trainingsdaten ohne zusätzliche API-Kosten
+
+---
+
 ## Implementierung
 
 ### Neue/geänderte Dateien

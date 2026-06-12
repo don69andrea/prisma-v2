@@ -1,7 +1,7 @@
 {
-  "model_path": "/Users/andreapetretta/prisma-v2/models/return_predictor_xgboost_20260612_171721.joblib",
-  "model_type": "xgboost",
-  "trained_at": "20260612_171721",
+  "model_path": "/Users/andreapetretta/prisma-v2/models/return_predictor_lightgbm_20260612_175826.joblib",
+  "model_type": "lightgbm",
+  "trained_at": "20260612_175826",
   "tickers": [
     "NESN",
     "NOVN",
@@ -178,8 +178,8 @@
   "years": 8,
   "train_rows": 12709,
   "val_rows": 1956,
-  "val_accuracy": 0.4315,
-  "val_top_quartile_recall": 0.5015,
+  "val_accuracy": 0.411,
+  "val_top_quartile_recall": 0.6142,
   "feature_names": [
     "quant_score",
     "score_rendite",
@@ -202,25 +202,25 @@
     "chf_eur"
   ],
   "feature_importance": {
-    "score_sicherheit": 0.1373,
-    "score_substanz": 0.1048,
-    "score_wachstum": 0.0811,
-    "quant_score": 0.0663,
-    "chf_eur": 0.0625,
-    "drawdown_12m": 0.0595,
-    "snb_rate": 0.055,
-    "return_12m": 0.0496,
-    "vol_90d": 0.0477,
-    "price_to_52w_high": 0.0432,
-    "score_rendite": 0.0429,
-    "vol_30d": 0.0388,
-    "return_6m": 0.0358,
-    "rsi_14": 0.0306,
-    "bb_position": 0.0299,
-    "return_3m": 0.0294,
-    "return_1m": 0.0291,
-    "macd_hist": 0.0291,
-    "vol_trend": 0.0273
+    "drawdown_12m": 1086.0,
+    "return_12m": 692.0,
+    "vol_90d": 653.0,
+    "return_6m": 510.0,
+    "snb_rate": 501.0,
+    "vol_30d": 500.0,
+    "chf_eur": 460.0,
+    "rsi_14": 454.0,
+    "price_to_52w_high": 418.0,
+    "bb_position": 414.0,
+    "return_1m": 375.0,
+    "return_3m": 364.0,
+    "macd_hist": 357.0,
+    "quant_score": 355.0,
+    "vol_trend": 348.0,
+    "score_substanz": 193.0,
+    "score_wachstum": 106.0,
+    "score_rendite": 71.0,
+    "score_sicherheit": 10.0
   },
   "class_distribution": {
     "0": 4945,
@@ -229,5 +229,5 @@
   },
   "tuned": false,
   "market": "all",
-  "simfin_used": false
+  "simfin_used": true
 }

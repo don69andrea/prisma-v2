@@ -381,13 +381,8 @@ class MLFeatureService:
 
                 # Per-Snapshot Fundamentals wenn SimFin verfügbar (behebt Point-in-Time Bias)
                 if _use_simfin:
-                    from backend.infrastructure.adapters.simfin_adapter import (
-                        SimFinAdapter,
-                        ticker_to_simfin_market,
-                    )
-                    _sf_market = ticker_to_simfin_market(ticker)
                     _sf_fund = simfin_adapter.get_fundamentals_on_date(  # type: ignore[union-attr]
-                        ticker, snap_date, _sf_market
+                        ticker, snap_date, _market
                     )
                     fund = _sf_fund if _sf_fund is not None else _stub_fundamentals(ticker, _market)
                     score = self._scorer.score(ticker.upper(), fund)

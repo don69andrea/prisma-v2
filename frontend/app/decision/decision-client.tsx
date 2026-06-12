@@ -201,23 +201,16 @@ export function DecisionClient() {
     }
   }, [universes, selectedUniverse, isLiveMode]);
 
-  // Live-Modus: Signale direkt via /live Endpunkt (Discovery-Flow)
+  // Live-Modus: EINMALIGER Request — alle Signale, Filterung client-seitig
+  // (zwei parallele Requests auf denselben Ticker triggern yfinance-Rate-Limits)
   const {
-    data: liveData,
+    data: liveAllData,
     isLoading: liveLoading,
     isError: liveError,
     refetch: liveRefetch,
   } = useQuery({
-    queryKey: ['decisions-live', liveTickers, signalFilter, eligibleOnly],
-    queryFn: () => liveDecisions(liveTickers!, signalFilter || undefined, eligibleOnly || undefined),
-    enabled: isLiveMode,
-  });
-
-  const {
-    data: liveAllData,
-  } = useQuery({
-    queryKey: ['decisions-live-all', liveTickers, eligibleOnly],
-    queryFn: () => liveDecisions(liveTickers!, undefined, eligibleOnly || undefined),
+    queryKey: ['decisions-live', liveTickers],
+    queryFn: () => liveDecisions(liveTickers!),
     enabled: isLiveMode,
     staleTime: 5 * 60 * 1000,
   });
@@ -246,15 +239,21 @@ export function DecisionClient() {
   const refetch   = isLiveMode ? liveRefetch  : dRefetch;
   const isReady   = isLiveMode ? true : !!selectedUniverse;
 
-  const signals = useMemo(
-    () => (isLiveMode ? liveData?.items : decisionsData?.items) ?? [],
-    [isLiveMode, liveData, decisionsData],
-  );
-
+  // Im Live-Modus: alle Signale vom einmaligen Request, dann client-seitig filtern
   const allSignals = useMemo(
     () => (isLiveMode ? liveAllData?.items : decisionsAllData?.items) ?? [],
     [isLiveMode, liveAllData, decisionsAllData],
   );
+
+  const signals = useMemo(() => {
+    if (isLiveMode) {
+      let filtered = allSignals;
+      if (signalFilter) filtered = filtered.filter((s) => s.signal === signalFilter);
+      if (eligibleOnly) filtered = filtered.filter((s) => s.is_3a_eligible);
+      return filtered;
+    }
+    return (decisionsData?.items) ?? [];
+  }, [isLiveMode, allSignals, signalFilter, eligibleOnly, decisionsData]);
 
   const filteredSignals = useMemo(() => {
     if (minConfidence === 0) return signals;

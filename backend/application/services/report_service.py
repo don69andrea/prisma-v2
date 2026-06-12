@@ -58,16 +58,16 @@ class ReportService:
         from backend.infrastructure.persistence.repositories.ranking_run_repository import (
             SQLARankingRunRepository,
         )
-        from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
-            SQLASwissStockRepository,
+        from backend.infrastructure.persistence.repositories.stock_repository import (
+            SQLAStockRepository,
         )
         from backend.infrastructure.persistence.session import get_session_factory
 
         session_factory = get_session_factory()
         async with session_factory() as _session:
-            swiss_repo = SQLASwissStockRepository(session=_session)
+            stock_repo = SQLAStockRepository(session=_session)
             run_repo = SQLARankingRunRepository(session=_session)
-            factsheet_svc = FactsheetService(stock_repo=swiss_repo, run_repo=run_repo)
+            factsheet_svc = FactsheetService(stock_repo=stock_repo, run_repo=run_repo)
         ml_svc = MLPredictionService()
 
         factsheet, ml_prediction = await asyncio.gather(

@@ -78,9 +78,7 @@ class DiscoveryService:
             *[self._score_stock(stock, risk_floor) for stock in candidates],
             return_exceptions=True,
         )
-        scored: list[tuple[SwissStock, float]] = [
-            r for r in raw if isinstance(r, tuple)
-        ]
+        scored: list[tuple[SwissStock, float]] = [r for r in raw if isinstance(r, tuple)]
 
         # 3. Bekannte Titel zuerst, dann nach Composite-Score absteigend
         known = {t.upper() for t in profile.known_tickers}

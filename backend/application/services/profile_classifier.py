@@ -69,7 +69,9 @@ class ProfileClassifier:
         try:
             return Turn1Classification.model_validate(json.loads(raw))
         except (json.JSONDecodeError, ValueError) as exc:
-            _logger.error("LLM returned invalid JSON for Turn1Classification: %r — %s", raw[:200], exc)
+            _logger.error(
+                "LLM returned invalid JSON for Turn1Classification: %r — %s", raw[:200], exc
+            )
             raise
 
     @staticmethod

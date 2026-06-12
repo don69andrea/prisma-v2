@@ -10,6 +10,7 @@ import numpy as np
 
 _logger = logging.getLogger(__name__)
 _TARGET_500K = 500_000.0
+_TRADING_DAYS_PER_MONTH = 21
 
 
 @dataclass(frozen=True)
@@ -121,7 +122,7 @@ def _run_gbm(
     n_months = inp.years * 12
     n_sim = inp.n_simulations
     weights = np.array([h.weight for h in inp.holdings])
-    dt = 21  # 21 trading days per month
+    dt = _TRADING_DAYS_PER_MONTH
 
     try:
         L = np.linalg.cholesky(corr_matrix)

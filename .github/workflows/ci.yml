@@ -140,7 +140,15 @@ jobs:
         run: npm run lint
 
       - name: Unit Tests
-        run: npm test
+        run: npm test -- --coverage
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          path: frontend/coverage/
+          retention-days: 14
 
       - name: Build
         env:

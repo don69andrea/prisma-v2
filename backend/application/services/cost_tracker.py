@@ -12,12 +12,13 @@ Wird vom `LLMClient`-Wrapper in der Infrastructure-Schicht aufgerufen:
   und delegiert das Persistieren an den Repository-Adapter
 - `summary(last_n)` liefert aggregierte Kosten-Übersicht für den Admin-Endpoint
 
-Concurrency: das App-Cap ist ein **Soft-Limit** — ein kleines Race-Window
-existiert (zwei parallele Calls passen beide `check_cap` und schreiben dann
-beide `record`). Bei Capstone-Volumen (max ~30 Calls/Batch) absorbiert die
-5%-Schwelle das. Der echte **Backstop** ist das Anthropic-Console Spend-Limit.
+Concurrency: check_cap ist durch self._cap_lock serialisiert — innerhalb eines
+Prozesses können keine zwei Calls gleichzeitig die Cap-Schwelle lesen und beide
+"grünes Licht" bekommen. Der echte Backstop für multi-process bleibt das
+Anthropic-Console Spend-Limit.
 """
 
+import asyncio
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -44,16 +45,22 @@ class CostTracker:
         self._pricing = pricing
         self._cap_usd = cap_usd
         self._threshold = threshold
+        self._cap_lock = asyncio.Lock()
 
     async def check_cap(self, *, estimated_usd: Decimal) -> None:
-        """Wirft BudgetCapExceeded, wenn (current + estimated) > cap * threshold."""
-        current = await self._repository.current_month_total_usd()
-        if (current + estimated_usd) > self._cap_usd * self._threshold:
-            raise BudgetCapExceeded(
-                current_usd=current,
-                attempted_usd=estimated_usd,
-                cap_usd=self._cap_usd,
-            )
+        """Wirft BudgetCapExceeded, wenn (current + estimated) > cap * threshold.
+
+        asyncio.Lock serialisiert concurrent check_cap-Calls innerhalb eines Prozesses —
+        zwei parallele Calls sehen nie beide "grünes Licht" für dasselbe Budget-Fenster.
+        """
+        async with self._cap_lock:
+            current = await self._repository.current_month_total_usd()
+            if (current + estimated_usd) > self._cap_usd * self._threshold:
+                raise BudgetCapExceeded(
+                    current_usd=current,
+                    attempted_usd=estimated_usd,
+                    cap_usd=self._cap_usd,
+                )
 
     async def record(
         self,

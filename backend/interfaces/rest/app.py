@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.config import get_settings
 from backend.domain.errors import BudgetCapExceeded
 from backend.interfaces.rest.exception_handlers import handle_budget_cap_exceeded
+from backend.interfaces.rest.rate_limiter import LLMRateLimiterMiddleware
 from backend.interfaces.rest.routers import (
     admin,
     alerts,
@@ -87,6 +88,7 @@ def create_app() -> FastAPI:
     """
     settings = get_settings()
 
+    is_production = settings.environment == "production"
     app = FastAPI(
         lifespan=_lifespan,
         title="PRISMA API",
@@ -96,18 +98,19 @@ def create_app() -> FastAPI:
             "keine Anlageberatung."
         ),
         version="0.1.0",
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url=None if is_production else "/docs",
+        redoc_url=None if is_production else "/redoc",
+        openapi_url=None if is_production else "/openapi.json",
     )
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.cors_origins,
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(LLMRateLimiterMiddleware)
 
     # FastAPI typisiert add_exception_handler über `Type[Exception]` mit einem
     # generischen Handler-Signature, das unsere konkrete (Request, BudgetCapExceeded)-

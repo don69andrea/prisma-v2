@@ -76,7 +76,18 @@ class LLMClient:
         if system is not None:
             sdk_kwargs["system"] = system
 
-        response = await self._anthropic.messages.create(**sdk_kwargs)
+        # Retry on HTTP 429 (rate limit) with exponential backoff — no external lib needed.
+        _retry_delays = [1.0, 2.0, 4.0]
+        response = None
+        for attempt, delay in enumerate(_retry_delays):
+            try:
+                response = await self._anthropic.messages.create(**sdk_kwargs)
+                break
+            except Exception as exc:
+                if getattr(exc, "status_code", None) != 429 or attempt == len(_retry_delays) - 1:
+                    raise
+                await asyncio.sleep(delay)
+        assert response is not None  # loop always raises or assigns
 
         await self._cost_tracker.record(
             provider="anthropic",

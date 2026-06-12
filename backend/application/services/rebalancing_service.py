@@ -104,7 +104,10 @@ class RebalancingService:
         )
 
     async def _resolve_eligibility(self, tickers: set[str], is_3a_account: bool) -> dict[str, bool]:
-        if not is_3a_account or self._stock_repo is None:
+        if not is_3a_account:
+            # No 3a restriction for non-3a accounts — all stocks are eligible.
+            return {ticker: True for ticker in tickers}
+        if self._stock_repo is None:
             return {ticker: False for ticker in tickers}
 
         result: dict[str, bool] = {}

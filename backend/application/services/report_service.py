@@ -55,6 +55,9 @@ class ReportService:
     async def _aggregate_data(self, ticker: str) -> ReportData:
         from backend.application.services.factsheet_service import FactsheetService
         from backend.application.services.ml_prediction_service import MLPredictionService
+        from backend.infrastructure.persistence.repositories.ranking_run_repository import (
+            SQLARankingRunRepository,
+        )
         from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
             SQLASwissStockRepository,
         )
@@ -63,7 +66,8 @@ class ReportService:
         session_factory = get_session_factory()
         async with session_factory() as _session:
             swiss_repo = SQLASwissStockRepository(session=_session)
-            factsheet_svc = FactsheetService(stock_repo=swiss_repo)
+            run_repo = SQLARankingRunRepository(session=_session)
+            factsheet_svc = FactsheetService(stock_repo=swiss_repo, run_repo=run_repo)
         ml_svc = MLPredictionService()
 
         factsheet, ml_prediction = await asyncio.gather(

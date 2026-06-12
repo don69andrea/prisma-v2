@@ -10,7 +10,7 @@ import logging
 from collections import defaultdict, deque
 from time import monotonic
 
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -44,10 +44,10 @@ class LLMRateLimiterMiddleware(BaseHTTPMiddleware):
         self._calls: dict[str, deque[float]] = defaultdict(deque)
         self._lock = asyncio.Lock()
 
-    async def dispatch(self, request: Request, call_next: object) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         path = request.url.path
         if not any(path.startswith(prefix) for prefix in _LLM_PREFIXES):
-            return await call_next(request)  # type: ignore[operator]
+            return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"
         key = f"{client_ip}:{path}"
@@ -67,4 +67,4 @@ class LLMRateLimiterMiddleware(BaseHTTPMiddleware):
                 )
             bucket.append(now)
 
-        return await call_next(request)  # type: ignore[operator]
+        return await call_next(request)

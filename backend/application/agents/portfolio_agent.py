@@ -146,7 +146,7 @@ def _mean_variance(
             grad_return = mu
             grad_vol = (cov_matrix @ weights) / port_vol
             sharpe = port_return / port_vol
-            return -(grad_return / port_vol - sharpe * grad_vol / port_vol)
+            return np.asarray(-(grad_return / port_vol - sharpe * grad_vol / port_vol))
 
         w0 = np.full(n_assets, 1.0 / n_assets)
         bounds = [(float(_MIN_WEIGHT), float(_MAX_WEIGHT))] * n_assets

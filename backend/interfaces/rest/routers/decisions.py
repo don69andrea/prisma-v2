@@ -17,7 +17,12 @@ from backend.interfaces.rest.dependencies import (
     get_swiss_stock_repository,
     get_universe_service,
 )
-from backend.interfaces.rest.schemas.decision import DecisionListResponse, DecisionSignalResponse
+from backend.interfaces.rest.schemas.decision import (
+    DecisionListResponse,
+    DecisionSignalResponse,
+    ExplainRequest,
+    ExplainResponse,
+)
 
 router = APIRouter(prefix="/api/v1/decisions", tags=["decisions"])
 _logger = logging.getLogger(__name__)
@@ -80,6 +85,97 @@ async def live_decisions(
     ticker_list = ticker_list[:_MAX_LIVE_TICKERS]
     signals = await aggregation_service.get_signals(ticker_list)
     return _build_response(signals, signal, eligible_only)
+
+
+_EXPLAIN_SYSTEM = """\
+Du bist ein quantitativer Analyst einer Schweizer Vermögensverwaltung.
+Erkläre eine algorithmische Investitionsentscheidung auf Deutsch, präzise und verständlich.
+Antworte NUR mit einem JSON-Objekt (kein Markdown, kein Text davor/danach):
+{
+  "overall": "...",
+  "quant_why": "...",
+  "ml_why": "...",
+  "macro_why": "...",
+  "risk_note": "..."
+}
+"""
+
+_EXPLAIN_HAIKU = "claude-haiku-4-5-20251001"
+
+
+@router.post(
+    "/explain",
+    response_model=ExplainResponse,
+    summary="LLM-Erklärung warum ein Signal so entschieden wurde",
+)
+async def explain_decision(
+    body: ExplainRequest,
+    llm_client: object = Depends(get_llm_client),
+) -> ExplainResponse:
+    """Generiert eine Haiku-basierte Erklärung warum TICKER dieses Signal erhalten hat.
+
+    Erklärt nicht nur den Score-Wert, sondern den inhaltlichen Grund:
+    warum ist der Quant-Score so hoch/niedrig, was sagt das ML-Modell wirklich aus,
+    warum begünstigt/belastet das Makroumfeld diesen Titel.
+    """
+    import json
+
+    from backend.infrastructure.llm.client import LLMClient
+
+    client: LLMClient = llm_client  # type: ignore[assignment]
+
+    ticker = body.ticker.upper()
+    quant_band = "stark" if body.quant_score >= 70 else ("moderat" if body.quant_score >= 45 else "schwach")
+    ml_label = "OUTPERFORM" if body.ml_score >= 75 else ("NEUTRAL" if body.ml_score >= 35 else "UNDERPERFORM")
+    macro_band = "günstig" if body.macro_score >= 70 else ("neutral" if body.macro_score >= 45 else "ungünstig")
+
+    user_msg = f"""
+Ticker: {ticker}
+Signal: {body.signal} ({round(body.confidence * 100)}% Konfidenz)
+Gewichteter Gesamtscore: {body.weighted_score:.1f}/100 → {body.signal} (BUY ≥65 / HOLD 40–64 / WATCH <40)
+
+METRIKEN:
+1. Quant-Score: {body.quant_score:.0f}/100 × 0.45 = {body.quant_score * 0.45:.1f} Punkte
+   Einordnung: {quant_band} (Skala: <45=schwach, 45–69=moderat, ≥70=stark)
+   Misst: Fundamentalqualität (Bewertung, Dividende, Cashflow, Kapitalrendite) relativ zu SMI-Bändern.
+
+2. ML-Score: {body.ml_score:.0f}/100 × 0.35 = {body.ml_score * 0.35:.1f} Punkte
+   Modell-Output: {ml_label} (OUTPERFORM=85 / NEUTRAL=50 / UNDERPERFORM=15)
+   Misst: LightGBM-Vorhersage auf historischen Preis- und Fundamental-Features.
+
+3. Makro-Score: {body.macro_score:.0f}/100 × 0.20 = {body.macro_score * 0.20:.1f} Punkte
+   Einordnung: {macro_band} (Skala: SNB ≤0%=80 / ≤0.5%=65 / ≤1%=50 / ≤1.5%=35 / >1.5%=20)
+   Misst: Geldpolitisches Umfeld (SNB-Leitzins, CHF/EUR, Inflation).
+
+AUFGABE — erkläre in je 2 präzisen Sätzen pro Feld:
+- overall: Warum hat {ticker} genau dieses Signal ({body.signal}) erhalten?
+- quant_why: Warum ist der Quant-Score {body.quant_score:.0f}? Was sagt das über die Fundamentaldaten von {ticker} aus?
+- ml_why: Warum zeigt das ML-Modell {ml_label}? Was bedeutet das für die erwartete Kursentwicklung?
+- macro_why: Warum ist der Makro-Score {body.macro_score:.0f}? Wie wirkt das aktuelle Umfeld auf {ticker}?
+- risk_note: Ein kurzer Risikohinweis (1 Satz, keine Anlageberatung).
+"""
+
+    try:
+        response = await client.messages_create(
+            model=_EXPLAIN_HAIKU,
+            max_tokens=600,
+            feature="decision_explain",
+            system=_EXPLAIN_SYSTEM,
+            messages=[{"role": "user", "content": user_msg}],
+        )
+        raw = response.content[0].text.strip()
+        data = json.loads(raw)
+        return ExplainResponse(
+            ticker=ticker,
+            overall=data.get("overall", ""),
+            quant_why=data.get("quant_why", ""),
+            ml_why=data.get("ml_why", ""),
+            macro_why=data.get("macro_why", ""),
+            risk_note=data.get("risk_note", "Keine Anlageberatung."),
+        )
+    except Exception as exc:
+        _logger.warning("explain_decision LLM fehlgeschlagen für %s: %s", ticker, exc)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Erklärung temporär nicht verfügbar.") from exc
 
 
 @router.get(

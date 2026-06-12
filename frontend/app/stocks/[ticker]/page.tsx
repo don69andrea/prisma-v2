@@ -285,17 +285,6 @@ function FactsheetContent() {
   );
 }
 
-export function generateMetadata({
-  params,
-}: {
-  params: { ticker: string };
-}) {
-  const symbol = params.ticker.toUpperCase();
-  return {
-    title: `${symbol} Factsheet`,
-    description: `PRISMA Factsheet für ${symbol} — quantitative Analyse`,
-  };
-}
 
 function FactsheetSkeleton() {
   return (

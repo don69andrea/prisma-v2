@@ -323,10 +323,7 @@ class MLFeatureService:
                 "eu" if _is_eu_ticker(t) else "ch"
             )
             # US-Ticker brauchen kein Exchange-Suffix in yfinance
-            if _market == "us":
-                yf_ticker = t
-            else:
-                yf_ticker = _ticker_to_yf(t)
+            yf_ticker = t if _market == "us" else _ticker_to_yf(t)
             try:
                 hist = yf.download(yf_ticker, start=start_date, end=end_date, progress=False)
                 if hist is None or len(hist) < 60:

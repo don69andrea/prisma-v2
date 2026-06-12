@@ -27,10 +27,10 @@ describe('NavLinks', () => {
   it('zeigt alle 5 Gruppenbezeichnungen', () => {
     vi.mocked(usePathname).mockReturnValue('/');
     render(<NavLinks />);
-    expect(screen.getByText('ENTDECKEN')).toBeInTheDocument();
-    expect(screen.getByText('VERSTEHEN')).toBeInTheDocument();
-    expect(screen.getByText('VERGLEICHEN')).toBeInTheDocument();
-    expect(screen.getByText('ENTSCHEIDEN')).toBeInTheDocument();
+    expect(screen.getByText('SCREENING')).toBeInTheDocument();
+    expect(screen.getByText('ANALYSE')).toBeInTheDocument();
+    expect(screen.getByText('SIMULATION')).toBeInTheDocument();
+    expect(screen.getByText('MONITOR')).toBeInTheDocument();
     expect(screen.getByText('PORTFOLIO')).toBeInTheDocument();
   });
 

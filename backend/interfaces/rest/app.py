@@ -10,7 +10,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
 from backend.domain.errors import BudgetCapExceeded
-from backend.interfaces.rest.exception_handlers import handle_budget_cap_exceeded, handle_unhandled_exception
+from backend.interfaces.rest.exception_handlers import (
+    handle_budget_cap_exceeded,
+    handle_unhandled_exception,
+)
 from backend.interfaces.rest.rate_limiter import LLMRateLimiterMiddleware
 from backend.interfaces.rest.routers import (
     admin,

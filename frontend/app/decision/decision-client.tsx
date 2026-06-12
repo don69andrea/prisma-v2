@@ -278,23 +278,51 @@ export function DecisionClient() {
     <div className="space-y-4">
       {/* Live-Mode Banner */}
       {isLiveMode && (
-        <div
-          className="rounded-xl px-4 py-3 flex items-center justify-between gap-4"
-          style={{ background: 'rgba(88,166,255,0.07)', border: '1px solid rgba(88,166,255,0.15)' }}
-        >
-          <div>
-            <p className="text-sm font-medium text-[#e6edf3]">Dein persönliches Universe</p>
-            <p className="text-xs text-[#8b949e]">
-              {liveTickers!.length} Titel aus dem Discovery-Flow · {liveTickers!.join(', ')}
-            </p>
-          </div>
-          <Link
-            href="/discover"
-            className="text-xs text-[#58a6ff] hover:underline whitespace-nowrap"
+        <>
+          <style>{`
+            @keyframes livePulse {
+              0%, 100% { box-shadow: 0 0 4px 1px rgba(88,166,255,0.5), 0 0 0 0 rgba(88,166,255,0.4); }
+              50%       { box-shadow: 0 0 10px 3px rgba(88,166,255,0.85), 0 0 18px 6px rgba(88,166,255,0.25); }
+            }
+            @keyframes liveDot {
+              0%, 100% { opacity: 1; box-shadow: 0 0 4px 1px #58a6ff; }
+              50%       { opacity: 0.55; box-shadow: 0 0 8px 3px #58a6ff; }
+            }
+          `}</style>
+          <div
+            className="rounded-xl px-4 py-3 flex items-center justify-between gap-4"
+            style={{
+              background: 'rgba(88,166,255,0.06)',
+              border: '1px solid rgba(88,166,255,0.25)',
+              animation: 'livePulse 2.4s ease-in-out infinite',
+            }}
           >
-            Zurück zum Universe →
-          </Link>
-        </div>
+            <div className="flex items-center gap-3">
+              {/* LIVE badge */}
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#58a6ff]/40 bg-[#58a6ff]/10 px-2.5 py-0.5 text-[11px] font-bold tracking-widest text-[#58a6ff]"
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full bg-[#58a6ff]"
+                  style={{ animation: 'liveDot 1.2s ease-in-out infinite' }}
+                />
+                LIVE
+              </span>
+              <div>
+                <p className="text-sm font-medium text-[#e6edf3]">Dein persönliches Universe</p>
+                <p className="text-xs text-[#8b949e]">
+                  {liveTickers!.length} Titel · {liveTickers!.join(', ')}
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/discover"
+              className="text-xs text-[#58a6ff] hover:underline whitespace-nowrap"
+            >
+              Zurück →
+            </Link>
+          </div>
+        </>
       )}
 
       {/* Filter bar */}

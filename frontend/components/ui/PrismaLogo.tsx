@@ -6,8 +6,15 @@ interface PrismaLogoProps {
   animated?: boolean;
 }
 
-/** Geometrisches Prisma-Logo — Dreieck mit ausfächernden Spektrallinien. */
+/** Geometrisches Prisma-Logo mit Spektralstrahlen. */
 export function PrismaLogo({ size = 20, className = '', animated = false }: PrismaLogoProps) {
+  const rays = [
+    { x1: 22, y1: 11, x2: 35, y2: 3,  color: '#58a6ff', delay: '0s'   },
+    { x1: 24, y1: 16, x2: 37, y2: 12, color: '#7ee787', delay: '0.1s' },
+    { x1: 26, y1: 21, x2: 38, y2: 21, color: '#f59e0b', delay: '0.2s' },
+    { x1: 27, y1: 26, x2: 37, y2: 32, color: '#bc8cff', delay: '0.3s' },
+  ];
+
   return (
     <svg
       width={size}
@@ -17,42 +24,42 @@ export function PrismaLogo({ size = 20, className = '', animated = false }: Pris
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden="true"
+      overflow="visible"
     >
-      {/* Prisma-Dreieck */}
+      {/* Prisma-Körper mit subtiler Füllung */}
       <path
         d="M16 3L29 27H3L16 3Z"
+        fill="currentColor"
+        fillOpacity="0.07"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinejoin="round"
+        strokeOpacity="0.85"
       />
-      {/* Innere Achse */}
-      <line x1="16" y1="3" x2="16" y2="27" stroke="currentColor" strokeWidth="0.75" strokeOpacity="0.3" />
-      {/* Spektrallinien rechts */}
+      {/* Kristall-Facettenlinie (3D-Schnitt-Effekt) */}
       <line
-        x1="26" y1="25" x2="31" y2="17"
-        stroke="#58a6ff" strokeWidth="1.5" strokeLinecap="round"
-        style={animated ? { animation: 'prismaRay1 2s ease-in-out infinite' } : undefined}
+        x1="16" y1="3" x2="22" y2="27"
+        stroke="currentColor"
+        strokeWidth="0.6"
+        strokeOpacity="0.22"
       />
-      <line
-        x1="27" y1="26" x2="32" y2="22"
-        stroke="#7ee787" strokeWidth="1.5" strokeLinecap="round"
-        style={animated ? { animation: 'prismaRay2 2s ease-in-out infinite 0.1s' } : undefined}
-      />
-      <line
-        x1="27" y1="27" x2="32" y2="27"
-        stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round"
-        style={animated ? { animation: 'prismaRay3 2s ease-in-out infinite 0.2s' } : undefined}
-      />
-      <line
-        x1="26" y1="27" x2="31" y2="31"
-        stroke="#bc8cff" strokeWidth="1.5" strokeLinecap="round"
-        style={animated ? { animation: 'prismaRay4 2s ease-in-out infinite 0.3s' } : undefined}
-      />
+      {/* Spektralstrahlen — treten aus der rechten Prismafläche aus */}
+      {rays.map((ray, i) => (
+        <line
+          key={i}
+          x1={ray.x1} y1={ray.y1}
+          x2={ray.x2} y2={ray.y2}
+          stroke={ray.color}
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          style={animated ? { animation: `prismaRay${i + 1} 2s ease-in-out infinite`, animationDelay: ray.delay } : undefined}
+        />
+      ))}
     </svg>
   );
 }
 
-/** Vollbild-Ladeanimation mit Prisma-Logo — zeigt nach Profil-Reveal. */
+/** Vollbild-Ladeanimation mit Prisma-Logo. */
 export function PrismaLoader({ label = 'Dein Universe wird zusammengestellt' }: { label?: string }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm">
@@ -75,12 +82,10 @@ export function PrismaLoader({ label = 'Dein Universe wird zusammengestellt' }: 
         }
       `}</style>
 
-      {/* Animiertes Prisma */}
       <div style={{ animation: 'prismaSpin 3s linear infinite, prismaGlow 2s ease-in-out infinite' }}>
         <PrismaLogo size={56} className="text-foreground" />
       </div>
 
-      {/* Spektrumbalken */}
       <div className="mt-8 h-[2px] w-40 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full"
@@ -91,7 +96,6 @@ export function PrismaLoader({ label = 'Dein Universe wird zusammengestellt' }: 
         />
       </div>
 
-      {/* Text */}
       <p className="mt-5 text-sm text-muted-foreground tracking-wide">
         {label}
         <span style={{ animation: 'prismaDot 1.4s 0.0s infinite' }}>.</span>

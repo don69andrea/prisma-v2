@@ -29,3 +29,14 @@ export async function listDecisions(
   if (eligibleOnly) params.set('eligible_only', 'true');
   return apiFetch<DecisionListResponse>(`/api/v1/decisions?${params.toString()}`);
 }
+
+export async function liveDecisions(
+  tickers: string[],
+  signal?: SignalType,
+  eligibleOnly?: boolean,
+): Promise<DecisionListResponse> {
+  const params = new URLSearchParams({ tickers: tickers.join(',') });
+  if (signal) params.set('signal', signal);
+  if (eligibleOnly) params.set('eligible_only', 'true');
+  return apiFetch<DecisionListResponse>(`/api/v1/decisions/live?${params.toString()}`);
+}

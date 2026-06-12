@@ -22,6 +22,8 @@ from backend.interfaces.rest.schemas.decision import DecisionListResponse, Decis
 router = APIRouter(prefix="/api/v1/decisions", tags=["decisions"])
 _logger = logging.getLogger(__name__)
 
+_MAX_LIVE_TICKERS = 25
+
 
 def get_signal_aggregation_service(
     swiss_stock_repo: SwissStockRepository = Depends(get_swiss_stock_repository),
@@ -29,6 +31,55 @@ def get_signal_aggregation_service(
 ) -> SignalAggregationService:
     macro_agent = MacroIntelligenceAgent(macro_service=MacroService(llm_client=llm_client))
     return SignalAggregationService(swiss_stock_repo=swiss_stock_repo, macro_agent=macro_agent)
+
+
+def _build_response(
+    signals: list,
+    signal_filter: str | None,
+    eligible_only: bool,
+) -> DecisionListResponse:
+    if signal_filter is not None:
+        signals = [s for s in signals if s.signal == signal_filter.upper()]
+    if eligible_only:
+        signals = [s for s in signals if s.is_3a_eligible]
+    items = [
+        DecisionSignalResponse(
+            ticker=s.ticker,
+            snapshot_date=s.snapshot_date,
+            signal=s.signal,
+            confidence=s.confidence,
+            weighted_score=s.weighted_score,
+            quant_score=s.quant_score,
+            ml_score=s.ml_score,
+            macro_score=s.macro_score,
+            is_3a_eligible=s.is_3a_eligible,
+        )
+        for s in signals
+    ]
+    return DecisionListResponse(items=items, total=len(items))
+
+
+@router.get(
+    "/live",
+    response_model=DecisionListResponse,
+    summary="BUY/HOLD/WATCH Signale für beliebige Ticker (kein Universe nötig)",
+    description=(
+        "Berechnet Signale direkt für eine komma-separierte Ticker-Liste. "
+        "Ideal für Discovery-Flow: keine universe_id erforderlich. Max. 25 Ticker."
+    ),
+)
+async def live_decisions(
+    tickers: str = Query(..., description="Komma-separierte Ticker, z.B. NESN,ROG,NOVN"),
+    signal: str | None = Query(default=None),
+    eligible_only: bool = Query(default=False),
+    aggregation_service: SignalAggregationService = Depends(get_signal_aggregation_service),
+) -> DecisionListResponse:
+    ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
+    if not ticker_list:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Keine Ticker angegeben.")
+    ticker_list = ticker_list[:_MAX_LIVE_TICKERS]
+    signals = await aggregation_service.get_signals(ticker_list)
+    return _build_response(signals, signal, eligible_only)
 
 
 @router.get(

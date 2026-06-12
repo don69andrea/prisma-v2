@@ -87,39 +87,38 @@ function FactsheetContent() {
   const [memoError, setMemoError] = useState<string | null>(null);
 
   // Optional: load full factsheet for Swiss fields (badge, SIX link, market_cap_chf)
-  const { data: factsheet } = useQuery({
+  const { data: factsheet, error: factsheetError } = useQuery({
     queryKey: ['factsheet', symbol],
     queryFn: () => getFactsheet(symbol),
-    retry: false,
+    retry: 1,
   });
 
   // Optional: load Langfrist-Score for Swiss stocks
   const { data: langfrist } = useQuery({
     queryKey: ['langfrist-score', symbol],
     queryFn: () => getLangfristScore(symbol),
-    retry: false,
+    retry: 1,
   });
 
   const { data: dividendData } = useQuery({
     queryKey: ['dividends', symbol],
     queryFn: () => getDividends(symbol),
-    retry: false,
+    retry: 1,
     staleTime: 5 * 60 * 1_000,
   });
 
-  const { data: fundamentalsData } = useQuery({
+  const { data: fundamentalsData, error: fundamentalsError } = useQuery({
     queryKey: ['fundamentals', symbol],
     queryFn: () => getFundamentals(symbol),
-    retry: false,
+    retry: 1,
     staleTime: 5 * 60 * 1_000,
   });
 
-
-  const { data: prices } = useQuery({
+  const { data: prices, error: pricesError } = useQuery({
     queryKey: ['prices', symbol],
     queryFn: () => getPrices(symbol),
     staleTime: 5 * 60 * 1000,
-    retry: false,
+    retry: 1,
   });
 
   const handleRequestMemo = async () => {
@@ -138,8 +137,15 @@ function FactsheetContent() {
     }
   };
 
+  const hasError = factsheetError || fundamentalsError || pricesError;
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
+      {hasError && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Einige Daten konnten nicht geladen werden. Bitte Seite neu laden.
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <Link
           href={runId ? `/rankings/${runId}` : '/discover'}

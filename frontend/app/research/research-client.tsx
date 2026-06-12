@@ -8,7 +8,20 @@ import { Search, ExternalLink, Download } from 'lucide-react';
 
 const LS_RESEARCH_KEY = 'prisma_research_last_search';
 
+type ResearchResult = {
+  ticker?: string;
+  doc_type?: string;
+  form?: string;
+  filing_date?: string;
+  filed_at?: string;
+  similarity: number;
+  source?: string;
+  company?: string;
+  content: string;
+};
+
 function loadStoredResearch() {
+  if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(LS_RESEARCH_KEY);
     if (raw) return JSON.parse(raw) as { query: string; ticker: string };
@@ -16,7 +29,7 @@ function loadStoredResearch() {
   return null;
 }
 
-function exportResearchCsv(results: Array<{ ticker?: string; doc_type?: string; form?: string; filing_date?: string; filed_at?: string; similarity: number; source?: string; company?: string; content: string }>, filename: string) {
+function exportResearchCsv(results: ResearchResult[], filename: string) {
   const rows = [
     ['Ticker', 'Typ', 'Datum', 'Ähnlichkeit%', 'Quelle/Unternehmen', 'Inhalt'],
     ...results.map((r) => [

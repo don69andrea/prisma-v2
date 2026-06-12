@@ -87,6 +87,7 @@ def create_app() -> FastAPI:
     """
     settings = get_settings()
 
+    is_production = settings.environment == "production"
     app = FastAPI(
         lifespan=_lifespan,
         title="PRISMA API",
@@ -96,14 +97,14 @@ def create_app() -> FastAPI:
             "keine Anlageberatung."
         ),
         version="0.1.0",
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url=None if is_production else "/docs",
+        redoc_url=None if is_production else "/redoc",
+        openapi_url=None if is_production else "/openapi.json",
     )
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.cors_origins,
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],

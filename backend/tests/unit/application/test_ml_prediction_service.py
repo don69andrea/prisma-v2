@@ -28,8 +28,12 @@ def _make_feature_vector(ticker: str = "NESN") -> MLFeatureVector:
         vol_30d=0.18,
         vol_90d=0.20,
         rsi_14=55.0,
-        price_to_52w_high=0.92,
-        vol_trend=1.05,
+        price_to_52w_high=0.95,
+        vol_trend=1.1,
+        macd_hist=0.001,
+        bb_position=0.6,
+        return_1m=0.01,
+        drawdown_12m=-0.08,
         snb_rate=0.25,
         chf_eur=0.93,
         forward_return_12m=None,
@@ -72,7 +76,7 @@ async def test_predict_returns_outperform() -> None:
     assert result.prob_top == 0.7
     assert result.confidence == 0.7
     assert result.model_type == "xgboost"
-    assert len(result.features) == len(MLFeatureVector.FEATURE_NAMES)
+    assert len(result.features) == 19
 
 
 @pytest.mark.asyncio

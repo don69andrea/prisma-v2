@@ -44,6 +44,26 @@ def _seconds_until_next_month_utc() -> int:
     return int(delta.total_seconds())
 
 
+async def handle_unhandled_exception(
+    request: Request,  # noqa: ARG001
+    exc: Exception,
+) -> JSONResponse:
+    """Globaler Fallback — stellt sicher dass CORS-Header auch bei 500 vorhanden sind.
+
+    FastAPI/Starlette's CORSMiddleware fügt keine Headers hinzu wenn eine
+    unbehandelte Exception vor der Response-Phase auftritt. Dieser Handler
+    wandelt alle unerwarteten Exceptions in eine JSON-Response mit
+    Access-Control-Allow-Origin: * um, damit der Browser den Body sehen kann.
+    """
+    import logging
+    logging.getLogger(__name__).exception("Unhandled exception in request %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        headers={"Access-Control-Allow-Origin": "*"},
+        content={"detail": "Interner Serverfehler. Bitte später erneut versuchen."},
+    )
+
+
 async def handle_budget_cap_exceeded(
     request: Request,  # noqa: ARG001 — FastAPI-Handler-Signatur erfordert request
     exc: BudgetCapExceeded,

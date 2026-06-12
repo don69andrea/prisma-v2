@@ -29,3 +29,40 @@ export async function listDecisions(
   if (eligibleOnly) params.set('eligible_only', 'true');
   return apiFetch<DecisionListResponse>(`/api/v1/decisions?${params.toString()}`);
 }
+
+export interface ExplainRequest {
+  ticker: string;
+  signal: string;
+  confidence: number;
+  quant_score: number;
+  ml_score: number;
+  macro_score: number;
+  weighted_score: number;
+}
+
+export interface ExplainResponse {
+  ticker: string;
+  overall: string;
+  quant_why: string;
+  ml_why: string;
+  macro_why: string;
+  risk_note: string;
+}
+
+export async function explainDecision(body: ExplainRequest): Promise<ExplainResponse> {
+  return apiFetch<ExplainResponse>('/api/v1/decisions/explain', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function liveDecisions(
+  tickers: string[],
+  signal?: SignalType,
+  eligibleOnly?: boolean,
+): Promise<DecisionListResponse> {
+  const params = new URLSearchParams({ tickers: tickers.join(',') });
+  if (signal) params.set('signal', signal);
+  if (eligibleOnly) params.set('eligible_only', 'true');
+  return apiFetch<DecisionListResponse>(`/api/v1/decisions/live?${params.toString()}`);
+}

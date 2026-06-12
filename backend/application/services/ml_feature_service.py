@@ -36,6 +36,108 @@ _SNB_RATE_HISTORY: list[tuple[date, float]] = [
 ]
 _SNB_RATE_BEFORE_2022 = -0.75
 
+# ECB Einlagenzins-History (Deposit Facility Rate)
+_ECB_RATE_HISTORY: list[tuple[date, float]] = [
+    (date(2022, 7, 27), 0.00),
+    (date(2022, 9, 14), 0.75),
+    (date(2022, 10, 27), 1.50),
+    (date(2022, 12, 15), 2.00),
+    (date(2023, 2, 2),  2.50),
+    (date(2023, 3, 22), 3.00),
+    (date(2023, 5, 10), 3.25),
+    (date(2023, 6, 21), 3.50),
+    (date(2023, 7, 27), 3.75),
+    (date(2024, 6, 12), 3.50),
+    (date(2024, 9, 18), 3.25),
+    (date(2024, 10, 23), 3.00),
+    (date(2024, 12, 18), 2.75),
+    (date(2025, 1, 30),  2.50),
+    (date(2025, 3, 6),   2.25),
+    (date(2025, 4, 17),  2.00),
+    (date(2025, 6, 5),   1.75),
+]
+_ECB_RATE_BEFORE_2022 = -0.50
+
+
+def _ecb_rate_on(target: date) -> float:
+    """Gibt den ECB Einlagenzins zum Stichtag zurück."""
+    rate = _ECB_RATE_BEFORE_2022
+    for effective_date, r in _ECB_RATE_HISTORY:
+        if target >= effective_date:
+            rate = r
+    return rate
+
+
+# Fed Funds Rate (Upper Bound) History
+_FED_RATE_HISTORY: list[tuple[date, float]] = [
+    (date(2018, 3, 22), 1.75),
+    (date(2018, 6, 14), 2.00),
+    (date(2018, 9, 27), 2.25),
+    (date(2018, 12, 20), 2.50),
+    (date(2019, 8, 1),  2.25),
+    (date(2019, 9, 19), 2.00),
+    (date(2019, 10, 31), 1.75),
+    (date(2020, 3, 4),  1.25),
+    (date(2020, 3, 16), 0.25),
+    (date(2022, 3, 17), 0.50),
+    (date(2022, 5, 5),  1.00),
+    (date(2022, 6, 16), 1.75),
+    (date(2022, 7, 28), 2.50),
+    (date(2022, 9, 22), 3.25),
+    (date(2022, 11, 3), 4.00),
+    (date(2022, 12, 15), 4.50),
+    (date(2023, 2, 2),  4.75),
+    (date(2023, 3, 23), 5.00),
+    (date(2023, 5, 4),  5.25),
+    (date(2023, 7, 27), 5.50),
+    (date(2024, 9, 19), 5.00),
+    (date(2024, 11, 8), 4.75),
+    (date(2024, 12, 19), 4.50),
+    (date(2025, 3, 20), 4.25),
+]
+_FED_RATE_BEFORE_2018 = 1.25
+
+
+def _fed_rate_on(target: date) -> float:
+    """Gibt den Fed Funds Rate (Upper Bound) zum Stichtag zurück."""
+    rate = _FED_RATE_BEFORE_2018
+    for effective_date, r in _FED_RATE_HISTORY:
+        if target >= effective_date:
+            rate = r
+    return rate
+
+
+# Exchange suffix → yfinance suffix mapping for non-Swiss stocks
+_EU_YF_SUFFIX: dict[str, str] = {
+    ".DE": ".DE",  # Xetra (Deutschland)
+    ".PA": ".PA",  # Euronext Paris
+    ".AS": ".AS",  # Euronext Amsterdam
+    ".MC": ".MC",  # Bolsa Madrid
+    ".MI": ".MI",  # Borsa Italiana
+    ".L":  ".L",   # London Stock Exchange (GBP)
+    ".ST": ".ST",  # Nasdaq Stockholm (SEK)
+    ".VI": ".VI",  # Wiener Börse (EUR)
+    ".BR": ".BR",  # Euronext Brüssel (EUR)
+}
+
+
+def _ticker_to_yf(ticker: str) -> str:
+    """Konvertiert internen Ticker zu yfinance-Format."""
+    overrides = {"ROG": "RO.SW"}
+    if ticker in overrides:
+        return overrides[ticker]
+    if "." in ticker:
+        return ticker  # EU-Ticker haben bereits Börsen-Suffix
+    return f"{ticker}.SW"  # Swiss default
+
+
+def _is_eu_ticker(ticker: str) -> bool:
+    """True wenn es sich um einen EU-Ticker (nicht Swiss) handelt."""
+    if "." not in ticker:
+        return False
+    suffix = "." + ticker.rsplit(".", 1)[-1].upper()
+    return suffix in _EU_YF_SUFFIX
+
 
 def _snb_rate_on(target: date) -> float:
     """Gibt den SNB Leitzins zum Stichtag zurück (stufenweise)."""
@@ -59,6 +161,50 @@ def _compute_rsi(prices: pd.Series, window: int = 14) -> float:
         return 100.0 if avg_gain > 0 else 50.0
     rs = avg_gain / avg_loss
     return float(100.0 - 100.0 / (1.0 + rs))
+
+
+def _compute_macd_hist(close: pd.Series) -> float:
+    """MACD histogram (EMA12-EMA26 - EMA9 signal), price-normalized."""
+    if len(close) < 35:
+        return 0.0
+    ema12 = close.ewm(span=12, adjust=False).mean()
+    ema26 = close.ewm(span=26, adjust=False).mean()
+    macd_line = ema12 - ema26
+    signal_line = macd_line.ewm(span=9, adjust=False).mean()
+    hist = float(macd_line.iloc[-1] - signal_line.iloc[-1])
+    price = float(close.iloc[-1])
+    if price <= 0:
+        return 0.0
+    return hist / price
+
+
+def _compute_bb_position(close: pd.Series, window: int = 20) -> float:
+    """Position in Bollinger Bands (0 = lower band, 1 = upper band)."""
+    if len(close) < window:
+        return 0.5
+    tail = close.tail(window)
+    sma = float(tail.mean())
+    std = float(tail.std())
+    if std <= 0:
+        return 0.5
+    upper = sma + 2 * std
+    lower = sma - 2 * std
+    band_range = upper - lower
+    if band_range <= 0:
+        return 0.5
+    pos = (float(close.iloc[-1]) - lower) / band_range
+    return max(-0.5, min(1.5, pos))
+
+
+def _compute_drawdown_12m(close: pd.Series) -> float:
+    """Max drawdown over last 252 trading days (0 to -1)."""
+    if len(close) < 2:
+        return 0.0
+    lookback = min(len(close), 252)
+    window = close.tail(lookback)
+    rolling_max = window.cummax()
+    drawdowns = (window - rolling_max) / rolling_max
+    return float(drawdowns.min())
 
 
 def _score_wachstum(f: SwissFundamentals) -> float:
@@ -133,6 +279,10 @@ class MLFeatureService:
             rsi_14=_compute_rsi(close),
             price_to_52w_high=_price_to_52w_high_from_series(close),
             vol_trend=_vol_trend_from_series(volume),
+            macd_hist=_compute_macd_hist(close),
+            bb_position=_compute_bb_position(close),
+            return_1m=_return_nm_from_series(close, 21),
+            drawdown_12m=_compute_drawdown_12m(close),
             snb_rate=_snb_rate_on(today),
             chf_eur=_current_chf_eur(),
             forward_return_12m=None,
@@ -147,6 +297,8 @@ class MLFeatureService:
         self,
         tickers: list[str],
         years: int = 3,
+        simfin_adapter: object | None = None,
+        ticker_markets: dict[str, str] | None = None,
     ) -> pd.DataFrame:
         """Baut historisches Feature-Dataset für ML-Training.
 
@@ -165,11 +317,16 @@ class MLFeatureService:
 
         rows: list[dict[str, Any]] = []
 
-        _YF_OVERRIDES = {"ROG": "RO.SW"}
-
         for ticker in tickers:
             t = ticker.upper()
-            yf_ticker = _YF_OVERRIDES.get(t, f"{t}.SW")
+            _market = (ticker_markets or {}).get(ticker, None) or (
+                "eu" if _is_eu_ticker(t) else "ch"
+            )
+            # US-Ticker brauchen kein Exchange-Suffix in yfinance
+            if _market == "us":
+                yf_ticker = t
+            else:
+                yf_ticker = _ticker_to_yf(t)
             try:
                 hist = yf.download(yf_ticker, start=start_date, end=end_date, progress=False)
                 if hist is None or len(hist) < 60:
@@ -182,10 +339,12 @@ class MLFeatureService:
                 _logger.warning("yfinance-Download für %s fehlgeschlagen: %s", ticker, exc)
                 continue
 
-            # Fundamentals (Punkt-in-Zeit — Vereinfachung für Capstone)
-            fund = _stub_fundamentals(ticker)
-            score = self._scorer.score(ticker.upper(), fund)
-            s_wachstum = _score_wachstum(fund)
+            # Fundamentals: SimFin (historisch) wenn verfügbar, sonst aktueller Stub
+            _use_simfin = simfin_adapter is not None
+            if not _use_simfin:
+                fund = _stub_fundamentals(ticker, _market)
+                score = self._scorer.score(ticker.upper(), fund)
+                s_wachstum = _score_wachstum(fund)
 
             # Monatliche Snapshots
             snapshot_dates = pd.date_range(
@@ -220,6 +379,15 @@ class MLFeatureService:
                 )
                 snap_date = snap.date()
 
+                # Per-Snapshot Fundamentals wenn SimFin verfügbar (behebt Point-in-Time Bias)
+                if _use_simfin:
+                    _sf_fund = simfin_adapter.get_fundamentals_on_date(  # type: ignore[union-attr]
+                        ticker, snap_date, _market
+                    )
+                    fund = _sf_fund if _sf_fund is not None else _stub_fundamentals(ticker, _market)
+                    score = self._scorer.score(ticker.upper(), fund)
+                    s_wachstum = _score_wachstum(fund)
+
                 rows.append(
                     {
                         "ticker": ticker.upper(),
@@ -237,8 +405,16 @@ class MLFeatureService:
                         "rsi_14": rsi,
                         "price_to_52w_high": p52wh,
                         "vol_trend": vol_t,
-                        "snb_rate": _snb_rate_on(snap_date),
-                        "chf_eur": _chf_eur_on(snap),
+                        "macd_hist": _compute_macd_hist(past_prices),
+                        "bb_position": _compute_bb_position(past_prices),
+                        "return_1m": _return_nm_from_series(past_prices, 21),
+                        "drawdown_12m": _compute_drawdown_12m(past_prices),
+                        "snb_rate": (
+                            _fed_rate_on(snap_date) if _market == "us"
+                            else _ecb_rate_on(snap_date) if _market == "eu"
+                            else _snb_rate_on(snap_date)
+                        ),
+                        "chf_eur": _fx_rate_on(ticker, snap, _market),
                         "forward_return_12m": fwd_ret,
                         "target_class": None,  # wird cross-sektional befüllt
                     }
@@ -286,6 +462,41 @@ def _vol_30d_from_series(close: pd.Series) -> float:
         return 0.0
     ret = close.pct_change().dropna()
     return float(ret.tail(30).std() * np.sqrt(252))
+
+
+def _usd_chf_on(year: int) -> float:
+    """Approximierter USD/CHF Kurs (CHF pro USD) per Jahr."""
+    _rates = {
+        2015: 0.99, 2016: 0.99, 2017: 0.97, 2018: 0.99,
+        2019: 1.00, 2020: 0.94, 2021: 0.92, 2022: 0.96,
+        2023: 0.89, 2024: 0.89, 2025: 0.88,
+    }
+    return _rates.get(year, 0.93)
+
+
+def _gbp_chf_on(year: int) -> float:
+    """Approximierter GBP/CHF Kurs (CHF pro GBP) per Jahr."""
+    _rates = {
+        2015: 1.48, 2016: 1.27, 2017: 1.27, 2018: 1.31,
+        2019: 1.26, 2020: 1.19, 2021: 1.26, 2022: 1.18,
+        2023: 1.12, 2024: 1.13, 2025: 1.15,
+    }
+    return _rates.get(year, 1.15)
+
+
+def _fx_rate_on(ticker: str, snap: pd.Timestamp, market: str) -> float:
+    """CHF-relative FX-Rate für historische Snapshots (Training)."""
+    if market == "us":
+        return _usd_chf_on(snap.year)
+    if market == "ch":
+        return _chf_eur_on(snap)
+    # EU markets: dispatch by suffix
+    suffix = ("." + ticker.rsplit(".", 1)[-1].upper()) if "." in ticker else ""
+    if suffix == ".L":
+        return _gbp_chf_on(snap.year)
+    if suffix == ".ST":
+        return 0.094  # SEK/CHF näherungsweise stabil
+    return 1.0  # EUR-denominierte Märkte (DE, FR, NL, ES, IT, BE, AT)
 
 
 def _current_chf_eur() -> float:
@@ -352,19 +563,19 @@ def _chf_eur_on(snap_dt: pd.Timestamp) -> float:
     return 0.93
 
 
-def _stub_fundamentals(ticker: str) -> SwissFundamentals:
-    """Approximierte Fundamentals für historische Snapshots.
+def _stub_fundamentals(ticker: str, market: str = "ch") -> SwissFundamentals:
+    """Aktuelle Fundamentals als Proxy für historische Snapshots (Point-in-Time Bias).
 
-    Für ein Capstone-Projekt ohne Bloomberg: aktuelle Fundamentals als
-    Proxy für die gesamte 3-Jahres-Trainingsperiode. Produziert ein
-    starkes Point-in-Time-Bias, aber ausreichend für Demonstrations-Training.
+    Fallback wenn SimFin keine Daten liefert. Markt-Parameter steuert
+    das yfinance-Ticker-Format (CH: NESN.SW, EU: SAP.DE, US: AAPL).
     """
     from decimal import Decimal
 
     try:
         import yfinance as yf
 
-        info = yf.Ticker(ticker.upper() + ".SW").info
+        yf_sym = ticker.upper() if market in ("eu", "us") else _ticker_to_yf(ticker.upper())
+        info = yf.Ticker(yf_sym).info
         return SwissFundamentals(
             market_cap_chf=Decimal(str(info.get("marketCap") or 0)) or None,
             pe_ratio=info.get("trailingPE"),

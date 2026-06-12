@@ -39,10 +39,17 @@ Beispiele:
 """
 
 _GOAL_MAP: dict[str, tuple[str, str]] = {
-    "Neue Wohnung": ("housing", "short"),
-    "Altersvorsorge": ("retirement", "long"),
-    "Finanzielle Freiheit": ("freedom", "medium"),
-    "Besser als Konto": ("beat_savings", "medium"),
+    # Frontend-Werte (Enum-Value)
+    "housing":      ("housing",      "short"),
+    "retirement":   ("retirement",   "long"),
+    "freedom":      ("freedom",      "medium"),
+    "beat_savings": ("beat_savings", "medium"),
+    # Deutsche Display-Labels (legacy / direkte Übermittlung)
+    "Neue Wohnung":         ("housing",      "short"),
+    "Altersvorsorge":       ("retirement",   "long"),
+    "Finanzielle Freiheit": ("freedom",      "medium"),
+    "Besser als Konto":     ("beat_savings", "medium"),
+    "Besser als Sparkonto": ("beat_savings", "medium"),
 }
 
 
@@ -58,21 +65,19 @@ class ProfileClassifier:
 
     async def classify_turn1(self, profession_text: str) -> Turn1Classification:
         """Beruf-Freitext → financial_knowledge + optionaler sector_hint."""
-        response = await self._llm.messages_create(
-            model=_HAIKU_MODEL,
-            max_tokens=200,
-            feature="profile_classification_turn1",
-            system=_TURN1_SYSTEM,
-            messages=[{"role": "user", "content": f"Beruf: {profession_text}"}],
-        )
-        raw = response.content[0].text.strip()
         try:
-            return Turn1Classification.model_validate(json.loads(raw))
-        except (json.JSONDecodeError, ValueError) as exc:
-            _logger.error(
-                "LLM returned invalid JSON for Turn1Classification: %r — %s", raw[:200], exc
+            response = await self._llm.messages_create(
+                model=_HAIKU_MODEL,
+                max_tokens=200,
+                feature="profile_classification_turn1",
+                system=_TURN1_SYSTEM,
+                messages=[{"role": "user", "content": f"Beruf: {profession_text}"}],
             )
-            raise
+            raw = response.content[0].text.strip()
+            return Turn1Classification.model_validate(json.loads(raw))
+        except Exception as exc:
+            _logger.warning("classify_turn1 failed (%s), using default classification", exc)
+            return Turn1Classification(financial_knowledge="medium", sector_hint=None)
 
     @staticmethod
     def classify_turn2(goal_selection: str) -> tuple[str, str]:

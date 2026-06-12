@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { PrismaBar } from '@/components/ui/PrismaBar';
 
 const MESSAGES: Record<string, string[]> = {
   stock: [
@@ -15,7 +16,7 @@ const MESSAGES: Record<string, string[]> = {
     'Makro-Kontext wird einbezogen…',
   ],
   discover: [
-    'PRISMA kuratiert dein Universe…',
+    'PRISMA kuratiert dein Universum…',
     'Titel werden nach deinem Profil gefiltert…',
   ],
   explain: ['PRISMA erklärt…'],
@@ -33,12 +34,15 @@ export function LoadingState({ type = 'default', ticker, className }: LoadingSta
   const msg  = msgs[0].replace('{ticker}', ticker ?? '…');
 
   return (
-    <div className={cn('flex items-center gap-2 text-sm text-[#8b949e]', className)}>
-      <span
-        className="inline-block h-3.5 w-3.5 rounded-full border-2 border-[#58a6ff] border-t-transparent animate-spin"
-        aria-hidden
-      />
-      <span>{msg}</span>
+    <div className={cn('space-y-2', className)}>
+      <div className="flex items-center gap-2 text-sm text-[#8b949e]">
+        <span
+          className="inline-block h-3.5 w-3.5 rounded-full border-2 border-[#58a6ff] border-t-transparent animate-spin shrink-0"
+          aria-hidden
+        />
+        <span>{msg}</span>
+      </div>
+      <PrismaBar />
     </div>
   );
 }
@@ -58,6 +62,7 @@ export function LoadingStateMulti({ type = 'default', ticker, className }: Loadi
           <span>{m.replace('{ticker}', ticker ?? '…')}</span>
         </div>
       ))}
+      <PrismaBar className="mt-2" />
     </div>
   );
 }

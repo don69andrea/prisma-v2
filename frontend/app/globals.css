@@ -164,3 +164,9 @@
   from { transform: rotate(45deg); }
   to   { transform: rotate(405deg); }
 }
+
+/* ── Indeterminate Progress Bar ───────────────────────── */
+@keyframes prismaIndeterminate {
+  0%   { left: -35%; }
+  100% { left: 110%; }
+}

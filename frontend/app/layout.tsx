@@ -8,6 +8,7 @@ import { ChatDrawer } from '@/components/chat/ChatDrawer';
 import { ApiStatusBadge } from '@/components/ui/ApiStatusBadge';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { PrismaLogo } from '@/components/ui/PrismaLogo';
+import { NavigationProgressBar } from '@/components/ui/PrismaBar';
 import '@/app/globals.css';
 
 export const metadata: Metadata = {
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
               />
             </div>
           </header>
+          <NavigationProgressBar />
           <main className="container py-8">{children}</main>
           <ChatDrawer />
         </Providers>

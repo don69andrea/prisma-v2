@@ -1,6 +1,9 @@
+import { PrismaBar } from '@/components/ui/PrismaBar';
+
 export default function DiscoverLoading() {
   return (
     <div className="space-y-6">
+      <PrismaBar />
       <div className="space-y-1">
         <div className="h-7 w-40 rounded bg-muted animate-pulse" />
         <div className="h-4 w-56 rounded bg-muted animate-pulse" />

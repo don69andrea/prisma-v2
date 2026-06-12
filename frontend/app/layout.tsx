@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { Providers } from '@/app/providers';
 import { NavLinks } from '@/app/nav-links';
 import { ChatDrawer } from '@/components/chat/ChatDrawer';
+import { ApiStatusBadge } from '@/components/ui/ApiStatusBadge';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { PrismaLogo } from '@/components/ui/PrismaLogo';
 import '@/app/globals.css';
 
 export const metadata: Metadata = {
@@ -29,11 +32,16 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <div className="container flex flex-col gap-2 py-2 sm:h-14 sm:flex-row sm:items-center sm:gap-0 sm:py-0">
               <Link
                 href="/"
-                className="flex items-center gap-2 font-bold tracking-tight text-foreground sm:mr-8"
+                className="flex items-center gap-1.5 font-bold tracking-tight text-foreground sm:mr-8"
               >
+                <PrismaLogo size={16} className="text-foreground opacity-80" />
                 <span className="text-lg font-black uppercase tracking-widest">PRISMA</span>
               </Link>
               <NavLinks />
+              <div className="ml-auto flex items-center gap-2 pl-4">
+                <ApiStatusBadge />
+                <ThemeToggle />
+              </div>
             </div>
             {/* PRISMA-Spektrum: zerlegt weisses Licht in 5 quantitative Dimensionen */}
             <div

@@ -185,6 +185,13 @@ export function DecisionClient() {
 
   const universes = universesData?.items ?? [];
 
+  // Auto-select erstes Universe (z.B. SMI-20) wenn noch keins ausgewählt
+  useEffect(() => {
+    if (!selectedUniverse && universes.length > 0) {
+      setSelectedUniverse(universes[0].id);
+    }
+  }, [universes, selectedUniverse]);
+
   const {
     data: decisionsData,
     isLoading: dLoading,
@@ -344,7 +351,16 @@ export function DecisionClient() {
       )}
 
       {/* Content */}
-      {!selectedUniverse && (
+      {!selectedUniverse && !uLoading && universes.length === 0 && (
+        <div className="rounded-xl border border-[#21262d] p-8 text-center space-y-3">
+          <p className="text-sm font-medium text-[#e6edf3]">Kein Universum vorhanden</p>
+          <p className="text-xs text-[#8b949e]">
+            Erstelle zuerst ein Universum unter{' '}
+            <a href="/universes" className="text-[#58a6ff] hover:underline">Universen</a>.
+          </p>
+        </div>
+      )}
+      {!selectedUniverse && !uLoading && universes.length > 0 && (
         <p className="text-sm text-[#8b949e] py-8 text-center">
           Bitte ein Universum wählen.
         </p>

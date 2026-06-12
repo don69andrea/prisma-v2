@@ -12,7 +12,10 @@ class PortfolioAllocateRequest(BaseModel):
     run_id: UUID
     top_n: int = Field(default=10, ge=2, le=20)
     eligible_only: bool = False
-    method: str = Field(default="score_weighted", pattern="^(score_weighted|risk_parity)$")
+    method: str = Field(
+        default="score_weighted",
+        pattern="^(score_weighted|risk_parity|mean_variance)$",
+    )
 
 
 class PortfolioPositionResponse(BaseModel):

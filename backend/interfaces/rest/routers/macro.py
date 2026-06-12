@@ -97,7 +97,7 @@ async def get_macro_score(
                 _logger.debug(
                     "RAG-Kontext für %s: %d Dokumente abgerufen", ticker, len(rag_results)
                 )
-        except Exception as exc:
+        except Exception:
             _logger.warning("RAG-Kontext für %s nicht verfügbar — Fallback", ticker, exc_info=True)
             rag_context_used = False
 

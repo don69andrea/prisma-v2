@@ -111,8 +111,8 @@ def _mean_variance(
         return _risk_parity(picks, price_histories)
 
     try:
-        from sklearn.covariance import LedoitWolf  # noqa: PLC0415
         from scipy.optimize import minimize  # noqa: PLC0415
+        from sklearn.covariance import LedoitWolf  # noqa: PLC0415
     except ImportError:
         _logger.warning("sklearn/scipy nicht verfügbar — Fallback auf Risk-Parity")
         return _risk_parity(picks, price_histories)

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { completeDiscovery, createDiscoverySession, submitAnswer } from '@/lib/api/discovery';
+import { PrismaLoader } from '@/components/ui/PrismaLogo';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,17 +75,54 @@ const ZIEL_OPTIONS: { value: Ziel; label: string; sub: string }[] = [
   { value: 'beat_savings', label: 'Besser als Sparkonto',   sub: 'Das Geld soll mehr arbeiten.' },
 ];
 
+/** SVG-Gesichtsicons als Emoji-Ersatz für Risiko-Buttons. */
+function FaceScared({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 15c1-2 6-2 8 0" />
+      <circle cx="9" cy="10" r="1.2" fill={color} stroke="none" />
+      <circle cx="15" cy="10" r="1.2" fill={color} stroke="none" />
+      <path d="M9 8l-1.5-1.5M15 8l1.5-1.5" strokeWidth="1" />
+    </svg>
+  );
+}
+
+function FaceNeutral({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="9" y1="15" x2="15" y2="15" />
+      <circle cx="9" cy="10" r="1.2" fill={color} stroke="none" />
+      <circle cx="15" cy="10" r="1.2" fill={color} stroke="none" />
+    </svg>
+  );
+}
+
+function FaceConfident({ color }: { color: string }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 13c1 2.5 6 2.5 8 0" />
+      {/* Sonnenbrillengläser */}
+      <rect x="7" y="8.5" width="4" height="2.5" rx="1.2" fill={color} opacity="0.7" stroke="none"/>
+      <rect x="13" y="8.5" width="4" height="2.5" rx="1.2" fill={color} opacity="0.7" stroke="none"/>
+      <line x1="11" y1="9.75" x2="13" y2="9.75" strokeWidth="1" />
+    </svg>
+  );
+}
+
 const RISIKO_OPTIONS: {
   value: Risiko;
   label: string;
-  emoji: string;
   sub: string;
   color: string;
   bg: string;
+  icon: (color: string) => React.ReactNode;
 }[] = [
-  { value: 'conservative', emoji: '😱', label: 'Fehler gemacht. Alles raus.',  sub: 'Sicherheit ist mir wichtiger als Rendite.',   color: '#f85149', bg: '#2d0d0d' },
-  { value: 'moderate',     emoji: '😐', label: 'Das ist normal. Ich warte.',   sub: 'Kurzfristige Schwankungen akzeptiere ich.',  color: '#ffa657', bg: '#2d1a0d' },
-  { value: 'aggressive',   emoji: '😎', label: 'Jetzt kaufe ich mehr.',         sub: 'Krisen sind Kaufgelegenheiten.',             color: '#7ee787', bg: '#0d2d1a' },
+  { value: 'conservative', label: 'Fehler gemacht. Alles raus.',  sub: 'Sicherheit ist mir wichtiger als Rendite.',   color: '#f85149', bg: '#2d0d0d', icon: (c) => <FaceScared color={c} /> },
+  { value: 'moderate',     label: 'Das ist normal. Ich warte.',   sub: 'Kurzfristige Schwankungen akzeptiere ich.',  color: '#ffa657', bg: '#2d1a0d', icon: (c) => <FaceNeutral color={c} /> },
+  { value: 'aggressive',   label: 'Jetzt kaufe ich mehr.',         sub: 'Krisen sind Kaufgelegenheiten.',             color: '#7ee787', bg: '#0d2d1a', icon: (c) => <FaceConfident color={c} /> },
 ];
 
 const PROFILE_LABELS: Record<Risiko, string> = {
@@ -208,7 +246,13 @@ function StepLanding({ onEntdecker, onKenner }: { onEntdecker: () => void; onKen
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}
         >
-          <div className="text-2xl mb-3">🎯</div>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" strokeWidth="1.5" strokeLinecap="round" className="mb-3">
+            <circle cx="12" cy="12" r="10" />
+            <circle cx="12" cy="12" r="6" />
+            <circle cx="12" cy="12" r="2" />
+            <line x1="12" y1="2" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="22" />
+            <line x1="2" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="22" y2="12" />
+          </svg>
           <div className="font-semibold text-[#e6edf3]">Ich weiss, was ich suche.</div>
           <div className="text-sm text-[#8b949e] mt-1">Direkt zu den Titeln.</div>
           <div className="mt-4 text-xs text-[#58a6ff] group-hover:translate-x-1 transition-transform inline-block">
@@ -342,7 +386,7 @@ function StepRisiko({ onNext }: { onNext: (risiko: Risiko) => void }) {
               }}
             >
               <div className="flex items-start gap-3">
-                <span className="text-xl shrink-0">{opt.emoji}</span>
+                <span className="shrink-0">{opt.icon(opt.color)}</span>
                 <div>
                   <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
                   <div className="text-xs text-[#8b949e] mt-0.5">{opt.sub}</div>
@@ -783,10 +827,12 @@ export function StartClient() {
   const [risiko, setRisiko]         = useState<Risiko | null>(null);
   const [brands, setBrands]         = useState<string[]>([]);
   const [kennerMode, setKennerMode] = useState(false);
+  const [loading, setLoading]       = useState(false);
   const router = useRouter();
 
   const handleContinue = useCallback(
     async (finalBrands: string[], finalZiel: Ziel, finalRisiko: Risiko) => {
+      setLoading(true);
       const knownBrandObjs = BRANDS.filter((b) => finalBrands.includes(b.ticker));
 
       try {
@@ -825,6 +871,10 @@ export function StartClient() {
     },
     [beruf, router],
   );
+
+  if (loading) {
+    return <PrismaLoader label="Dein Universe wird zusammengestellt" />;
+  }
 
   if (kennerMode) {
     return <div className="min-h-[60vh]"><KennerSearch onBack={() => setKennerMode(false)} /></div>;

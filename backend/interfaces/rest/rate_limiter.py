@@ -35,7 +35,9 @@ _WINDOW_SECONDS = 60.0
 class LLMRateLimiterMiddleware(BaseHTTPMiddleware):
     """Limits requests to LLM endpoints per client IP within a sliding window."""
 
-    def __init__(self, app: object, *, max_calls: int = _MAX_CALLS, window_seconds: float = _WINDOW_SECONDS) -> None:
+    def __init__(
+        self, app: object, *, max_calls: int = _MAX_CALLS, window_seconds: float = _WINDOW_SECONDS
+    ) -> None:
         super().__init__(app)  # type: ignore[arg-type]
         self._max = max_calls
         self._window = window_seconds

@@ -32,7 +32,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
 
     # yfinance verwendet für einige SIX-Titel abweichende Ticker-Symbole
     _YF_OVERRIDES: dict[str, str] = {
-        "ROG": "RO.SW",   # Roche Holding AG — yfinance nutzt RO statt ROG
+        "ROG": "RO.SW",  # Roche Holding AG — yfinance nutzt RO statt ROG
     }
 
     def build_yf_ticker(self, ticker: str) -> str:

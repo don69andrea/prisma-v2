@@ -93,7 +93,14 @@ def _build_service(
         market_data_provider=mock_market_data_provider,
         stock_service=mock_stock_service,
     )
-    return svc, mock_universe_repo, mock_run_repo, mock_fundamentals_provider, mock_market_data_provider, mock_stock_service
+    return (
+        svc,
+        mock_universe_repo,
+        mock_run_repo,
+        mock_fundamentals_provider,
+        mock_market_data_provider,
+        mock_stock_service,
+    )
 
 
 class TestCreateAndExecuteRun:
@@ -114,10 +121,16 @@ class TestCreateAndExecuteRun:
         mock_run_repo.save.side_effect = lambda run: saved_runs.append(run)
 
         with (
-            patch("backend.application.services.ranking_run_service.QualityClassicModel") as mock_qc,
-            patch("backend.application.services.ranking_run_service.DiversificationModel") as mock_div,
+            patch(
+                "backend.application.services.ranking_run_service.QualityClassicModel"
+            ) as mock_qc,
+            patch(
+                "backend.application.services.ranking_run_service.DiversificationModel"
+            ) as mock_div,
             patch("backend.application.services.ranking_run_service.TrendMomentumModel") as mock_tm,
-            patch("backend.application.services.ranking_run_service.ValueAlphaPotentialModel") as mock_vap,
+            patch(
+                "backend.application.services.ranking_run_service.ValueAlphaPotentialModel"
+            ) as mock_vap,
             patch("backend.application.services.ranking_run_service.AlphaModel") as mock_alpha,
             patch("backend.application.services.ranking_run_service.RankingAggregator") as mock_agg,
         ):
@@ -139,10 +152,16 @@ class TestCreateAndExecuteRun:
         mock_run_repo.save.side_effect = lambda run: saved_runs.append(run)
 
         with (
-            patch("backend.application.services.ranking_run_service.QualityClassicModel") as mock_qc,
-            patch("backend.application.services.ranking_run_service.DiversificationModel") as mock_div,
+            patch(
+                "backend.application.services.ranking_run_service.QualityClassicModel"
+            ) as mock_qc,
+            patch(
+                "backend.application.services.ranking_run_service.DiversificationModel"
+            ) as mock_div,
             patch("backend.application.services.ranking_run_service.TrendMomentumModel") as mock_tm,
-            patch("backend.application.services.ranking_run_service.ValueAlphaPotentialModel") as mock_vap,
+            patch(
+                "backend.application.services.ranking_run_service.ValueAlphaPotentialModel"
+            ) as mock_vap,
             patch("backend.application.services.ranking_run_service.AlphaModel") as mock_alpha,
             patch("backend.application.services.ranking_run_service.RankingAggregator") as mock_agg,
         ):
@@ -162,10 +181,16 @@ class TestCreateAndExecuteRun:
         mock_run_repo.save.return_value = None
 
         with (
-            patch("backend.application.services.ranking_run_service.QualityClassicModel") as mock_qc,
-            patch("backend.application.services.ranking_run_service.DiversificationModel") as mock_div,
+            patch(
+                "backend.application.services.ranking_run_service.QualityClassicModel"
+            ) as mock_qc,
+            patch(
+                "backend.application.services.ranking_run_service.DiversificationModel"
+            ) as mock_div,
             patch("backend.application.services.ranking_run_service.TrendMomentumModel") as mock_tm,
-            patch("backend.application.services.ranking_run_service.ValueAlphaPotentialModel") as mock_vap,
+            patch(
+                "backend.application.services.ranking_run_service.ValueAlphaPotentialModel"
+            ) as mock_vap,
             patch("backend.application.services.ranking_run_service.AlphaModel") as mock_alpha,
             patch("backend.application.services.ranking_run_service.RankingAggregator") as mock_agg,
         ):
@@ -197,10 +222,16 @@ class TestCreateAndExecuteRun:
         )
 
         with (
-            patch("backend.application.services.ranking_run_service.QualityClassicModel") as mock_qc,
-            patch("backend.application.services.ranking_run_service.DiversificationModel") as mock_div,
+            patch(
+                "backend.application.services.ranking_run_service.QualityClassicModel"
+            ) as mock_qc,
+            patch(
+                "backend.application.services.ranking_run_service.DiversificationModel"
+            ) as mock_div,
             patch("backend.application.services.ranking_run_service.TrendMomentumModel") as mock_tm,
-            patch("backend.application.services.ranking_run_service.ValueAlphaPotentialModel") as mock_vap,
+            patch(
+                "backend.application.services.ranking_run_service.ValueAlphaPotentialModel"
+            ) as mock_vap,
             patch("backend.application.services.ranking_run_service.AlphaModel") as mock_alpha,
             patch("backend.application.services.ranking_run_service.RankingAggregator") as mock_agg,
         ):
@@ -220,10 +251,16 @@ class TestCreateAndExecuteRun:
         mock_run_repo.save.side_effect = lambda run: saved_runs.append(run)
 
         with (
-            patch("backend.application.services.ranking_run_service.QualityClassicModel") as mock_qc,
-            patch("backend.application.services.ranking_run_service.DiversificationModel") as mock_div,
+            patch(
+                "backend.application.services.ranking_run_service.QualityClassicModel"
+            ) as mock_qc,
+            patch(
+                "backend.application.services.ranking_run_service.DiversificationModel"
+            ) as mock_div,
             patch("backend.application.services.ranking_run_service.TrendMomentumModel") as mock_tm,
-            patch("backend.application.services.ranking_run_service.ValueAlphaPotentialModel") as mock_vap,
+            patch(
+                "backend.application.services.ranking_run_service.ValueAlphaPotentialModel"
+            ) as mock_vap,
             patch("backend.application.services.ranking_run_service.AlphaModel") as mock_alpha,
             patch("backend.application.services.ranking_run_service.RankingAggregator") as mock_agg,
         ):
@@ -241,10 +278,16 @@ class TestCreateAndExecuteRun:
         mock_run_repo.save.return_value = None
 
         with (
-            patch("backend.application.services.ranking_run_service.QualityClassicModel") as mock_qc,
-            patch("backend.application.services.ranking_run_service.DiversificationModel") as mock_div,
+            patch(
+                "backend.application.services.ranking_run_service.QualityClassicModel"
+            ) as mock_qc,
+            patch(
+                "backend.application.services.ranking_run_service.DiversificationModel"
+            ) as mock_div,
             patch("backend.application.services.ranking_run_service.TrendMomentumModel") as mock_tm,
-            patch("backend.application.services.ranking_run_service.ValueAlphaPotentialModel") as mock_vap,
+            patch(
+                "backend.application.services.ranking_run_service.ValueAlphaPotentialModel"
+            ) as mock_vap,
             patch("backend.application.services.ranking_run_service.AlphaModel") as mock_alpha,
             patch("backend.application.services.ranking_run_service.RankingAggregator") as mock_agg,
         ):
@@ -264,10 +307,16 @@ class TestCreateAndExecuteRun:
         mock_run_repo.save.side_effect = lambda run: saved_statuses.append(run.status)
 
         with (
-            patch("backend.application.services.ranking_run_service.QualityClassicModel") as mock_qc,
-            patch("backend.application.services.ranking_run_service.DiversificationModel") as mock_div,
+            patch(
+                "backend.application.services.ranking_run_service.QualityClassicModel"
+            ) as mock_qc,
+            patch(
+                "backend.application.services.ranking_run_service.DiversificationModel"
+            ) as mock_div,
             patch("backend.application.services.ranking_run_service.TrendMomentumModel") as mock_tm,
-            patch("backend.application.services.ranking_run_service.ValueAlphaPotentialModel") as mock_vap,
+            patch(
+                "backend.application.services.ranking_run_service.ValueAlphaPotentialModel"
+            ) as mock_vap,
             patch("backend.application.services.ranking_run_service.AlphaModel") as mock_alpha,
             patch("backend.application.services.ranking_run_service.RankingAggregator") as mock_agg,
         ):

@@ -72,7 +72,7 @@ async def test_predict_returns_outperform() -> None:
     assert result.prob_top == 0.7
     assert result.confidence == 0.7
     assert result.model_type == "xgboost"
-    assert len(result.features) == 10
+    assert len(result.features) == len(MLFeatureVector.FEATURE_NAMES)
 
 
 @pytest.mark.asyncio

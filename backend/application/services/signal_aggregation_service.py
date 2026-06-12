@@ -129,7 +129,9 @@ class SignalAggregationService:
         results: list[DecisionSignal] = []
         for ticker, outcome in zip(tickers, raw, strict=False):
             if isinstance(outcome, BaseException):
-                _logger.exception("Signal-Berechnung fehlgeschlagen für %s", ticker, exc_info=outcome)
+                _logger.exception(
+                    "Signal-Berechnung fehlgeschlagen für %s", ticker, exc_info=outcome
+                )
             elif outcome is not None:
                 results.append(outcome)
         return results

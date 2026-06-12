@@ -22,7 +22,7 @@ from backend.interfaces.rest.schemas.decision import DecisionListResponse, Decis
 router = APIRouter(prefix="/api/v1/decisions", tags=["decisions"])
 _logger = logging.getLogger(__name__)
 
-_MAX_LIVE_TICKERS = 25
+_MAX_LIVE_TICKERS = 12
 
 
 def get_signal_aggregation_service(

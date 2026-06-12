@@ -12,6 +12,10 @@ from backend.domain.value_objects.decision_signal import DecisionSignal
 
 _logger = logging.getLogger(__name__)
 
+# Max. parallele Signal-Berechnungen — jede lädt yfinance-DataFrame + optionaler LLM-Call.
+# Render Free-Tier: 512 MB RAM. 4 × ~80 MB Peak = ~320 MB → sicherer Puffer.
+_MAX_CONCURRENT_SIGNALS = 4
+
 # Gewichtung: Quant 45%, ML 35%, Macro 20%
 _W_QUANT = 0.45
 _W_ML = 0.35
@@ -119,11 +123,21 @@ class SignalAggregationService:
         )
 
     async def get_signals(self, tickers: list[str]) -> list[DecisionSignal]:
-        """Berechnet Signale für eine Liste von Tickern (fehlgeschlagene werden übersprungen)."""
+        """Berechnet Signale für eine Liste von Tickern (fehlgeschlagene werden übersprungen).
+
+        Maximal _MAX_CONCURRENT Ticker gleichzeitig — verhindert OOM durch parallele
+        yfinance-DataFrames + LLM-Responses im RAM bei grossen Ticker-Listen.
+        """
         import asyncio
 
+        sem = asyncio.Semaphore(_MAX_CONCURRENT_SIGNALS)
+
+        async def _bounded(ticker: str) -> DecisionSignal | None | BaseException:
+            async with sem:
+                return await self.get_signal(ticker)
+
         raw = await asyncio.gather(
-            *[self.get_signal(ticker) for ticker in tickers],
+            *[_bounded(t) for t in tickers],
             return_exceptions=True,
         )
         results: list[DecisionSignal] = []

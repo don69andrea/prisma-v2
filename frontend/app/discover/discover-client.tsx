@@ -175,7 +175,7 @@ export function DiscoverClient() {
             </div>
           </div>
           <Link
-            href="/decision"
+            href={`/decision?tickers=${stocks.map((s) => s.ticker).join(',')}`}
             className="shrink-0 rounded-lg px-4 py-2 text-sm font-semibold text-[#0d1117] whitespace-nowrap transition-all hover:opacity-90"
             style={{ background: 'linear-gradient(135deg, #58a6ff 0%, #7ee787 100%)' }}
           >

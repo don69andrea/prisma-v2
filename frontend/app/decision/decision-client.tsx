@@ -7,7 +7,7 @@ import { ChevronDown, ChevronUp, Download } from 'lucide-react';
 
 import Link from 'next/link';
 import { listUniverses } from '@/lib/api/universes';
-import { listDecisions, type DecisionSignal, type SignalType } from '@/lib/api/decisions';
+import { listDecisions, liveDecisions, type DecisionSignal, type SignalType } from '@/lib/api/decisions';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SignalBadge } from '@/components/ui/SignalBadge';
@@ -156,6 +156,15 @@ function loadStoredDecision() {
 
 export function DecisionClient() {
   const searchParams = useSearchParams();
+
+  // tickers param = Discovery-Flow: direkte Ticker ohne universe_id
+  const tickersParam = searchParams.get('tickers');
+  const liveTickers = useMemo(
+    () => (tickersParam ? tickersParam.split(',').filter(Boolean) : null),
+    [tickersParam],
+  );
+  const isLiveMode = liveTickers !== null && liveTickers.length > 0;
+
   const [selectedUniverse, setSelectedUniverse] = useState<string>(
     () => searchParams.get('universe') ?? '',
   );
@@ -181,41 +190,71 @@ export function DecisionClient() {
   const { data: universesData, isLoading: uLoading } = useQuery({
     queryKey: ['universes'],
     queryFn: listUniverses,
+    enabled: !isLiveMode,
   });
 
   const universes = universesData?.items ?? [];
 
-  // Auto-select erstes Universe (z.B. SMI-20) wenn noch keins ausgewählt
   useEffect(() => {
-    if (!selectedUniverse && universes.length > 0) {
+    if (!isLiveMode && !selectedUniverse && universes.length > 0) {
       setSelectedUniverse(universes[0].id);
     }
-  }, [universes, selectedUniverse]);
+  }, [universes, selectedUniverse, isLiveMode]);
 
+  // Live-Modus: Signale direkt via /live Endpunkt (Discovery-Flow)
+  const {
+    data: liveData,
+    isLoading: liveLoading,
+    isError: liveError,
+    refetch: liveRefetch,
+  } = useQuery({
+    queryKey: ['decisions-live', liveTickers, signalFilter, eligibleOnly],
+    queryFn: () => liveDecisions(liveTickers!, signalFilter || undefined, eligibleOnly || undefined),
+    enabled: isLiveMode,
+  });
+
+  const {
+    data: liveAllData,
+  } = useQuery({
+    queryKey: ['decisions-live-all', liveTickers, eligibleOnly],
+    queryFn: () => liveDecisions(liveTickers!, undefined, eligibleOnly || undefined),
+    enabled: isLiveMode,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Universum-Modus: klassisch via universe_id
   const {
     data: decisionsData,
     isLoading: dLoading,
-    isError,
-    refetch,
+    isError: dError,
+    refetch: dRefetch,
   } = useQuery({
     queryKey: ['decisions', selectedUniverse, signalFilter, eligibleOnly],
-    queryFn: () =>
-      listDecisions(
-        selectedUniverse,
-        signalFilter || undefined,
-        eligibleOnly || undefined,
-      ),
-    enabled: !!selectedUniverse,
+    queryFn: () => listDecisions(selectedUniverse, signalFilter || undefined, eligibleOnly || undefined),
+    enabled: !isLiveMode && !!selectedUniverse,
   });
 
   const { data: decisionsAllData } = useQuery({
     queryKey: ['decisions-all', selectedUniverse, eligibleOnly],
     queryFn: () => listDecisions(selectedUniverse, undefined, eligibleOnly || undefined),
-    enabled: !!selectedUniverse,
+    enabled: !isLiveMode && !!selectedUniverse,
     staleTime: 5 * 60 * 1000,
   });
 
-  const signals = useMemo(() => decisionsData?.items ?? [], [decisionsData]);
+  const isLoading = isLiveMode ? liveLoading : dLoading;
+  const isError   = isLiveMode ? liveError   : dError;
+  const refetch   = isLiveMode ? liveRefetch  : dRefetch;
+  const isReady   = isLiveMode ? true : !!selectedUniverse;
+
+  const signals = useMemo(
+    () => (isLiveMode ? liveData?.items : decisionsData?.items) ?? [],
+    [isLiveMode, liveData, decisionsData],
+  );
+
+  const allSignals = useMemo(
+    () => (isLiveMode ? liveAllData?.items : decisionsAllData?.items) ?? [],
+    [isLiveMode, liveAllData, decisionsAllData],
+  );
 
   const filteredSignals = useMemo(() => {
     if (minConfidence === 0) return signals;
@@ -229,33 +268,54 @@ export function DecisionClient() {
     });
   }, [filteredSignals, sortKey]);
 
-  const counts = useMemo(() => {
-    const all = decisionsAllData?.items ?? [];
-    return {
-      BUY:   all.filter((s) => s.signal === 'BUY').length,
-      HOLD:  all.filter((s) => s.signal === 'HOLD').length,
-      WATCH: all.filter((s) => s.signal === 'WATCH').length,
-    };
-  }, [decisionsAllData]);
+  const counts = useMemo(() => ({
+    BUY:   allSignals.filter((s) => s.signal === 'BUY').length,
+    HOLD:  allSignals.filter((s) => s.signal === 'HOLD').length,
+    WATCH: allSignals.filter((s) => s.signal === 'WATCH').length,
+  }), [allSignals]);
 
   return (
     <div className="space-y-4">
+      {/* Live-Mode Banner */}
+      {isLiveMode && (
+        <div
+          className="rounded-xl px-4 py-3 flex items-center justify-between gap-4"
+          style={{ background: 'rgba(88,166,255,0.07)', border: '1px solid rgba(88,166,255,0.15)' }}
+        >
+          <div>
+            <p className="text-sm font-medium text-[#e6edf3]">Dein persönliches Universe</p>
+            <p className="text-xs text-[#8b949e]">
+              {liveTickers!.length} Titel aus dem Discovery-Flow · {liveTickers!.join(', ')}
+            </p>
+          </div>
+          <Link
+            href="/discover"
+            className="text-xs text-[#58a6ff] hover:underline whitespace-nowrap"
+          >
+            Zurück zum Universe →
+          </Link>
+        </div>
+      )}
+
       {/* Filter bar */}
       <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-[#8b949e] font-medium">Universum</label>
-          <select
-            className="h-9 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#58a6ff] min-w-[180px]"
-            value={selectedUniverse}
-            onChange={(e) => setSelectedUniverse(e.target.value)}
-            disabled={uLoading}
-          >
-            <option value="">— wählen —</option>
-            {universes.map((u) => (
-              <option key={u.id} value={u.id}>{u.name}</option>
-            ))}
-          </select>
-        </div>
+        {/* Universe-Dropdown nur im klassischen Modus */}
+        {!isLiveMode && (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-[#8b949e] font-medium">Universum</label>
+            <select
+              className="h-9 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#58a6ff] min-w-[180px]"
+              value={selectedUniverse}
+              onChange={(e) => setSelectedUniverse(e.target.value)}
+              disabled={uLoading}
+            >
+              <option value="">— wählen —</option>
+              {universes.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="flex flex-col gap-1">
           <label className="text-xs text-[#8b949e] font-medium">Signal</label>
@@ -325,7 +385,7 @@ export function DecisionClient() {
       </div>
 
       {/* Signal-Zusammenfassung */}
-      {selectedUniverse && decisionsAllData && (
+      {isReady && allSignals.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="signal-summary">
           {(['BUY', 'HOLD', 'WATCH'] as const).map((sig) => {
             const cfg = FILTER_CHIP_CONFIG[sig];
@@ -351,7 +411,7 @@ export function DecisionClient() {
       )}
 
       {/* Content */}
-      {!selectedUniverse && !uLoading && universes.length === 0 && (
+      {!isLiveMode && !selectedUniverse && !uLoading && universes.length === 0 && (
         <div className="rounded-xl border border-[#21262d] p-8 text-center space-y-3">
           <p className="text-sm font-medium text-[#e6edf3]">Kein Universum vorhanden</p>
           <p className="text-xs text-[#8b949e]">
@@ -360,21 +420,21 @@ export function DecisionClient() {
           </p>
         </div>
       )}
-      {!selectedUniverse && !uLoading && universes.length > 0 && (
+      {!isLiveMode && !selectedUniverse && !uLoading && universes.length > 0 && (
         <p className="text-sm text-[#8b949e] py-8 text-center">
           Bitte ein Universum wählen.
         </p>
       )}
 
-      {selectedUniverse && dLoading && (
+      {isReady && isLoading && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: isLiveMode ? (liveTickers?.length ?? 6) : 8 }).map((_, i) => (
             <Skeleton key={i} className="h-40 w-full rounded-lg bg-[#161b22]" />
           ))}
         </div>
       )}
 
-      {selectedUniverse && isError && (
+      {isReady && isError && (
         <div className="space-y-3">
           <div className="rounded-md border border-[#f85149]/50 bg-[#f85149]/10 p-4 text-sm text-[#f85149]">
             Signale konnten nicht geladen werden.
@@ -385,7 +445,7 @@ export function DecisionClient() {
         </div>
       )}
 
-      {selectedUniverse && !dLoading && !isError && sortedSignals.length === 0 && (
+      {isReady && !isLoading && !isError && sortedSignals.length === 0 && (
         <p className="text-sm text-[#8b949e] py-8 text-center">
           Keine Signale gefunden (Marktdaten werden berechnet oder Filter zu eng).
         </p>

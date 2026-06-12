@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.config import get_settings
 from backend.domain.errors import BudgetCapExceeded
 from backend.interfaces.rest.exception_handlers import handle_budget_cap_exceeded
+from backend.interfaces.rest.rate_limiter import LLMRateLimiterMiddleware
 from backend.interfaces.rest.routers import (
     admin,
     alerts,
@@ -109,6 +110,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(LLMRateLimiterMiddleware)
 
     # FastAPI typisiert add_exception_handler über `Type[Exception]` mit einem
     # generischen Handler-Signature, das unsere konkrete (Request, BudgetCapExceeded)-

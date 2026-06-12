@@ -299,6 +299,15 @@ class NarrativeService:
         if job is None:
             return  # Sollte nicht passieren — job war grade erstellt
 
+        # Guard: nur von "pending" nach "running" transitieren.
+        # Verhindert Doppelverarbeitung falls _execute_batch_inner mehrfach
+        # aufgerufen wird (z.B. nach Crash-Recovery oder Race bei Shutdown).
+        if job.status != "pending":
+            self._logger.warning(
+                "Batch %s: status already '%s', skipping duplicate execution", job_id, job.status
+            )
+            return
+
         # Status auf running setzen
         running = job.model_copy(update={"status": "running", "started_at": datetime.now(tz=UTC)})
         await self._batch_repo.save(running)

@@ -68,6 +68,9 @@ services:
       # Docker services, so setting it here is sufficient.
       - key: NEXT_PUBLIC_API_URL
         value: https://prisma-v2-backend.onrender.com
+      # Muss identisch mit API_KEY im Backend sein — manuell im Dashboard setzen.
+      - key: NEXT_PUBLIC_API_KEY
+        sync: false
     buildFilter:
       paths:
         - frontend/**

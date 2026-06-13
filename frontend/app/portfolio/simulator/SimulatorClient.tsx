@@ -210,6 +210,28 @@ export function SimulatorClient() {
                     />
                   </CardContent>
                 </Card>
+
+                {/* Text Interpretation */}
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-white/80">📊 Was bedeutet das?</h3>
+                  <p className="text-sm text-white/70 leading-relaxed">
+                    Mit <span className="text-white font-medium">90% Wahrscheinlichkeit</span> liegt dein Portfolio in{' '}
+                    <span className="text-white font-medium">{years} Jahren</span> zwischen{' '}
+                    <span className="text-green-400 font-medium">{formatCHF(result.p5[result.p5.length - 1])}</span> und{' '}
+                    <span className="text-green-400 font-medium">{formatCHF(result.p95[result.p95.length - 1])}</span>.
+                  </p>
+                  <p className="text-sm text-white/70 leading-relaxed">
+                    Im <span className="text-white font-medium">Median (50%)</span> erreichst du{' '}
+                    <span className="text-blue-400 font-medium">{formatCHF(result.p50[result.p50.length - 1])}</span> — das entspricht einem{' '}
+                    {result.p50[result.p50.length - 1] > result.contribution_total
+                      ? <span className="text-green-400 font-medium">Gewinn von {formatCHF(result.p50[result.p50.length - 1] - result.contribution_total)}</span>
+                      : <span className="text-red-400 font-medium">Verlust gegenüber den Einzahlungen</span>
+                    }.
+                  </p>
+                  <p className="text-xs text-white/40 mt-2">
+                    Basiert auf historischer Volatilität · Einzahlungen total: {formatCHF(result.contribution_total)}
+                  </p>
+                </div>
               </>
             ) : (
               <Card className="bg-slate-900/40 border-slate-800 border-dashed h-64 flex items-center justify-center">

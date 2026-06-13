@@ -1,5 +1,7 @@
 import { apiFetch } from './client';
 
+export type BacktestMode = 'quant_only' | 'quant_ml' | 'full';
+
 export interface PortfolioMetrics {
   total_return: string;
   cagr: string;
@@ -28,6 +30,7 @@ export function runBacktest(params: {
   end_date: string;
   top_n: number;
   benchmark_ticker: string;
+  mode?: BacktestMode;
 }): Promise<BacktestResult> {
   return apiFetch<BacktestResult>('/api/v1/backtests', {
     method: 'POST',

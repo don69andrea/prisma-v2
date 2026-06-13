@@ -11,8 +11,8 @@ services:
     name: prisma-v2-backend
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
-    plan: free
     branch: main
+    plan: free
     healthCheckPath: /health
     autoDeploy: true
     # Dockerfile CMD calls /app/backend-start.sh which runs alembic + uvicorn.
@@ -59,8 +59,8 @@ services:
     name: prisma-v2-frontend
     runtime: docker
     dockerfilePath: ./Dockerfile.frontend
-    plan: free
     branch: main
+    plan: free
     autoDeploy: true
     envVars:
       # NEXT_PUBLIC_* variables are baked into the Next.js bundle at build time.

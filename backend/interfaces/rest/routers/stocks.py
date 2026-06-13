@@ -10,7 +10,6 @@ from backend.interfaces.rest.dependencies import (
     get_stock_service,
     get_swiss_market_service,
 )
-from backend.interfaces.rest.schemas.fundamentals import FundamentalsResponse
 from backend.interfaces.rest.schemas.langfrist import LangfristScoreResponse
 from backend.interfaces.rest.schemas.stock import (
     LatestRankingSnapshot,

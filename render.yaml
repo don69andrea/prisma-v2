@@ -39,7 +39,7 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: CORS_ORIGINS
-        sync: false
+        value: https://prisma-v2-frontend.onrender.com
       - key: PYTHONPATH
         value: /app
       # Alert Engine: E-Mail-Benachrichtigungen via SendGrid

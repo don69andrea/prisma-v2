@@ -2,7 +2,7 @@
 
 **Status: Draft — 2026-04-27**
 **Autor: Fabia Holzer / Claude Code**
-**Bezieht sich auf**: `docs/specs/2026-04-21-prisma-capstone-design.md` (§6, §7, §8.1, §13), `docs/specs/2026-04-28-narrative-engine.md` (§5.2, §10.2), `docs/specs/2026-04-28-mcp-server.md` (§4.1, §4.3)
+**Bezieht sich auf**: `docs/specs/2026-04-21-prisma-v2-design.md` (§6, §7, §8.1, §13), `docs/specs/2026-04-28-narrative-engine.md` (§5.2, §10.2), `docs/specs/2026-04-28-mcp-server.md` (§4.1, §4.3)
 
 ---
 
@@ -12,7 +12,7 @@ Die ursprüngliche Modell-Liste der Design-Spec v1.1 (5 Modelle) enthält zwei M
 
 | Modell | Problem |
 |---|---|
-| **Quality AI** (Lasso-Regression mit rollendem 2J-Fenster + Forward-Returns) | Braucht **point-in-time** Fundamentaldaten zum jeweiligen historischen Stichtag (as-reported, ohne nachträgliche Restatements). FMP Free liefert nur aktuelle Snapshots; FMP Starter liefert Historicals **ohne explizites Restatement-Flag** → Look-Ahead-Bias unvermeidbar. Saubere PIT-Quellen (Bloomberg, SIX) sind nicht im Capstone-Budget. |
+| **Quality AI** (Lasso-Regression mit rollendem 2J-Fenster + Forward-Returns) | Braucht **point-in-time** Fundamentaldaten zum jeweiligen historischen Stichtag (as-reported, ohne nachträgliche Restatements). FMP Free liefert nur aktuelle Snapshots; FMP Starter liefert Historicals **ohne explizites Restatement-Flag** → Look-Ahead-Bias unvermeidbar. Saubere PIT-Quellen (Bloomberg, SIX) sind nicht im Projektbudget. |
 | **Anti-Cyclical** (P/E + P/B unter 3J-Median) | Braucht historische P/E-Reihen über 3 Jahre. FMP Free liefert kein Historical, Yahoo liefert für CH-Tickers (.SW) keine zuverlässigen historischen Ratios. |
 
 Zusätzlich wurde ursprünglich auch **Diversification** als Tausch-Kandidat diskutiert. Diese bleibt aber drin, weil sie nur Tagespreise braucht (Yahoo, gratis).
@@ -197,7 +197,7 @@ Alle Stubs implementieren das `BaseModel`-Protocol mit `run(universe_data: Unive
 
 | Datei | Änderung |
 |---|---|
-| `docs/specs/2026-04-21-prisma-capstone-design.md` | §6.2 ersetzen durch Trend Momentum, §6.4 (Anti-Cyclical) entfernen, §6.5 bleibt, neue §6.X für Value Alpha Potential. §7.1/§7.2 Default-Weights aktualisieren. §8.1 neue Widerspruchs-Regel ergänzen. §13 Datenquellen-Hinweis (FMP Free, kein Historical). §18 Risiko "Lasso instabil" entfernen. §19 Stretch-Goals: "Relative Momentum (EWMA)" und "Alpha Potential" entfernen (jetzt in MVP). |
+| `docs/specs/2026-04-21-prisma-v2-design.md` | §6.2 ersetzen durch Trend Momentum, §6.4 (Anti-Cyclical) entfernen, §6.5 bleibt, neue §6.X für Value Alpha Potential. §7.1/§7.2 Default-Weights aktualisieren. §8.1 neue Widerspruchs-Regel ergänzen. §13 Datenquellen-Hinweis (FMP Free, kein Historical). §18 Risiko "Lasso instabil" entfernen. §19 Stretch-Goals: "Relative Momentum (EWMA)" und "Alpha Potential" entfernen (jetzt in MVP). |
 | `docs/specs/2026-04-28-narrative-engine.md` | §5.2 User-Prompt Template: Quality AI → Trend Momentum, Anti-Cyclical → Value Alpha Potential. §10.2 Fixture-Filenames anpassen. |
 | `docs/specs/2026-04-28-mcp-server.md` | §4.1 Default-Weights-Beispiel, §4.3 dimensions-Beispielliste. |
 | `README.md` | Z.11 Modell-Liste. |

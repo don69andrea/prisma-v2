@@ -150,7 +150,7 @@ Ein Nutzer hält NESN. NESN-Signal wechselt von HOLD zu WATCH.
 
 ## Slide 9 — Team & Status
 
-**FHNW BSc Business Artificial Intelligence — Capstone FS 2026.**
+**FHNW BSc Business Artificial Intelligence — FS 2026.**
 
 | | |
 |---|---|
@@ -191,5 +191,5 @@ Keine Anlageberatung. Historische Performance ≠ zukünftige Rendite.*
 
 ---
 
-**Kontakt:** FHNW BSc Business AI — Capstone Team FS 2026  
-**Repository:** github.com/SheylaSam/prisma-capstone
+**Kontakt:** FHNW BSc Business AI Team FS 2026  
+**Repository:** github.com/don69andrea/prisma-v2

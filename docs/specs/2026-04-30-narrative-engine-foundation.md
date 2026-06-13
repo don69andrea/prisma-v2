@@ -3,7 +3,7 @@
 **Status**: Draft v1.0 — 2026-04-30
 **Rolle**: B — AI Engineer (Sheyla)
 **Parent-Spec**: [`2026-04-28-narrative-engine.md`](2026-04-28-narrative-engine.md)
-**Issue**: [#17](https://github.com/SheylaSam/prisma-capstone/issues/17) — feat(ai): Narrative-Engine (Layer 1) — Scaffold + ResearchMemo-Schema
+**Issue**: [#17](https://github.com/don69andrea/prisma-v2/issues/17) — feat(ai): Narrative-Engine (Layer 1) — Scaffold + ResearchMemo-Schema
 
 ---
 

@@ -1,7 +1,7 @@
 # LLM-Universe-Wizard — Design
 
 **Datum:** 2026-05-28
-**Issue:** Backlog (Capstone-Demo-Feature)
+**Issue:** Backlog (Demo-Feature)
 **Status:** Draft — Mini-Variante (Single-Turn)
 
 ## Ziel

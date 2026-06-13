@@ -6,7 +6,7 @@
 
 ## Kontext
 
-Die ursprüngliche Modell-Liste der Design-Spec v1.1 (siehe `docs/specs/2026-04-21-prisma-capstone-design.md` §6) enthielt fünf Modelle:
+Die ursprüngliche Modell-Liste der Design-Spec v1.1 (siehe `docs/specs/2026-04-21-prisma-v2-design.md` §6) enthielt fünf Modelle:
 
 1. Quality Classic — Fundamentaldaten-Snapshot
 2. Quality AI — Lasso-Regression mit rollendem 2-Jahres-Fenster, Forward-Returns als Ziel
@@ -16,7 +16,7 @@ Die ursprüngliche Modell-Liste der Design-Spec v1.1 (siehe `docs/specs/2026-04-
 
 Beim ernsten Daten-Verfügbarkeits-Check (Yahoo Finance gratis + FinancialModelingPrep Free Tier, kein Bezahl-Datenfeed) zeigt sich:
 
-- **Quality AI** braucht **point-in-time** Fundamentaldaten (as-reported, ohne Restatements). FMP Free liefert nur aktuelle Snapshots; FMP Starter (~$30–50/Mo) liefert Historicals **ohne dokumentiertes Restatement-Flag** → Look-Ahead-Bias unvermeidbar. Saubere PIT-Quellen (Bloomberg, SIX) sind nicht im Capstone-Budget.
+- **Quality AI** braucht **point-in-time** Fundamentaldaten (as-reported, ohne Restatements). FMP Free liefert nur aktuelle Snapshots; FMP Starter (~$30–50/Mo) liefert Historicals **ohne dokumentiertes Restatement-Flag** → Look-Ahead-Bias unvermeidbar. Saubere PIT-Quellen (Bloomberg, SIX) sind nicht im Projektbudget.
 - **Anti-Cyclical** braucht historische P/E-Reihen (mind. 3 Jahre rolling). FMP Free liefert kein Historical, Yahoo liefert für CH-Tickers (.SW) keine zuverlässigen historischen Ratios.
 
 Damit sind **2 von 5 Modellen mit gratis verfügbaren Daten nicht implementierbar oder nur mit erheblichem Bias-Risiko**.
@@ -41,7 +41,7 @@ Zwei Modelle aus dem MVP entfernen, zwei neue ersetzen, Diversification bleibt:
 
 ### Option A: Quality AI behalten, FMP Starter kaufen
 - **Pro**: einziges echtes ML-Modell im MVP, Gewicht für 40%-Achse
-- **Contra**: $30–50/Monat, ohne PIT-Garantie weiterhin Look-Ahead-Bias-Risiko, Kosten nicht im Capstone-Budget
+- **Contra**: $30–50/Monat, ohne PIT-Garantie weiterhin Look-Ahead-Bias-Risiko, Kosten nicht im Projektbudget
 - **Verworfen**: Bias-Problem bleibt selbst mit Bezahl-Tier ungelöst
 
 ### Option B: Quality AI mit dokumentiertem Bias behalten
@@ -52,7 +52,7 @@ Zwei Modelle aus dem MVP entfernen, zwei neue ersetzen, Diversification bleibt:
 ### Option C: Anti-Cyclical mit Self-Built-History (jeden Run historisieren, 3J aufbauen)
 - **Pro**: Pipeline-Trick, kostet nichts
 - **Contra**: braucht 3 Jahre Laufzeit bis valid → in 12 Wochen nicht testbar
-- **Verworfen**: scheitert an Capstone-Zeit
+- **Verworfen**: scheitert an Projektzeit
 
 ### Option D: Auf 4 Modelle runtergehen (nur die wirklich freien)
 - **Pro**: maximaler Daten-Vertrauensgrad
@@ -63,7 +63,7 @@ Zwei Modelle aus dem MVP entfernen, zwei neue ersetzen, Diversification bleibt:
 
 ### Vorteile
 - Alle 5 Modelle in CI deterministisch testbar (Trend Momentum + Value Alpha Potential haben reine Preis-Inputs → Golden-Datasets trivial reproduzierbar)
-- Keine externen Bezahl-Subscriptions, Capstone-Budget bleibt unter $20
+- Keine externen Bezahl-Subscriptions, Projektbudget bleibt unter $20
 - Pillar-Verteilung wird Trend-lastig (×2) — bewusst akzeptiert, weil beide Trend-Modelle bewusst gegensätzlich konzipiert sind (Alpha = absolut/Sharpe-gewichtet, Trend Momentum = relativ/EWMA)
 
 ### Nachteile
@@ -73,7 +73,7 @@ Zwei Modelle aus dem MVP entfernen, zwei neue ersetzen, Diversification bleibt:
 
 ### Migration
 - ✅ Spec `docs/specs/2026-04-27-quant-models-redesign.md` (commit `7f93095`)
-- ⏳ Update `docs/specs/2026-04-21-prisma-capstone-design.md` §6/§7/§8.1/§13/§18/§19
+- ⏳ Update `docs/specs/2026-04-21-prisma-v2-design.md` §6/§7/§8.1/§13/§18/§19
 - ⏳ Update `docs/specs/2026-04-28-narrative-engine.md` §5.2/§10.2
 - ⏳ Update `docs/specs/2026-04-28-mcp-server.md` §4.1/§4.3
 - ⏳ Update `README.md` Z.11, `frontend/app/page.tsx` Z.19
@@ -85,6 +85,6 @@ Ja. Falls nach Wochen 5–6 ein Bezahl-Datenfeed verfügbar wird (Sponsoring, Na
 
 ## Referenzen
 - Spec: `docs/specs/2026-04-27-quant-models-redesign.md`
-- Original-Design: `docs/specs/2026-04-21-prisma-capstone-design.md` §6, §19
+- Original-Design: `docs/specs/2026-04-21-prisma-v2-design.md` §6, §19
 - PR: #26
 - Daten-Feasibility-Check: agent-recherche dokumentiert in PR-Diskussion

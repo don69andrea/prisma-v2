@@ -3,13 +3,13 @@
 **Status: Draft**
 **Datum: 2026-05-17**
 **Autor: Sheyla Sampietro / Claude Code**
-**Bezieht sich auf**: `docs/specs/2026-04-21-prisma-capstone-design.md` §7 (Frontend), `docs/specs/2026-05-09-ranking-service-multi-model.md` (Backend-API)
+**Bezieht sich auf**: `docs/specs/2026-04-21-prisma-v2-design.md` §7 (Frontend), `docs/specs/2026-05-09-ranking-service-multi-model.md` (Backend-API)
 
 ---
 
 ## Übersicht
 
-Die Seite `/rankings` ist aktuell ein "Kommt bald"-Platzhalter (`frontend/app/rankings/page.tsx`, 14 Zeilen). Das ist riskant für die Capstone-Demo, weil "Ranking" das Kernprodukt benennt. Diese Spec schließt die Lücke mit einer minimalen, demo-tauglichen UI:
+Die Seite `/rankings` ist aktuell ein "Kommt bald"-Platzhalter (`frontend/app/rankings/page.tsx`, 14 Zeilen). Das ist riskant für die Demo, weil "Ranking" das Kernprodukt benennt. Diese Spec schließt die Lücke mit einer minimalen, demo-tauglichen UI:
 
 1. **`/rankings`** — Form mit Universe-Dropdown + "Run starten"-Button.
 2. **`/rankings/[runId]`** — Detail-Page mit Ergebnis-Tabelle (9 Spalten: Rank, Ticker, Avg, Sweet-Spot, + 5 Modell-Ranks).

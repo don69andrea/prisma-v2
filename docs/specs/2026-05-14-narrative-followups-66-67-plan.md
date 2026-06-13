@@ -1,6 +1,6 @@
 # Narrative-Followups Bundle (#66 + #67) — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Implementiere diesen Plan Schritt für Schritt. Schritte nutzen Checkbox-Syntax (`- [ ]`) zum Tracking.
 
 **Goal:** Disziplinierung der Narrative-Engine-Schnittstelle: (a) Score=1/rank-Hallucination aus Prompt-Pfad entfernen (#66), (b) `is_error` als echtes Entity-Feld mit Migration + Backfill statt String-Match (#67).
 
@@ -1033,7 +1033,7 @@ Edit `docs/AI-USAGE.md`. Direkt nach `## Einträge` (vor dem ersten existierende
 
 ```markdown
 ## 2026-05-14 · Narrative-Followups Bundle #66 + #67 (PR #__)
-- **Agent**: Claude Code (Opus 4.7) im Haupt-Context. Skills: `superpowers:brainstorming` (4 Q-by-Q-Fragen), `superpowers:writing-plans` (10-Task-Plan), `superpowers:test-driven-development` (RED→GREEN pro Task), `superpowers:verification-before-completion` (CI-Mirror lokal + Real-API-Smoke).
+- **Agent**: Claude Code (Opus 4.7) im Haupt-Context. Skills: `Brainstorming` (4 Q-by-Q-Fragen), `Plan-Schreiben` (10-Task-Plan), `TDD` (RED→GREEN pro Task), `Verifikation vor Abschluss` (CI-Mirror lokal + Real-API-Smoke).
 - **Scope**: Zwei thematisch zusammengehörige Folge-Fixes aus PR #64-Review als 1 PR. (a) **#66** — `_rankings_for_template`-Helper liefert keinen erfundenen `score = 1/rank` mehr; DE + EN User-Templates und System-Prompt-Few-Shots ohne Score-Werte. (b) **#67** — `is_error: bool` als reguläres Feld auf `ResearchMemo`-Entity + ORM-Spalte + Migration 0009 + Backfill via Sentinel; Router-String-Match (`one_liner.startswith("Memo-Generierung fehlgeschlagen")`) entkernt — kritisch für EN-Memos, die der String-Match nach #116-Merge false-negative gemeldet hätte. `ERROR_FALLBACK_MODEL_VERSION`-Sentinel bleibt als zusätzliche DB-Markierung.
 - **Real-API-Smoke (DE, Sonnet 4.6)**: [WERTE NACH SMOKE-RUN EINTRAGEN]
 - **Was gut lief**:

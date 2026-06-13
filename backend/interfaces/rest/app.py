@@ -120,7 +120,7 @@ def create_app() -> FastAPI:
     # Signatur nicht akzeptiert. Laufzeit funktioniert korrekt; das ist ein
     # bekanntes Sticky-Problem im Starlette/FastAPI-Type-Stub.
     app.add_exception_handler(BudgetCapExceeded, handle_budget_cap_exceeded)  # type: ignore[arg-type]
-    app.add_exception_handler(Exception, handle_unhandled_exception)  # type: ignore[arg-type]
+    app.add_exception_handler(Exception, handle_unhandled_exception)
 
     app.include_router(health.router)
     app.include_router(chat.router)

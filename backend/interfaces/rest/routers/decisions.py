@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -39,7 +40,7 @@ def get_signal_aggregation_service(
 
 
 def _build_response(
-    signals: list,
+    signals: list[Any],
     signal_filter: str | None,
     eligible_only: bool,
 ) -> DecisionListResponse:

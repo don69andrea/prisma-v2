@@ -2,6 +2,7 @@
 
 from datetime import date
 from decimal import Decimal
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -15,6 +16,7 @@ class RunBacktestRequest(BaseModel):
     end_date: date
     top_n: int = 3
     benchmark_ticker: str = "^SSMI"
+    mode: Literal["quant_only", "quant_ml", "full"] = "full"
 
 
 class PortfolioMetricsResponse(BaseModel):

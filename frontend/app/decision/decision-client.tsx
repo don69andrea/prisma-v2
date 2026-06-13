@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SignalBadge } from '@/components/ui/SignalBadge';
 import { AuditTrail } from '@/components/ui/AuditTrail';
 import { SignalBreakdown } from '@/components/ui/SignalBreakdown';
+import { WeightSensitivity } from '@/components/ui/WeightSensitivity';
 import { SHAPWaterfallChart } from '@/components/factsheet/SHAPWaterfallChart';
 import { cn } from '@/lib/utils';
 
@@ -292,6 +293,14 @@ function SignalCard({ item }: { item: DecisionSignal }) {
           signal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
         />
 
+        <WeightSensitivity
+          quantScore={item.quant_score}
+          mlScore={item.ml_score}
+          macroScore={item.macro_score}
+          standardScore={item.weighted_score}
+          standardSignal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
+        />
+=======
         {shapValues.length > 0 && (
           <div className="space-y-1.5">
             <h3 className="text-[11px] font-semibold text-[#8b949e] uppercase tracking-widest">
@@ -304,7 +313,6 @@ function SignalCard({ item }: { item: DecisionSignal }) {
             />
           </div>
         )}
-
         {/* Action row */}
         <div className="flex items-center justify-between gap-2 pt-0.5">
           <button

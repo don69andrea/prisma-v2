@@ -2,7 +2,7 @@
 
 **Status**: Draft v1.0 — 2026-04-21 (für Phase 2, Wo 2)
 **Rolle**: B — AI Engineer (Sheyla)
-**Parent-Spec**: `docs/specs/2026-04-21-prisma-capstone-design.md` §8.1
+**Parent-Spec**: `docs/specs/2026-04-21-prisma-v2-design.md` §8.1
 
 ---
 
@@ -235,7 +235,7 @@ Ein Batch-Run mit 20 Memos, System-Prompt 2000 Tokens, User-Prompt 300 Tokens, O
 
 Ohne Caching wären das ~0.315 $. Caching spart ~40% — nicht 90%, weil der Output (500 Tokens × 15 $/M) der grösste Kostenanteil ist und nicht cacheable.
 
-**Budget-Prognose fürs gesamte Capstone**: Angenommen 5 Demos × 2 Full-Runs + 10 Tests = 20 Batches × 0.2 $ ≈ **4 USD**. Grosszügig gepuffert auf **20 USD Spending Cap** im Anthropic-Dashboard.
+**Budget-Prognose fürs gesamte Modulprojekt**: Angenommen 5 Demos × 2 Full-Runs + 10 Tests = 20 Batches × 0.2 $ ≈ **4 USD**. Grosszügig gepuffert auf **20 USD Spending Cap** im Anthropic-Dashboard.
 
 ---
 

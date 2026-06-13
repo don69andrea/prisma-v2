@@ -1,6 +1,6 @@
 # Narrative Engine — Single-Memo Slice Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Implementiere diesen Plan Schritt für Schritt. Schritte nutzen Checkbox-Syntax (`- [ ]`) zum Tracking.
 
 **Goal:** Den Single-Memo-Pfad der Narrative-Engine implementieren (Service + Prompt-Templates + Tool-use-Strukturierung + 2 REST-Endpoints + Error-Memo-Persistierung + Tests), strikt nach Slice-Spec `docs/specs/2026-05-04-narrative-engine-single-memo.md`.
 

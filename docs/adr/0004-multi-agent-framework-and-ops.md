@@ -76,7 +76,7 @@ Voyage-3-large bietet das beste Qualitäts-Kosten-Verhältnis und ist von Anthro
 
 **Warum nicht Celery/Arq?**
 - Extra Infrastruktur (Redis-Broker nötig) = zusätzlicher Render-Service
-- Capstone-Zeitrahmen limitiert — wir haben bessere Stellen zum Investieren
+- Projektzeitraum limitiert — wir haben bessere Stellen zum Investieren
 - Stretch-Goal dokumentiert: Migration auf Arq (leichter als Celery), wenn Deep-Dives >100/Tag werden
 
 ### 6. Synthesizer-Input: mit oder ohne Layer-1-Memo

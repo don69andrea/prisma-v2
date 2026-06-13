@@ -207,7 +207,7 @@ In dieser Session wurden folgende Bugs behoben (alle in `develop` committed):
 |---|---------|-----|
 | 1 | Back-Button → `/rankings` statt `/discover` | Href + Label korrigiert |
 | 2 | Discovery-Fallback speichert `stocks: []` | Fallback aus Brand-Auswahl aufgebaut |
-| 3 | Capstone-Referenzen in README/CLAUDE.md/AGENTS.md | Bereinigt → FHNW BI Module |
+| 3 | V1-Referenzen in README/CLAUDE.md/AGENTS.md | Bereinigt → FHNW BI Module |
 
 ---
 
@@ -235,7 +235,7 @@ Diese Punkte sind bewusste Einschränkungen, die dokumentiert aber nicht "gefixt
 - **ISIN-Lücken:** ABBN, BALN (delisted), STMN haben `isin=NULL` im Seed. ISINs müssen manuell via SIX Exchange verifiziert werden. yfinance liefert für `.SW`-Ticker kein `isin`-Feld.
 - **SNB Rate History:** Endet Juni 2025. Für spätere Daten würde die History-Tabelle echte SNB-Entscheide brauchen — keine Fake-Daten hinzufügen.
 - **Memo ohne Run:** Aktuell nur mit `model_run_id` möglich (→ siehe Open Item 2 oben).
-- **Cost-Tracker Race-Condition:** Soft-Limit ohne DB-Lock. Zwei parallele Calls können beide `check_cap` passieren. Bewusst akzeptiert für Capstone-Volumen.
+- **Cost-Tracker Race-Condition:** Soft-Limit ohne DB-Lock. Zwei parallele Calls können beide `check_cap` passieren. Bewusst akzeptiert für das aktuelle Projektvolumen.
 
 ---
 

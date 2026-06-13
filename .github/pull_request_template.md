@@ -36,7 +36,7 @@
 
 ## AI-Usage
 
-<!-- Wie wurde dieser PR mit Coding-Agents gebaut? Pflicht-Eintrag in docs/AI-USAGE.md. -->
+<!-- Wie wurde dieser PR mit Coding-Agents gebaut? -->
 - Agent: Claude Code / Cursor / Copilot / -
 - Was gut lief:
 - Was nicht klappte:
@@ -52,4 +52,4 @@
 - [ ] Mindestens 1 Review-Approval
 - [ ] Conversation-Threads resolved
 - [ ] Feature-Branch wird beim Merge gelöscht (automatisch)
-- [ ] Eintrag in `docs/AI-USAGE.md` ergänzt
+- [ ] AI-Einsatz im PR dokumentiert (falls Agent-assistiert)

@@ -1,6 +1,6 @@
 # Backtest `_simulate_portfolio` — Drift + Monthly-Reset Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Implementiere diesen Plan Schritt für Schritt. Schritte nutzen Checkbox-Syntax (`- [ ]`) zum Tracking.
 
 **Goal:** `_simulate_portfolio` an Backtest-Spec v1.1 §5 angleichen — Drift-Akkumulation pro Tag + monatlicher Reset auf 1/N am letzten Trading-Day jedes Kalendermonats. Heutiger naiver `returns.mean(axis=1)` ist mathematisch ein kontinuierlich rebalanciertes EW-Portfolio und entspricht NICHT der Spec.
 
@@ -292,7 +292,7 @@ Sanity-Check der Response: 3 Portfolio-Kurven, alle ≥ 0, monoton-ähnlich, Res
 
 ## Task 6: PR vorbereiten
 
-- [ ] **Step 6.1: Verifikation** (siehe `superpowers:verification-before-completion`)
+- [ ] **Step 6.1: Verifikation** (siehe `Verifikation vor Abschluss`)
 
 ```bash
 ruff check backend/

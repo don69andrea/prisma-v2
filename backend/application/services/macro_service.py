@@ -32,6 +32,7 @@ class _NarrativeOutput(BaseModel):
 
 async def _fetch_chf_eur() -> float:
     """Lädt CHF/EUR-Kurs asynchron via asyncio.to_thread, um den Event-Loop nicht zu blockieren."""
+
     def _sync_fetch() -> float:
         try:
             ticker = yf.Ticker("EURCHF=X")
@@ -43,6 +44,7 @@ async def _fetch_chf_eur() -> float:
         return 0.93
 
     import asyncio
+
     try:
         result = await asyncio.to_thread(_sync_fetch)
         return result
@@ -149,7 +151,9 @@ async def _fetch_swiss_pmi() -> float:
         _logger.warning(
             "Schweizer PMI nicht abrufbar (URL: %s, Fehler: %s) — Fallback %.1f. "
             "Fallback-Wert _FALLBACK_PMI_CH zuletzt validiert: 2025-06-13.",
-            url, exc, _FALLBACK_PMI_CH,
+            url,
+            exc,
+            _FALLBACK_PMI_CH,
         )
     return _FALLBACK_PMI_CH
 

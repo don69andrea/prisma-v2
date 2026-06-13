@@ -126,7 +126,9 @@ class SQLACostLogRepository(CostLogRepository):
             raw = result.scalar_one()
             return Decimal(str(raw))
 
-    async def check_cap_atomic(self, estimated_usd: Decimal, cap_usd: Decimal, threshold: Decimal) -> bool:
+    async def check_cap_atomic(
+        self, estimated_usd: Decimal, cap_usd: Decimal, threshold: Decimal
+    ) -> bool:
         async with self._session_factory() as session, session.begin():
             result = await session.execute(
                 _CAP_CHECK_ATOMIC_SQL,

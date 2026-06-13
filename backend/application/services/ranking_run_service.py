@@ -92,21 +92,32 @@ class RankingRunService:
             except Exception as exc:
                 _logger.error(
                     "Modell '%s' fehlgeschlagen in Run %s — wird übersprungen: %s",
-                    model_name, run.id, exc,
+                    model_name,
+                    run.id,
+                    exc,
                 )
                 failed_models.append(model_name)
 
         if not per_model:
-            await self._run_repo.save(RankingRun(
-                id=run.id, created_at=run.created_at,
-                universe_id=run.universe_id, weight_config=run.weight_config,
-                status="failed",
-            ))
+            await self._run_repo.save(
+                RankingRun(
+                    id=run.id,
+                    created_at=run.created_at,
+                    universe_id=run.universe_id,
+                    weight_config=run.weight_config,
+                    status="failed",
+                )
+            )
             raise RuntimeError(f"Alle Modelle fehlgeschlagen in Run {run.id}: {failed_models}")
 
         if failed_models:
-            _logger.warning("Run %s: %d/%d Modelle fehlgeschlagen: %s",
-                            run.id, len(failed_models), len(_model_factories), failed_models)
+            _logger.warning(
+                "Run %s: %d/%d Modelle fehlgeschlagen: %s",
+                run.id,
+                len(failed_models),
+                len(_model_factories),
+                failed_models,
+            )
 
         total_results = RankingAggregator().aggregate(per_model, weights)
 

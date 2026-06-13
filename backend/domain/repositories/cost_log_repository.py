@@ -61,7 +61,9 @@ class CostLogRepository(ABC):
         ...
 
     @abstractmethod
-    async def check_cap_atomic(self, estimated_usd: Decimal, cap_usd: Decimal, threshold: Decimal) -> bool:
+    async def check_cap_atomic(
+        self, estimated_usd: Decimal, cap_usd: Decimal, threshold: Decimal
+    ) -> bool:
         """Atomarer Cap-Check via PostgreSQL Advisory Lock — multi-process-sicher.
 
         Gibt True zurück wenn (current_month_total + estimated_usd) <= cap_usd * threshold.

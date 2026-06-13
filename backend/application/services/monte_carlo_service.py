@@ -86,6 +86,7 @@ class MonteCarloService:
                 svc = self._ml_prediction_service
             else:
                 from backend.application.services.ml_prediction_service import MLPredictionService
+
                 svc = MLPredictionService()
 
             result = await svc.predict(ticker)  # type: ignore[union-attr]

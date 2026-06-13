@@ -105,7 +105,9 @@ class SignalAggregationService:
                 macro_score = _snb_macro_score(features.snb_rate)
         else:
             macro_score = _snb_macro_score(features.snb_rate)
-        weighted_score = self._w_quant * quant_score + self._w_ml * ml_score + self._w_macro * macro_score
+        weighted_score = (
+            self._w_quant * quant_score + self._w_ml * ml_score + self._w_macro * macro_score
+        )
         signal = DecisionSignal.signal_for_score(weighted_score)
         confidence = round(weighted_score / 100.0, 4)
         is_eligible = await self._check_3a_eligible(ticker)

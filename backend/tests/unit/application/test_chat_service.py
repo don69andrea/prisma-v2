@@ -33,11 +33,11 @@ async def test_dispatch_tool_search_stocks() -> None:
             return_value=MagicMock(return_value=mock_ctx),
         ),
         patch(
-            "backend.application.services.swiss_market_service.SwissMarketService",
+            "backend.application.services.chat_service.SwissMarketService",
             return_value=mock_svc,
         ),
         patch(
-            "backend.infrastructure.persistence.repositories.swiss_stock_repository.SQLASwissStockRepository",
+            "backend.application.services.chat_service.SQLASwissStockRepository",
         ),
     ):
         result = await _dispatch_tool("search_stocks", {"query": "nestlé"})

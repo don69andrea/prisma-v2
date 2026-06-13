@@ -82,14 +82,14 @@ class MonteCarloService:
 
     async def _fetch_ml_mu(self, ticker: str) -> float:
         try:
-            if self._ml_prediction_service is not None:
-                svc = self._ml_prediction_service
-            else:
-                from backend.application.services.ml_prediction_service import MLPredictionService
+            from backend.application.services.ml_prediction_service import MLPredictionService
 
+            if isinstance(self._ml_prediction_service, MLPredictionService):
+                svc: MLPredictionService = self._ml_prediction_service
+            else:
                 svc = MLPredictionService()
 
-            result = await svc.predict(ticker)  # type: ignore[union-attr]
+            result = await svc.predict(ticker)
             if result is None:
                 return 0.0003
             annual_map = {"OUTPERFORM": 0.10, "NEUTRAL": 0.05, "UNDERPERFORM": 0.0}

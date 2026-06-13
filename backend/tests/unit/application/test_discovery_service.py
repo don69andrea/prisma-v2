@@ -129,6 +129,69 @@ class TestDiscoveryServiceKnownTickerPriority:
         assert len(result) == 2
 
 
+class TestDiscoveryServiceESGFilter:
+    @pytest.mark.asyncio
+    async def test_esg_yes_excludes_non_esg_sector(self) -> None:
+        stocks = [_make_stock("OIL.SW", "energy"), _make_stock("NESN.SW", "consumer")]
+        service = _make_service(stocks, composite=80.0)
+        profile = _make_profile(esg_preference="yes")
+        result = await service.get_personalized_universe(profile)
+        assert len(result) == 1
+        assert result[0].ticker == "NESN.SW"
+
+    @pytest.mark.asyncio
+    async def test_esg_indifferent_includes_all_sectors(self) -> None:
+        stocks = [_make_stock("OIL.SW", "energy"), _make_stock("NESN.SW", "consumer")]
+        service = _make_service(stocks, composite=80.0)
+        profile = _make_profile(esg_preference="indifferent")
+        result = await service.get_personalized_universe(profile)
+        assert len(result) == 2
+
+    @pytest.mark.asyncio
+    async def test_esg_yes_includes_unknown_sector(self) -> None:
+        stocks = [_make_stock("ABBN.SW", None)]
+        service = _make_service(stocks, composite=80.0)
+        profile = _make_profile(esg_preference="yes")
+        result = await service.get_personalized_universe(profile)
+        assert len(result) == 1
+
+
+class TestDiscoveryServiceIncomePreference:
+    @pytest.mark.asyncio
+    async def test_dividends_preference_boosts_high_yield(self) -> None:
+        stock = _make_stock("NESN.SW", "consumer")
+        repo = MagicMock()
+        repo.list_by_exchange = AsyncMock(return_value=[stock])
+        market_data = MagicMock()
+        fundamentals_mock = MagicMock()
+        fundamentals_mock.dividend_yield = 0.03  # 3% > threshold
+        market_data.get_fundamentals = AsyncMock(return_value=fundamentals_mock)
+        service = DiscoveryService(swiss_stock_repo=repo, market_data=market_data)
+        service._scorer = MagicMock()
+        service._scorer.score = MagicMock(return_value=_make_score(70.0))
+        service._eligibility = MagicMock()
+        profile = _make_profile(income_preference="dividends")
+        result = await service.get_personalized_universe(profile)
+        assert len(result) == 1  # included and boosted
+
+    @pytest.mark.asyncio
+    async def test_growth_preference_boosts_low_yield(self) -> None:
+        stock = _make_stock("LOGN.SW", "tech")
+        repo = MagicMock()
+        repo.list_by_exchange = AsyncMock(return_value=[stock])
+        market_data = MagicMock()
+        fundamentals_mock = MagicMock()
+        fundamentals_mock.dividend_yield = 0.005  # 0.5% < threshold
+        market_data.get_fundamentals = AsyncMock(return_value=fundamentals_mock)
+        service = DiscoveryService(swiss_stock_repo=repo, market_data=market_data)
+        service._scorer = MagicMock()
+        service._scorer.score = MagicMock(return_value=_make_score(60.0))
+        service._eligibility = MagicMock()
+        profile = _make_profile(income_preference="growth")
+        result = await service.get_personalized_universe(profile)
+        assert len(result) == 1  # included and boosted
+
+
 class TestDiscoveryServiceErrorHandling:
     @pytest.mark.asyncio
     async def test_scoring_error_skips_stock(self) -> None:

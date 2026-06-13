@@ -472,7 +472,7 @@ Bei N=20 + 3-concurrent + ~3s/Memo erwartet ~20s Laufzeit. 10min Timeout ist sic
 
 `asyncio.create_task(self._execute_batch(...))` ist an den FastAPI-Worker-Event-Loop gebunden. Bei einem `SIGTERM` während eines laufenden Batches (Render-Deploy, Auto-Restart) wird der Task ohne `await` gecancelt → Job bleibt in `running`, wird erst nach `STALE_BATCH_TIMEOUT_SECONDS` (10 min) via Lazy-Cleanup auf `failed` markiert.
 
-Für die Capstone-Demo akzeptabel. Tracking: Issue #87. Saubere Lösung: FastAPI-`lifespan`-Shutdown-Hook, der pending Tasks mit `error_message="server shutdown"` als `failed` markiert.
+Für die Demo akzeptabel. Tracking: Issue #87. Saubere Lösung: FastAPI-`lifespan`-Shutdown-Hook, der pending Tasks mit `error_message="server shutdown"` als `failed` markiert.
 
 ### Logging
 
@@ -548,7 +548,7 @@ Pro Batch:
 
 ### 11.1 Plan-Code-Drift
 
-Gefunden während der 12 Build-Steps durch Two-Stage-Review (Spec-Reviewer + Code-Quality-Reviewer pro Task).
+Gefunden während der 12 Build-Steps durch zweistufiger Review (Spec-Reviewer + Code-Quality-Reviewer pro Task).
 
 | Plan-Annahme | Code-Realität | Fix-Commit |
 |---|---|---|

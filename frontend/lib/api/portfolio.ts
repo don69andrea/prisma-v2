@@ -43,7 +43,7 @@ export interface PortfolioAllocateRequest {
   run_id: string;
   top_n?: number;
   eligible_only?: boolean;
-  method?: 'score_weighted' | 'risk_parity';
+  method?: 'score_weighted' | 'risk_parity' | 'mean_variance';
 }
 
 export interface PortfolioPosition {

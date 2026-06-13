@@ -387,14 +387,24 @@ async def get_swiss_stock_repository(
     return SQLASwissStockRepository(session=session)
 
 
+_yfinance_adapter: YFinanceSwissAdapter | None = None
+
+
+def _get_yfinance_adapter_singleton() -> YFinanceSwissAdapter:
+    global _yfinance_adapter
+    if _yfinance_adapter is None:
+        _yfinance_adapter = YFinanceSwissAdapter()
+    return _yfinance_adapter
+
+
 async def get_swiss_market_data_provider() -> SwissMarketDataProvider:
-    """Instanziiert den YFinanceSwissAdapter für Swiss Market Data."""
-    return YFinanceSwissAdapter()
+    """Liefert den prozess-weiten YFinanceSwissAdapter (Singleton)."""
+    return _get_yfinance_adapter_singleton()
 
 
 async def get_yfinance_adapter() -> YFinanceSwissAdapter:
-    """Liefert einen YFinanceSwissAdapter für direkte Adapter-Nutzung (z.B. Dividenden)."""
-    return YFinanceSwissAdapter()
+    """Liefert den prozess-weiten YFinanceSwissAdapter (Singleton)."""
+    return _get_yfinance_adapter_singleton()
 
 
 async def get_swiss_market_service(

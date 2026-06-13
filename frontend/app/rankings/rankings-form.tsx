@@ -6,6 +6,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { PrismaBar } from '@/components/ui/PrismaBar';
 import { listUniverses } from '@/lib/api/universes';
 import { createRun } from '@/lib/api/runs';
 
@@ -82,8 +83,9 @@ export function RankingsForm() {
       )}
 
       <Button type="submit" disabled={disabled} aria-busy={isPending}>
-        {isPending ? 'Run läuft (~30-60s)…' : 'Run starten'}
+        {isPending ? 'Run wird gestartet…' : 'Run starten'}
       </Button>
+      {isPending && <PrismaBar />}
     </form>
   );
 }

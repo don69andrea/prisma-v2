@@ -1,6 +1,9 @@
+import { PrismaBar } from '@/components/ui/PrismaBar';
+
 export default function StockDetailLoading() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
+      <PrismaBar />
       {/* Back-button placeholder */}
       <div className="h-5 w-32 rounded bg-muted animate-pulse" />
 

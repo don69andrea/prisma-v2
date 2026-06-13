@@ -1,6 +1,9 @@
+import { PrismaBar } from '@/components/ui/PrismaBar';
+
 export default function RankingsLoading() {
   return (
     <div className="space-y-6 max-w-3xl">
+      <PrismaBar />
       <div className="space-y-1">
         <div className="h-7 w-44 rounded bg-muted animate-pulse" />
         <div className="h-4 w-64 rounded bg-muted animate-pulse" />

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -39,7 +40,7 @@ def get_signal_aggregation_service(
 
 
 def _build_response(
-    signals: list,
+    signals: list[Any],
     signal_filter: str | None,
     eligible_only: bool,
 ) -> DecisionListResponse:
@@ -81,7 +82,9 @@ async def live_decisions(
 ) -> DecisionListResponse:
     ticker_list = [t.strip().upper() for t in tickers.split(",") if t.strip()]
     if not ticker_list:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Keine Ticker angegeben.")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Keine Ticker angegeben."
+        )
     ticker_list = ticker_list[:_MAX_LIVE_TICKERS]
     signals = await aggregation_service.get_signals(ticker_list)
     return _build_response(signals, signal, eligible_only)
@@ -125,9 +128,19 @@ async def explain_decision(
     client: LLMClient = llm_client  # type: ignore[assignment]
 
     ticker = body.ticker.upper()
-    quant_band = "stark" if body.quant_score >= 70 else ("moderat" if body.quant_score >= 45 else "schwach")
-    ml_label = "OUTPERFORM" if body.ml_score >= 75 else ("NEUTRAL" if body.ml_score >= 35 else "UNDERPERFORM")
-    macro_band = "günstig" if body.macro_score >= 70 else ("neutral" if body.macro_score >= 45 else "ungünstig")
+    quant_band = (
+        "stark" if body.quant_score >= 70 else ("moderat" if body.quant_score >= 45 else "schwach")
+    )
+    ml_label = (
+        "OUTPERFORM"
+        if body.ml_score >= 75
+        else ("NEUTRAL" if body.ml_score >= 35 else "UNDERPERFORM")
+    )
+    macro_band = (
+        "günstig"
+        if body.macro_score >= 70
+        else ("neutral" if body.macro_score >= 45 else "ungünstig")
+    )
 
     user_msg = f"""
 Ticker: {ticker}
@@ -175,7 +188,10 @@ AUFGABE — erkläre in je 2 präzisen Sätzen pro Feld:
         )
     except Exception as exc:
         _logger.warning("explain_decision LLM fehlgeschlagen für %s: %s", ticker, exc)
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Erklärung temporär nicht verfügbar.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Erklärung temporär nicht verfügbar.",
+        ) from exc
 
 
 @router.get(

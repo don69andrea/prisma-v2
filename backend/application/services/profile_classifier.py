@@ -40,15 +40,15 @@ Beispiele:
 
 _GOAL_MAP: dict[str, tuple[str, str]] = {
     # Frontend-Werte (Enum-Value)
-    "housing":      ("housing",      "short"),
-    "retirement":   ("retirement",   "long"),
-    "freedom":      ("freedom",      "medium"),
+    "housing": ("housing", "short"),
+    "retirement": ("retirement", "long"),
+    "freedom": ("freedom", "medium"),
     "beat_savings": ("beat_savings", "medium"),
     # Deutsche Display-Labels (legacy / direkte Übermittlung)
-    "Neue Wohnung":         ("housing",      "short"),
-    "Altersvorsorge":       ("retirement",   "long"),
-    "Finanzielle Freiheit": ("freedom",      "medium"),
-    "Besser als Konto":     ("beat_savings", "medium"),
+    "Neue Wohnung": ("housing", "short"),
+    "Altersvorsorge": ("retirement", "long"),
+    "Finanzielle Freiheit": ("freedom", "medium"),
+    "Besser als Konto": ("beat_savings", "medium"),
     "Besser als Sparkonto": ("beat_savings", "medium"),
 }
 

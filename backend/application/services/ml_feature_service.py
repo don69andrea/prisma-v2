@@ -42,7 +42,7 @@ _ECB_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2022, 9, 14), 0.75),
     (date(2022, 10, 27), 1.50),
     (date(2022, 12, 15), 2.00),
-    (date(2023, 2, 2),  2.50),
+    (date(2023, 2, 2), 2.50),
     (date(2023, 3, 22), 3.00),
     (date(2023, 5, 10), 3.25),
     (date(2023, 6, 21), 3.50),
@@ -51,10 +51,10 @@ _ECB_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2024, 9, 18), 3.25),
     (date(2024, 10, 23), 3.00),
     (date(2024, 12, 18), 2.75),
-    (date(2025, 1, 30),  2.50),
-    (date(2025, 3, 6),   2.25),
-    (date(2025, 4, 17),  2.00),
-    (date(2025, 6, 5),   1.75),
+    (date(2025, 1, 30), 2.50),
+    (date(2025, 3, 6), 2.25),
+    (date(2025, 4, 17), 2.00),
+    (date(2025, 6, 5), 1.75),
 ]
 _ECB_RATE_BEFORE_2022 = -0.50
 
@@ -74,21 +74,21 @@ _FED_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2018, 6, 14), 2.00),
     (date(2018, 9, 27), 2.25),
     (date(2018, 12, 20), 2.50),
-    (date(2019, 8, 1),  2.25),
+    (date(2019, 8, 1), 2.25),
     (date(2019, 9, 19), 2.00),
     (date(2019, 10, 31), 1.75),
-    (date(2020, 3, 4),  1.25),
+    (date(2020, 3, 4), 1.25),
     (date(2020, 3, 16), 0.25),
     (date(2022, 3, 17), 0.50),
-    (date(2022, 5, 5),  1.00),
+    (date(2022, 5, 5), 1.00),
     (date(2022, 6, 16), 1.75),
     (date(2022, 7, 28), 2.50),
     (date(2022, 9, 22), 3.25),
     (date(2022, 11, 3), 4.00),
     (date(2022, 12, 15), 4.50),
-    (date(2023, 2, 2),  4.75),
+    (date(2023, 2, 2), 4.75),
     (date(2023, 3, 23), 5.00),
-    (date(2023, 5, 4),  5.25),
+    (date(2023, 5, 4), 5.25),
     (date(2023, 7, 27), 5.50),
     (date(2024, 9, 19), 5.00),
     (date(2024, 11, 8), 4.75),
@@ -114,7 +114,7 @@ _EU_YF_SUFFIX: dict[str, str] = {
     ".AS": ".AS",  # Euronext Amsterdam
     ".MC": ".MC",  # Bolsa Madrid
     ".MI": ".MI",  # Borsa Italiana
-    ".L":  ".L",   # London Stock Exchange (GBP)
+    ".L": ".L",  # London Stock Exchange (GBP)
     ".ST": ".ST",  # Nasdaq Stockholm (SEK)
     ".VI": ".VI",  # Wiener Börse (EUR)
     ".BR": ".BR",  # Euronext Brüssel (EUR)
@@ -407,8 +407,10 @@ class MLFeatureService:
                         "return_1m": _return_nm_from_series(past_prices, 21),
                         "drawdown_12m": _compute_drawdown_12m(past_prices),
                         "snb_rate": (
-                            _fed_rate_on(snap_date) if _market == "us"
-                            else _ecb_rate_on(snap_date) if _market == "eu"
+                            _fed_rate_on(snap_date)
+                            if _market == "us"
+                            else _ecb_rate_on(snap_date)
+                            if _market == "eu"
                             else _snb_rate_on(snap_date)
                         ),
                         "chf_eur": _fx_rate_on(ticker, snap, _market),
@@ -464,9 +466,17 @@ def _vol_30d_from_series(close: pd.Series) -> float:
 def _usd_chf_on(year: int) -> float:
     """Approximierter USD/CHF Kurs (CHF pro USD) per Jahr."""
     _rates = {
-        2015: 0.99, 2016: 0.99, 2017: 0.97, 2018: 0.99,
-        2019: 1.00, 2020: 0.94, 2021: 0.92, 2022: 0.96,
-        2023: 0.89, 2024: 0.89, 2025: 0.88,
+        2015: 0.99,
+        2016: 0.99,
+        2017: 0.97,
+        2018: 0.99,
+        2019: 1.00,
+        2020: 0.94,
+        2021: 0.92,
+        2022: 0.96,
+        2023: 0.89,
+        2024: 0.89,
+        2025: 0.88,
     }
     return _rates.get(year, 0.93)
 
@@ -474,9 +484,17 @@ def _usd_chf_on(year: int) -> float:
 def _gbp_chf_on(year: int) -> float:
     """Approximierter GBP/CHF Kurs (CHF pro GBP) per Jahr."""
     _rates = {
-        2015: 1.48, 2016: 1.27, 2017: 1.27, 2018: 1.31,
-        2019: 1.26, 2020: 1.19, 2021: 1.26, 2022: 1.18,
-        2023: 1.12, 2024: 1.13, 2025: 1.15,
+        2015: 1.48,
+        2016: 1.27,
+        2017: 1.27,
+        2018: 1.31,
+        2019: 1.26,
+        2020: 1.19,
+        2021: 1.26,
+        2022: 1.18,
+        2023: 1.12,
+        2024: 1.13,
+        2025: 1.15,
     }
     return _rates.get(year, 1.15)
 

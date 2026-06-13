@@ -56,7 +56,10 @@ async def handle_unhandled_exception(
     Access-Control-Allow-Origin: * um, damit der Browser den Body sehen kann.
     """
     import logging
-    logging.getLogger(__name__).exception("Unhandled exception in request %s %s", request.method, request.url.path)
+
+    logging.getLogger(__name__).exception(
+        "Unhandled exception in request %s %s", request.method, request.url.path
+    )
     return JSONResponse(
         status_code=500,
         headers={"Access-Control-Allow-Origin": "*"},

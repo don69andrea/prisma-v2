@@ -73,9 +73,9 @@ class SimFinAdapter:
 
         # Lazy-loaded after first US call
         self._us_loaded = False
-        self._income_us: dict[str, pd.DataFrame] = {}   # ticker → rows sorted by Publish Date
+        self._income_us: dict[str, pd.DataFrame] = {}  # ticker → rows sorted by Publish Date
         self._balance_us: dict[str, pd.DataFrame] = {}
-        self._prices_us: dict[str, pd.DataFrame] = {}   # ticker → rows sorted by Date
+        self._prices_us: dict[str, pd.DataFrame] = {}  # ticker → rows sorted by Date
 
         _logger.info("SimFinAdapter initialisiert (data_dir=%s)", self._data_dir)
 
@@ -243,9 +243,7 @@ class SimFinAdapter:
         pb = price / bvps
         return float(pb) if 0 < pb < 100 else None
 
-    def _compute_div_yield(
-        self, ticker: str, snap_ts: pd.Timestamp, price: float
-    ) -> float | None:
+    def _compute_div_yield(self, ticker: str, snap_ts: pd.Timestamp, price: float) -> float | None:
         """Dividendenrendite = Summe Dividenden letzte 12 Monate / Preis."""
         df = self._prices_us.get(ticker)
         if df is None:

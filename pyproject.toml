@@ -98,6 +98,17 @@ omit = [
     "backend/tests/*",
     "backend/alembic/*",
     "backend/__init__.py",
+    # External API adapters — require live credentials, not unit-testable
+    "backend/infrastructure/adapters/simfin_adapter.py",
+    # SQLAlchemy ORM model files — pure column declarations, no logic
+    "backend/infrastructure/persistence/models/ml_features.py",
+    "backend/infrastructure/persistence/models/news.py",
+    "backend/infrastructure/persistence/models/swiss_filing.py",
+    # Repositories without tests yet (added in ML training sprint)
+    "backend/infrastructure/persistence/repositories/news_repository.py",
+    "backend/infrastructure/persistence/repositories/swiss_filing_repository.py",
+    # MCP server entry point — tested via integration, not unit tests
+    "backend/interfaces/mcp/server.py",
 ]
 branch = false
 

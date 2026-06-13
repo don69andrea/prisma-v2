@@ -24,7 +24,7 @@ export interface DiscoveredStock {
   ticker: string;
   name: string;
   sector: string | null;
-  market_cap_chf: string | null;
+  market_cap_chf: number | null;
   exchange: string;
 }
 
@@ -41,10 +41,13 @@ export interface DiscoverySessionResponse {
 }
 
 export interface PartialProfile {
-  beruf?: string;
-  ziel?: 'housing' | 'retirement' | 'freedom' | 'beat_savings' | 'other';
-  risiko?: 'conservative' | 'moderate' | 'aggressive';
-  brands?: string[];
+  session_id: string;
+  risk_profile: string;
+  sector_affinity: string[];
+  time_horizon: string;
+  investment_goal: string;
+  confidence_score: number;
+  onboarding_complete: boolean;
 }
 
 export interface AnswerResponse {
@@ -60,7 +63,7 @@ export interface CompleteDiscoveryResponse {
     ticker: string;
     name: string;
     sector: string | null;
-    market_cap_chf: string | null;
+    market_cap_chf: number | null;
     exchange: string;
   }>;
 }

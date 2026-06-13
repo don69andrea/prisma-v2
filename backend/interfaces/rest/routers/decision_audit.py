@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.decision_audit_service import DecisionAuditService
@@ -45,7 +45,7 @@ def get_audit_service(
     ),
 )
 async def get_audit_trail(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     limit: int = Query(default=10, ge=1, le=50),
     service: DecisionAuditService = Depends(get_audit_service),
 ) -> DecisionAuditListResponse:
@@ -83,7 +83,7 @@ async def get_audit_trail(
     ),
 )
 async def compute_and_save_audit(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: DecisionAuditService = Depends(get_audit_service),
 ) -> DecisionAuditRecordResponse:
     try:

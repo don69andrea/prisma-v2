@@ -25,6 +25,10 @@ _LLM_PREFIXES = (
     "/api/v1/portfolio",
     "/api/v1/discovery",
     "/api/v1/steuer",
+    "/api/v1/decisions/explain",
+    "/api/v1/news/ingest",
+    "/api/v1/backtests",
+    "/api/v1/stocks",
 )
 
 # 10 LLM-triggering requests per IP per 60 seconds.

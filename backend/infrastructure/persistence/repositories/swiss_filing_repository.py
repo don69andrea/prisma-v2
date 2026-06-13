@@ -72,7 +72,11 @@ class SQLASwissFilingRepository(SwissFilingRepository):
     ) -> list[SwissFilingRetrievalResult]:
         ticker_filter = "AND ticker = :ticker" if ticker else ""
         language_filter = "AND language = :language" if language else ""
-        query_vector_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+        # K-6: Validate embedding values — NaN/Inf would cause a PostgreSQL parsing error.
+        validated = [float(v) for v in query_embedding]
+        if any(not math.isfinite(v) for v in validated):
+            raise ValueError("Embedding contains non-finite values (NaN/Inf)")
+        query_vector_str = "[" + ",".join(f"{v:.8f}" for v in validated) + "]"
 
         raw_sql = f"""
             SELECT

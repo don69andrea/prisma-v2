@@ -13,9 +13,9 @@ export interface BacktestResult {
   model_run_id: string;
   series: {
     dates: string[];
-    prisma: string[];
-    universe: string[];
-    benchmark: string[];
+    prisma: number[];
+    universe: number[];
+    benchmark: number[];
   };
   prisma_metrics: PortfolioMetrics;
   universe_metrics: PortfolioMetrics;

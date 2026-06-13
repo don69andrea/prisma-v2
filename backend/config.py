@@ -97,11 +97,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _api_key_required_in_production(self) -> "Settings":
-        """In Production-Umgebung muss API_KEY explizit gesetzt sein —
-        sonst booten wir nicht. Verhindert, dass ein leerer/Default-Wert
-        unbemerkt in Production landet."""
-        if self.environment == "production" and not self.api_key:
-            raise ValueError("API_KEY muss in der Production-Umgebung gesetzt sein")
+        """In Production-Umgebung müssen API_KEY und ANTHROPIC_API_KEY explizit
+        gesetzt sein — sonst booten wir nicht. Verhindert, dass ein leerer/
+        Default-Wert unbemerkt in Production landet."""
+        if self.environment == "production":
+            if not self.api_key:
+                raise ValueError("API_KEY muss in der Production-Umgebung gesetzt sein")
+            if not self.anthropic_api_key:
+                raise ValueError("ANTHROPIC_API_KEY muss in der Production-Umgebung gesetzt sein")
         return self
 
 

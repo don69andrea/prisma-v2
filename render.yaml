@@ -48,9 +48,6 @@ services:
       # VoyageAI Embedding-Key
       - key: VOYAGE_API_KEY
         sync: false
-      # FinancialModelingPrep API key (free tier, 250 calls/day)
-      - key: FMP_API_KEY
-        sync: false
       # MCP-Tool-API-Key für X-API-Key auf /api/v1/runs (getrennt vom Admin-Key)
       - key: TOOL_API_KEY
         sync: false
@@ -69,10 +66,11 @@ services:
       # NEXT_PUBLIC_* variables are baked into the Next.js bundle at build time.
       # Render passes envVars as both build-time ARGs and runtime env vars for
       # Docker services, so setting it here is sufficient.
-      # Value must point to the public URL of prisma-v2-backend on Render,
-      # e.g. https://prisma-v2-backend.onrender.com
       - key: NEXT_PUBLIC_API_URL
         value: https://prisma-v2-backend.onrender.com
+      # Muss identisch mit API_KEY im Backend sein — manuell im Dashboard setzen.
+      - key: NEXT_PUBLIC_API_KEY
+        sync: false
     buildFilter:
       paths:
         - frontend/**

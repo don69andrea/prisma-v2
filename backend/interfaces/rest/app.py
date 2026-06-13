@@ -5,11 +5,12 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
 from backend.domain.errors import BudgetCapExceeded
+from backend.interfaces.rest.dependencies import require_admin_api_key
 from backend.interfaces.rest.exception_handlers import (
     handle_budget_cap_exceeded,
     handle_unhandled_exception,
@@ -106,6 +107,9 @@ def create_app() -> FastAPI:
         openapi_url=None if is_production else "/openapi.json",
     )
 
+    # K-13: In Starlette the last-added middleware becomes the outermost layer.
+    # LLMRateLimiterMiddleware must be added first (innermost) so that CORSMiddleware
+    # (outermost) can attach CORS headers to 429 responses from the rate limiter.
     app.add_middleware(LLMRateLimiterMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -114,7 +118,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(LLMRateLimiterMiddleware)
 
     # FastAPI typisiert add_exception_handler über `Type[Exception]` mit einem
     # generischen Handler-Signature, das unsere konkrete (Request, BudgetCapExceeded)-
@@ -123,29 +126,34 @@ def create_app() -> FastAPI:
     app.add_exception_handler(BudgetCapExceeded, handle_budget_cap_exceeded)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, handle_unhandled_exception)
 
-    app.include_router(health.router)
-    app.include_router(chat.router)
-    app.include_router(reports.router)
-    app.include_router(discovery.router)
-    app.include_router(stocks.router)
-    app.include_router(eligibility.router)
-    app.include_router(dividends.router)
-    app.include_router(fundamentals.router)
-    app.include_router(universes.router)
-    app.include_router(admin.router)
-    app.include_router(runs.router)
-    app.include_router(memos.router, prefix="/api/v1")
-    app.include_router(backtests.router)
-    app.include_router(rag.router)
-    app.include_router(steuer.router)
-    app.include_router(news.router)
-    app.include_router(ml.router)
-    app.include_router(decisions.router)
-    app.include_router(decision_audit.router)
-    app.include_router(macro.router)
-    app.include_router(portfolio.router)
-    app.include_router(fonds_vergleich.router)
-    app.include_router(rebalancing.router)
-    app.include_router(alerts.router)
+    _auth = [Depends(require_admin_api_key)]
+
+    # Public — kein API-Key erforderlich
+    app.include_router(health.router)  # Render health checks
+    app.include_router(discovery.router)  # Onboarding-Flow (Demo, öffentlich)
+
+    # Geschützt — X-API-Key Header erforderlich
+    app.include_router(chat.router, dependencies=_auth)
+    app.include_router(reports.router, dependencies=_auth)
+    app.include_router(stocks.router, dependencies=_auth)
+    app.include_router(eligibility.router, dependencies=_auth)
+    app.include_router(dividends.router, dependencies=_auth)
+    app.include_router(fundamentals.router, dependencies=_auth)
+    app.include_router(universes.router, dependencies=_auth)
+    app.include_router(admin.router, dependencies=_auth)
+    app.include_router(runs.router, dependencies=_auth)
+    app.include_router(memos.router, dependencies=_auth, prefix="/api/v1")
+    app.include_router(backtests.router, dependencies=_auth)
+    app.include_router(rag.router, dependencies=_auth)
+    app.include_router(steuer.router, dependencies=_auth)
+    app.include_router(news.router, dependencies=_auth)
+    app.include_router(ml.router, dependencies=_auth)
+    app.include_router(decisions.router, dependencies=_auth)
+    app.include_router(decision_audit.router, dependencies=_auth)
+    app.include_router(macro.router, dependencies=_auth)
+    app.include_router(portfolio.router, dependencies=_auth)
+    app.include_router(fonds_vergleich.router, dependencies=_auth)
+    app.include_router(rebalancing.router, dependencies=_auth)
+    app.include_router(alerts.router, dependencies=_auth)
 
     return app

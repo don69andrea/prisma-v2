@@ -17,7 +17,7 @@ _BLOCKED_NETWORKS = [
     ipaddress.ip_network("172.16.0.0/12"),
     ipaddress.ip_network("192.168.0.0/16"),
     ipaddress.ip_network("169.254.0.0/16"),  # link-local / AWS metadata
-    ipaddress.ip_network("127.0.0.0/8"),     # loopback
+    ipaddress.ip_network("127.0.0.0/8"),  # loopback
 ]
 
 # Simple regex to detect bare IPv4 addresses in the hostname

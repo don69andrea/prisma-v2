@@ -104,9 +104,7 @@ class Settings(BaseSettings):
             if not self.api_key:
                 raise ValueError("API_KEY muss in der Production-Umgebung gesetzt sein")
             if not self.anthropic_api_key:
-                raise ValueError(
-                    "ANTHROPIC_API_KEY muss in der Production-Umgebung gesetzt sein"
-                )
+                raise ValueError("ANTHROPIC_API_KEY muss in der Production-Umgebung gesetzt sein")
         return self
 
 

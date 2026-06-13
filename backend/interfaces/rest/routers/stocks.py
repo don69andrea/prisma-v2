@@ -117,33 +117,6 @@ async def get_prices(
 
 
 @router.get(
-    "/stocks/{ticker}/fundamentals",
-    response_model=FundamentalsResponse,
-    summary="Bewertungskennzahlen abrufen",
-    description="Gibt P/E, P/B, EPS und Dividendenrendite für einen Ticker zurück (Yahoo Finance TTM).",
-)
-async def get_fundamentals(
-    ticker: str = Path(..., pattern=r"^[A-Z0-9.\-]{1,12}$"),
-    service: SwissMarketService = Depends(get_swiss_market_service),
-) -> FundamentalsResponse:
-    try:
-        fund = await service.get_fundamentals_for_ticker(ticker)
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    div_yield_pct: float | None = (
-        round(fund.dividend_yield * 100, 2) if fund.dividend_yield is not None else None
-    )
-    return FundamentalsResponse(
-        ticker=ticker.upper(),
-        pe_ratio=fund.pe_ratio,
-        pb_ratio=fund.pb_ratio,
-        eps_chf=fund.eps_chf,
-        dividend_yield_pct=div_yield_pct,
-        disclaimer="Yahoo Finance — Trailing 12 Months. Keine Anlageberatung.",
-    )
-
-
-@router.get(
     "/stocks/{ticker}/langfrist-score",
     response_model=LangfristScoreResponse,
     summary="VIAC Langfrist-Score (0–10)",

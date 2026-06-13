@@ -12,8 +12,12 @@ from backend.config import get_settings
 # Neue Modelle hier ergänzen, sonst generiert autogenerate keine Migrationen.
 from backend.infrastructure.persistence.base import Base
 from backend.infrastructure.persistence.models import llm_call_log, stock  # noqa: F401
+from backend.infrastructure.persistence.models.alert import AlertORM  # noqa: F401
 from backend.infrastructure.persistence.models.backtest_result import (
     BacktestResultORM,  # noqa: F401
+)
+from backend.infrastructure.persistence.models.decision_audit_log import (  # noqa: F401
+    DecisionAuditLogORM,
 )
 from backend.infrastructure.persistence.models.embedding import (  # noqa: F401
     DocumentORM,
@@ -25,7 +29,17 @@ from backend.infrastructure.persistence.models.investor_profile import (  # noqa
 from backend.infrastructure.persistence.models.memo_batch_job import (  # noqa: F401
     MemoBatchJobORM,
 )
+from backend.infrastructure.persistence.models.ml_features import MLFeatureORM  # noqa: F401
+from backend.infrastructure.persistence.models.news import (  # noqa: F401
+    NewsChunkORM,
+    NewsDocumentORM,
+)
+from backend.infrastructure.persistence.models.ranking_run import RankingRunORM  # noqa: F401
 from backend.infrastructure.persistence.models.research_memo import ResearchMemoORM  # noqa: F401
+from backend.infrastructure.persistence.models.swiss_filing import (  # noqa: F401
+    SwissFilingChunkORM,
+)
+from backend.infrastructure.persistence.models.universe import UniverseORM  # noqa: F401
 
 # Alembic Config-Objekt, gibt Zugriff auf alembic.ini
 config = context.config

@@ -132,7 +132,11 @@ class SQLAEmbeddingRepository(EmbeddingRepository):
         # JOIN documents bringt ticker und doc_type mit.
         ticker_filter = "AND d.ticker = :ticker" if ticker else ""
         # Convert list to PostgreSQL vector format: [0.1, 0.2, ...] -> "'[0.1, 0.2, ...]'::vector"
-        query_vector_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+        # K-6: Validate embedding values — NaN/Inf would cause a PostgreSQL parsing error.
+        validated = [float(v) for v in query_embedding]
+        if any(not math.isfinite(v) for v in validated):
+            raise ValueError("Embedding contains non-finite values (NaN/Inf)")
+        query_vector_str = "[" + ",".join(f"{v:.8f}" for v in validated) + "]"
         raw_sql = f"""
             SELECT
                 ec.id          AS chunk_id,

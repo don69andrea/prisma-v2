@@ -85,7 +85,11 @@ async def live_decisions(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Keine Ticker angegeben."
         )
-    ticker_list = ticker_list[:_MAX_LIVE_TICKERS]
+    if len(ticker_list) > _MAX_LIVE_TICKERS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Maximal {_MAX_LIVE_TICKERS} Ticker erlaubt, {len(ticker_list)} übergeben.",
+        )
     signals = await aggregation_service.get_signals(ticker_list)
     return _build_response(signals, signal, eligible_only)
 

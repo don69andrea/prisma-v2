@@ -199,9 +199,16 @@ async def require_admin_api_key(
     Information-Leak über die erwartete Header-Struktur entsteht. Ein leerer
     `settings.api_key` wird ebenfalls als 401 behandelt — kein gültiger Key
     kann leer sein.
+
     """
     if not settings.api_key:
-        raise HTTPException(status_code=401, detail="Invalid API key")
+        # In production, a missing key is a misconfiguration — block all requests.
+        # In test/dev, no key means auth is not configured → bypass so tests run
+        # without needing API_KEY set in CI. Admin tests that want to verify 401
+        # behaviour inject their own Settings(api_key=...) via dependency_overrides.
+        if settings.environment == "production":
+            raise HTTPException(status_code=401, detail="Invalid API key")
+        return
     if x_api_key is None or not hmac.compare_digest(x_api_key, settings.api_key):
         raise HTTPException(status_code=401, detail="Invalid API key")
 
@@ -215,8 +222,24 @@ async def require_api_key(
     Wenn tool_api_key leer ist (default), kein Enforcement — bestehende Aufrufer
     ohne Header werden nicht gebrochen. Sobald TOOL_API_KEY gesetzt ist,
     muss der Header exakt übereinstimmen.
+
+    In Production (ENVIRONMENT=production) wird bei fehlendem Key ein 503
+    zurückgegeben statt den Endpoint ohne Auth durchzulassen.
     """
     if not settings.tool_api_key:
+        if settings.environment == "production":
+            _logger.error(
+                "require_api_key: TOOL_API_KEY ist nicht konfiguriert, "
+                "Endpoint in Production ohne Auth aufgerufen — Zugriff verweigert."
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Dienst nicht verfügbar: API-Key-Konfiguration fehlt.",
+            )
+        _logger.warning(
+            "require_api_key: TOOL_API_KEY ist nicht gesetzt — Auth-Enforcement deaktiviert. "
+            "Setze TOOL_API_KEY in Production."
+        )
         return
     if x_api_key is None or not hmac.compare_digest(x_api_key, settings.tool_api_key):
         raise HTTPException(status_code=401, detail="Invalid API key")

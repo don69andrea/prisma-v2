@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from backend.application.agents.macro_agent import MacroIntelligenceAgent
 from backend.application.services.macro_service import MacroService
@@ -68,7 +68,7 @@ async def get_macro_context(
     ),
 )
 async def get_macro_score(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: MacroService = Depends(get_macro_service),
     retrieval: RetrievalService = Depends(get_retrieval_service),
 ) -> MacroScoreResponse:

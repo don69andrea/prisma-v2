@@ -1,9 +1,10 @@
 name: CD — Render V2 Deploy
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       target:
@@ -20,16 +21,19 @@ jobs:
   deploy:
     name: Trigger Render V2 Deploy Hook
     runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Validate secrets are set
         run: |
-          if [ "${{ github.event_name }}" = "push" ] || [ "${{ inputs.target }}" != "frontend" ]; then
+          if [ "${{ github.event_name }}" = "workflow_run" ] || [ "${{ inputs.target }}" != "frontend" ]; then
             if [ -z "${{ secrets.RENDER_V2_DEPLOY_HOOK_BACKEND }}" ]; then
               echo "::error::Secret RENDER_V2_DEPLOY_HOOK_BACKEND nicht gesetzt (Settings → Secrets → Actions)."
               exit 1
             fi
           fi
-          if [ "${{ github.event_name }}" = "push" ] || [ "${{ inputs.target }}" != "backend" ]; then
+          if [ "${{ github.event_name }}" = "workflow_run" ] || [ "${{ inputs.target }}" != "backend" ]; then
             if [ -z "${{ secrets.RENDER_V2_DEPLOY_HOOK_FRONTEND }}" ]; then
               echo "::error::Secret RENDER_V2_DEPLOY_HOOK_FRONTEND nicht gesetzt (Settings → Secrets → Actions)."
               exit 1
@@ -38,7 +42,7 @@ jobs:
 
       - name: Trigger backend deploy
         if: >
-          github.event_name == 'push' ||
+          github.event_name == 'workflow_run' ||
           inputs.target == 'backend' ||
           inputs.target == 'both'
         run: |
@@ -54,7 +58,7 @@ jobs:
 
       - name: Trigger frontend deploy
         if: >
-          github.event_name == 'push' ||
+          github.event_name == 'workflow_run' ||
           inputs.target == 'frontend' ||
           inputs.target == 'both'
         run: |
@@ -73,7 +77,7 @@ jobs:
           echo "### PRISMA V2 Deploy Triggered" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Target: \`${{ inputs.target || 'both (auto push)' }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Trigger: \`${{ github.event_name }}\` by ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: \`${{ github.event_name }}\` (CI: ${{ github.event.workflow_run.conclusion || 'n/a' }}) by ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "- Branch: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Render baut das Image — Status im [Render-Dashboard](https://dashboard.render.com) sichtbar." >> $GITHUB_STEP_SUMMARY

@@ -141,7 +141,7 @@ export function ChatDrawer() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1" style={{ height: '380px' }}>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1" style={{ height: '356px' }}>
           {messages.length === 0 && (
             <div className="text-center pt-8 space-y-3">
               <p className="text-xs text-slate-600">Stell mir eine Frage über PRISMA-Daten</p>
@@ -168,6 +168,13 @@ export function ChatDrawer() {
             />
           ))}
         </div>
+
+        {/* Session cost estimate */}
+        {messages.length > 0 && (
+          <div className="px-3 py-1 text-xs text-white/30 text-right border-t border-slate-800/40">
+            Session: ~CHF {((messages.length / 2) * 0.0015).toFixed(3)}
+          </div>
+        )}
 
         {/* Input */}
         <div className="px-3 pb-3 border-t border-slate-800 pt-3">

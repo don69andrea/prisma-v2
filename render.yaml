@@ -72,7 +72,7 @@ services:
       # Value must point to the public URL of prisma-v2-backend on Render,
       # e.g. https://prisma-v2-backend.onrender.com
       - key: NEXT_PUBLIC_API_URL
-        sync: false
+        value: https://prisma-v2-backend.onrender.com
     buildFilter:
       paths:
         - frontend/**

@@ -30,15 +30,25 @@ class _NarrativeOutput(BaseModel):
     en: str = Field(..., min_length=10, max_length=500)
 
 
-def _fetch_chf_eur() -> float:
+async def _fetch_chf_eur() -> float:
+    """Lädt CHF/EUR-Kurs asynchron via asyncio.to_thread, um den Event-Loop nicht zu blockieren."""
+    def _sync_fetch() -> float:
+        try:
+            ticker = yf.Ticker("EURCHF=X")
+            hist = ticker.history(period="5d")
+            if not hist.empty:
+                return round(1.0 / float(hist["Close"].iloc[-1]), 4)
+        except Exception:
+            pass
+        return 0.93
+
+    import asyncio
     try:
-        ticker = yf.Ticker("EURCHF=X")
-        hist = ticker.history(period="5d")
-        if not hist.empty:
-            return round(1.0 / float(hist["Close"].iloc[-1]), 4)
-    except Exception:
-        _logger.warning("CHF/EUR-Abruf fehlgeschlagen — Fallback 0.93")
-    return 0.93
+        result = await asyncio.to_thread(_sync_fetch)
+        return result
+    except Exception as exc:
+        _logger.warning("CHF/EUR-Abruf fehlgeschlagen (%s) — Fallback 0.93", exc)
+        return 0.93
 
 
 async def _fetch_swiss_inflation() -> float:
@@ -135,11 +145,11 @@ async def _fetch_swiss_pmi() -> float:
 
             raise ValueError("PMI-Wert nicht im HTML gefunden")
 
-    except Exception:
+    except Exception as exc:
         _logger.warning(
-            "Schweizer PMI nicht abrufbar — Fallback %.1f",
-            _FALLBACK_PMI_CH,
-            exc_info=True,
+            "Schweizer PMI nicht abrufbar (URL: %s, Fehler: %s) — Fallback %.1f. "
+            "Fallback-Wert _FALLBACK_PMI_CH zuletzt validiert: 2025-06-13.",
+            url, exc, _FALLBACK_PMI_CH,
         )
     return _FALLBACK_PMI_CH
 
@@ -169,7 +179,7 @@ class MacroService:
     async def get_context(self) -> MacroContext:
         """Erstellt den aktuellen MacroContext (SNB + CHF + Narrative)."""
         leitzins = await fetch_current_snb_rate()
-        chf_eur = _fetch_chf_eur()
+        chf_eur = await _fetch_chf_eur()
         today = datetime.now(tz=UTC).date()
 
         # Inflation und PMI parallel abrufen (beide mit robustem Fallback)

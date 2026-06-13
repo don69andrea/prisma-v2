@@ -206,6 +206,14 @@ export function PortfolioClient() {
   const [positions, setPositions] = useState<PositionRow[]>(() => loadStoredPortfolio()?.positions ?? DEFAULT_POSITIONS);
   const [error, setError] = useState('');
 
+  const totalCurrentWeight = positions.reduce((sum, p) => sum + (parseFloat(p.current) || 0), 0);
+  const totalTargetWeight = positions.reduce((sum, p) => sum + (parseFloat(p.target) || 0), 0);
+  const weightError = totalCurrentWeight > 100
+    ? `Ist-Gewichte: ${totalCurrentWeight.toFixed(1)}% — maximal 100% erlaubt`
+    : totalTargetWeight > 100
+    ? `Soll-Gewichte: ${totalTargetWeight.toFixed(1)}% — maximal 100% erlaubt`
+    : null;
+
   const mutation = useMutation({
     mutationFn: computeRebalancingPlan,
     onSuccess: () => {
@@ -339,7 +347,7 @@ export function PortfolioClient() {
           <Button type="button" size="sm" variant="outline" onClick={addPosition}>
             <Plus className="h-3.5 w-3.5 mr-1" /> Position
           </Button>
-          <Button type="submit" size="sm" disabled={mutation.isPending} data-testid="plan-submit-btn">
+          <Button type="submit" size="sm" disabled={mutation.isPending || !!weightError} data-testid="plan-submit-btn">
             {mutation.isPending ? 'Berechne…' : 'Plan berechnen'}
           </Button>
           {JSON.stringify(positions) !== JSON.stringify(DEFAULT_POSITIONS) && (
@@ -356,6 +364,7 @@ export function PortfolioClient() {
           )}
         </div>
 
+        {weightError && <p className="text-xs text-destructive">{weightError}</p>}
         {error && <p className="text-xs text-destructive" data-testid="portfolio-error">{error}</p>}
       </form>
 

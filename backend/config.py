@@ -50,6 +50,17 @@ class Settings(BaseSettings):
     max_concurrent_batch_workers: int = 3
     stale_batch_timeout_seconds: int = 600
 
+    # Signal-Aggregation: Gewichtung der drei Signal-Quellen (Summe muss 1.0 ergeben)
+    # Konfigurierbar via ENV: SIGNAL_QUANT_WEIGHT, SIGNAL_ML_WEIGHT, SIGNAL_MACRO_WEIGHT
+    signal_quant_weight: float = 0.45
+    signal_ml_weight: float = 0.35
+    signal_macro_weight: float = 0.20
+
+    @field_validator("signal_macro_weight", mode="after")
+    @classmethod
+    def validate_signal_weights_sum(cls, macro: float) -> float:
+        return macro
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: object) -> list[str]:
@@ -73,6 +84,16 @@ class Settings(BaseSettings):
                 f"budget_cap_threshold muss zwischen 0 und 1 liegen, erhalten: {value}"
             )
         return decimal_value
+
+    @model_validator(mode="after")
+    def _validate_signal_weights(self) -> "Settings":
+        total = self.signal_quant_weight + self.signal_ml_weight + self.signal_macro_weight
+        if abs(total - 1.0) > 0.001:
+            raise ValueError(
+                f"SIGNAL_*_WEIGHT Summe muss 1.0 ergeben, erhalten: {total:.4f} "
+                f"(quant={self.signal_quant_weight}, ml={self.signal_ml_weight}, macro={self.signal_macro_weight})"
+            )
+        return self
 
     @model_validator(mode="after")
     def _api_key_required_in_production(self) -> "Settings":

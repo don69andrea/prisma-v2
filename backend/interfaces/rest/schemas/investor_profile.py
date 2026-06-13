@@ -22,14 +22,21 @@ class InvestorProfileCreateRequest(BaseModel):
     )
     profession: str | None = None
     known_tickers: list[str] = Field(default_factory=list)
+    investment_amount: Literal["under_10k", "10k_100k", "over_100k"] = "10k_100k"
+    esg_preference: Literal["yes", "no", "indifferent"] = "indifferent"
+    income_preference: Literal["dividends", "growth", "balanced"] = "balanced"
 
 
 class InvestorProfileResponse(BaseModel):
     session_id: str
     risk_profile: str
     sector_affinity: list[str]
+    sector_hint: str | None = None
     time_horizon: str
     investment_goal: str
+    investment_amount: str = "10k_100k"
+    esg_preference: str = "indifferent"
+    income_preference: str = "balanced"
     confidence_score: float
     onboarding_complete: bool
 

@@ -1,4 +1,4 @@
-# PRISMA — Design-Spec & Capstone-Referenzdokument
+# PRISMA V2 — Design-Spec & Referenzdokument
 
 **Status: Draft v1.3 — 2026-04-30**
 
@@ -35,7 +35,7 @@ Team: Sheyla, Fabia, Nicolas, Andrea
 
 ## 1. Kontext & Ziele
 
-PRISMA ist das Capstone-Projekt im Modul "AI-assisted Software Development" des BSc Business Artificial Intelligence an der FHNW Hochschule für Wirtschaft (FS 2026). Das Capstone macht 100% der Modulnote aus.
+PRISMA ist das Modulprojekt im Modul "AI-assisted Software Development" des BSc Business Artificial Intelligence an der FHNW Hochschule für Wirtschaft (FS 2026). Das Projekt macht 100% der Modulnote aus.
 
 Das Projekt ist angelehnt an eine reale Lösung der Vireos AG (Schweizer Asset-Manager) und wird von einem 4-Personen-Studententeam in ca. 12 Wochen neben dem Studium entwickelt.
 
@@ -133,7 +133,7 @@ graph TD
 ### 4.2 Verzeichnisstruktur
 
 ```
-prisma-capstone/
+prisma-v2/
 ├── backend/
 │   ├── domain/
 │   │   ├── entities/          # Stock, Universe, ModelRun, ...
@@ -792,14 +792,14 @@ Diese Features sind explizit **nicht im MVP-Scope** und werden erst nach Woche 1
 |---|---|---|
 | Statistical Arbitrage (PCA + Ornstein-Uhlenbeck) | Quant | Hohe mathematische Komplexität; braucht sauberes Pairs-Trading-Framework |
 | Earnings Cycle (Hampel-Filter) | Quant | Datenqualität der Earnings-Reihen variabel |
-| Quality AI (Lasso) | Quant | Braucht point-in-time Fundamentals — FMP Free liefert keine, FMP Starter ohne Restatement-Flag = Look-Ahead-Bias. Bezahl-Quelle (Bloomberg/SIX) ausserhalb Capstone-Budget. Siehe ADR 0005. |
+| Quality AI (Lasso) | Quant | Braucht point-in-time Fundamentals — FMP Free liefert keine, FMP Starter ohne Restatement-Flag = Look-Ahead-Bias. Bezahl-Quelle (Bloomberg/SIX) ausserhalb Projektbudget. Siehe ADR 0005. |
 | Anti-Cyclical (3J-Median P/E) | Quant | Braucht historische P/E-Reihen; FMP Free liefert keine. Siehe ADR 0005. |
 | Multi-Horizon Momentum (gewichteter Mix halflife 21/63/126) | Quant | Erweiterung von Trend Momentum, nicht im MVP-Scope |
 | Sektor-neutrales Trend Momentum | Quant | Spannend für Demo, aber Kategorie-Mapping pro Ticker erhöht Komplexität |
 | Walk-Forward-Analyse | Backtest | Komplexität vs. Nutzen für Demo |
 | Transaktionskosten-Modell | Backtest | Scope-Erweiterung ohne direkten Bewertungsnutzen |
 | Multi-Faktor-Risiko-Modell | Quant | Barra-ähnlich; eigenes Projekt |
-| Lokalisierung / Multi-Währungs-Normalisierung | Platform | Relevant für Production, übertrieben für Capstone |
+| Lokalisierung / Multi-Währungs-Normalisierung | Platform | Relevant für Production, übertrieben für Modulprojekt |
 
 ---
 
@@ -840,4 +840,4 @@ Zu prüfen am Ende von Woche 10 — alle Punkte müssen abgehakt sein für Zieln
 | Draft v1.0 | 2026-04-21 | Documentation Engineer | Initiales Dokument erstellt; alle Sektionen vollständig ausgearbeitet |
 | Draft v1.1 | 2026-04-21 | Sheyla / Claude Code | Tippfehler-Review: "Nota" → "Note", "grünsein" → "grün sein", "nebenberuflich" → "neben dem Studium", fehlender Artikel in Risiko-Mitigation. `UniverseStock` aus Entitäten-Tabelle entfernt (Bridge-Entity, bleibt im ER-Diagramm). |
 | Draft v1.2 | 2026-04-27 | Fabia / Claude Code | Quant-Modelle-Redesign (PR #26, ADR 0005, Spec 2026-04-27): Quality AI + Anti-Cyclical raus (PIT-Daten / Historicals nicht im Free-Tier verfügbar), Trend Momentum + Value Alpha Potential rein. §6.2/§6.4 ersetzt, §7.1/§7.2 Default-Weights gleichgewichtet 0.20, §8.1 zweite Widerspruchs-Regel, §13 Datenquellen + FMP-Key, §15.3 env-Liste, §18 Risiko-Tabelle, §19 Stretch-Goals erweitert. |
-| Draft v1.3 | 2026-04-30 | Sheyla / Claude Code | §16 Team-Rollen mit echten Personen befüllt (TBD → Fabia / Sheyla / Andrea / Nicolas inkl. GitHub-Handles). Quelle: Capstone-Briefing-PDF. |
+| Draft v1.3 | 2026-04-30 | Sheyla / Claude Code | §16 Team-Rollen mit echten Personen befüllt (TBD → Fabia / Sheyla / Andrea / Nicolas inkl. GitHub-Handles). Quelle: Modul-Briefing-PDF. |

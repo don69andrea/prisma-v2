@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SignalBadge } from '@/components/ui/SignalBadge';
 import { AuditTrail } from '@/components/ui/AuditTrail';
+import { SignalBreakdown } from '@/components/ui/SignalBreakdown';
 import { cn } from '@/lib/utils';
 
 const FILTER_CHIP_CONFIG: Record<
@@ -270,20 +271,13 @@ function SignalCard({ item }: { item: DecisionSignal }) {
 
         <ConfidenceBar value={item.confidence} />
 
-        <div className="grid grid-cols-3 gap-1 text-[11px]">
-          <div className="text-center">
-            <p className="text-[#8b949e]">Quant</p>
-            <p className="font-medium text-[#e6edf3]">{item.quant_score.toFixed(1)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[#8b949e]">ML</p>
-            <p className="font-medium text-[#e6edf3]">{item.ml_score.toFixed(0)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[#8b949e]">Makro</p>
-            <p className="font-medium text-[#e6edf3]">{item.macro_score.toFixed(0)}</p>
-          </div>
-        </div>
+        <SignalBreakdown
+          quantScore={item.quant_score}
+          mlScore={item.ml_score}
+          macroScore={item.macro_score}
+          finalScore={item.weighted_score}
+          signal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
+        />
 
         {/* Action row */}
         <div className="flex items-center justify-between gap-2 pt-0.5">

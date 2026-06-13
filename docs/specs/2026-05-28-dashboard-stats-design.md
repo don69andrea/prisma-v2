@@ -6,7 +6,7 @@
 
 ## Ziel
 
-Das aktuelle Dashboard (`/dashboard`, PR #124) zeigt nur eine Runs-Tabelle. Für die Capstone-Demo ist die Startseite, die Bewerter zuerst sehen, zu spartanisch. Vier Stats-Karten oben sollen sofort vermitteln, dass PRISMA echte Daten verwaltet:
+Das aktuelle Dashboard (`/dashboard`, PR #124) zeigt nur eine Runs-Tabelle. Für die Demo ist die Startseite, die Bewerter zuerst sehen, zu spartanisch. Vier Stats-Karten oben sollen sofort vermitteln, dass PRISMA echte Daten verwaltet:
 
 1. **Letzter Run** — Datum + Status-Badge, Link zur Run-Detail-Page
 2. **# Universen** — Anzahl angelegter Universen, Link zu `/universes`

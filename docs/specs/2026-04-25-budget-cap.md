@@ -5,7 +5,7 @@
 - **Kontext**: Implementiert Issue #19, setzt ADR-0004 §7 (Hard-Cap-Budget-Kontrolle) operationell um
 - **Supersedes**: —
 - **Rolle**: B — AI Engineer (Sheyla)
-- **Parent-Spec**: `docs/specs/2026-04-21-prisma-capstone-design.md` §10, §14
+- **Parent-Spec**: `docs/specs/2026-04-21-prisma-v2-design.md` §10, §14
 
 ---
 
@@ -280,7 +280,7 @@ class CostTracker:
 
 ### Concurrency-Hinweis
 
-Zwischen `check_cap` und `record` existiert ein kleines Race-Window: zwei parallele Calls können beide `check_cap` passieren, dann aber zusammen die Cap überschreiten. Bei Capstone-Volumen (max ~30 Calls/Batch) ist der maximale Slip einstellig. Der 5%-Puffer der 95%-Schwelle absorbiert das. Als Backstop dient das Anthropic Console Spend-Limit — das ist die letzte Sicherheitslinie und liegt auf Infrastruktur-Ebene, ausserhalb des eigenen Codes.
+Zwischen `check_cap` und `record` existiert ein kleines Race-Window: zwei parallele Calls können beide `check_cap` passieren, dann aber zusammen die Cap überschreiten. Bei Projektvolumen (max ~30 Calls/Batch) ist der maximale Slip einstellig. Der 5%-Puffer der 95%-Schwelle absorbiert das. Als Backstop dient das Anthropic Console Spend-Limit — das ist die letzte Sicherheitslinie und liegt auf Infrastruktur-Ebene, ausserhalb des eigenen Codes.
 
 ---
 
@@ -631,8 +631,8 @@ def validate_threshold(cls, v: Decimal) -> Decimal:
 - **CLAUDE.md** — `Decimal`-für-Geld-Regel, Fixture-Mode-Pflicht (`tests/fixtures/llm/`), kein SDK-Import in `domain/` oder `application/`
 - **Anthropic Pricing** — https://www.anthropic.com/pricing (Single-Source-of-Truth für `pricing.py` Anthropic-Einträge)
 - **Voyage Pricing** — https://docs.voyageai.com/docs/pricing (Single-Source-of-Truth für `pricing.py` Voyage-Einträge)
-- **Haupt-Design-Spec §10** (Auth / `X-API-Key`) — `docs/specs/2026-04-21-prisma-capstone-design.md`
-- **Haupt-Design-Spec §14.2** (Integration-Test-DB-Fixture) — `docs/specs/2026-04-21-prisma-capstone-design.md`
+- **Haupt-Design-Spec §10** (Auth / `X-API-Key`) — `docs/specs/2026-04-21-prisma-v2-design.md`
+- **Haupt-Design-Spec §14.2** (Integration-Test-DB-Fixture) — `docs/specs/2026-04-21-prisma-v2-design.md`
 
 ---
 

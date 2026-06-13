@@ -2,7 +2,7 @@
 
 **Status**: Draft v1.0 — 2026-04-21 (für Phase 2, Wo 3)
 **Rolle**: B — AI Engineer (Sheyla)
-**Parent-Spec**: `docs/specs/2026-04-21-prisma-capstone-design.md` §8.2
+**Parent-Spec**: `docs/specs/2026-04-21-prisma-v2-design.md` §8.2
 **Verwandte Specs**:
 - `docs/specs/2026-04-28-narrative-engine.md` (Layer 1)
 - `docs/specs/2026-04-28-mcp-server.md` (Layer 3)
@@ -43,7 +43,7 @@ Die **Multi-Agent-Pipeline** schliesst diese Lücke. Für die **Top-10** eines M
 
 Das Ergebnis ist ein **2-seitiges Research-Dossier pro Aktie**, mit Quellenzitaten zu jeder Aussage — tiefer als das Layer-1-Memo, aber immer noch maschinell erzeugt und innerhalb von ~60 Sekunden verfügbar.
 
-**Warum das für euer Capstone zählt**: Multi-Agent-Kollaboration ist einer der Modul-Lehrstoffe (Kapitel "Agentic AI & MCP"). Diese Pipeline ist das deutlichste Produkt-Feature, das den Lehrstoff direkt adressiert.
+**Warum das für euer Modulprojekt zählt**: Multi-Agent-Kollaboration ist einer der Modul-Lehrstoffe (Kapitel "Agentic AI & MCP"). Diese Pipeline ist das deutlichste Produkt-Feature, das den Lehrstoff direkt adressiert.
 
 ---
 
@@ -501,7 +501,7 @@ Pro Top-10 Deep-Dive Batch:
 | RAG Query-Embeddings | < $0.01 |
 | **Total pro Batch** | **≈ $0.48** |
 
-**Capstone-Budget-Prognose**: 3 Voll-Demos + 5 Dev-Tests = 8 Batches × $0.5 = **~$4 gesamt**. Zusammen mit Narrative Engine (~$4) = **~$8 gesamt** Claude-API-Kosten für AI-Features. **Plus einmalig $0.24 Embedding-Ingestion**. Grosszügiger Anthropic-Cap: **$30/Monat**.
+**Projektbudget-Prognose**: 3 Voll-Demos + 5 Dev-Tests = 8 Batches × $0.5 = **~$4 gesamt**. Zusammen mit Narrative Engine (~$4) = **~$8 gesamt** Claude-API-Kosten für AI-Features. **Plus einmalig $0.24 Embedding-Ingestion**. Grosszügiger Anthropic-Cap: **$30/Monat**.
 
 ### 13.2 Logging pro Deep-Dive
 

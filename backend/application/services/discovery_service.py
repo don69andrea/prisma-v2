@@ -32,6 +32,23 @@ _KNOWLEDGE_RESULT_LIMIT: dict[str, int] = {
     "high": 30,
 }
 
+# Sektoren die bei esg_preference="yes" herausgefiltert werden.
+# Proxy-Ansatz: kein ESG-Rating auf SwissStock → sektorbasierte Annäherung.
+_NON_ESG_SECTORS: frozenset[str] = frozenset(
+    {
+        "energy",
+        "coal",
+        "oil & gas",
+        "defense",
+        "gambling",
+        "tobacco",
+        "weapons",
+    }
+)
+
+# Mindest-Dividendenrendite (%) für Income-Bonus
+_DIVIDEND_YIELD_THRESHOLD = 0.02  # 2 %
+
 
 class DiscoveryService:
     """Gibt ein personalisiertes Aktienuniversum für ein InvestorProfile zurück.
@@ -53,18 +70,41 @@ class DiscoveryService:
         self._eligibility = EligibilityFilter()
 
     async def _score_stock(
-        self, stock: SwissStock, risk_floor: float
+        self, stock: SwissStock, profile: InvestorProfile, risk_floor: float
     ) -> tuple[SwissStock, float] | None:
-        """Berechnet Quant-Score für einen Titel. Gibt None zurück wenn nicht verfügbar oder < risk_floor."""
+        """Berechnet Quant-Score für einen Titel inkl. ESG-Filter und Income-Bonus.
+
+        Gibt None zurück wenn der Titel nicht verfügbar, unter dem Risk-Floor liegt
+        oder via esg_preference ausgeschlossen wird.
+        """
+        # ESG-Filter (sektorbasierter Proxy — kein dediziertes ESG-Rating vorhanden)
+        if (
+            profile.esg_preference == "yes"
+            and stock.sector is not None
+            and stock.sector.lower() in _NON_ESG_SECTORS
+        ):
+            _logger.debug("ESG-Filter: %s (Sektor '%s') ausgeschlossen", stock.ticker, stock.sector)
+            return None
+
         try:
             fundamentals = await self._market_data.get_fundamentals(stock.ticker)
             quant_score = self._scorer.score(stock.ticker, fundamentals)
         except Exception:
             _logger.debug("Quant-Score für %s nicht verfügbar — übersprungen", stock.ticker)
             return None
+
         if quant_score.composite < risk_floor:
             return None
-        return (stock, quant_score.composite)
+
+        # Income-Präferenz: Bonus-Score basierend auf Dividendenrendite
+        adjusted = quant_score.composite
+        dividend_yield = (fundamentals.dividend_yield or 0.0) if fundamentals else 0.0
+        if profile.income_preference == "dividends" and dividend_yield >= _DIVIDEND_YIELD_THRESHOLD:
+            adjusted = min(adjusted + 10.0, 100.0)
+        elif profile.income_preference == "growth" and dividend_yield < _DIVIDEND_YIELD_THRESHOLD:
+            adjusted = min(adjusted + 5.0, 100.0)
+
+        return (stock, adjusted)
 
     async def get_personalized_universe(self, profile: InvestorProfile) -> list[SwissStock]:
         """Gibt die gefilterte Titelliste für das übergebene Profil zurück."""
@@ -81,9 +121,9 @@ class DiscoveryService:
 
         risk_floor = _RISK_MIN_COMPOSITE.get(profile.risk_profile, 0.0)
 
-        # 2. Quant-Score-Filter — alle Titel parallel bewerten
+        # 2. Quant-Score-Filter + ESG/Income — alle Titel parallel bewerten
         raw = await asyncio.gather(
-            *[self._score_stock(stock, risk_floor) for stock in candidates],
+            *[self._score_stock(stock, profile, risk_floor) for stock in candidates],
             return_exceptions=True,
         )
         scored: list[tuple[SwissStock, float]] = [r for r in raw if isinstance(r, tuple)]

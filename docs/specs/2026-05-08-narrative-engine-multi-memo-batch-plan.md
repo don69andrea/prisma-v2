@@ -1,6 +1,6 @@
 # Multi-Memo Batch Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Implementiere diesen Plan Schritt für Schritt. Schritte nutzen Checkbox-Syntax (`- [ ]`) zum Tracking.
 
 **Goal:** Implementiert Async-Job-Batch für Memo-Generierung über Top-N Stocks eines Runs (siehe Spec `2026-05-08-narrative-engine-multi-memo-batch.md`).
 
@@ -2340,7 +2340,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 Zwei Execution-Optionen:
 
-**1. Subagent-Driven (recommended)** — Pro Task ein frischer Subagent, Two-Stage-Review zwischen Tasks, schnelle Iteration. Pattern wie bei Single-Memo-Slice und Foundation.
+**1. Parallele Agent-Ausführung (empfohlen)** — Pro Task ein frischer Agent, zweistufiger Review zwischen Tasks, schnelle Iteration. Pattern wie bei Single-Memo-Slice und Foundation.
 
 **2. Inline Execution** — Sheyla + Claude im selben Session-Kontext, Batch-Execution mit Checkpoints für Review.
 

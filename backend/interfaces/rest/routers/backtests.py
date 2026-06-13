@@ -32,6 +32,7 @@ async def run_backtest(
             end_date=body.end_date,
             top_n=body.top_n,
             benchmark_ticker=body.benchmark_ticker,
+            mode=body.mode,
         )
     except RunNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

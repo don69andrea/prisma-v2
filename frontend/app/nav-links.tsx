@@ -1,10 +1,18 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
+import { PROFILE_STORAGE_KEY } from '@/app/start/start-client';
+
+const PROFILE_BADGE_LABEL: Record<string, string> = {
+  conservative: 'Stabiler Investor',
+  moderate:     'Ausgewogener Investor',
+  aggressive:   'Chancen-Investor',
+};
 
 const NAV_GROUPS = [
   {
@@ -55,6 +63,18 @@ function isActive(href: string, pathname: string): boolean {
 
 export function NavLinks() {
   const pathname = usePathname();
+  const [profileType, setProfileType] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (stored) setProfileType(stored);
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === PROFILE_STORAGE_KEY) setProfileType(e.newValue);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   return (
     <nav
@@ -89,6 +109,17 @@ export function NavLinks() {
           </div>
         </div>
       ))}
+
+      {profileType && (
+        <div className="flex flex-col gap-1 shrink-0 ml-2">
+          <span className="text-[9px] font-semibold tracking-[0.15em] text-[#8b949e] uppercase px-1 opacity-0 select-none">
+            &nbsp;
+          </span>
+          <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 whitespace-nowrap">
+            🧭 {PROFILE_BADGE_LABEL[profileType] ?? 'Entdecker'}
+          </span>
+        </div>
+      )}
     </nav>
   );
 }

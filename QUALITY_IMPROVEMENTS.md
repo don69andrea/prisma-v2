@@ -326,3 +326,11 @@ P2: #5 → #6              (unabhängig)
     #13                  (unabhängig)
 P3: #14 → #15 → #16      (alle unabhängig)
 ```
+
+---
+
+## Abschluss
+
+**Alle 16 Tasks erledigt und in `main` gemergt (2026-06-13).**
+
+PRs: #153, #155, #157, #165 — CI grün, Render deployt automatisch.

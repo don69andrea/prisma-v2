@@ -10,6 +10,7 @@ from backend.domain.services.langfrist_score_calculator import LangfristScoreCal
 from backend.domain.services.swiss_quant_scorer import SwissQuantScorer
 from backend.domain.value_objects.eligibility_result import EligibilityResult
 from backend.domain.value_objects.langfrist_score import LangfristScore
+from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
 from backend.domain.value_objects.swiss_quant_score import SwissQuantScore
 
 

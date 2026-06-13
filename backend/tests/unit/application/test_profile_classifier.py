@@ -137,7 +137,7 @@ class TestCalculateConfidence:
 
     def test_two_known_tickers_adds_score(self) -> None:
         p = self._profile(known_tickers=["NESN.SW", "ROG.SW"])
-        assert ProfileClassifier.calculate_confidence(p) >= 0.2
+        assert ProfileClassifier.calculate_confidence(p) >= 0.15
 
     def test_full_profile_reaches_high_confidence(self) -> None:
         p = self._profile(

@@ -132,10 +132,13 @@ export function FondsClient() {
   );
   const [error, setError] = useState('');
 
-  const { data: fondsList, isLoading: fondsLoading } = useQuery({
+  const { data: fondsList, isLoading: fondsLoading, isError: fondsError } = useQuery({
     queryKey: ['fonds'],
     queryFn: listFonds,
   });
+
+  const totalWeight = positions.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0);
+  const weightError = totalWeight > 100 ? `Gesamtgewichtung: ${totalWeight.toFixed(1)}% — maximal 100% erlaubt` : null;
 
   const mutation = useMutation({
     mutationFn: compareFonds,
@@ -179,7 +182,9 @@ export function FondsClient() {
       <form onSubmit={handleSubmit} className="rounded-lg border bg-card p-4 space-y-4">
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">VIAC-Fonds</label>
-          {fondsLoading ? (
+          {fondsError ? (
+            <p className="text-xs text-destructive">Fondsliste konnte nicht geladen werden. Bitte Seite neu laden.</p>
+          ) : fondsLoading ? (
             <Skeleton className="h-9 w-64" />
           ) : (
             <select
@@ -235,10 +240,11 @@ export function FondsClient() {
           </Button>
         </div>
 
+        {weightError && <p className="text-xs text-destructive">{weightError}</p>}
         {error && <p className="text-xs text-destructive">{error}</p>}
 
         <div className="flex gap-2">
-          <Button type="submit" size="sm" disabled={mutation.isPending || fondsLoading}>
+          <Button type="submit" size="sm" disabled={mutation.isPending || fondsLoading || !!weightError || totalWeight === 0}>
             {mutation.isPending ? 'Berechne…' : 'Vergleichen'}
           </Button>
           {JSON.stringify(positions) !== JSON.stringify(DEFAULT_FONDS_POSITIONS) && (

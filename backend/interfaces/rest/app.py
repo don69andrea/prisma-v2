@@ -114,6 +114,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(LLMRateLimiterMiddleware)
 
     # FastAPI typisiert add_exception_handler über `Type[Exception]` mit einem
     # generischen Handler-Signature, das unsere konkrete (Request, BudgetCapExceeded)-

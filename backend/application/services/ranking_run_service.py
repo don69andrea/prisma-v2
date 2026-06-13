@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
@@ -76,13 +77,48 @@ class RankingRunService:
             self._market_data_provider.get_prices(tickers),
         )
 
-        per_model = {
-            "quality_classic": QualityClassicModel().run(fundamentals),
-            "diversification": DiversificationModel().run(prices=prices),
-            "trend_momentum": TrendMomentumModel().run(prices=prices),
-            "value_alpha_potential": ValueAlphaPotentialModel().run(prices=prices),
-            "alpha": AlphaModel().run(prices=prices),
+        _model_factories: dict[str, Callable[[], list[Any]]] = {
+            "quality_classic": lambda: QualityClassicModel().run(fundamentals),
+            "diversification": lambda: DiversificationModel().run(prices=prices),
+            "trend_momentum": lambda: TrendMomentumModel().run(prices=prices),
+            "value_alpha_potential": lambda: ValueAlphaPotentialModel().run(prices=prices),
+            "alpha": lambda: AlphaModel().run(prices=prices),
         }
+        per_model: dict[str, list[Any]] = {}
+        failed_models: list[str] = []
+        for model_name, factory in _model_factories.items():
+            try:
+                per_model[model_name] = factory()
+            except Exception as exc:
+                _logger.error(
+                    "Modell '%s' fehlgeschlagen in Run %s — wird übersprungen: %s",
+                    model_name,
+                    run.id,
+                    exc,
+                )
+                failed_models.append(model_name)
+
+        if not per_model:
+            await self._run_repo.save(
+                RankingRun(
+                    id=run.id,
+                    created_at=run.created_at,
+                    universe_id=run.universe_id,
+                    weight_config=run.weight_config,
+                    status="failed",
+                )
+            )
+            raise RuntimeError(f"Alle Modelle fehlgeschlagen in Run {run.id}: {failed_models}")
+
+        if failed_models:
+            _logger.warning(
+                "Run %s: %d/%d Modelle fehlgeschlagen: %s",
+                run.id,
+                len(failed_models),
+                len(_model_factories),
+                failed_models,
+            )
+
         total_results = RankingAggregator().aggregate(per_model, weights)
 
         ticker_to_model_rank: dict[str, dict[str, int | None]] = {

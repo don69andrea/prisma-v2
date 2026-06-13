@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { SHAPEntry } from '@/lib/api/ml';
 
 interface Props {
@@ -9,10 +9,22 @@ interface Props {
   signal: 'OUTPERFORM' | 'NEUTRAL' | 'UNDERPERFORM';
 }
 
-const MAX_BAR_WIDTH = 180;
-
 export function SHAPWaterfallChart({ shapValues, expectedValue, signal }: Props) {
   const barsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [maxBarWidth, setMaxBarWidth] = useState(180);
+
+  // Responsive: containerWidth messen und maxBarWidth anpassen
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? 0;
+      // Bars dürfen maximal 60% der Container-Breite einnehmen (Rest für Label + Wert)
+      setMaxBarWidth(Math.max(40, Math.min(180, Math.round(width * 0.45))));
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     barsRef.current.forEach((bar, i) => {
@@ -24,7 +36,7 @@ export function SHAPWaterfallChart({ shapValues, expectedValue, signal }: Props)
         bar.style.width = target;
       });
     });
-  }, [shapValues]);
+  }, [shapValues, maxBarWidth]);
 
   if (!shapValues.length) return null;
 
@@ -38,7 +50,10 @@ export function SHAPWaterfallChart({ shapValues, expectedValue, signal }: Props)
       : 'from-purple-900/40 to-slate-900/40';
 
   return (
-    <div className={`rounded-xl border border-purple-500/20 bg-gradient-to-br ${signalGradient} backdrop-blur-sm p-4 space-y-3`}>
+    <div
+      ref={containerRef}
+      className={`rounded-xl border border-purple-500/20 bg-gradient-to-br ${signalGradient} backdrop-blur-sm p-4 space-y-3`}
+    >
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold tracking-widest text-purple-300 uppercase">
           Why {signal}?
@@ -51,7 +66,7 @@ export function SHAPWaterfallChart({ shapValues, expectedValue, signal }: Props)
       <div className="space-y-2">
         {shapValues.map((entry, i) => {
           const pct = Math.abs(entry.shap_value) / maxAbs;
-          const barPx = Math.round(pct * MAX_BAR_WIDTH);
+          const barPx = Math.round(pct * maxBarWidth);
           const isPos = entry.shap_value >= 0;
 
           return (

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -38,10 +39,15 @@ class MonteCarloResult:
     prob_500k: float
     contribution_total: float
     months: int
+    correlation_degraded: bool = False  # True wenn Cholesky auf Identitätsmatrix zurückgefallen ist
 
 
 class MonteCarloService:
     """Simuliert 3a-Wealth-Paths via Geometric Brownian Motion."""
+
+    def __init__(self, ml_prediction_service: Any | None = None) -> None:
+        # MLPredictionService per DI statt inline-Instantiierung
+        self._ml_prediction_service = ml_prediction_service
 
     async def simulate(self, inp: MonteCarloInput) -> MonteCarloResult:
         total_weight = sum(h.weight for h in inp.holdings)
@@ -60,7 +66,7 @@ class MonteCarloService:
 
         for h in holdings:
             hist_mu, hist_sigma, hist_returns = await _fetch_ticker_params(h.ticker)
-            ml_mu = await _fetch_ml_mu(h.ticker)
+            ml_mu = await self._fetch_ml_mu(h.ticker)
             blended_mu = 0.5 * hist_mu + 0.5 * ml_mu
             mu_list.append(blended_mu)
             sigma_list.append(hist_sigma)
@@ -74,6 +80,24 @@ class MonteCarloService:
             corr_matrix = np.array([[1.0]])
 
         return np.array(mu_list), np.array(sigma_list), corr_matrix
+
+    async def _fetch_ml_mu(self, ticker: str) -> float:
+        try:
+            if self._ml_prediction_service is not None:
+                svc = self._ml_prediction_service
+            else:
+                from backend.application.services.ml_prediction_service import MLPredictionService
+
+                svc = MLPredictionService()
+
+            result = await svc.predict(ticker)
+            if result is None:
+                return 0.0003
+            annual_map = {"OUTPERFORM": 0.10, "NEUTRAL": 0.05, "UNDERPERFORM": 0.0}
+            annual = annual_map.get(result.signal, 0.05)
+            return annual / 252
+        except Exception:
+            return 0.0003
 
 
 async def _fetch_ticker_params(ticker: str) -> tuple[float, float, np.ndarray]:
@@ -98,20 +122,6 @@ async def _fetch_ticker_params(ticker: str) -> tuple[float, float, np.ndarray]:
         return 0.0003, 0.012, rng.normal(0.0003, 0.012, 252)
 
 
-async def _fetch_ml_mu(ticker: str) -> float:
-    try:
-        from backend.application.services.ml_prediction_service import MLPredictionService
-
-        result = await MLPredictionService().predict(ticker)
-        if result is None:
-            return 0.0003
-        annual_map = {"OUTPERFORM": 0.10, "NEUTRAL": 0.05, "UNDERPERFORM": 0.0}
-        annual = annual_map.get(result.signal, 0.05)
-        return annual / 252
-    except Exception:
-        return 0.0003
-
-
 def _run_gbm(
     inp: MonteCarloInput,
     mu_arr: np.ndarray,
@@ -124,10 +134,16 @@ def _run_gbm(
     weights = np.array([h.weight for h in inp.holdings])
     dt = _TRADING_DAYS_PER_MONTH
 
+    correlation_degraded = False
     try:
         L = np.linalg.cholesky(corr_matrix)
     except np.linalg.LinAlgError:
+        _logger.warning(
+            "Korrelationsmatrix ist nicht positiv-definit — Simulation läuft ohne Titelkorrelationen. "
+            "Ergebnisse können die tatsächliche Portfolio-Diversifikation über- oder unterschätzen."
+        )
         L = np.eye(n_assets)
+        correlation_degraded = True
 
     mu_m = mu_arr * dt
     sigma_m = sigma_arr * np.sqrt(dt)
@@ -165,4 +181,5 @@ def _run_gbm(
         prob_500k=round(prob_500k, 4),
         contribution_total=round(contribution_total, 2),
         months=n_months,
+        correlation_degraded=correlation_degraded,
     )

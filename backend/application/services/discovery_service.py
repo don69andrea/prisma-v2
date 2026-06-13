@@ -24,6 +24,14 @@ _RISK_MIN_COMPOSITE: dict[str, float] = {
     "aggressive": 0.0,  # alle Signale
 }
 
+# financial_knowledge → maximale Titelanzahl im Discovery-Ergebnis
+# Mehr Wissen → breiteres Universum, da der User mit Komplexität umgehen kann
+_KNOWLEDGE_RESULT_LIMIT: dict[str, int] = {
+    "low": 10,
+    "medium": 20,
+    "high": 30,
+}
+
 
 class DiscoveryService:
     """Gibt ein personalisiertes Aktienuniversum für ein InvestorProfile zurück.
@@ -84,4 +92,7 @@ class DiscoveryService:
         known = {t.upper() for t in profile.known_tickers}
         scored.sort(key=lambda t: (0 if t[0].ticker in known else 1, -t[1]))
 
-        return [stock for stock, _ in scored]
+        # 4. Ergebnis-Limit basierend auf financial_knowledge
+        # Einsteiger sehen weniger Titel um nicht überwältigt zu werden
+        limit = _KNOWLEDGE_RESULT_LIMIT.get(profile.financial_knowledge, 20)
+        return [stock for stock, _ in scored[:limit]]

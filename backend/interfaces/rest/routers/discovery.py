@@ -126,6 +126,7 @@ async def submit_answer(
         classification = await classifier.classify_turn1(profession_text)
         updates["profession"] = profession_text
         updates["financial_knowledge"] = classification.financial_knowledge
+        updates["sector_hint"] = classification.sector_hint
         if classification.sector_hint:
             existing = list(profile.sector_affinity)
             if classification.sector_hint not in existing:

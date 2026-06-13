@@ -112,21 +112,36 @@ class SteuerAgent:
         halteperiode_jahre: int,
         now: datetime,
     ) -> SteuerEinschätzung:
+        # Ticker-spezifische Kontextualisierung des Fallback-Textes
+        profil_label = {
+            "privatperson": "Privatperson",
+            "unternehmen": "Unternehmen",
+            "vorsorge_3a": "Säule-3a-Investor",
+        }.get(anlegerprofil, anlegerprofil)
+
+        halte_hinweis = (
+            f"Bei {halteperiode_jahre} Jahren Haltedauer gilt in der Schweiz: "
+            "Kapitalgewinne sind für Privatpersonen steuerfrei (keine Kapitalertragssteuer)."
+            if anlegerprofil == "privatperson"
+            else f"Bei {halteperiode_jahre} Jahren Haltedauer — steuerliche Behandlung abhängig vom Rechtsträger."
+        )
+
         return SteuerEinschätzung(
             ticker=ticker,
             anlegerprofil=anlegerprofil,
             halteperiode_jahre=halteperiode_jahre,
             steuerarten=["Verrechnungssteuer (35%)", "Vermögenssteuer"],
             pflichten=[
-                "Dividenden als Einkommen deklarieren",
-                "VST-Rückerstattung via Formular 103 beantragen",
-                "Kurswert per 31.12. in Vermögenserklärung angeben",
+                f"Dividenden von {ticker} als Einkommen deklarieren (Formular DA-1 für Rückerstattung).",
+                "VST-Rückerstattung via Formular 103 (bei Schweizer Aktien) beantragen.",
+                f"Kurswert {ticker} per 31.12. in der Vermögenserklärung angeben.",
             ],
             hinweise=[
-                "Steuerliche Behandlung kann sich je nach Kanton unterscheiden.",
-                "Diese Einschätzung wurde durch einen Fallback generiert — Daten unvollständig.",
+                f"Profil: {profil_label}. {halte_hinweis}",
+                "Steuerliche Behandlung variiert je nach Wohnsitzkanton — lokales Steueramt konsultieren.",
+                "Diese Einschätzung wurde durch einen Fallback generiert — KI-Analyse nicht verfügbar.",
             ],
-            quellen=["ESTV — Verrechnungssteuer", "DBG Art. 20"],
+            quellen=["ESTV — Verrechnungssteuer", "DBG Art. 20", f"Ticker: {ticker}"],
             disclaimer=PFLICHT_DISCLAIMER,
             generated_at=now,
             model_version="fallback",

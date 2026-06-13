@@ -338,11 +338,28 @@ class PortfolioAgent:
             if method == "mean_variance"
             else "Risk-Parity"
         )
-        overall = (
-            f"Portfolio mit {len(picks)} Positionen via {method_label}. "
-            f"Grösste Position: {max(picks, key=lambda p: weights.get(p['ticker'], 0))['ticker']}."
-        )
+        sorted_picks = sorted(picks, key=lambda p: weights.get(p["ticker"], 0), reverse=True)
+        top = sorted_picks[0] if sorted_picks else None
+        top_weight_pct = f"{weights.get(top['ticker'], 0) * 100:.1f}%" if top else "—"
+
+        overall_parts = [
+            f"Portfolio mit {len(picks)} Positionen nach {method_label}.",
+        ]
+        if top:
+            overall_parts.append(
+                f"Grösste Position: {top['ticker']} ({top_weight_pct}, Quant-Score {top['quant_score']:.0f})."
+            )
+        avg_score = sum(p["quant_score"] for p in picks) / len(picks) if picks else 0
+        overall_parts.append(f"Durchschnittlicher Quant-Score: {avg_score:.0f}/100.")
+        overall = " ".join(overall_parts)
+
         pos = {
-            p["ticker"]: f"Rank-basierte Position mit Score {p['quant_score']:.0f}." for p in picks
+            p["ticker"]: (
+                f"{weights.get(p['ticker'], 0) * 100:.1f}% Gewicht, "
+                f"Quant-Score {p['quant_score']:.0f}"
+                + (f", Signal: {p.get('signal', '—')}" if p.get("signal") else "")
+                + "."
+            )
+            for p in sorted_picks
         }
         return overall, pos

@@ -49,7 +49,7 @@ class AlertCreateRequest(BaseModel):
         return v.upper()
 
     @model_validator(mode="after")
-    def validate_webhook_target(self) -> "AlertCreateRequest":
+    def validate_webhook_target(self) -> AlertCreateRequest:
         """For WEBHOOK channel: enforce https:// and block private IP ranges (SSRF prevention)."""
         if self.channel != "WEBHOOK":
             return self
@@ -62,7 +62,7 @@ class AlertCreateRequest(BaseModel):
             parsed = urlparse(url)
             hostname = parsed.hostname or ""
         except Exception:
-            raise ValueError("Ungültige Webhook-URL.")
+            raise ValueError("Ungültige Webhook-URL.") from None
         if not hostname:
             raise ValueError("Webhook-URL enthält keinen gültigen Hostname.")
         if _is_private_host(hostname):

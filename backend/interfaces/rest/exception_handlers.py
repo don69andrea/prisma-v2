@@ -81,7 +81,10 @@ async def handle_budget_cap_exceeded(
     """
     return JSONResponse(
         status_code=402,
-        headers={"Retry-After": str(_seconds_until_next_month_utc())},
+        headers={
+            "Retry-After": str(_seconds_until_next_month_utc()),
+            "Access-Control-Allow-Origin": "*",
+        },
         content={
             "error": "budget_cap_exceeded",
             "message": ("Monatliches AI-Budget erschöpft. Reset am 1. des nächsten Monats."),

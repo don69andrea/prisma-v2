@@ -7,6 +7,7 @@ import logging
 from backend.application.agents.macro_agent import MacroIntelligenceAgent
 from backend.application.services.ml_feature_service import MLFeatureService
 from backend.application.services.ml_prediction_service import MLPredictionService
+from backend.config import get_settings
 from backend.domain.services.eligibility_filter import EligibilityFilter
 from backend.domain.value_objects.decision_signal import DecisionSignal
 
@@ -15,11 +16,6 @@ _logger = logging.getLogger(__name__)
 # Max. parallele Signal-Berechnungen — jede lädt yfinance-DataFrame + optionaler LLM-Call.
 # Render Free-Tier: 512 MB RAM. 4 × ~80 MB Peak = ~320 MB → sicherer Puffer.
 _MAX_CONCURRENT_SIGNALS = 4
-
-# Gewichtung: Quant 45%, ML 35%, Macro 20%
-_W_QUANT = 0.45
-_W_ML = 0.35
-_W_MACRO = 0.20
 
 # ML-Signal → numerischer Score (0–100)
 _ML_SIGNAL_TO_SCORE: dict[str, float] = {
@@ -62,6 +58,10 @@ class SignalAggregationService:
         self._swiss_stock_repo = swiss_stock_repo
         self._macro_agent = macro_agent
         self._eligibility = EligibilityFilter()
+        _s = get_settings()
+        self._w_quant = _s.signal_quant_weight
+        self._w_ml = _s.signal_ml_weight
+        self._w_macro = _s.signal_macro_weight
 
     async def _check_3a_eligible(self, ticker: str) -> bool:
         """Prüft 3a-Eignung via EligibilityFilter; nicht im Repo → nicht eligible."""
@@ -105,7 +105,9 @@ class SignalAggregationService:
                 macro_score = _snb_macro_score(features.snb_rate)
         else:
             macro_score = _snb_macro_score(features.snb_rate)
-        weighted_score = _W_QUANT * quant_score + _W_ML * ml_score + _W_MACRO * macro_score
+        weighted_score = (
+            self._w_quant * quant_score + self._w_ml * ml_score + self._w_macro * macro_score
+        )
         signal = DecisionSignal.signal_for_score(weighted_score)
         confidence = round(weighted_score / 100.0, 4)
         is_eligible = await self._check_3a_eligible(ticker)

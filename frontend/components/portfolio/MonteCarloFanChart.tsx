@@ -8,6 +8,7 @@ interface Props {
   p95: number[];
   contributionLine: number[];
   years: number;
+  correlationDegraded?: boolean;
 }
 
 const W = 600;
@@ -48,7 +49,7 @@ function formatCHF(v: number) {
   return `CHF ${v.toFixed(0)}`;
 }
 
-export function MonteCarloFanChart({ p5, p50, p95, contributionLine, years }: Props) {
+export function MonteCarloFanChart({ p5, p50, p95, contributionLine, years, correlationDegraded }: Props) {
   const pathRef = useRef<SVGPathElement>(null);
 
   useEffect(() => {
@@ -71,6 +72,13 @@ export function MonteCarloFanChart({ p5, p50, p95, contributionLine, years }: Pr
   const xLabelStep = Math.max(1, Math.floor(years / 5));
 
   return (
+    <div className="space-y-2">
+      {correlationDegraded && (
+        <div className="rounded-lg px-3 py-2 text-xs flex items-start gap-2" style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', color: '#ca8a04' }}>
+          <span className="mt-0.5 shrink-0">⚠</span>
+          <span>Korrelationsdaten unvollständig — Simulation ohne Titelkorrelationen berechnet. Diversifikationseffekte können über- oder unterschätzt sein.</span>
+        </div>
+      )}
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" style={{ overflow: 'visible' }}>
       <defs>
         <linearGradient id="fanGrad" x1="0" y1="0" x2="0" y2="1">
@@ -151,5 +159,6 @@ export function MonteCarloFanChart({ p5, p50, p95, contributionLine, years }: Pr
         <text x="24" y="44" fontSize="9" fill="#64748b">Einzahlungen</text>
       </g>
     </svg>
+    </div>
   );
 }

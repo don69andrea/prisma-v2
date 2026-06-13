@@ -87,18 +87,30 @@ function EmptyState() {
 }
 
 export function DiscoverClient() {
-  const [stocks, setStocks]     = useState<DiscoveredStock[]>([]);
+  const [stocks, setStocks]       = useState<DiscoveredStock[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [loading, setLoading]   = useState(true);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState<string | null>(null);
 
-  useEffect(() => {
+  function load() {
+    setError(null);
+    setLoading(true);
+
     const raw = localStorage.getItem(DISCOVER_STORAGE_KEY);
     if (!raw) {
       setLoading(false);
       return;
     }
 
-    const cached = JSON.parse(raw) as DiscoveryResponse;
+    let cached: DiscoveryResponse;
+    try {
+      cached = JSON.parse(raw) as DiscoveryResponse;
+    } catch {
+      setError('Gespeichertes Profil konnte nicht gelesen werden. Bitte neu starten.');
+      setLoading(false);
+      return;
+    }
+
     setSessionId(cached.session_id);
 
     if (cached.stocks.length > 0) {
@@ -113,9 +125,14 @@ export function DiscoverClient() {
         setStocks(data.stocks);
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(data));
       })
-      .catch(() => {/* backend not available yet */})
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+        setError(`Titel konnten nicht geladen werden: ${msg}`);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasStocks = stocks.length > 0;
 
@@ -140,6 +157,22 @@ export function DiscoverClient() {
           </Link>
         )}
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div
+          className="rounded-xl p-4 flex items-center justify-between gap-4"
+          style={{ background: 'rgba(248,81,73,0.08)', border: '1px solid rgba(248,81,73,0.25)' }}
+        >
+          <div className="text-sm text-[#f85149]">{error}</div>
+          <button
+            onClick={load}
+            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#f85149] border border-[#f85149]/40 hover:bg-[#f85149]/10 transition-colors"
+          >
+            Erneut versuchen
+          </button>
+        </div>
+      )}
 
       {/* Content */}
       {loading ? (

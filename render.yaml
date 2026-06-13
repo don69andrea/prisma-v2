@@ -11,6 +11,7 @@ services:
     name: prisma-v2-backend
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
+    branch: main
     plan: free
     healthCheckPath: /health
     autoDeploy: true
@@ -61,6 +62,7 @@ services:
     name: prisma-v2-frontend
     runtime: docker
     dockerfilePath: ./Dockerfile.frontend
+    branch: main
     plan: free
     autoDeploy: true
     envVars:

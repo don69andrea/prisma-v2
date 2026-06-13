@@ -16,7 +16,9 @@ _REASON_LABELS: dict[EligibilityReason, str] = {
     ),
 }
 
-_ELIGIBLE_REASON = "Erfüllt BVV2 Art. 53 Kriterien (XSWX-Börse, Marktkapitalisierung ≥ CHF 100 Mio.)"
+_ELIGIBLE_REASON = (
+    "Erfüllt BVV2 Art. 53 Kriterien (XSWX-Börse, Marktkapitalisierung ≥ CHF 100 Mio.)"
+)
 
 
 class EligibilityResponse(BaseModel):

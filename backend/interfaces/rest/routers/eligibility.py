@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from backend.application.services.swiss_market_service import SwissMarketService
 from backend.interfaces.rest.dependencies import get_swiss_market_service
 from backend.interfaces.rest.schemas.eligibility import (
-    EligibilityResponse,
     _ELIGIBLE_REASON,
     _REASON_LABELS,
+    EligibilityResponse,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["3a-eligibility"])

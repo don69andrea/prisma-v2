@@ -16,7 +16,9 @@
 | R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Helin | `feature/helin-navigation` | ✅ DONE | — |
 | R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui` | ✅ DONE | — |
 | R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE | — |
-| R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ NEXT | — |
+| R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | 🔄 IN PROGRESS | — |
+| R2.5-2 | ML-Overhaul: 163 Ticker, 19 Features, SimFin, 61.4% Recall | Andrea | `main` | ✅ DONE | — |
+| R2.5-3 | SHAP Explainability + Fundamentals Widget + Cleanup | Andrea | `main` | 🔄 IN PROGRESS | — |
 
 ---
 

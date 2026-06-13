@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SignalBadge } from '@/components/ui/SignalBadge';
 import { AuditTrail } from '@/components/ui/AuditTrail';
 import { SignalBreakdown } from '@/components/ui/SignalBreakdown';
+import { WeightSensitivity } from '@/components/ui/WeightSensitivity';
 import { cn } from '@/lib/utils';
 
 const FILTER_CHIP_CONFIG: Record<
@@ -277,6 +278,14 @@ function SignalCard({ item }: { item: DecisionSignal }) {
           macroScore={item.macro_score}
           finalScore={item.weighted_score}
           signal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
+        />
+
+        <WeightSensitivity
+          quantScore={item.quant_score}
+          mlScore={item.ml_score}
+          macroScore={item.macro_score}
+          standardScore={item.weighted_score}
+          standardSignal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
         />
 
         {/* Action row */}

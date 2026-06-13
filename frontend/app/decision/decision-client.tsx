@@ -313,8 +313,6 @@ function SignalCard({ item }: { item: DecisionSignal }) {
             />
           </div>
         )}
->>>>>>> ee5fb1a2bfb175b2a95ebb5020bedda078e1fda9
-
         {/* Action row */}
         <div className="flex items-center justify-between gap-2 pt-0.5">
           <button

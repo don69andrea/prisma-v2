@@ -2,11 +2,10 @@
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
-
-from collections.abc import Callable
 
 from backend.application.services.ranking_aggregator import RankingAggregator
 from backend.application.services.stock_service import StockService

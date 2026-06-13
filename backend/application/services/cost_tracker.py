@@ -24,8 +24,6 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from decimal import Decimal
 
-_logger = logging.getLogger(__name__)
-
 from backend.domain.cost_summary import CostSummary
 from backend.domain.errors import BudgetCapExceeded, UnknownModelError
 from backend.domain.llm_pricing import ModelPricing
@@ -33,6 +31,8 @@ from backend.domain.repositories.cost_log_repository import (
     CostLogEntry,
     CostLogRepository,
 )
+
+_logger = logging.getLogger(__name__)
 
 
 class CostTracker:
@@ -87,7 +87,7 @@ class CostTracker:
                         current_usd=current,
                         attempted_usd=estimated_usd,
                         cap_usd=self._cap_usd,
-                    )
+                    ) from None
 
     async def record(
         self,

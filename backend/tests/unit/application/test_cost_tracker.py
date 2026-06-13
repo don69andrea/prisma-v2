@@ -61,6 +61,8 @@ def _make_repository(
     repo.current_month_breakdown = AsyncMock(
         return_value=breakdown or CostBreakdown(by_model=[], by_feature=[], last_calls=[])
     )
+    # Simuliert einen Stub ohne Advisory Lock — CostTracker fällt auf In-Process-Fallback
+    repo.check_cap_atomic = AsyncMock(side_effect=NotImplementedError("stub repository"))
     return repo
 
 

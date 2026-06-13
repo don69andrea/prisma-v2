@@ -276,7 +276,7 @@ async def _dispatch_tool(name: str, inputs: dict[str, Any]) -> str:
     """Leitet Tool-Call über Registry an entsprechenden Handler weiter."""
     handler = _TOOL_REGISTRY.get(name)
     if handler is None:
-        return json.dumps({"error": f"Tool '{name}' nicht registriert. Bekannte Tools: {list(_TOOL_REGISTRY)}"})
+        return json.dumps({"error": f"Unbekanntes Tool '{name}'. Bekannte Tools: {list(_TOOL_REGISTRY)}"})
 
     try:
         from backend.infrastructure.persistence.session import get_session_factory

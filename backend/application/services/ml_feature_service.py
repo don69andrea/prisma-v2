@@ -8,7 +8,7 @@ Features: 5 Quant-Scores, 12M/6M/3M-Return, Vol(30d/90d), RSI(14),
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from datetime import date
 from typing import Any
 
 import numpy as np

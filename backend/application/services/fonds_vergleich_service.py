@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import logging
 import math
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 
+from backend.application.services.ml_feature_service import _snb_rate_on
 from backend.domain.value_objects.fonds_vergleich import (
     FondsVergleich,
     PortfolioCompareMetrics,
@@ -38,8 +39,6 @@ class FondsVergleichService:
         else:
             # Aktuellen SNB-Leitzins als Risk-Free Rate verwenden
             try:
-                from datetime import date
-                from backend.application.services.ml_feature_service import _snb_rate_on
                 snb_rate = _snb_rate_on(date.today())
                 self._risk_free_rate = snb_rate / 100.0  # Prozent → Dezimal
             except Exception as exc:

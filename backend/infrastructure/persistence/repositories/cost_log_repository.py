@@ -127,18 +127,17 @@ class SQLACostLogRepository(CostLogRepository):
             return Decimal(str(raw))
 
     async def check_cap_atomic(self, estimated_usd: Decimal, cap_usd: Decimal, threshold: Decimal) -> bool:
-        async with self._session_factory() as session:
-            async with session.begin():
-                result = await session.execute(
-                    _CAP_CHECK_ATOMIC_SQL,
-                    {
-                        "lock_key": _BUDGET_CAP_LOCK_KEY,
-                        "estimated_usd": str(estimated_usd),
-                        "cap_usd": str(cap_usd),
-                        "threshold": str(threshold),
-                    },
-                )
-                return bool(result.scalar_one())
+        async with self._session_factory() as session, session.begin():
+            result = await session.execute(
+                _CAP_CHECK_ATOMIC_SQL,
+                {
+                    "lock_key": _BUDGET_CAP_LOCK_KEY,
+                    "estimated_usd": str(estimated_usd),
+                    "cap_usd": str(cap_usd),
+                    "threshold": str(threshold),
+                },
+            )
+            return bool(result.scalar_one())
 
     async def current_month_breakdown(self, last_n: int) -> CostBreakdown:
         async with self._session_factory() as session:

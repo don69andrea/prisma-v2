@@ -13,8 +13,9 @@ interface SteuerPanelProps {
 
 const ANLEGERPROFILE = [
   { value: 'privatperson', label: 'Privatperson' },
-  { value: 'unternehmen', label: 'Unternehmen' },
   { value: 'vorsorge_3a', label: 'Vorsorge 3a' },
+  { value: 'vorsorge_2a', label: 'Vorsorge 2a' },
+  { value: 'institution', label: 'Institution' },
 ] as const;
 
 type Anlegerprofil = (typeof ANLEGERPROFILE)[number]['value'];

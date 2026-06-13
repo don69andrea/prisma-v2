@@ -19,6 +19,11 @@
 | R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | 🔄 IN PROGRESS | — |
 | R2.5-2 | ML-Overhaul: 163 Ticker, 19 Features, SimFin, 61.4% Recall | Andrea | `feat/issue-r25-ml-overhaul` | ✅ DONE | — |
 | R2.5-3 | SHAP Explainability + Fundamentals Widget + Cleanup | Andrea | `feat/issue-r25-ml-shap` | 🔄 IN PROGRESS | — |
+| R2.5-4 | Security + Performance Audit (rate limiting, CORS, auth) | T1 | `fix/security-performance-audit` | ✅ DONE (PR #154 → main) | — |
+| R2.5-5 | Global API-Key Auth für /admin-Endpoints | T1 | `feat/global-api-auth` | ✅ DONE (PR #156 → main) | — |
+| R2.5-6 | Chat Tool Hints + verbesserter Placeholder | T3 | `feat/chat-tool-hints` | ✅ DONE (PR #162 → develop) | — |
+| R2.5-7 | Decision: strukturiertes Signal-Breakdown-Card (Quant/ML/Makro) | T3 | `feat/decision-signal-breakdown` | ✅ DONE (PR #164 → develop) | — |
+| R2.5-8 | DiscoveryService: ESG- + Income-Preference-Gap schliessen | T2 | `feat/discovery-esg-income` | 🔄 IN PROGRESS | — |
 
 ---
 

@@ -11,13 +11,19 @@
 
 ## Was ist PRISMA V2?
 
-PRISMA V2 ist eine quantitative Stock-Intelligence-Plattform für den Schweizer Markt (SMI/SMIM/SPI), entwickelt im BI-Modul FS 2026 (FHNW) von Andrea, Helin und Aurelius.
+PRISMA V2 ist eine quantitative Stock-Intelligence-Plattform für den Schweizer
+Markt (SMI/SMIM/SPI) — entwickelt im BI-Modul der FHNW Hochschule für
+Wirtschaft (FS 2026) von Andrea Petretta, Helin und Aurelius. Zwei Ziele:
 
-Das System kombiniert quantitative Finanzmodelle, Machine Learning und KI-Narrative zu einem einzigen Entscheidungssystem: **BUY / HOLD / WATCH** — jede Entscheidung begründet, auditierbar, erklärbar.
+**ZIEL 1 — FHNW BI Module:** Den BI-Layer bauen — echtes ML (LightGBM/XGBoost
+Return Prediction), Agentic AI (Discovery + Portfolio + Macro + Steuer), RAG
+(pgvector + Voyage AI), Decision Intelligence Dashboard (BUY/HOLD/WATCH).
+Jede Entscheidung ist begründet, auditierbar, erklärbar.
 
-Zwei Anwendungsfälle:
-- **FHNW BI Module:** Decision Intelligence mit ML, Portfolio Agent, Macro Agent
-- **VIAC Stocks Initiative:** Infrastruktur für Einzeltitelhandel in der 3. Säule (3a)
+**ZIEL 2 — VIAC Stocks Initiative:** PRISMA V2 als potentielle Infrastruktur
+für VIAC Stocks (Einzeltitelhandel in der 3. Säule). Dafür: 3a Eligibility
+Filter (FINMA-regelbasiert), Langfrist-Score, Steuer-Implikations-Agent,
+Fonds vs. Einzeltitel Vergleich.
 
 ---
 
@@ -39,6 +45,20 @@ Zwei Anwendungsfälle:
 | MCP-Server (Claude Desktop Integration) | ✅ Live |
 | Decision Audit Trail | ✅ Live |
 | Demo-Flow + Präsentation | ⬜ In Arbeit |
+
+---
+
+## WAS BEREITS EXISTIERT
+
+| Komponente | Beschreibung |
+|---|---|
+| **Quant Core** | 5 Scoring-Modelle (Quality, Trend, Value, Momentum, Diversification) — SMI-kalibriert |
+| **Narrative Engine** | Claude Sonnet + Pydantic. Research-Memos: Stärken, Risiken, One-Liner — validiert |
+| **Multi-Agent Pipeline** | Fundamentals + Sentiment + Synthesizer-Agent — parallelisierte Dossiers |
+| **Discovery Engine** | 5-Schritt-Onboarding: Beruf → Ziel → Risiko-Test → Schweizer Brands → Profil-Reveal |
+| **Decision Dashboard** | BUY/HOLD/WATCH mit Audit Trail, Quant 45% + ML 35% + Makro 20% |
+| **Swiss RAG** | pgvector + Voyage AI, SIX-Filings, Nestlé-Chunks verifiziert |
+| **MCP-Server** | PRISMA aus Claude Desktop per Natursprache nutzbar |
 
 ---
 
@@ -100,9 +120,7 @@ backend/
 scripts/              # Seed-Skripte (idempotent), ML-Training
 docs/
 ├── ml-training.md    # ML-Pipeline: Features, Universum, SimFin, Ergebnisse
-├── adr/              # Architecture Decision Records (0001–0008)
-├── specs/            # Spec-First: ein .md pro Feature
-└── superpowers/plans # Implementationspläne
+└── adr/              # Architecture Decision Records (0001–0008)
 ```
 
 ---
@@ -144,6 +162,18 @@ docs/
 | Research-Memos, Signal-Erklärungen | `claude-sonnet-4-6` | Balance Qualität + Speed |
 | Discovery-Klassifikation, Haiku-Responses | `claude-haiku-4-5-20251001` | Schnell + günstig für kurze Tasks |
 | Forward-Return-Prediction | LightGBM / XGBoost | Deterministisch, erklärbar, auditierbar |
+
+---
+
+## ENTWICKLUNGS-WORKFLOW
+
+```
+feature/andrea-*  ──┐
+feature/helin-*   ──┼──► develop ──► main
+feature/aurelius-* ─┘
+```
+
+Alle Features via Pull Request. CI muss grün sein vor Merge. Coverage ≥ 80%.
 
 ---
 
@@ -202,11 +232,12 @@ python scripts/train_return_predictor.py --market all --years 8 \
 | [`docs/adr/`](./docs/adr/) | Architecture Decision Records (8 ADRs) |
 | [`CLAUDE.md`](./CLAUDE.md) | Kontext für Claude Code — Status, Tasks, Swiss Market Regeln |
 | [`AGENTS.md`](./AGENTS.md) | Coding-Konventionen (Python, TypeScript, Tests, Async-Patterns) |
-| [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) | KI-Einsatz im Projekt (Transparenz) |
 
 ---
 
 > **Disclaimer:** PRISMA V2 ist ein Bildungs- und Forschungsprojekt (FHNW BI Module FS 2026). Keine der hier generierten Analysen, Rankings, Scores oder Signale stellt eine Anlageberatung dar. Historische Performance ist kein Indikator für zukünftige Ergebnisse. Investitionsentscheide liegen ausschliesslich beim Anleger.
+
+> *Technische Basis: PRISMA V1 lieferte Clean Architecture, 5 Quant-Modelle, Narrative Engine und Multi-Agent-Pipeline. V2 baut darauf auf.*
 
 ---
 

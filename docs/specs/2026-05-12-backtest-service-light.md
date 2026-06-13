@@ -2,7 +2,7 @@
 
 **Status**: Draft v1.0 — 2026-05-12
 **Rolle**: A — Quant Core (Fabia)
-**Parent-Spec**: `docs/specs/2026-04-21-prisma-capstone-design.md` §7.4 + §9.5
+**Parent-Spec**: `docs/specs/2026-04-21-prisma-v2-design.md` §7.4 + §9.5
 **Spec-Konvention**: AGENTS.md §3 "Wenn ein neues Quant-Modell/Service implementiert wird"
 
 ---
@@ -11,7 +11,7 @@
 
 Implementiert die Light-Variante des `BacktestService` aus Design-Spec §7.4. Erlaubt einem User, einen abgeschlossenen `ModelRun` als Startpunkt zu nehmen und das resultierende Top-N-Portfolio über einen Zeitraum gegen zwei Benchmarks zu vergleichen. Liefert annualisierte Rendite, annualisierte Volatilität, Sharpe-Ratio und Maximum Drawdown.
 
-**Slicing-Begründung:** Die "echte" Backtest-Variante mit monatlichem Re-Ranking (RankingService N-mal über die History laufen lassen) ist 5-10× komplexer und braucht ein Snapshot-Konzept für Universe + Prices zu jedem Rebalancing-Datum. Die Light-Variante validiert Entity, Repository, REST-Endpoints, Metriken-Berechnung und Frontend-Anbindung Ende-zu-Ende und ist damit auch das Capstone-Demo-Asset (Spec §14.3 Z. 649: "Backtest starten → Chart mit 3 Kurven").
+**Slicing-Begründung:** Die "echte" Backtest-Variante mit monatlichem Re-Ranking (RankingService N-mal über die History laufen lassen) ist 5-10× komplexer und braucht ein Snapshot-Konzept für Universe + Prices zu jedem Rebalancing-Datum. Die Light-Variante validiert Entity, Repository, REST-Endpoints, Metriken-Berechnung und Frontend-Anbindung Ende-zu-Ende und ist damit auch das Demo-Asset (Spec §14.3 Z. 649: "Backtest starten → Chart mit 3 Kurven").
 
 ---
 
@@ -359,7 +359,7 @@ Implementation ist komplett, wenn:
 - [ ] Coverage neue Module ≥85%; Gesamtsuite bleibt ≥80% (CI-Gate aus PR #83)
 - [ ] mypy strict + ruff clean
 - [ ] Sample-Backtest-Result unter `docs/examples/backtest-result-sample.json`
-- [ ] AI-USAGE.md-Eintrag (40%-Achse Capstone)
+- [ ] AI-Einsatz dokumentieren
 - [ ] README-Sektion "Backtest" mit Kurz-Anleitung (Curl-Example)
 
 ---

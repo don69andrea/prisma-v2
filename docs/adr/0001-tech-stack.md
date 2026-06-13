@@ -2,7 +2,7 @@
 
 - **Status**: Accepted
 - **Datum**: 2026-04-21
-- **Kontext**: Projekt-Initialisierung Capstone PRISMA
+- **Kontext**: Projekt-Initialisierung PRISMA V2
 
 ## Kontext
 
@@ -33,7 +33,7 @@ Wir bauen PRISMA von 0 auf. Entscheidungen zu Sprache, Framework, DB, Frontend, 
 ### LLM-Provider
 - **Anthropic Claude** (gewählt): Modul-Fit (Curriculum referenziert Claude explizit), starke Structured-Output-Qualität, Prompt-Caching senkt Kosten deutlich, MCP ist Anthropic-Standard.
 - OpenAI: valide Alternative, aber MCP-Integration ist Anthropic-nativ.
-- Open-Weight (Llama, Mistral): interessant für Privacy, aber Betriebs-Overhead für Capstone zu hoch.
+- Open-Weight (Llama, Mistral): interessant für Privacy, aber Betriebs-Overhead für das Projekt zu hoch.
 
 ### Frontend
 - **Next.js 14 (App Router)** + shadcn/ui + Recharts (gewählt): Enterprise-Look, gute DX mit Coding-Agents, shadcn ist flexibel und nicht überladen.
@@ -52,7 +52,7 @@ Wir bauen PRISMA von 0 auf. Entscheidungen zu Sprache, Framework, DB, Frontend, 
 ### Deployment
 - **Render** (Web Service + Postgres managed, gewählt): Modul-Empfehlung, niedriger Ops-Overhead, Free-Tier verfügbar, Auto-Deploy bei Push.
 - Fly.io, Railway: valide Alternativen, aber Render ist explizit im Modul-Text erwähnt.
-- Eigener Kubernetes-Cluster: ausgeschlossen, Over-Engineering für Capstone.
+- Eigener Kubernetes-Cluster: ausgeschlossen, Over-Engineering für das Projekt.
 
 ### Container
 - **Docker + docker-compose** (gewählt): Modul-Pflicht.

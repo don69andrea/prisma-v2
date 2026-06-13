@@ -45,25 +45,21 @@ Bei agent-assistiertem Code: Footer `Co-Authored-By: Claude <noreply@anthropic.c
 
 Jeder PR muss:
 
-- [ ] verlinkte Spec unter `docs/specs/` haben (falls Feature)
 - [ ] alle CI-Checks grün (Lint, Typecheck, Unit, Integration)
 - [ ] Coverage nicht verschlechtern (ideal: verbessern)
 - [ ] mindestens 1 Review von einem anderen Teammitglied
-- [ ] **`docs/AI-USAGE.md`-Eintrag im gleichen PR** (wenn Agent-assistiert) — siehe "AI-Usage-Dokumentation" unten
 - [ ] ADR bei architekturrelevanten Entscheidungen
 
 ### PR-Template
 
 Das Template unter `.github/pull_request_template.md` wird automatisch eingefügt. Es verlangt:
 - Beschreibung (Was & Warum)
-- Spec-Link
 - Test-Strategie
-- Agent-Usage-Summary
 - Screenshots bei UI-Änderungen
 
 ### Review-Regeln
 
-- Reviewer prüft: Spec-Abgleich, Architektur-Konformität, Testabdeckung, Lesbarkeit
+- Reviewer prüft: Architektur-Konformität, Testabdeckung, Lesbarkeit
 - Author reagiert auf alle Kommentare (fix oder begründete Ablehnung)
 - Neue Commits nach Review → Re-Review erforderlich (stale reviews werden automatisch dismissed)
 
@@ -81,34 +77,9 @@ Das Template unter `.github/pull_request_template.md` wird automatisch eingefüg
 - **Kleine PRs**: idealerweise <400 Zeilen, grössere brauchen ADR
 - **Draft-PRs** gerne früh öffnen für Diskussion
 
-## Spec-Driven Development
+## Feature-Diskussion
 
-Die wichtigste Team-Regel: **Code nur nach Spec**.
-
-1. Feature-Idee → Diskussion → Konsens
-2. Spec schreiben (`docs/specs/YYYY-MM-DD-<feature>.md`)
-3. Spec-PR öffnen, Review, Merge
-4. **Erst dann** Feature-Branch + Implementierung
-5. Implementation-PR verlinkt die Spec
-
-Ausnahme: Trivial-Fixes (Typos, offensichtliche Bugs) dürfen direkt als PR ohne Spec.
-
-## AI-Usage-Dokumentation
-
-Jeder substantiell AI-assistierte PR bekommt einen Eintrag in `docs/AI-USAGE.md`. **Der Eintrag gehört in denselben PR wie die Feature-Arbeit** — nicht als separater Nachläufer-PR.
-
-Warum gebündelt:
-- Die Reflexion ist unmittelbar nach der Arbeit am präzisesten (nach 2 Tagen vergisst man die Detail-Stolpersteine)
-- Ein PR = eine abgeschlossene Einheit: Code + Tests + Doku + Reflexion
-- Weniger PR-Overhead als separate Reflexions-PRs
-- Reviewer sieht Feature und Reflexion im Kontext und kann beide inhaltlich querprüfen
-
-Wann du trotzdem einen **separaten** AI-USAGE-PR machen darfst:
-- Rückblickende Erkenntnisse, die Wochen später kommen (z.B. "was wir aus Phase 2 gelernt haben")
-- Meta-Einträge über den Team-Workflow, die nicht an einen spezifischen Feature-PR koppeln
-- Korrekturen/Ergänzungen an bestehenden Einträgen
-
-Für den Eintrag selber: das Format in `docs/AI-USAGE.md` einhalten (Datum, PR-Titel, Agent, Scope, Was gut lief, Was nicht, Nachbearbeitung, Autor). Pflicht-Lehre aus jedem Eintrag: **eine klare Lektion**, nicht nur "lief ok".
+Besprich grössere Features zuerst im Team, bevor du mit der Implementierung beginnst. Kurze Abstimmung (Slack, Issue, Draft-PR) genügt — kein formales Spec-Dokument nötig. Trivial-Fixes und Bugfixes können direkt als PR ohne vorherige Diskussion.
 
 ## Architecture Decision Records (ADR)
 

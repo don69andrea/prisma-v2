@@ -1,6 +1,6 @@
 # MCP-Server Slice 1 — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (recommended) oder superpowers:executing-plans. Steps mit `- [ ]` Checkbox-Syntax.
+> **For agentic workers:** Implementiere diesen Plan Schritt für Schritt. Schritte nutzen Checkbox-Syntax (`- [ ]`) zum Tracking.
 
 **Goal:** MCP-Server-Skeleton via STDIO mit erstem Tool `run_ranking`, das `POST /api/v1/runs` aufruft. Opt-in X-API-Key-Auth, vollstaendiges Error-Mapping fuer alle 5 Master-Spec-Typen, Integration-Tests via FastAPI-TestClient.
 
@@ -1274,7 +1274,7 @@ Edit `docs/AI-USAGE.md` — neuen Eintrag oben (oder am chronologisch passenden 
 
 - Datum
 - Slice-Spec + Plan-Doc-Pfade
-- Patterns angewandt: P1 (Q-by-Q-Brainstorming), P2 (Reality-Check vor Code — `/factsheet`-Pivot dokumentiert), P4 (Plan-as-Contract), P6 (Strict-Scope: opt-in Auth statt strict-by-default)
+- Patterns angewandt: P1 (Q-by-Q-Brainstorming), P2 (Reality-Check vor Code — `/factsheet`-Pivot dokumentiert), P4 (verbindliche Planstruktur), P6 (Strict-Scope: opt-in Auth statt strict-by-default)
 - Anti-Pattern vermieden: A1 (Plan-Code-Drift) — durch Reality-Check vermieden
 - Test-Coverage: unit + integration
 - Cost: ggf. Inference-Tokens fuer Plan-Phase notieren
@@ -1324,7 +1324,7 @@ Nach Plan-Schreiben mit frischen Augen:
 
 **Plan saved to:** `docs/specs/2026-05-11-mcp-server-slice-1-plan.md`
 
-Empfohlene Execution: superpowers:subagent-driven-development. Tasks sind weitgehend unabhaengig — jede Task ist 1 Datei + 1 Test-File, Reviewer-fokussiert mit klaren Erwartungen.
+Empfohlene Ausführung: parallele Agent-Ausführung (je Task ein frischer Agent). Tasks sind weitgehend unabhaengig — jede Task ist 1 Datei + 1 Test-File, Reviewer-fokussiert mit klaren Erwartungen.
 
 Sequenz strict (kein Reordering): Task 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9.
 

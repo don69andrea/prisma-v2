@@ -1,6 +1,6 @@
 # Narrative-Engine Foundation — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Implementiere diesen Plan Schritt für Schritt. Schritte nutzen Checkbox-Syntax (`- [ ]`) zum Tracking.
 
 **Goal:** Foundation für die Narrative-Engine implementieren (Issue #17, PR #1) — Pydantic-Schema, Domain-Entity, ORM, Migration, Repository-Port + SQLA-Adapter mit Tests.
 

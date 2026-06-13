@@ -125,7 +125,7 @@ export function ChatDrawer() {
         style={{
           background: 'rgba(8,8,20,0.92)',
           backdropFilter: 'blur(20px)',
-          height: '520px',
+          height: '570px',
           boxShadow: '0 0 40px rgba(168,85,247,0.15), 0 25px 50px rgba(0,0,0,0.5)',
         }}
       >
@@ -141,7 +141,7 @@ export function ChatDrawer() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1" style={{ height: '356px' }}>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1" style={{ height: '390px' }}>
           {messages.length === 0 && (
             <div className="text-center pt-8 space-y-3">
               <p className="text-xs text-slate-600">Stell mir eine Frage über PRISMA-Daten</p>
@@ -176,14 +176,34 @@ export function ChatDrawer() {
           </div>
         )}
 
+        {/* Tool capabilities hint */}
+        <div className="flex flex-wrap gap-1.5 px-3 py-2 border-t border-slate-800/60">
+          <span className="text-[10px] font-medium text-slate-500 self-center">Ich kann:</span>
+          {[
+            "🔍 Aktien suchen",
+            "🔧 Aktien filtern",
+            "📄 Factsheets laden",
+            "📊 Aktien vergleichen",
+            "🌍 Makrokontext abfragen",
+            "🏆 Rankings anzeigen",
+          ].map((cap) => (
+            <span
+              key={cap}
+              className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800/60 border border-slate-700/50 text-slate-400"
+            >
+              {cap}
+            </span>
+          ))}
+        </div>
+
         {/* Input */}
-        <div className="px-3 pb-3 border-t border-slate-800 pt-3">
+        <div className="px-3 pb-3 pt-2">
           <div className="flex items-center gap-2 bg-slate-800/60 rounded-xl px-3 py-2 border border-slate-700/60 focus-within:border-purple-500/40 transition-colors">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
-              placeholder="Frag PRISMA..."
+              placeholder="Frag mich nach Aktien, Vergleichen, Makro oder Rankings..."
               disabled={streaming}
               className="flex-1 bg-transparent text-sm text-white placeholder-slate-600 outline-none"
             />

@@ -1,6 +1,6 @@
 # EN-Template-Aktivierung Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Implementiere diesen Plan Schritt für Schritt. Schritte nutzen Checkbox-Syntax (`- [ ]`) zum Tracking.
 
 **Goal:** Bilingualen Pfad der Narrative-Engine produktiv aktivieren — `narrative_system.en.md.j2` füllen (1:1-Übersetzung des DE-Templates), `narrative_user.en.md.j2` als Zweitvariante neben renamed `narrative_user.de.md.j2`, beide `NotImplementedError`-Guards in `NarrativeService` entfernen, Tests + 1× Real-API-Smoke vor Merge.
 

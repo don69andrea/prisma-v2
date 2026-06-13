@@ -169,6 +169,13 @@ export function ChatDrawer() {
           ))}
         </div>
 
+        {/* Session cost estimate */}
+        {messages.length > 0 && (
+          <div className="px-3 py-1 text-xs text-white/30 text-right border-t border-slate-800/40">
+            Session: ~CHF {((messages.length / 2) * 0.0015).toFixed(3)}
+          </div>
+        )}
+
         {/* Tool capabilities hint */}
         <div className="flex flex-wrap gap-1.5 px-3 py-2 border-t border-slate-800/60">
           <span className="text-[10px] font-medium text-slate-500 self-center">Ich kann:</span>

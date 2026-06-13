@@ -114,7 +114,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(LLMRateLimiterMiddleware)
 
     # FastAPI typisiert add_exception_handler über `Type[Exception]` mit einem
     # generischen Handler-Signature, das unsere konkrete (Request, BudgetCapExceeded)-
@@ -123,6 +122,8 @@ def create_app() -> FastAPI:
     app.add_exception_handler(BudgetCapExceeded, handle_budget_cap_exceeded)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, handle_unhandled_exception)
 
+    # TODO: Standardize all routers to use /api/v1 prefix consistently
+    # Currently: memos has /api/v1 added here; most others define it in their own router prefix
     app.include_router(health.router)
     app.include_router(chat.router)
     app.include_router(reports.router)

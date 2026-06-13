@@ -45,7 +45,7 @@ def get_audit_service(
     ),
 )
 async def get_audit_trail(
-    ticker: str = Path(..., pattern=r"^[A-Z0-9.\-]{1,12}$"),
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     limit: int = Query(default=10, ge=1, le=50),
     service: DecisionAuditService = Depends(get_audit_service),
 ) -> DecisionAuditListResponse:
@@ -83,7 +83,7 @@ async def get_audit_trail(
     ),
 )
 async def compute_and_save_audit(
-    ticker: str = Path(..., pattern=r"^[A-Z0-9.\-]{1,12}$"),
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: DecisionAuditService = Depends(get_audit_service),
 ) -> DecisionAuditRecordResponse:
     try:

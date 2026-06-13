@@ -68,7 +68,7 @@ async def get_macro_context(
     ),
 )
 async def get_macro_score(
-    ticker: str = Path(..., pattern=r"^[A-Z0-9.\-]{1,12}$"),
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: MacroService = Depends(get_macro_service),
     retrieval: RetrievalService = Depends(get_retrieval_service),
 ) -> MacroScoreResponse:

@@ -30,7 +30,7 @@ router = APIRouter(prefix="/api/v1", tags=["stocks"])
     description="Gibt einen einzelnen Stock anhand des Ticker-Symbols zurück (case-insensitive).",
 )
 async def get_stock_by_ticker(
-    ticker: str = Path(..., pattern=r"^[A-Z0-9.\-]{1,12}$"),
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: StockService = Depends(get_stock_service),
 ) -> StockRead:
     stock = await service.get_by_ticker(ticker)
@@ -84,7 +84,7 @@ async def list_stocks(
     description="Gibt Stammdaten und neueste Ranking-Momentaufnahme für einen Ticker zurück.",
 )
 async def get_factsheet(
-    ticker: str = Path(..., pattern=r"^[A-Z0-9.\-]{1,12}$"),
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: FactsheetService = Depends(get_factsheet_service),
 ) -> StockFactsheet:
     try:
@@ -102,7 +102,7 @@ async def get_factsheet(
     description="Gibt die letzten `days` Handelstage als Preiszeitreihe zurück (Stub-Daten).",
 )
 async def get_prices(
-    ticker: str = Path(..., pattern=r"^[A-Z0-9.\-]{1,12}$"),
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     days: int = Query(default=252, ge=1, le=504, description="Anzahl Handelstage, 1–504"),
     service: StockService = Depends(get_stock_service),
 ) -> PriceSeriesResponse:
@@ -127,7 +127,7 @@ async def get_prices(
     ),
 )
 async def get_langfrist_score(
-    ticker: str = Path(..., pattern=r"^[A-Z0-9.\-]{1,12}$"),
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: SwissMarketService = Depends(get_swiss_market_service),
 ) -> LangfristScoreResponse:
     try:

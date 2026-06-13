@@ -103,6 +103,24 @@ class ProfileClassifier:
         return sectors, list(clicked_tickers)
 
     @staticmethod
+    def classify_turn_amount(amount_selection: str) -> str:
+        """Anlagebetrag-Auswahl → investment_amount."""
+        valid = {"under_10k", "10k_100k", "over_100k"}
+        return amount_selection if amount_selection in valid else "10k_100k"
+
+    @staticmethod
+    def classify_turn_esg(esg_selection: str) -> str:
+        """ESG-Präferenz → esg_preference."""
+        valid = {"yes", "no", "indifferent"}
+        return esg_selection if esg_selection in valid else "indifferent"
+
+    @staticmethod
+    def classify_turn_income(income_selection: str) -> str:
+        """Rendite-Präferenz → income_preference."""
+        valid = {"dividends", "growth", "balanced"}
+        return income_selection if income_selection in valid else "balanced"
+
+    @staticmethod
     def calculate_confidence(profile: InvestorProfile) -> float:
         """Wie vollständig ist das Profil? 0.0–1.0.
 
@@ -117,7 +135,13 @@ class ProfileClassifier:
         if profile.risk_profile != "moderate":
             score += 0.3
         if len(profile.known_tickers) >= 2:
-            score += 0.2
+            score += 0.15
         if len(profile.sector_affinity) >= 1:
             score += 0.1
+        if profile.investment_amount != "10k_100k":
+            score += 0.05
+        if profile.esg_preference != "indifferent":
+            score += 0.05
+        if profile.income_preference != "balanced":
+            score += 0.05
         return min(score, 1.0)

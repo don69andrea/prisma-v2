@@ -34,3 +34,4 @@ class MonteCarloResponse(BaseModel):
     prob_500k: float
     contribution_total: float
     months: int
+    correlation_degraded: bool = False

@@ -11,6 +11,17 @@ interface SteuerPanelProps {
   ticker: string;
 }
 
+const ANLEGERPROFILE = [
+  { value: 'privatperson', label: 'Privatperson' },
+  { value: 'vorsorge_3a', label: 'Vorsorge 3a' },
+  { value: 'vorsorge_2a', label: 'Vorsorge 2a' },
+  { value: 'institution', label: 'Institution' },
+] as const;
+
+type Anlegerprofil = (typeof ANLEGERPROFILE)[number]['value'];
+
+const HALTEPERIODEN = [1, 3, 5, 10, 20] as const;
+
 function SteuerResult({ data }: { data: SteuerEinschaetzungResponse }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -82,15 +93,18 @@ export function SteuerPanel({ ticker }: SteuerPanelProps) {
   const [result, setResult] = useState<SteuerEinschaetzungResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [anlegerprofil, setAnlegerprofil] = useState<Anlegerprofil>('privatperson');
+  const [halteperiode, setHalteperiode] = useState<number>(10);
 
   const handleRequest = async () => {
     setLoading(true);
     setError(null);
+    setResult(null);
     try {
       const data = await getSteuerEinschaetzung({
         ticker,
-        anlegerprofil: 'privatperson',
-        halteperiode_jahre: 10,
+        anlegerprofil,
+        halteperiode_jahre: halteperiode,
       });
       setResult(data);
     } catch (err) {
@@ -108,7 +122,42 @@ export function SteuerPanel({ ticker }: SteuerPanelProps) {
           Steuer-Einschätzung
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
+        {/* Parameter-Konfiguration */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Anlegerprofil</label>
+            <select
+              className="w-full rounded border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              value={anlegerprofil}
+              onChange={(e) => {
+                setAnlegerprofil(e.target.value as Anlegerprofil);
+                setResult(null);
+              }}
+            >
+              {ANLEGERPROFILE.map((p) => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Haltedauer</label>
+            <select
+              className="w-full rounded border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              value={halteperiode}
+              onChange={(e) => {
+                setHalteperiode(Number(e.target.value));
+                setResult(null);
+              }}
+            >
+              {HALTEPERIODEN.map((y) => (
+                <option key={y} value={y}>{y} Jahr{y !== 1 ? 'e' : ''}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         {!result && (
           <Button
             variant="outline"
@@ -127,6 +176,17 @@ export function SteuerPanel({ ticker }: SteuerPanelProps) {
                 Steuer-Einschätzung anfordern
               </>
             )}
+          </Button>
+        )}
+
+        {result && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setResult(null)}
+            className="text-xs text-muted-foreground"
+          >
+            Parameter ändern
           </Button>
         )}
 

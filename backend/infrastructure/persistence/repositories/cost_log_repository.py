@@ -77,6 +77,27 @@ _LAST_CALLS_SQL = text(
     """
 )
 
+# Advisory Lock Key: stabiler Hash für PRISMA Budget-Cap.
+# pg_try_advisory_xact_lock hält den Lock bis zum Transaktions-Ende —
+# verhindert Race Conditions zwischen mehreren Backend-Instanzen.
+_BUDGET_CAP_LOCK_KEY = 7_273_948_201  # hash("prisma_budget_cap") % 2^31
+
+_CAP_CHECK_ATOMIC_SQL = text(
+    """
+    SELECT
+        pg_try_advisory_xact_lock(:lock_key)
+        AND (
+            COALESCE((
+                SELECT SUM(cost_usd)
+                FROM llm_call_log
+                WHERE created_at >= date_trunc('month', now() AT TIME ZONE 'UTC')
+                  AND created_at <  date_trunc('month', now() AT TIME ZONE 'UTC')
+                                     + INTERVAL '1 month'
+            ), 0) + :estimated_usd
+        ) <= :cap_usd * :threshold
+    """
+)
+
 
 class SQLACostLogRepository(CostLogRepository):
     """Persistiert Audit-Einträge und liefert Aggregate via async SQLAlchemy."""
@@ -104,6 +125,21 @@ class SQLACostLogRepository(CostLogRepository):
             # COALESCE garantiert nicht-NULL; Driver liefert Decimal oder int
             raw = result.scalar_one()
             return Decimal(str(raw))
+
+    async def check_cap_atomic(
+        self, estimated_usd: Decimal, cap_usd: Decimal, threshold: Decimal
+    ) -> bool:
+        async with self._session_factory() as session, session.begin():
+            result = await session.execute(
+                _CAP_CHECK_ATOMIC_SQL,
+                {
+                    "lock_key": _BUDGET_CAP_LOCK_KEY,
+                    "estimated_usd": str(estimated_usd),
+                    "cap_usd": str(cap_usd),
+                    "threshold": str(threshold),
+                },
+            )
+            return bool(result.scalar_one())
 
     async def current_month_breakdown(self, last_n: int) -> CostBreakdown:
         async with self._session_factory() as session:

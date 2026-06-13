@@ -21,7 +21,28 @@ from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 
 _logger = logging.getLogger(__name__)
 
+# Datum der letzten manuellen Aktualisierung der Makro-Daten.
+# Wenn dieser Wert >7 Tage in der Vergangenheit liegt, wird beim Start eine Warnung geloggt.
+# BITTE bei jeder Aktualisierung der Listen unten dieses Datum anpassen.
+_MACRO_DATA_LAST_UPDATED = date(2025, 6, 13)
+_MACRO_STALENESS_THRESHOLD_DAYS = 7
+
+
+def _check_macro_staleness() -> None:
+    """Warnt, wenn die hartcodierten Makro-Daten zu alt sind."""
+    days_old = (date.today() - _MACRO_DATA_LAST_UPDATED).days
+    if days_old > _MACRO_STALENESS_THRESHOLD_DAYS:
+        _logger.warning(
+            "ACHTUNG: Makro-Daten (SNB/ECB/FED Zinsen, FX-Kurse) sind %d Tage alt "
+            "(zuletzt aktualisiert: %s). Bitte ml_feature_service.py manuell aktualisieren "
+            "oder eine API-Integration einrichten.",
+            days_old,
+            _MACRO_DATA_LAST_UPDATED.isoformat(),
+        )
+
+
 # SNB Leitzins-History (näherungsweise, quartalsweise)
+# ACHTUNG: Manuell gepflegt — zuletzt aktualisiert: 2025-06-13
 _SNB_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2022, 9, 23), 0.5),
     (date(2022, 12, 16), 1.0),
@@ -57,6 +78,7 @@ _ECB_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2025, 6, 5), 1.75),
 ]
 _ECB_RATE_BEFORE_2022 = -0.50
+# ACHTUNG: Manuell gepflegt — zuletzt aktualisiert: 2025-06-13
 
 
 def _ecb_rate_on(target: date) -> float:
@@ -69,6 +91,7 @@ def _ecb_rate_on(target: date) -> float:
 
 
 # Fed Funds Rate (Upper Bound) History
+# ACHTUNG: Manuell gepflegt — zuletzt aktualisiert: 2025-06-13
 _FED_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2018, 3, 22), 1.75),
     (date(2018, 6, 14), 2.00),
@@ -232,6 +255,7 @@ class MLFeatureService:
     ) -> None:
         self._adapter = yfinance_adapter or YFinanceSwissAdapter()
         self._scorer = scorer or SwissQuantScorer()
+        _check_macro_staleness()
 
     # ------------------------------------------------------------------
     # Inferenz: aktueller Feature-Vektor für einen Ticker

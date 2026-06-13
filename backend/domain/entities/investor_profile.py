@@ -22,6 +22,7 @@ class InvestorProfile(BaseModel):
     # Turn 1 — Beruf & Wissensstand
     profession: str | None = None
     financial_knowledge: Literal["low", "medium", "high"] = "low"
+    sector_hint: str | None = None  # aus Beruf-Klassifikation (Turn 1), z.B. "tech", "pharma"
 
     # Turn 2 — Ziel
     investment_goal: Literal[
@@ -39,6 +40,15 @@ class InvestorProfile(BaseModel):
     # Turn 4 — Brand-Mapping
     sector_affinity: list[str] = Field(default_factory=list)
     known_tickers: list[str] = Field(default_factory=list)
+
+    # Turn 5 — Anlagebetrag (Grössenordnung)
+    investment_amount: Literal["under_10k", "10k_100k", "over_100k"] = "10k_100k"
+
+    # Turn 6 — ESG-Präferenz
+    esg_preference: Literal["yes", "no", "indifferent"] = "indifferent"
+
+    # Turn 7 — Rendite-Präferenz: Dividenden vs. Wachstum
+    income_preference: Literal["dividends", "growth", "balanced"] = "balanced"
 
     # Klassifikations-Zustand
     confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)

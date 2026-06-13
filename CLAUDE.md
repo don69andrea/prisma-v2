@@ -16,7 +16,9 @@
 | R2.4-4 | Navigation: 5 Bereiche umstrukturieren | Helin | `feature/helin-navigation` | ✅ DONE | — |
 | R2.4-5 | AuditTrail Komponente + Profil-Reveal Animation | Helin | `feature/helin-discovery-ui` | ✅ DONE | — |
 | R2.4-6 | Makro-Agent + RAG verifizieren | Aurelius | `feature/aurelius-discovery-agent` | ✅ DONE | — |
-| R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | ⬜ NEXT | — |
+| R2.5-1 | Demo-Flow + Präsentation | Alle | `feature/presentation` | 🔄 IN PROGRESS | — |
+| R2.5-2 | ML-Overhaul: 163 Ticker, 19 Features, SimFin, 61.4% Recall | Andrea | `feat/issue-r25-ml-overhaul` | ✅ DONE | — |
+| R2.5-3 | SHAP Explainability + Fundamentals Widget + Cleanup | Andrea | `feat/issue-r25-ml-shap` | 🔄 IN PROGRESS | — |
 
 ---
 
@@ -25,6 +27,20 @@ Kurzkontext für Claude Code. **Quelle der Wahrheit ist `AGENTS.md`** — dieses
 ## Projekt in einem Satz
 
 PRISMA V2 = quantitative Stock-Intelligence-Plattform für den Schweizer Markt (SMI/SMIM/SPI), Swiss Quant Scoring Engine + Claude-Narrative-Engine + VIAC 3a-Entscheidungsunterstützung. FHNW BI Module FS 2026 — Gruppenarbeit Andrea, Helin, Aurelius.
+
+## Git Workflow (GitHub Flow)
+
+- **`main`** = einziger stabiler Branch, Render deployt von hier, direkte Pushes gesperrt
+- **`feat/issue-<nr>-<name>`** = ein Branch pro Task, von `main` abzweigen
+- Fertig → PR → `main` (CI muss grün sein, 1 Review)
+- **Niemals direkt auf `main` pushen**
+
+```bash
+git checkout main && git pull
+git checkout -b feat/issue-<nr>-<kurzname>
+# ... arbeiten ...
+gh pr create --base main
+```
 
 ## Vor jeder Aufgabe lesen
 

@@ -106,6 +106,7 @@ def create_app() -> FastAPI:
         openapi_url=None if is_production else "/openapi.json",
     )
 
+    app.add_middleware(LLMRateLimiterMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

@@ -44,10 +44,10 @@ DEFAULT_TICKERS = [
     "NESN", "NOVN", "ROG", "ABBN", "ZURN", "UHR", "GIVN", "SIKA",
     "LONN", "BAER", "SLHN", "SCMN", "GEBN", "UBSG", "CFR", "KNIN",
     "PGHN", "HOLN", "SREN", "SGKN",
-    # SMIM Mid Caps
-    "VACN", "TEMN", "COTN", "HELN", "STMN", "DKSH", "EMMN", "BARN",
-    "CLTN", "DUFN", "LISP", "BUCN", "SOFN", "AMS", "CSGN", "CMBN",
-    "BCVN", "MBTN", "ORON", "SPSN",
+    # SMIM Mid Caps (HELN/DUFN/SOFN/CSGN/MBTN delisted — entfernt 2026-06-12)
+    "VACN", "TEMN", "COTN", "STMN", "DKSH", "EMMN", "BARN",
+    "CLTN", "LISP", "BUCN", "AMS", "CMBN",
+    "BCVN", "ORON", "SPSN",
 ]
 
 # DAX-40 Hauptwerte (Xetra, yfinance-Format mit .DE Suffix)
@@ -65,10 +65,10 @@ EU_TICKERS_FR = [
     "ACA.PA", "GLE.PA", "KER.PA", "RI.PA", "CAP.PA",
 ]
 
-# AEX Hauptwerte (Amsterdam, .AS Suffix)
+# AEX Hauptwerte (Amsterdam, .AS Suffix) — ING.AS/DSM.AS keine yfinance-Daten
 EU_TICKERS_NL = [
-    "ASML.AS", "HEIA.AS", "ING.AS", "PHIA.AS", "AD.AS",
-    "NN.AS", "RAND.AS", "DSM.AS",
+    "ASML.AS", "HEIA.AS", "PHIA.AS", "AD.AS",
+    "NN.AS", "RAND.AS",
 ]
 
 # FTSE-100 Hauptwerte (London, .L Suffix, GBP-denominiert)
@@ -84,9 +84,9 @@ EU_TICKERS_ES = [
     "TEF.MC", "ACS.MC", "AENA.MC", "FER.MC", "AMS.MC",
 ]
 
-# FTSE MIB Hauptwerte (Mailand, .MI Suffix)
+# FTSE MIB Hauptwerte (Mailand, .MI Suffix) — STM.MI rate-limited/unzuverlässig
 EU_TICKERS_IT = [
-    "ENI.MI", "ENEL.MI", "ISP.MI", "UCG.MI", "STM.MI",
+    "ENI.MI", "ENEL.MI", "ISP.MI", "UCG.MI",
     "TIT.MI", "PRY.MI", "LDO.MI", "RACE.MI", "G.MI",
 ]
 

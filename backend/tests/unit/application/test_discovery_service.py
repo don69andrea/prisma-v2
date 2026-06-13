@@ -17,7 +17,7 @@ from backend.domain.value_objects.swiss_quant_score import SwissQuantScore
 pytestmark = pytest.mark.unit
 
 
-def _make_stock(ticker: str, sector: str = "tech") -> SwissStock:
+def _make_stock(ticker: str, sector: str | None = "tech") -> SwissStock:
     return SwissStock(
         id=uuid4(),
         ticker=ticker,

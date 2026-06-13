@@ -12,5 +12,5 @@ set -e
 echo "==> Running alembic migrations..."
 alembic upgrade head
 
-echo "==> Starting uvicorn on 0.0.0.0:8000 ..."
-exec uvicorn backend.interfaces.rest.main:app --host 0.0.0.0 --port 8000
+echo "==> Starting uvicorn on 0.0.0.0:${PORT:-8000} ..."
+exec uvicorn backend.interfaces.rest.main:app --host 0.0.0.0 --port "${PORT:-8000}"

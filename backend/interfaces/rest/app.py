@@ -106,6 +106,10 @@ def create_app() -> FastAPI:
         openapi_url=None if is_production else "/openapi.json",
     )
 
+    # K-13: In Starlette the last-added middleware becomes the outermost layer.
+    # LLMRateLimiterMiddleware must be added first (innermost) so that CORSMiddleware
+    # (outermost) can attach CORS headers to 429 responses from the rate limiter.
+    app.add_middleware(LLMRateLimiterMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
@@ -113,7 +117,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(LLMRateLimiterMiddleware)
 
     # FastAPI typisiert add_exception_handler über `Type[Exception]` mit einem
     # generischen Handler-Signature, das unsere konkrete (Request, BudgetCapExceeded)-

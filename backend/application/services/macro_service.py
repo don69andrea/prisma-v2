@@ -169,7 +169,7 @@ class MacroService:
     async def get_context(self) -> MacroContext:
         """Erstellt den aktuellen MacroContext (SNB + CHF + Narrative)."""
         leitzins = await fetch_current_snb_rate()
-        chf_eur = _fetch_chf_eur()
+        chf_eur = await asyncio.to_thread(_fetch_chf_eur)  # K-10: offload blocking yfinance call
         today = datetime.now(tz=UTC).date()
 
         # Inflation und PMI parallel abrufen (beide mit robustem Fallback)

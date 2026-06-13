@@ -215,8 +215,24 @@ async def require_api_key(
     Wenn tool_api_key leer ist (default), kein Enforcement — bestehende Aufrufer
     ohne Header werden nicht gebrochen. Sobald TOOL_API_KEY gesetzt ist,
     muss der Header exakt übereinstimmen.
+
+    In Production (ENVIRONMENT=production) wird bei fehlendem Key ein 503
+    zurückgegeben statt den Endpoint ohne Auth durchzulassen.
     """
     if not settings.tool_api_key:
+        if settings.environment == "production":
+            _logger.error(
+                "require_api_key: TOOL_API_KEY ist nicht konfiguriert, "
+                "Endpoint in Production ohne Auth aufgerufen — Zugriff verweigert."
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Dienst nicht verfügbar: API-Key-Konfiguration fehlt.",
+            )
+        _logger.warning(
+            "require_api_key: TOOL_API_KEY ist nicht gesetzt — Auth-Enforcement deaktiviert. "
+            "Setze TOOL_API_KEY in Production."
+        )
         return
     if x_api_key is None or not hmac.compare_digest(x_api_key, settings.tool_api_key):
         raise HTTPException(status_code=401, detail="Invalid API key")

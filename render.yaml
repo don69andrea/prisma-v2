@@ -12,6 +12,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
     plan: free
+    branch: main
     healthCheckPath: /health
     autoDeploy: true
     # Dockerfile CMD calls /app/backend-start.sh which runs alembic + uvicorn.
@@ -38,7 +39,7 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: CORS_ORIGINS
-        sync: false
+        value: https://prisma-v2-frontend.onrender.com
       - key: PYTHONPATH
         value: /app
       # Alert Engine: E-Mail-Benachrichtigungen via SendGrid
@@ -46,9 +47,6 @@ services:
         sync: false
       # VoyageAI Embedding-Key
       - key: VOYAGE_API_KEY
-        sync: false
-      # FinancialModelingPrep API key (free tier, 250 calls/day)
-      - key: FMP_API_KEY
         sync: false
       # MCP-Tool-API-Key für X-API-Key auf /api/v1/runs (getrennt vom Admin-Key)
       - key: TOOL_API_KEY
@@ -62,15 +60,14 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile.frontend
     plan: free
+    branch: main
     autoDeploy: true
     envVars:
       # NEXT_PUBLIC_* variables are baked into the Next.js bundle at build time.
       # Render passes envVars as both build-time ARGs and runtime env vars for
       # Docker services, so setting it here is sufficient.
-      # Value must point to the public URL of prisma-v2-backend on Render,
-      # e.g. https://prisma-v2-backend.onrender.com
       - key: NEXT_PUBLIC_API_URL
-        sync: false
+        value: https://prisma-v2-backend.onrender.com
     buildFilter:
       paths:
         - frontend/**

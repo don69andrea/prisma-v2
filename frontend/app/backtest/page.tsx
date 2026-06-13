@@ -65,9 +65,9 @@ function exportSeriesCsv(result: BacktestResult) {
     ['Datum', 'PRISMA%', 'Universum%', 'Benchmark%'],
     ...result.series.dates.map((d, i) => [
       d,
-      `${((parseFloat(result.series.prisma[i]) - 1) * 100).toFixed(2)}`,
-      `${((parseFloat(result.series.universe[i]) - 1) * 100).toFixed(2)}`,
-      `${((parseFloat(result.series.benchmark[i]) - 1) * 100).toFixed(2)}`,
+      `${((result.series.prisma[i] - 1) * 100).toFixed(2)}`,
+      `${((result.series.universe[i] - 1) * 100).toFixed(2)}`,
+      `${((result.series.benchmark[i] - 1) * 100).toFixed(2)}`,
     ]),
   ];
   const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -190,9 +190,9 @@ function BacktestContent() {
   const chartData =
     result?.series.dates.map((d, i) => ({
       date: d,
-      PRISMA: parseFloat(result.series.prisma[i]),
-      Universum: parseFloat(result.series.universe[i]),
-      Benchmark: parseFloat(result.series.benchmark[i]),
+      PRISMA: result.series.prisma[i],
+      Universum: result.series.universe[i],
+      Benchmark: result.series.benchmark[i],
     })) ?? [];
 
   return (

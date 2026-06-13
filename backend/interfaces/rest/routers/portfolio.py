@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,6 +12,7 @@ from backend.application.services.monte_carlo_service import (
     HoldingWeight,
     MonteCarloInput,
     MonteCarloService,
+    _run_gbm,
 )
 from backend.application.services.ranking_run_service import RankingRunNotFound, RankingRunService
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
@@ -112,7 +114,14 @@ async def monte_carlo(req: MonteCarloRequest) -> MonteCarloResponse:
         n_simulations=req.n_simulations,
     )
     try:
-        result = await svc.simulate(inp)
+        # W-2: Fetch stochastic parameters async, then offload CPU-intensive GBM
+        # simulation (up to 50k paths × N months) to a thread to avoid blocking
+        # the event loop.
+        total_weight = sum(h.weight for h in inp.holdings)
+        if abs(total_weight - 1.0) > 0.01:
+            raise ValueError(f"Gewichte müssen 1.0 ergeben, ist: {total_weight:.3f}")
+        mu_arr, sigma_arr, corr_matrix = await svc._fetch_return_params(inp.holdings)
+        result = await asyncio.to_thread(_run_gbm, inp, mu_arr, sigma_arr, corr_matrix)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)

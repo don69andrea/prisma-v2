@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -44,7 +45,7 @@ class MonteCarloResult:
 class MonteCarloService:
     """Simuliert 3a-Wealth-Paths via Geometric Brownian Motion."""
 
-    def __init__(self, ml_prediction_service: object | None = None) -> None:
+    def __init__(self, ml_prediction_service: Any | None = None) -> None:
         # MLPredictionService per DI statt inline-Instantiierung
         self._ml_prediction_service = ml_prediction_service
 
@@ -89,7 +90,7 @@ class MonteCarloService:
 
                 svc = MLPredictionService()
 
-            result = await svc.predict(ticker)  # type: ignore[union-attr]
+            result = await svc.predict(ticker)
             if result is None:
                 return 0.0003
             annual_map = {"OUTPERFORM": 0.10, "NEUTRAL": 0.05, "UNDERPERFORM": 0.0}

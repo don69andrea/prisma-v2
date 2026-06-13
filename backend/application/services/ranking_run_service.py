@@ -77,14 +77,14 @@ class RankingRunService:
             self._market_data_provider.get_prices(tickers),
         )
 
-        _model_factories: dict[str, Callable[[], list]] = {
+        _model_factories: dict[str, Callable[[], list[Any]]] = {
             "quality_classic": lambda: QualityClassicModel().run(fundamentals),
             "diversification": lambda: DiversificationModel().run(prices=prices),
             "trend_momentum": lambda: TrendMomentumModel().run(prices=prices),
             "value_alpha_potential": lambda: ValueAlphaPotentialModel().run(prices=prices),
             "alpha": lambda: AlphaModel().run(prices=prices),
         }
-        per_model: dict[str, list] = {}
+        per_model: dict[str, list[Any]] = {}
         failed_models: list[str] = []
         for model_name, factory in _model_factories.items():
             try:

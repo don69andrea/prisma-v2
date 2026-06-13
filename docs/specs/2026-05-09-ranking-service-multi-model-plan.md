@@ -1,6 +1,6 @@
 # RankingService Multi-Model-Wiring — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** Implementiere diesen Plan Schritt für Schritt. Schritte nutzen Checkbox-Syntax (`- [ ]`) zum Tracking.
 
 **Goal:** RankingRunService nutzt alle 5 Quant-Modelle (statt nur QualityClassic), via neuem `MarketDataProvider`-Port + `StubMarketDataProvider`.
 
@@ -731,10 +731,10 @@ Format am Anfang von `## Einträge`-Sektion (zwischen Zeile mit `## Einträge` u
 ## 2026-05-09 · RankingService Multi-Model-Wiring (Branch `feat/ranking-service-multi-model`)
 - **Agent**: Claude Code (Opus 4.7), Brainstorming + writing-plans + TDD im Main-Context.
 - **Scope**: Schließt AGENTS.md-§"Wenn ein neues Quant-Modell"-Punkt 4 ("RankingService erweitern, Integration-Test schreiben"). Aktuell rief der Service nur QualityClassic — die 4 anderen Modelle (Diversification, TM, VAP, Alpha) hingen als Domain-Klassen ungenutzt. Diese PR: neuer `MarketDataProvider`-Port (analog FundamentalsProvider), `StubMarketDataProvider` mit zlib.crc32-Seed (statt builtin hash → prozess-stabil) + injizierbarem `end_date` für deterministische Tests, RankingRunService nutzt `asyncio.gather` für parallel Fetch + ruft alle 5 Modelle auf, 6 Unit-Tests + 3 Integration-Tests.
-- **Spec-Driven**: `docs/specs/2026-05-09-ranking-service-multi-model.md` (Spec) + `-plan.md` (Implementation-Plan). Spec-First-Disziplin gehalten — Brainstorming-Skill mit 4 strukturierten User-Fragen vor erstem Code, dann Self-Review der Spec hat 5 echte Issues (zlib.crc32 statt hash, injizierbares end_date, UTC-Timezone, asyncio.gather, empty-input edge-case) gefangen, bevor sie Code wurden.
+- **Spec-Driven**: `docs/specs/2026-05-09-ranking-service-multi-model.md` (Spec) + `-plan.md` (Implementation-Plan). Disziplin Spec vor Code gehalten — Brainstorming-Skill mit 4 strukturierten User-Fragen vor erstem Code, dann Self-Review der Spec hat 5 echte Issues (zlib.crc32 statt hash, injizierbares end_date, UTC-Timezone, asyncio.gather, empty-input edge-case) gefangen, bevor sie Code wurden.
 - **Was gut lief**:
   - **Self-Review als Mini-TDD**: Nach erstem Spec-Entwurf bewusst „looking with fresh eyes" — 5 Bugs gefunden (z.B. `hash()` ist prozess-instabil, ein klassischer Python-Fall, der erst beim 2. Test-Run sichtbar wäre). Self-Review hat hier real Bugs gefangen, nicht nur Tippfehler.
-  - **Spec-First spart TDD-Iterations**: Die 5 vor-vorab gefundenen Issues hätten sonst je eine RED-Phase gekostet — geschätzt 30 Minuten Iteration eingespart.
+  - **Spec vor Code spart TDD-Iterations**: Die 5 vor-vorab gefundenen Issues hätten sonst je eine RED-Phase gekostet — geschätzt 30 Minuten Iteration eingespart.
   - **Existing Provider-Pattern als Vorbild**: `FundamentalsProvider` + `StubFundamentalsProvider` als Template übernommen. Saubere Symmetrie, keine Architektur-Diskussion nötig.
 - **Was nicht klappte**: TODO nach Implementation eintragen.
 - **Token-Kosten**: TODO eintragen.

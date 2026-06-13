@@ -7,7 +7,7 @@
 
 ## Ziel
 
-Bewertende der Capstone-Demo verstehen ohne Vorerklärung, was die 5 Modell-Spalten (Quality, Diversification, Trend, Value, Alpha) bedeuten und was die Sweet-Spot-Auszeichnung qualifiziert. Reibung "was heißt das?" wird beseitigt, ohne den Tabellen-Layout zu überfrachten.
+Bewertende der Demo verstehen ohne Vorerklärung, was die 5 Modell-Spalten (Quality, Diversification, Trend, Value, Alpha) bedeuten und was die Sweet-Spot-Auszeichnung qualifiziert. Reibung "was heißt das?" wird beseitigt, ohne den Tabellen-Layout zu überfrachten.
 
 ## Nicht-Ziele
 
@@ -128,7 +128,7 @@ Bestehenden Rankings-Detail-E2E-Test erweitern:
 
 ## Verifikation (vor "done")
 
-Aus `superpowers:verification-before-completion`:
+Aus `Verifikation vor Abschluss`:
 
 - [ ] `npm run lint` grün
 - [ ] `npm run typecheck` grün
@@ -139,7 +139,7 @@ Aus `superpowers:verification-before-completion`:
 ## Referenzen
 
 - Memory: `project-frontend-improvement-backlog` (Item 2)
-- Memory: `project-capstone-deadline` (Deadline 2026-05-31)
+- Memory: `project-deadline` (Deadline 2026-05-31)
 - Backend-Sweet-Spot-Definition: `backend/tests/unit/application/test_ranking_aggregator.py::test_top25_in_3_of_5_models_is_sweet_spot`
 - Modell-Specs: `docs/specs/2026-04-28-quant-mvp-models.md`
 - shadcn Popover: https://ui.shadcn.com/docs/components/popover

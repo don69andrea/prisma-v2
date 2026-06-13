@@ -156,8 +156,8 @@ Keine — alle Macro-Trade-offs sind im Brainstorming entschieden:
 
 ## §10 Referenzen
 
-- Issue #66 (W1): https://github.com/SheylaSam/prisma-capstone/issues/66
-- Issue #67 (W3): https://github.com/SheylaSam/prisma-capstone/issues/67
-- PR #64 Review-Kommentar: https://github.com/SheylaSam/prisma-capstone/pull/64#pullrequestreview-4230626614
+- Issue #66 (W1): https://github.com/don69andrea/prisma-v2/issues/66
+- Issue #67 (W3): https://github.com/don69andrea/prisma-v2/issues/67
+- PR #64 Review-Kommentar: https://github.com/don69andrea/prisma-v2/pull/64#pullrequestreview-4230626614
 - Master-Spec §5 (Memo-Generation): `docs/specs/2026-05-04-narrative-engine-single-memo.md`
 - AGENTS.md: Branching-/Commit-Konventionen

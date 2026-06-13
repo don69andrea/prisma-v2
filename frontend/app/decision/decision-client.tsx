@@ -8,12 +8,14 @@ import { ChevronDown, ChevronUp, Download } from 'lucide-react';
 import Link from 'next/link';
 import { listUniverses } from '@/lib/api/universes';
 import { listDecisions, liveDecisions, explainDecision, type DecisionSignal, type SignalType, type ExplainResponse } from '@/lib/api/decisions';
+import { getMLPrediction } from '@/lib/api/ml';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SignalBadge } from '@/components/ui/SignalBadge';
 import { AuditTrail } from '@/components/ui/AuditTrail';
 import { SignalBreakdown } from '@/components/ui/SignalBreakdown';
 import { WeightSensitivity } from '@/components/ui/WeightSensitivity';
+import { SHAPWaterfallChart } from '@/components/factsheet/SHAPWaterfallChart';
 import { cn } from '@/lib/utils';
 
 const FILTER_CHIP_CONFIG: Record<
@@ -241,6 +243,17 @@ function SignalCard({ item }: { item: DecisionSignal }) {
   const [auditOpen, setAuditOpen] = useState(false);
   const [explainOpen, setExplainOpen] = useState(false);
 
+  const { data: mlData } = useQuery({
+    queryKey: ['ml-predict', item.ticker],
+    queryFn: () => getMLPrediction(item.ticker),
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+
+  const shapValues = mlData?.shap_values ?? [];
+  const shapExpectedValue = mlData?.shap_expected_value ?? 0;
+  const shapSignal = mlData?.signal ?? 'NEUTRAL';
+
   return (
     <>
       <div className="glass-card p-4 space-y-3 hover:border-[#58a6ff]/30 transition-colors">
@@ -287,6 +300,20 @@ function SignalCard({ item }: { item: DecisionSignal }) {
           standardScore={item.weighted_score}
           standardSignal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
         />
+=======
+        {shapValues.length > 0 && (
+          <div className="space-y-1.5">
+            <h3 className="text-[11px] font-semibold text-[#8b949e] uppercase tracking-widest">
+              Warum sagt das ML-Modell das?
+            </h3>
+            <SHAPWaterfallChart
+              shapValues={shapValues}
+              expectedValue={shapExpectedValue}
+              signal={shapSignal}
+            />
+          </div>
+        )}
+>>>>>>> ee5fb1a2bfb175b2a95ebb5020bedda078e1fda9
 
         {/* Action row */}
         <div className="flex items-center justify-between gap-2 pt-0.5">

@@ -90,7 +90,12 @@ class DiscoveryService:
             fundamentals = await self._market_data.get_fundamentals(stock.ticker)
             quant_score = self._scorer.score(stock.ticker, fundamentals)
         except Exception as exc:
-            _logger.warning("Quant-Score für %s nicht verfügbar — übersprungen: %s", stock.ticker, exc, exc_info=True)
+            _logger.warning(
+                "Quant-Score für %s nicht verfügbar — übersprungen: %s",
+                stock.ticker,
+                exc,
+                exc_info=True,
+            )
             return None
 
         if quant_score.composite < risk_floor:
@@ -135,7 +140,10 @@ class DiscoveryService:
         if not scored:
             _logger.warning(
                 "Discovery: Alle %d Kandidaten gefiltert (risk=%s, esg=%s, risk_floor=%.1f)",
-                len(candidates), profile.risk_profile, profile.esg_preference, risk_floor,
+                len(candidates),
+                profile.risk_profile,
+                profile.esg_preference,
+                risk_floor,
             )
 
         # 4. Ergebnis-Limit basierend auf financial_knowledge

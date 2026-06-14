@@ -93,7 +93,9 @@ class SignalAggregationService:
         except FileNotFoundError:
             _logger.info("Kein ML-Modell vorhanden — ML-Gewicht wird umverteilt für %s", ticker)
         except Exception:
-            _logger.exception("ML-Prediction fehlgeschlagen für %s — ML-Gewicht wird umverteilt", ticker)
+            _logger.exception(
+                "ML-Prediction fehlgeschlagen für %s — ML-Gewicht wird umverteilt", ticker
+            )
 
         # Per-Ticker Macro-Score wenn MacroIntelligenceAgent verfügbar, sonst global
         if self._macro_agent is not None:

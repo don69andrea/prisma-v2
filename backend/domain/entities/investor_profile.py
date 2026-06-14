@@ -58,7 +58,7 @@ class InvestorProfile(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @model_validator(mode="after")
-    def _validate_onboarding_consistency(self) -> "InvestorProfile":
+    def _validate_onboarding_consistency(self) -> InvestorProfile:
         """Wenn Onboarding abgeschlossen ist, muss ein explizites Risikoprofil gesetzt sein."""
         if self.onboarding_complete and self.risk_profile == "moderate":
             raise ValueError(

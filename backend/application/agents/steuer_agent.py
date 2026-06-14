@@ -131,7 +131,10 @@ class SteuerAgent:
             ticker=ticker,
             anlegerprofil=anlegerprofil,
             halteperiode_jahre=halteperiode_jahre,
-            steuerarten=[f"Verrechnungssteuer ({int(_VERRECHNUNGSSTEUER_RATE * 100)}%)", "Vermögenssteuer"],
+            steuerarten=[
+                f"Verrechnungssteuer ({int(_VERRECHNUNGSSTEUER_RATE * 100)}%)",
+                "Vermögenssteuer",
+            ],
             pflichten=[
                 f"Dividenden von {ticker} als Einkommen deklarieren (Formular DA-1 für Rückerstattung).",
                 "VST-Rückerstattung via Formular 103 (bei Schweizer Aktien) beantragen.",

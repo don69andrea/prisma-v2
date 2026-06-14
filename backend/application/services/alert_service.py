@@ -101,7 +101,9 @@ class AlertService:
         try:
             current = await self._yf.get_current_price(alert.ticker)
         except Exception as exc:
-            _logger.warning("Preis-Check für Alert %s (%s) fehlgeschlagen: %s", alert.id, alert.ticker, exc)
+            _logger.warning(
+                "Preis-Check für Alert %s (%s) fehlgeschlagen: %s", alert.id, alert.ticker, exc
+            )
             return False
         if current is None:
             return False
@@ -136,7 +138,9 @@ class AlertService:
         try:
             new_signal = await self._signal_svc.get_current_signal(alert.ticker)
         except Exception as exc:
-            _logger.warning("Preis-Check für Alert %s (%s) fehlgeschlagen: %s", alert.id, alert.ticker, exc)
+            _logger.warning(
+                "Preis-Check für Alert %s (%s) fehlgeschlagen: %s", alert.id, alert.ticker, exc
+            )
             return False
         if new_signal is None or new_signal == alert.last_signal:
             return False

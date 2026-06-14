@@ -31,4 +31,4 @@ async def health_ready() -> JSONResponse:
         return JSONResponse({"ready": True, "database": "ok"})
     except Exception as exc:
         _logger.warning("Readiness-Check fehlgeschlagen: %s", exc)
-        raise HTTPException(status_code=503, detail=f"Database nicht erreichbar: {exc}")
+        raise HTTPException(status_code=503, detail=f"Database nicht erreichbar: {exc}") from exc

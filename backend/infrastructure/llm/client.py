@@ -17,11 +17,11 @@ from collections.abc import Mapping
 from decimal import Decimal
 from typing import Any
 
-_logger = logging.getLogger(__name__)
-
 from backend.application.services.cost_tracker import CostTracker
 from backend.domain.errors import UnknownModelError
 from backend.domain.llm_pricing import ModelPricing
+
+_logger = logging.getLogger(__name__)
 
 _ONE_MILLION = Decimal("1_000_000")
 

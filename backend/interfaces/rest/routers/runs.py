@@ -42,10 +42,8 @@ async def list_runs(
     universe_repo: UniverseRepository = Depends(get_universe_repository),
 ) -> list[RunResponse]:
     runs = await service.list_runs(limit=limit, offset=offset)
-    names = await asyncio.gather(
-        *[_universe_name(universe_repo, r.universe_id) for r in runs]
-    )
-    return [RunResponse.from_domain(r, name) for r, name in zip(runs, names)]
+    names = await asyncio.gather(*[_universe_name(universe_repo, r.universe_id) for r in runs])
+    return [RunResponse.from_domain(r, name) for r, name in zip(runs, names, strict=True)]
 
 
 @router.post("", status_code=201, response_model=RunResponse)
@@ -121,7 +119,7 @@ async def export_rankings_csv(
     )
     stock_map = {
         item.ticker: s
-        for item, s in zip(items, stocks)
+        for item, s in zip(items, stocks, strict=True)
         if not isinstance(s, Exception) and s is not None
     }
 

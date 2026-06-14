@@ -117,11 +117,12 @@ async def export_rankings_csv(
         *[stock_service.get_by_ticker(item.ticker) for item in items],
         return_exceptions=True,
     )
-    stock_map = {
-        item.ticker: s
-        for item, s in zip(items, stocks, strict=True)
-        if not isinstance(s, Exception) and s is not None
-    }
+    from backend.domain.entities.stock import Stock
+
+    stock_map: dict[str, Stock] = {}
+    for item, s in zip(items, stocks, strict=True):
+        if not isinstance(s, BaseException) and s is not None:
+            stock_map[item.ticker] = s
 
     buf = io.StringIO()
     writer = csv.writer(buf)

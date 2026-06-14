@@ -39,7 +39,54 @@ class MonteCarloResult:
     prob_500k: float
     contribution_total: float
     months: int
-    correlation_degraded: bool = False  # True wenn Cholesky auf Identitätsmatrix zurückgefallen ist
+    correlation_degraded: bool = False
+    interpretation: str = ""
+
+
+def build_interpretation(result: MonteCarloResult, initial_value: float, years: int) -> str:
+    def fmt(v: float) -> str:
+        if v >= 1_000_000:
+            return f"CHF {v / 1_000_000:,.2f}M".replace(",", "'")
+        return f"CHF {v:,.0f}".replace(",", "'")
+
+    p5_final = result.p5[-1]
+    p50_final = result.p50[-1]
+    p95_final = result.p95[-1]
+    prob_pct = round(result.prob_positive_return * 100)
+    invested = initial_value + result.contribution_total
+
+    lines: list[str] = []
+
+    lines.append(
+        f"Mit 90% Wahrscheinlichkeit liegt der Portfoliowert nach {years} Jahren "
+        f"zwischen {fmt(p5_final)} (5. Perzentil) und {fmt(p95_final)} (95. Perzentil)."
+    )
+
+    if invested > 0:
+        gain = p50_final - invested
+        gain_pct = (gain / invested) * 100
+        sign = "+" if gain >= 0 else ""
+        lines.append(
+            f"Im Median-Szenario wächst das Portfolio auf {fmt(p50_final)} "
+            f"({sign}{gain_pct:.0f}% gegenüber den Gesamteinzahlungen von {fmt(invested)})."
+        )
+    else:
+        lines.append(f"Im Median-Szenario erreicht das Portfolio {fmt(p50_final)}.")
+
+    if invested > 0:
+        worst_pct = round(((p5_final - invested) / invested) * 100)
+        sign_w = "+" if worst_pct >= 0 else ""
+        lines.append(
+            f"Im schlechtesten Szenario (5. Perzentil): {fmt(p5_final)} ({sign_w}{worst_pct}%)."
+        )
+    else:
+        lines.append(f"Im schlechtesten Szenario (5. Perzentil): {fmt(p5_final)}.")
+
+    lines.append(
+        f"Die Wahrscheinlichkeit eines positiven Returns gegenüber den Einzahlungen beträgt {prob_pct}%."
+    )
+
+    return " ".join(lines)
 
 
 class MonteCarloService:
@@ -172,7 +219,7 @@ def _run_gbm(
     prob_positive = float(np.mean(final > contribution_total))
     prob_500k = float(np.mean(final > _TARGET_500K))
 
-    return MonteCarloResult(
+    partial_result = MonteCarloResult(
         p5=[round(v, 2) for v in p5],
         p50=[round(v, 2) for v in p50],
         p95=[round(v, 2) for v in p95],
@@ -182,4 +229,17 @@ def _run_gbm(
         contribution_total=round(contribution_total, 2),
         months=n_months,
         correlation_degraded=correlation_degraded,
+    )
+    interp = build_interpretation(partial_result, initial_value=inp.initial_value, years=inp.years)
+    return MonteCarloResult(
+        p5=partial_result.p5,
+        p50=partial_result.p50,
+        p95=partial_result.p95,
+        final_distribution=partial_result.final_distribution,
+        prob_positive_return=partial_result.prob_positive_return,
+        prob_500k=partial_result.prob_500k,
+        contribution_total=partial_result.contribution_total,
+        months=partial_result.months,
+        correlation_degraded=partial_result.correlation_degraded,
+        interpretation=interp,
     )

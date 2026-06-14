@@ -14,6 +14,7 @@ from backend.application.services.monte_carlo_service import (
     MonteCarloResult,
     MonteCarloService,
     _run_gbm,
+    build_interpretation,
 )
 
 pytestmark = pytest.mark.unit
@@ -103,9 +104,6 @@ def test_run_gbm_single_asset() -> None:
     assert all(v > 0 for v in result.p50)
 
 
-from backend.application.services.monte_carlo_service import build_interpretation
-
-
 def _make_result(
     p5_final: float = 95_000.0,
     p50_final: float = 285_000.0,
@@ -173,7 +171,9 @@ def test_build_interpretation_returns_str() -> None:
 
 
 def test_build_interpretation_zero_initial_value() -> None:
-    result = _make_result(initial_value=0.0, p5_final=10_000.0, p50_final=80_000.0, p95_final=200_000.0, months=120)
+    result = _make_result(
+        initial_value=0.0, p5_final=10_000.0, p50_final=80_000.0, p95_final=200_000.0, months=120
+    )
     text = build_interpretation(result, initial_value=0.0, years=10)
     assert isinstance(text, str)
     assert len(text) > 20

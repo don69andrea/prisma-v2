@@ -48,6 +48,7 @@ def _get_discovery_service(session: AsyncSession = Depends(get_session)) -> Disc
     return DiscoveryService(
         swiss_stock_repo=SQLASwissStockRepository(session=session),
         market_data=YFinanceSwissAdapter(),
+        db_session=session,
     )
 
 

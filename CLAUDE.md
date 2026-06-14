@@ -117,6 +117,35 @@ Kein `tenacity`. Manueller Retry: `_RETRIES = 2`, `_BASE_DELAY = 1.0`, Exponenti
 ### MCP-Server-Arbeit
 MCP-Tools in `backend/interfaces/mcp/` liegen dünn über Application-Services. Keine Business-Logik im MCP-Layer.
 
+## Workflow-Regeln (gelernt aus PR #190)
+
+### 1. Kleinere PRs
+Max. ~20 Dateien pro PR. Mehrere unabhängige Features → mehrere PRs. Grosse PRs = viele gleichzeitig kaputte Tests = schwer zu debuggen.
+
+### 2. Tests im selben Commit wie der UI-Text
+Wenn ein Label, Button-Text oder Komponentenname geändert wird: den dazugehörigen Test **im gleichen Commit** anpassen. Nie später.
+
+### 3. Lokal prüfen vor dem Push
+```bash
+# Backend
+ruff check backend/ && ruff format --check backend/ && mypy backend/
+
+# Frontend
+cd frontend && npx vitest run
+```
+Jeder fehlgeschlagene CI-Run = ~10 Min Wartezeit. Lokal dauert es 30 Sekunden.
+
+### 4. main mergen bevor man lange arbeitet
+```bash
+git fetch origin && git merge origin/main
+```
+Am Anfang des Tages, nicht nach 20 CI-Runs. Branch-Divergenz erzeugt Konflikte und mypy-Fehler aus Code der nicht mal unser ist.
+
+### 5. Platform-Unterschied ruff (macOS vs. Linux)
+`ruff format` verhält sich bei Zeilen exakt an der `line-length`-Grenze unterschiedlich auf macOS (arm64) vs. Linux (x86_64 / CI). Nach einem Merge immer `ruff format backend/` auf Linux oder direkt in CI vertrauen — lokal auf macOS ist kein verlässlicher Check.
+
+---
+
 ## Häufige Claude-Fehler in diesem Projekt (bitte vermeiden)
 
 - Quant-Formeln aus dem Gedächtnis rekonstruieren statt aus dem Plan/Spec zu zitieren

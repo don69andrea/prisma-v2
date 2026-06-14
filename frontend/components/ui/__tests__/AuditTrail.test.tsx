@@ -42,8 +42,8 @@ describe('AuditTrail', () => {
     expect(screen.getByText(/40–64/)).toBeInTheDocument();
   });
 
-  it('zeigt WATCH-Schwelle < 40', () => {
-    render(<AuditTrail {...DEFAULT_PROPS} signal="WATCH" />);
+  it('zeigt SELL-Schwelle < 40', () => {
+    render(<AuditTrail {...DEFAULT_PROPS} signal="SELL" />);
     expect(screen.getByText(/< 40/)).toBeInTheDocument();
   });
 

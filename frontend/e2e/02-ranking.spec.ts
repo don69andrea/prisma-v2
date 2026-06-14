@@ -17,6 +17,10 @@ test("Ranking-Lauf starten und Tabelle mit 5 Zeilen anzeigen", async ({ page, re
   expect(universeResp.ok()).toBeTruthy();
   const universe = await universeResp.json();
 
+  await page.addInitScript(() => {
+    localStorage.setItem('prisma-mode', 'pro');
+  });
+
   await page.goto("/rankings");
 
   // Select universe from dropdown and start run

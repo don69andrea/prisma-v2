@@ -7,7 +7,7 @@ test.describe('PRISMA E2E', () => {
     await page.goto('/');
     await expect(page).toHaveTitle(/PRISMA|Dashboard/);
     // Navigation includes both existing and new links
-    await expect(page.getByRole('link', { name: /Universen/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Rankings/i })).toBeVisible();
     // /discover ("Mein Universum") and /start ("Start") were added to nav
     await expect(page.getByRole('link', { name: /Mein Universum/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Start/i })).toBeVisible();
@@ -42,8 +42,12 @@ test.describe('PRISMA E2E', () => {
   test('4. Rankings: Sortierung + CSV-Export', async ({ page }) => {
     const universe = await createTestUniverse(`sort-${Date.now()}`);
 
+    await page.addInitScript(() => {
+      localStorage.setItem('prisma-mode', 'pro');
+    });
+
     await page.goto('/rankings');
-    await page.getByLabel('Universe').selectOption(universe.id);
+    await page.locator('#universe').selectOption(universe.id);
     await page.getByRole('button', { name: /Run starten/i }).click();
 
     await expect(page).toHaveURL(/\/rankings\/[0-9a-f-]+$/, { timeout: 90_000 });
@@ -75,10 +79,14 @@ test.describe('PRISMA E2E', () => {
   test('3. Ranking-Flow: Run starten und Ergebnis-Tabelle sehen', async ({ page }) => {
     const universe = await createTestUniverse(`run-${Date.now()}`);
 
-    await page.goto('/rankings');
-    await expect(page.getByRole('heading', { name: /Ranking starten/i })).toBeVisible();
+    await page.addInitScript(() => {
+      localStorage.setItem('prisma-mode', 'pro');
+    });
 
-    await page.getByLabel('Universe').selectOption(universe.id);
+    await page.goto('/rankings');
+    await expect(page.getByRole('heading', { name: /Rankings/i })).toBeVisible();
+
+    await page.locator('#universe').selectOption(universe.id);
     await page.getByRole('button', { name: /Run starten/i }).click();
 
     await expect(page).toHaveURL(/\/rankings\/[0-9a-f-]+$/, { timeout: 90_000 });

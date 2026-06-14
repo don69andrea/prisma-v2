@@ -1,8 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 test("News-Suche — Suche durchführen und Ergebnisse sehen", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('prisma-mode', 'pro');
+  });
+
   await page.goto("/news");
-  await expect(page.getByRole("heading", { name: "CH-Finanz-News" })).toBeVisible();
+  await expect(page.getByTestId("news-query-input")).toBeVisible({ timeout: 10_000 });
 
   await page.getByTestId("news-query-input").fill("SNB Leitzins");
   await page.getByTestId("news-search-btn").click();

@@ -112,13 +112,10 @@ class DiscoveryService:
                 .subquery()
             )
 
-            stmt = (
-                select(MLFeatureORM.ticker, MLFeatureORM.quant_score)
-                .join(
-                    latest_date_subq,
-                    (MLFeatureORM.ticker == latest_date_subq.c.ticker)
-                    & (MLFeatureORM.snapshot_date == latest_date_subq.c.max_date),
-                )
+            stmt = select(MLFeatureORM.ticker, MLFeatureORM.quant_score).join(
+                latest_date_subq,
+                (MLFeatureORM.ticker == latest_date_subq.c.ticker)
+                & (MLFeatureORM.snapshot_date == latest_date_subq.c.max_date),
             )
 
             rows = await self._db_session.execute(stmt)
@@ -180,9 +177,7 @@ class DiscoveryService:
             and stock.sector is not None
             and stock.sector.lower() in _NON_ESG_SECTORS
         ):
-            _logger.debug(
-                "ESG-Filter: %s (Sektor '%s') ausgeschlossen", stock.ticker, stock.sector
-            )
+            _logger.debug("ESG-Filter: %s (Sektor '%s') ausgeschlossen", stock.ticker, stock.sector)
             return None
 
         # 2. Quant-Score bestimmen

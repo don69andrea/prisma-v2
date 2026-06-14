@@ -40,7 +40,7 @@ def get_audit_service(
     response_model=DecisionAuditListResponse,
     summary="Audit Trail für einen Ticker",
     description=(
-        "Gibt die letzten Entscheidungen (BUY/HOLD/WATCH) mit vollständiger "
+        "Gibt die letzten Entscheidungen (BUY/HOLD/SELL) mit vollständiger "
         "Begründung zurück — Quant-Score, ML-Signal, Makro-Score, Gewichtung."
     ),
 )
@@ -78,7 +78,7 @@ async def get_audit_trail(
     status_code=status.HTTP_201_CREATED,
     summary="Signal berechnen und Audit-Record speichern",
     description=(
-        "Berechnet das aktuelle BUY/HOLD/WATCH-Signal für einen Ticker "
+        "Berechnet das aktuelle BUY/HOLD/SELL-Signal für einen Ticker "
         "und persistiert den vollständigen Audit-Record inkl. Begründung."
     ),
 )

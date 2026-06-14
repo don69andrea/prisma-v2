@@ -172,7 +172,7 @@ function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => v
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">
             Trigger
-            <InfoBtn text="Preis-Alarm = wenn ein bestimmter Kurs erreicht wird. Signal-Alarm = wenn sich das BUY/HOLD/WATCH Signal ändert." />
+            <InfoBtn text="Preis-Alarm = wenn ein bestimmter Kurs erreicht wird. Signal-Alarm = wenn sich das BUY/HOLD/SELL Signal ändert." />
           </label>
           <select
             className="w-full rounded border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"

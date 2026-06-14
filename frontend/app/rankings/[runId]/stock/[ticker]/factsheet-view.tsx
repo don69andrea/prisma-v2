@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { XCircle } from 'lucide-react';
 
 import { getFactsheet, getPrices } from '@/lib/api/stocks';
+import { liveDecisions } from '@/lib/api/decisions';
 import { ApiError } from '@/lib/api/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { InfoTooltip } from '@/components/ui/InfoTooltip';
@@ -41,6 +42,15 @@ export function FactsheetView({ ticker, runId }: Props) {
     queryFn: () => getPrices(ticker),
     staleTime: 5 * 60 * 1000,
   });
+
+  const signalQuery = useQuery({
+    queryKey: ['decision-live', ticker],
+    queryFn: () => liveDecisions([ticker]),
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+
+  const signalReason = signalQuery.data?.items?.[0]?.signal_reason;
 
   const is404 =
     factsheetQuery.error instanceof ApiError && factsheetQuery.error.status === 404;
@@ -130,6 +140,9 @@ export function FactsheetView({ ticker, runId }: Props) {
 
       {/* 5. Fundamentaldaten / Audit */}
       <AuditPanel ticker={ticker} />
+      {signalReason && (
+        <p className="text-xs text-muted-foreground mt-1 px-1">{signalReason}</p>
+      )}
 
       <EligibilityPanel ticker={ticker} />
 

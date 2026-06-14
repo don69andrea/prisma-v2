@@ -144,4 +144,12 @@ class ProfileClassifier:
             score += 0.05
         if profile.income_preference != "balanced":
             score += 0.05
-        return min(score, 1.0)
+
+        # Mindest-Score Garantien
+        base_score = 0.0
+        if profile.risk_profile is not None:
+            base_score = 0.20  # mindestens durch Turn 3 gegangen
+        if profile.income_preference is not None:
+            base_score = 0.60  # alle 7 Turns beantwortet
+
+        return min(max(base_score, score), 1.0)

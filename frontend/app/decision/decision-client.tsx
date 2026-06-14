@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { BarChart2, ChevronDown, ChevronUp, Download } from 'lucide-react';
 
 import Link from 'next/link';
+import { InfoPopover } from '@/components/InfoPopover';
 import { listUniverses } from '@/lib/api/universes';
 import { listDecisions, liveDecisions, explainDecision, type DecisionSignal, type SignalType, type ExplainResponse } from '@/lib/api/decisions';
 import { getMLPrediction } from '@/lib/api/ml';
@@ -19,12 +20,12 @@ import { SHAPMiniBreakdown } from '@/components/ui/SHAPMiniBreakdown';
 import { cn } from '@/lib/utils';
 
 const FILTER_CHIP_CONFIG: Record<
-  'BUY' | 'HOLD' | 'WATCH',
+  'BUY' | 'HOLD' | 'SELL',
   { label: string; dot: string }
 > = {
-  BUY:   { label: 'BUY',   dot: 'bg-[#7ee787]' },
-  HOLD:  { label: 'HOLD',  dot: 'bg-[#ffa657]' },
-  WATCH: { label: 'WATCH', dot: 'bg-[#8b949e]'  },
+  BUY:  { label: 'BUY',  dot: 'bg-[#7ee787]' },
+  HOLD: { label: 'HOLD', dot: 'bg-[#ffa657]' },
+  SELL: { label: 'SELL', dot: 'bg-[#f85149]'  },
 };
 
 function ConfidenceBar({ value }: { value: number }) {
@@ -132,7 +133,7 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
       .finally(() => setLoading(false));
   }, [item]);
 
-  const signalColor = item.signal === 'BUY' ? '#7ee787' : item.signal === 'HOLD' ? '#ffa657' : '#8b949e';
+  const signalColor = item.signal === 'BUY' ? '#7ee787' : item.signal === 'HOLD' ? '#ffa657' : '#f85149';
 
   return (
     <div
@@ -270,7 +271,7 @@ function SignalCard({ item }: { item: DecisionSignal }) {
           </div>
           <div className="flex flex-col items-end gap-1">
             <SignalBadge
-              signal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
+              signal={item.signal as 'BUY' | 'HOLD' | 'SELL'}
               confidence={item.confidence}
               animated={item.signal === 'BUY'}
             />
@@ -282,26 +283,54 @@ function SignalCard({ item }: { item: DecisionSignal }) {
           </div>
         </div>
 
-        <ConfidenceBar value={item.confidence} />
+        {item.signal_reason && (
+          <p className="text-xs text-muted-foreground mt-1">{item.signal_reason}</p>
+        )}
 
-        <SignalBreakdown
-          quantScore={item.quant_score}
-          mlScore={item.ml_score}
-          macroScore={item.macro_score}
-          finalScore={item.weighted_score}
-          signal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
-        />
+        <div>
+          <div className="flex items-center gap-1 mb-0.5">
+            <span className="text-[10px] text-[#8b949e] font-medium uppercase tracking-wide">Konfidenz</span>
+            <InfoPopover ariaLabel="Was bedeutet Konfidenz?">
+              <p>Konfidenz gibt an wie sicher das Modell bei dieser Empfehlung ist. &gt;80% = sehr sicher, 60–80% = sicher, &lt;60% = unsicher.</p>
+            </InfoPopover>
+          </div>
+          <ConfidenceBar value={item.confidence} />
+        </div>
+
+        <div>
+          <div className="flex items-center gap-1 mb-0.5">
+            <span className="text-[10px] text-[#8b949e] font-medium uppercase tracking-wide">PRISMA Score</span>
+            <InfoPopover ariaLabel="Was ist der PRISMA Score?">
+              <p>Der PRISMA-Score kombiniert technische Analyse (45%), KI-Prognose (35%) und Makroökonomie (20%) auf einer Skala von 0–100.</p>
+            </InfoPopover>
+          </div>
+          <SignalBreakdown
+            quantScore={item.quant_score}
+            mlScore={item.ml_score}
+            macroScore={item.macro_score}
+            finalScore={item.weighted_score}
+            signal={item.signal as 'BUY' | 'HOLD' | 'SELL'}
+          />
+        </div>
 
         <WeightSensitivity
           quantScore={item.quant_score}
           mlScore={item.ml_score}
           macroScore={item.macro_score}
           standardScore={item.weighted_score}
-          standardSignal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
+          standardSignal={item.signal as 'BUY' | 'HOLD' | 'SELL'}
         />
 
         {shapValues.length > 0 && (
-          <SHAPMiniBreakdown shapValues={shapValues} signal={shapSignal} />
+          <div>
+            <div className="flex items-center gap-1 mb-0.5">
+              <span className="text-[10px] text-[#8b949e] font-medium uppercase tracking-wide">SHAP</span>
+              <InfoPopover ariaLabel="Was ist SHAP?">
+                <p>SHAP erklärt welche Faktoren den Score am stärksten beeinflusst haben. Positive Werte = positiver Einfluss auf das Signal.</p>
+              </InfoPopover>
+            </div>
+            <SHAPMiniBreakdown shapValues={shapValues} signal={shapSignal} />
+          </div>
         )}
 
         {/* Action row */}
@@ -382,7 +411,7 @@ function loadStoredDecision() {
         signalFilter: SignalType | '';
         eligibleOnly: boolean;
         minConfidence: number;
-        sortKey: 'confidence' | 'quant_score' | 'ml_score' | 'ticker';
+        sortKey: 'weighted_score' | 'confidence' | 'quant_score' | 'ml_score' | 'ticker';
       };
     }
   } catch {
@@ -407,8 +436,8 @@ export function DecisionClient() {
   );
   const [signalFilter, setSignalFilter] = useState<SignalType | ''>(() => loadStoredDecision()?.signalFilter ?? '');
   const [eligibleOnly, setEligibleOnly] = useState(() => loadStoredDecision()?.eligibleOnly ?? false);
-  const [sortKey, setSortKey] = useState<'confidence' | 'quant_score' | 'ml_score' | 'ticker'>(
-    () => loadStoredDecision()?.sortKey ?? 'confidence',
+  const [sortKey, setSortKey] = useState<'weighted_score' | 'confidence' | 'quant_score' | 'ml_score' | 'ticker'>(
+    () => loadStoredDecision()?.sortKey ?? 'weighted_score',
   );
   const [minConfidence, setMinConfidence] = useState(() => loadStoredDecision()?.minConfidence ?? 0);
 
@@ -507,7 +536,7 @@ export function DecisionClient() {
   const counts = useMemo(() => ({
     BUY:   allSignals.filter((s) => s.signal === 'BUY').length,
     HOLD:  allSignals.filter((s) => s.signal === 'HOLD').length,
-    WATCH: allSignals.filter((s) => s.signal === 'WATCH').length,
+    SELL: allSignals.filter((s) => s.signal === 'SELL').length,
   }), [allSignals]);
 
   return (
@@ -604,7 +633,7 @@ export function DecisionClient() {
             <option value="">Alle</option>
             <option value="BUY">BUY</option>
             <option value="HOLD">HOLD</option>
-            <option value="WATCH">WATCH</option>
+            <option value="SELL">SELL</option>
           </select>
         </div>
 
@@ -643,6 +672,7 @@ export function DecisionClient() {
             onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
             data-testid="decision-sort-select"
           >
+            <option value="weighted_score">PRISMA Score ↓</option>
             <option value="confidence">Confidence ↓</option>
             <option value="quant_score">Quant-Score ↓</option>
             <option value="ml_score">ML-Score ↓</option>
@@ -664,24 +694,33 @@ export function DecisionClient() {
       {/* Signal-Zusammenfassung */}
       {isReady && allSignals.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="signal-summary">
-          {(['BUY', 'HOLD', 'WATCH'] as const).map((sig) => {
+          {(['BUY', 'HOLD', 'SELL'] as const).map((sig) => {
             const cfg = FILTER_CHIP_CONFIG[sig];
             const active = signalFilter === sig;
+            const tooltips: Record<string, string> = {
+              BUY: 'BUY bedeutet: Der PRISMA-Score ist ≥ 70 von 100. Das Modell empfiehlt den Kauf.',
+              HOLD: 'HOLD bedeutet: PRISMA-Score 40–69. Beobachten, aber (noch) nicht handeln.',
+              SELL: 'SELL bedeutet: PRISMA-Score < 40. Die Fundamentaldaten sind schwach. Verkauf empfohlen.',
+            };
             return (
-              <button
-                key={sig}
-                onClick={() => setSignalFilter(active ? '' : sig)}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  active
-                    ? 'border-[#58a6ff] bg-[#58a6ff]/10 text-[#58a6ff]'
-                    : 'border-[#21262d] bg-[#161b22] text-[#8b949e] hover:border-[#58a6ff]/40'
-                }`}
-                data-testid={`signal-chip-${sig}`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
-                {cfg.label}
-                <span className="tabular-nums">{counts[sig]}</span>
-              </button>
+              <span key={sig} className="inline-flex items-center gap-0.5">
+                <button
+                  onClick={() => setSignalFilter(active ? '' : sig)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                    active
+                      ? 'border-[#58a6ff] bg-[#58a6ff]/10 text-[#58a6ff]'
+                      : 'border-[#21262d] bg-[#161b22] text-[#8b949e] hover:border-[#58a6ff]/40'
+                  }`}
+                  data-testid={`signal-chip-${sig}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+                  {cfg.label}
+                  <span className="tabular-nums">{counts[sig]}</span>
+                </button>
+                <InfoPopover ariaLabel={`Was bedeutet ${sig}?`}>
+                  <p>{tooltips[sig]}</p>
+                </InfoPopover>
+              </span>
             );
           })}
         </div>
@@ -722,9 +761,21 @@ export function DecisionClient() {
         </div>
       )}
 
-      {isReady && !isLoading && !isError && sortedSignals.length === 0 && (
+      {isReady && !isLoading && !isError && sortedSignals.length === 0 && allSignals.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <BarChart2 className="h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm font-medium text-foreground">Noch keine Signale vorhanden</p>
+          <p className="text-xs text-muted-foreground max-w-xs">
+            Starte einen Rankings-Run um BUY, HOLD und SELL Signale zu generieren
+          </p>
+          <Link href="/rankings" className="text-xs text-blue-400 hover:text-blue-300">
+            Zum Ranking →
+          </Link>
+        </div>
+      )}
+      {isReady && !isLoading && !isError && sortedSignals.length === 0 && allSignals.length > 0 && (
         <p className="text-sm text-[#8b949e] py-8 text-center">
-          Keine Signale gefunden (Marktdaten werden berechnet oder Filter zu eng).
+          Keine Signale gefunden (Filter zu eng).
         </p>
       )}
 

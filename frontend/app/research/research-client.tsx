@@ -65,6 +65,27 @@ import { cn } from '@/lib/utils';
 
 type TabType = 'swiss' | 'sec';
 
+function InfoBtn({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-muted text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ml-1"
+        aria-label="Mehr Info"
+      >
+        i
+      </button>
+      {show && (
+        <span className="absolute z-50 left-6 -top-1 w-52 text-xs bg-popover border border-border rounded-md px-2 py-1.5 text-popover-foreground shadow-lg">
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function SimilarityBadge({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   const color =
@@ -72,7 +93,7 @@ function SimilarityBadge({ value }: { value: number }) {
     : pct >= 60 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
     : 'bg-muted text-muted-foreground';
   return (
-    <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded', color)}>
+    <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded', color)} title="Ähnlichkeit: Wie relevant dieses Ergebnis für deine Suchanfrage ist. Höher = relevanter.">
       {pct}%
     </span>
   );
@@ -209,8 +230,9 @@ export function ResearchClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
+          <CardTitle className="text-base flex items-center gap-1">
             {tab === 'swiss' ? 'SIX Jahresbericht-Suche' : 'SEC Filing-Suche'}
+            <InfoBtn text="Analysiere Schweizer Unternehmensberichte, Geschäftsberichte und Finanzdaten mit KI-Unterstützung. Die Suche findet relevante Textstellen auch ohne genaue Übereinstimmung." />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -272,7 +294,10 @@ export function ResearchClient() {
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">{results.length} Treffer</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  {results.length} Treffer
+                  <InfoBtn text="Similarity Score: Wie relevant das Ergebnis für deine Suchanfrage ist. Höher = relevanter. Grün ab 80%, Gelb ab 60%." />
+                </p>
                 <button
                   onClick={() => exportResearchCsv(
                     results ?? [],

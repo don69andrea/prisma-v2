@@ -21,7 +21,6 @@ const ROWS = [
 const SIGNAL_RANGE: Record<string, string> = {
   BUY:  '≥ 65',
   HOLD: '40–64',
-  WATCH: '< 40',
   SELL: '< 40',
 };
 

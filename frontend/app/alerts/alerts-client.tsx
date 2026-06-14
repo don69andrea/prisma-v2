@@ -39,6 +39,27 @@ const CHANNEL_ICONS: Record<ChannelType, React.ReactNode> = {
   WEBHOOK: <Webhook className="h-3 w-3" />,
 };
 
+function InfoBtn({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-muted text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ml-1"
+        aria-label="Mehr Info"
+      >
+        i
+      </button>
+      {show && (
+        <span className="absolute z-50 left-6 -top-1 w-52 text-xs bg-popover border border-border rounded-md px-2 py-1.5 text-popover-foreground shadow-lg">
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function AlertRow({ alert, onDelete }: { alert: Alert; onDelete: () => void }) {
   const [confirming, setConfirming] = useState(false);
 
@@ -135,7 +156,10 @@ function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => v
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Ticker</label>
+          <label className="text-xs text-muted-foreground">
+            Ticker
+            <InfoBtn text="Das Kürzel der Aktie an der Börse. z.B. NESN für Nestlé oder UBSG für UBS" />
+          </label>
           <input
             className="w-full rounded border bg-background px-2 py-1.5 text-sm uppercase placeholder:normal-case placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             placeholder="NESN"
@@ -146,7 +170,10 @@ function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => v
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Trigger</label>
+          <label className="text-xs text-muted-foreground">
+            Trigger
+            <InfoBtn text="Preis-Alarm = wenn ein bestimmter Kurs erreicht wird. Signal-Alarm = wenn sich das BUY/HOLD/WATCH Signal ändert." />
+          </label>
           <select
             className="w-full rounded border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             value={triggerType}
@@ -158,7 +185,10 @@ function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => v
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="alert-threshold" className="text-xs text-muted-foreground">Threshold (%)</label>
+          <label htmlFor="alert-threshold" className="text-xs text-muted-foreground">
+            Threshold (%)
+            <InfoBtn text="Der Schwellenwert in Prozent bei dem der Alarm ausgelöst wird. z.B. 5 = Alarm wenn der Kurs um 5% steigt oder fällt." />
+          </label>
           <input
             id="alert-threshold"
             className="w-full rounded border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
@@ -288,9 +318,13 @@ export function AlertsClient() {
           </p>
         )}
         {data && data.alerts.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            Keine Alerts konfiguriert.
-          </p>
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <Bell className="h-10 w-10 text-muted-foreground/40" />
+            <p className="text-sm font-medium">Keine Kursalarme gesetzt</p>
+            <p className="text-xs text-muted-foreground max-w-xs">
+              Erstelle Alarme die dich benachrichtigen wenn ein Kurs ein bestimmtes Niveau erreicht
+            </p>
+          </div>
         )}
         {visibleAlerts.map((alert) => (
           <AlertRow

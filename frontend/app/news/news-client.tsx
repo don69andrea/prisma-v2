@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Download, Search } from 'lucide-react';
+import { Download, Newspaper, Search } from 'lucide-react';
 
 import { retrieveNews, type NewsChunkResult } from '@/lib/api/news';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,27 @@ function loadStoredSearch() {
     if (raw) return JSON.parse(raw) as { query: string; ticker: string };
   } catch {}
   return null;
+}
+
+function InfoBtn({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-muted text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ml-1"
+        aria-label="Mehr Info"
+      >
+        i
+      </button>
+      {show && (
+        <span className="absolute z-50 left-6 -top-1 w-52 text-xs bg-popover border border-border rounded-md px-2 py-1.5 text-popover-foreground shadow-lg">
+          {text}
+        </span>
+      )}
+    </span>
+  );
 }
 
 function NewsResultCard({ item }: { item: NewsChunkResult }) {
@@ -145,7 +166,10 @@ export function NewsClient() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>News-Suche</CardTitle>
+          <CardTitle className="flex items-center gap-1">
+            News-Suche
+            <InfoBtn text="Die Suche nutzt KI um relevante Artikel zu finden — auch wenn du nicht exakt den gleichen Wortlaut verwendest (RAG-Technologie)." />
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row">
@@ -159,13 +183,15 @@ export function NewsClient() {
                 data-testid="news-query-input"
               />
             </div>
-            <Input
-              placeholder="Ticker (optional)"
-              value={ticker}
-              onChange={(e) => setTicker(e.target.value)}
-              className="w-full sm:w-28"
-              data-testid="news-ticker-input"
-            />
+            <div className="relative w-full sm:w-28">
+              <Input
+                placeholder="Ticker (opt.)"
+                value={ticker}
+                onChange={(e) => setTicker(e.target.value)}
+                className="w-full"
+                data-testid="news-ticker-input"
+              />
+            </div>
             <Button
               type="submit"
               disabled={mutation.isPending || !query.trim()}
@@ -174,6 +200,9 @@ export function NewsClient() {
               {mutation.isPending ? 'Suche…' : 'Suchen'}
             </Button>
           </form>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Suche nach Unternehmensname, Ticker (z.B. NESN) oder Thema (z.B. Dividende)
+          </p>
           {mutation.isError && (
             <p className="mt-3 text-sm text-destructive">
               Suche fehlgeschlagen. Bitte erneut versuchen.
@@ -210,9 +239,11 @@ export function NewsClient() {
       {displayResults !== null && (
         <div className="space-y-3">
           {displayResults.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              Keine Ergebnisse für «{query}»{sourceFilter !== 'all' ? ` aus Quelle ${SOURCE_LABEL[sourceFilter]}` : ''}.
-            </p>
+            <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+              <Newspaper className="h-10 w-10 text-muted-foreground/40" />
+              <p className="text-sm font-medium">Keine News gefunden</p>
+              <p className="text-xs text-muted-foreground">Versuche einen anderen Suchbegriff oder Ticker</p>
+            </div>
           ) : (
             <>
               <div className="flex items-center justify-between">

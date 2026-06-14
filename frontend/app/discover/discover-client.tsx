@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Compass } from 'lucide-react';
 
 import { completeDiscovery, type DiscoveredStock, type DiscoveryResponse } from '@/lib/api/discovery';
 import { DISCOVER_STORAGE_KEY } from '@/app/start/start-client';
+import { InfoPopover } from '@/components/InfoPopover';
 
 const SECTOR_LABELS: Record<string, string> = {
   consumer:   'Konsum',
@@ -24,9 +26,29 @@ const SECTOR_COLOR: Record<string, string> = {
   luxury:     '#f85149',
 };
 
-function StockCard({ stock }: { stock: DiscoveredStock }) {
+const SIGNAL_STYLE: Record<string, string> = {
+  BUY:  'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+  HOLD: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+  SELL: 'bg-red-500/20 text-red-400 border border-red-500/30',
+};
+
+function ThreeABadge() {
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">
+      3a
+      <InfoPopover ariaLabel="Info: Säule 3a">
+        Diese Aktie kann für die Säule 3a (Altersvorsorge) verwendet werden
+      </InfoPopover>
+    </span>
+  );
+}
+
+function StockCard({ stock }: { stock: DiscoveredStock & { signal?: string; score?: number; is_3a_eligible?: boolean } }) {
   const color = SECTOR_COLOR[stock.sector ?? ''] ?? '#8b949e';
-  const label = SECTOR_LABELS[stock.sector ?? ''] ?? stock.sector ?? '—';
+  const label = SECTOR_LABELS[stock.sector ?? ''] ?? stock.sector ?? null;
+  const score = stock.score ?? null;
+  const signal = stock.signal ?? null;
+  const is3a = stock.is_3a_eligible === true;
 
   return (
     <Link
@@ -38,16 +60,42 @@ function StockCard({ stock }: { stock: DiscoveredStock }) {
           <div className="font-semibold text-[#e6edf3] text-sm leading-none">{stock.name}</div>
           <div className="text-xs text-[#8b949e] mt-1">{stock.ticker}.SW</div>
         </div>
-        <span
-          className="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0"
-          style={{ backgroundColor: `${color}22`, color }}
-        >
-          {label}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          {label && (
+            <span
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0"
+              style={{ backgroundColor: `${color}22`, color }}
+            >
+              {label}
+            </span>
+          )}
+          {signal && (
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${SIGNAL_STYLE[signal] ?? ''}`}>
+              {signal}
+            </span>
+          )}
+        </div>
       </div>
 
+      {score !== null && (
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1">
+            <div className="h-1 flex-1 rounded-full bg-green-500/20 overflow-hidden">
+              <div style={{ width: `${score}%` }} className="h-full bg-green-500 rounded-full" />
+            </div>
+            <span className="text-[10px] text-[#8b949e] tabular-nums w-6 text-right">{score}</span>
+            <InfoPopover ariaLabel="Info: PRISMA-Score">
+              PRISMA-Score: Bewertung von 0–100 basierend auf technischer Analyse, KI-Prognose und Makroökonomie
+            </InfoPopover>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between text-xs text-[#8b949e]">
-        <span>{stock.exchange}</span>
+        <div className="flex items-center gap-2">
+          <span>{stock.exchange}</span>
+          {is3a && <ThreeABadge />}
+        </div>
         {stock.market_cap_chf && (
           <span>
             CHF {(Number(stock.market_cap_chf) / 1e9).toFixed(1)} Mrd.
@@ -64,23 +112,17 @@ function StockCard({ stock }: { stock: DiscoveredStock }) {
 
 function EmptyState() {
   return (
-    <div className="text-center py-16 space-y-4">
-      <div
-        className="w-12 h-12 rotate-45 rounded-sm mx-auto"
-        style={{
-          background: 'linear-gradient(135deg, #58a6ff 0%, #7ee787 100%)',
-          opacity: 0.4,
-        }}
-      />
-      <p className="text-[#8b949e] text-sm max-w-xs mx-auto">
-        Noch keine Titel ausgewählt. Starte den geführten Einstieg um dein persönliches Universe zu erstellen.
+    <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+      <Compass className="h-10 w-10 text-muted-foreground/40" />
+      <p className="text-sm font-medium">Dein persönliches Aktien-Universum</p>
+      <p className="text-xs text-muted-foreground max-w-sm">
+        Beantworte 7 kurze Fragen und wir empfehlen dir Schweizer Aktien die zu deinem Profil passen
       </p>
       <Link
         href="/start"
-        className="inline-block rounded-lg px-5 py-2.5 text-sm font-semibold text-[#0d1117] transition-all hover:opacity-90"
-        style={{ background: 'linear-gradient(135deg, #58a6ff 0%, #7ee787 100%)' }}
+        className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-md transition-colors"
       >
-        Jetzt starten →
+        Profil erstellen
       </Link>
     </div>
   );
@@ -146,7 +188,12 @@ export function DiscoverClient() {
       {/* Header */}
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#e6edf3]">Mein Universe</h1>
+          <div className="flex items-center gap-1">
+            <h1 className="text-2xl font-bold text-[#e6edf3]">Mein Universum.</h1>
+            <InfoPopover ariaLabel="Info: Mein Universum">
+              Hier siehst du Schweizer Aktien die zu deinem persönlichen Profil passen. PRISMA wählt sie basierend auf deinem Risikotyp, Anlageziel und deinen Präferenzen aus.
+            </InfoPopover>
+          </div>
           <p className="text-sm text-[#8b949e] mt-1">
             {hasStocks
               ? `${stocks.length} Titel — ausgewählt für dein Profil`
@@ -209,7 +256,7 @@ export function DiscoverClient() {
           <div>
             <div className="text-sm font-medium text-[#e6edf3]">Bereit für die Signale?</div>
             <div className="text-xs text-[#8b949e]">
-              BUY / HOLD / WATCH mit vollständigem Audit-Trail
+              BUY / HOLD / SELL mit vollständigem Audit-Trail
             </div>
           </div>
           <Link

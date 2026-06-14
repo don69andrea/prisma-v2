@@ -114,9 +114,9 @@ export function MemoContent({ memo }: Props) {
       </Card>
 
       {/* Footer */}
-      <div className="text-xs text-muted-foreground flex justify-between pt-1">
+      <div className="text-xs text-muted-foreground flex justify-between pt-1 border-t">
         <span>Modell: {memo.model_version}</span>
-        <span>{new Date(memo.created_at).toLocaleDateString('de-CH')}</span>
+        <span>Generiert am {new Date(memo.created_at).toLocaleDateString('de-CH', { dateStyle: 'medium' })}</span>
       </div>
     </div>
   );

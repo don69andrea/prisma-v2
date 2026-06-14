@@ -5,12 +5,17 @@ import { useRouter } from 'next/navigation';
 
 import { completeDiscovery, createDiscoverySession, submitAnswer } from '@/lib/api/discovery';
 import { PrismaLoader } from '@/components/ui/PrismaLogo';
+import { InfoPopover } from '@/components/InfoPopover';
+import { Compass } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type Step = 'landing' | 'beruf' | 'ziel' | 'risiko' | 'brands' | 'reveal';
+type Step = 'landing' | 'beruf' | 'ziel' | 'risiko' | 'brands' | 'betrag' | 'nachhaltigkeit' | 'ertrag' | 'reveal';
+type Betrag = 'under_10k' | '10k_100k' | 'over_100k';
+type Nachhaltigkeit = 'yes' | 'no' | 'indifferent';
+type Ertrag = 'dividends' | 'balanced' | 'growth';
 
 type Ziel = 'housing' | 'retirement' | 'freedom' | 'beat_savings';
 type Risiko = 'conservative' | 'moderate' | 'aggressive';
@@ -20,6 +25,9 @@ interface Profile {
   ziel: Ziel;
   risiko: Risiko;
   brands: string[];
+  betrag: Betrag;
+  nachhaltigkeit: Nachhaltigkeit;
+  ertrag: Ertrag;
 }
 
 // ---------------------------------------------------------------------------
@@ -73,6 +81,24 @@ const ZIEL_OPTIONS: { value: Ziel; label: string; sub: string }[] = [
   { value: 'retirement',   label: 'Altersvorsorge',         sub: 'Ich denke langfristig.' },
   { value: 'freedom',      label: 'Finanzielle Freiheit',   sub: 'Ich will unabhängiger werden.' },
   { value: 'beat_savings', label: 'Besser als Sparkonto',   sub: 'Das Geld soll mehr arbeiten.' },
+];
+
+const BETRAG_OPTIONS: { value: Betrag; label: string; sub: string }[] = [
+  { value: 'under_10k',  label: 'Einsteiger',  sub: "< CHF 10'000 — Ideal zum Starten ohne grosses Risiko" },
+  { value: '10k_100k',   label: 'Wachstum',    sub: "CHF 10'000 – 100'000 — Echtes Depot aufbauen" },
+  { value: 'over_100k',  label: 'Investor',    sub: "> CHF 100'000 — Professionelle Portfoliooptimierung" },
+];
+
+const NACHHALTIGKEIT_OPTIONS: { value: Nachhaltigkeit; label: string; sub: string }[] = [
+  { value: 'yes',         label: 'Nachhaltigkeit ist wichtig', sub: 'Ich bevorzuge ESG-konforme Unternehmen' },
+  { value: 'no',          label: 'Rendite geht vor',           sub: 'Performance ist mein primäres Ziel' },
+  { value: 'indifferent', label: 'Spielt keine Rolle',         sub: 'Ich möchte alle Möglichkeiten sehen' },
+];
+
+const ERTRAG_OPTIONS: { value: Ertrag; label: string; sub: string }[] = [
+  { value: 'dividends', label: 'Dividenden', sub: 'Ich möchte regelmässige Ausschüttungen erhalten' },
+  { value: 'balanced',  label: 'Ausgewogen', sub: 'Mix aus Ausschüttungen und Kursgewinnen' },
+  { value: 'growth',    label: 'Wachstum',   sub: 'Ich setze auf langfristige Kurssteigerungen' },
 ];
 
 /** SVG-Gesichtsicons als Emoji-Ersatz für Risiko-Buttons. */
@@ -228,7 +254,7 @@ function StepLanding({ onEntdecker, onKenner }: { onEntdecker: () => void; onKen
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}
         >
-          <div className="text-2xl mb-3">🧭</div>
+          <Compass className="h-8 w-8 mb-3 text-blue-400 mx-auto" />
           <div className="font-semibold text-[#e6edf3]">Ich weiss noch nicht, wo ich anfangen soll.</div>
           <div className="text-sm text-[#8b949e] mt-1">Zeig mir den Weg.</div>
           <div className="mt-4 text-xs text-[#58a6ff] group-hover:translate-x-1 transition-transform inline-block">
@@ -273,7 +299,7 @@ function StepBeruf({ onNext }: { onNext: (beruf: string) => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
-      <StepIndicator current={1} total={4} />
+      <StepIndicator current={1} total={7} />
       <div className="text-center space-y-2">
         <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
         <h2 className="text-xl font-semibold text-[#e6edf3]">Was machst du beruflich?</h2>
@@ -312,10 +338,13 @@ function StepZiel({ onNext }: { onNext: (ziel: Ziel) => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
-      <StepIndicator current={2} total={4} />
+      <StepIndicator current={2} total={7} />
       <div className="text-center space-y-2">
         <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3]">Wofür ist das Geld irgendwann gedacht?</h2>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Wofür ist das Geld irgendwann gedacht?
+          <InfoPopover ariaLabel="Mehr Info zu Anlageziel">Was du mit deinem Geld erreichen möchtest</InfoPopover>
+        </h2>
         <p className="text-sm text-[#8b949e]">Kein falsches oder richtiges Ziel — ich will nur verstehen.</p>
       </div>
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -351,10 +380,13 @@ function StepRisiko({ onNext }: { onNext: (risiko: Risiko) => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
-      <StepIndicator current={3} total={4} />
+      <StepIndicator current={3} total={7} />
       <div className="text-center space-y-2">
         <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3]">Stell dir vor: Du siehst das auf deinem Konto.</h2>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Stell dir vor: Du siehst das auf deinem Konto.
+          <InfoPopover ariaLabel="Mehr Info zu Risikotyp">Wie du auf Wertverluste reagierst</InfoPopover>
+        </h2>
         <p className="text-sm text-[#8b949e]">
           Du hast CHF 10&apos;000 investiert. Nach 3 Monaten öffnest du die App.
         </p>
@@ -428,7 +460,7 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6 py-10 max-w-2xl mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
-      <StepIndicator current={4} total={4} />
+      <StepIndicator current={4} total={7} />
       <div className="text-center space-y-2">
         <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
         <h2 className="text-xl font-semibold text-[#e6edf3]">Welche dieser Schweizer Firmen kennst du?</h2>
@@ -524,6 +556,132 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
   );
 }
 
+function StepBetrag({ onNext }: { onNext: (betrag: Betrag) => void }) {
+  const [selected, setSelected] = useState<Betrag | null>(null);
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
+      <StepIndicator current={5} total={7} />
+      <div className="text-center space-y-2">
+        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Wie viel möchtest du ungefähr investieren?
+          <InfoPopover ariaLabel="Mehr Info zu Anlagebetrag">Dein ungefähres Startkapital hilft uns, passende Aktien zu empfehlen</InfoPopover>
+        </h2>
+        <p className="text-sm text-[#8b949e]">Es geht nur um eine grobe Einschätzung.</p>
+      </div>
+      <div className="w-full space-y-3">
+        {BETRAG_OPTIONS.map((opt) => {
+          const active = selected === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setSelected(opt.value)}
+              data-testid={`betrag-${opt.value}`}
+              className="w-full rounded-xl p-4 text-left transition-all"
+              style={{
+                background: active ? 'rgba(88,166,255,0.12)' : '#161b22',
+                border: `1px solid ${active ? '#58a6ff' : '#21262d'}`,
+                boxShadow: active ? '0 0 16px rgba(88,166,255,0.2)' : 'none',
+              }}
+            >
+              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
+              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+            </button>
+          );
+        })}
+      </div>
+      <PrismaButton onClick={() => selected && onNext(selected)} disabled={!selected}>
+        Weiter
+      </PrismaButton>
+    </div>
+  );
+}
+
+function StepNachhaltigkeit({ onNext }: { onNext: (nachhaltigkeit: Nachhaltigkeit) => void }) {
+  const [selected, setSelected] = useState<Nachhaltigkeit | null>(null);
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
+      <StepIndicator current={6} total={7} />
+      <div className="text-center space-y-2">
+        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Wie wichtig ist dir Nachhaltigkeit?
+          <InfoPopover ariaLabel="Mehr Info zu Nachhaltigkeit">ESG = Environment (Umwelt), Social (Soziales), Governance (Unternehmensführung) — nachhaltige Unternehmen</InfoPopover>
+        </h2>
+        <p className="text-sm text-[#8b949e]">ESG-Aktien sind Firmen die nachhaltig wirtschaften.</p>
+      </div>
+      <div className="w-full space-y-3">
+        {NACHHALTIGKEIT_OPTIONS.map((opt) => {
+          const active = selected === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setSelected(opt.value)}
+              data-testid={`nachhaltigkeit-${opt.value}`}
+              className="w-full rounded-xl p-4 text-left transition-all"
+              style={{
+                background: active ? 'rgba(126,231,135,0.1)' : '#161b22',
+                border: `1px solid ${active ? '#7ee787' : '#21262d'}`,
+                boxShadow: active ? '0 0 16px rgba(126,231,135,0.2)' : 'none',
+              }}
+            >
+              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
+              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+            </button>
+          );
+        })}
+      </div>
+      <PrismaButton onClick={() => selected && onNext(selected)} disabled={!selected}>
+        Weiter
+      </PrismaButton>
+    </div>
+  );
+}
+
+function StepErtrag({ onNext }: { onNext: (ertrag: Ertrag) => void }) {
+  const [selected, setSelected] = useState<Ertrag | null>(null);
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
+      <StepIndicator current={7} total={7} />
+      <div className="text-center space-y-2">
+        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Was ist dir bei der Rendite wichtiger?
+          <InfoPopover ariaLabel="Mehr Info zu Rendite-Fokus">Dividenden = regelmässige Auszahlungen, Wachstum = Kursgewinne</InfoPopover>
+        </h2>
+        <p className="text-sm text-[#8b949e]">Du kannst das später noch anpassen.</p>
+      </div>
+      <div className="w-full space-y-3">
+        {ERTRAG_OPTIONS.map((opt) => {
+          const active = selected === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setSelected(opt.value)}
+              data-testid={`ertrag-${opt.value}`}
+              className="w-full rounded-xl p-4 text-left transition-all"
+              style={{
+                background: active ? 'rgba(188,140,255,0.1)' : '#161b22',
+                border: `1px solid ${active ? '#bc8cff' : '#21262d'}`,
+                boxShadow: active ? '0 0 16px rgba(188,140,255,0.2)' : 'none',
+              }}
+            >
+              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
+              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+            </button>
+          );
+        })}
+      </div>
+      <PrismaButton onClick={() => selected && onNext(selected)} disabled={!selected}>
+        Profil fertigstellen
+      </PrismaButton>
+    </div>
+  );
+}
+
 function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () => void }) {
   const [phase, setPhase] = useState<'crystal' | 'card'>('crystal');
   const risikoLabel = PROFILE_LABELS[profile.risiko];
@@ -582,7 +740,7 @@ function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () 
 
       <div className="text-center space-y-1">
         <div className="text-xs text-[#8b949e] tracking-widest uppercase">PRISMA hat dein Investorprofil erstellt</div>
-        <h2 className="text-2xl font-bold text-[#e6edf3]">Dein Profil</h2>
+        <h2 className="text-2xl font-bold text-[#e6edf3]">Dein Profil.</h2>
       </div>
 
       {/* Profile card — glass morphism */}
@@ -601,11 +759,50 @@ function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () 
           <ProfileRow label="Typ"          value={risikoLabel} />
           <ProfileRow label="Zeithorizont" value={horizon} />
           <ProfileRow
-            label="Risikoprofil"
+            label="Kenntnisse"
             value={
-              profile.risiko === 'conservative' ? 'Konservativ — Stabilität vor Rendite'
-              : profile.risiko === 'moderate'   ? 'Moderat — du wartest bei –20%'
-              :                                   'Chancenorientiert — Krisen nutzen'
+              profile.beruf ? 'Erfasst' : 'Einsteiger'
+            }
+          />
+          <ProfileRow
+            label="Anlageziel"
+            value={
+              profile.ziel === 'housing'      ? 'Neue Wohnung'
+              : profile.ziel === 'retirement' ? 'Altersvorsorge'
+              : profile.ziel === 'freedom'    ? 'Finanzielle Freiheit'
+              :                                 'Besser als Sparkonto'
+            }
+          />
+          <ProfileRow
+            label="Risikotyp"
+            value={
+              profile.risiko === 'conservative' ? 'Sicherheitsorientiert'
+              : profile.risiko === 'moderate'   ? 'Ausgewogen'
+              :                                   'Chancenorientiert'
+            }
+          />
+          <ProfileRow
+            label="Anlagebetrag"
+            value={
+              profile.betrag === 'under_10k'  ? "< CHF 10'000"
+              : profile.betrag === '10k_100k' ? "CHF 10'000 – 100'000"
+              :                                 "> CHF 100'000"
+            }
+          />
+          <ProfileRow
+            label="Nachhaltigkeit"
+            value={
+              profile.nachhaltigkeit === 'yes'         ? 'ESG-Fokus'
+              : profile.nachhaltigkeit === 'no'        ? 'Rendite-Fokus'
+              :                                          'Neutral'
+            }
+          />
+          <ProfileRow
+            label="Rendite"
+            value={
+              profile.ertrag === 'dividends' ? 'Dividenden'
+              : profile.ertrag === 'balanced' ? 'Ausgewogen'
+              :                                 'Wachstum'
             }
           />
           {topSectors.length > 0 && (
@@ -822,29 +1019,45 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
 // ---------------------------------------------------------------------------
 
 export function StartClient() {
-  const [step, setStep]             = useState<Step>('landing');
-  const [beruf, setBeruf]           = useState('');
-  const [ziel, setZiel]             = useState<Ziel | null>(null);
-  const [risiko, setRisiko]         = useState<Risiko | null>(null);
-  const [brands, setBrands]         = useState<string[]>([]);
-  const [kennerMode, setKennerMode] = useState(false);
-  const [loading, setLoading]       = useState(false);
+  const [step, setStep]                       = useState<Step>('landing');
+  const [beruf, setBeruf]                     = useState('');
+  const [ziel, setZiel]                       = useState<Ziel | null>(null);
+  const [risiko, setRisiko]                   = useState<Risiko | null>(null);
+  const [brands, setBrands]                   = useState<string[]>([]);
+  const [betrag, setBetrag]                   = useState<Betrag | null>(null);
+  const [nachhaltigkeit, setNachhaltigkeit]   = useState<Nachhaltigkeit | null>(null);
+  const [ertrag, setErtrag]                   = useState<Ertrag | null>(null);
+  const [sessionId, setSessionId]             = useState<string | null>(null);
+  const [kennerMode, setKennerMode]           = useState(false);
+  const [loading, setLoading]                 = useState(false);
   const router = useRouter();
 
+  // Build brand_data map for turn 4 (ticker → {sector, name})
+  const brandDataMap = BRANDS.reduce<Record<string, Record<string, string>>>((acc, b) => {
+    acc[b.ticker] = { sector: CATEGORY_TO_SECTOR[b.category] ?? b.category, name: b.name };
+    return acc;
+  }, {});
+
   const handleContinue = useCallback(
-    async (finalBrands: string[], finalZiel: Ziel, finalRisiko: Risiko) => {
+    async (
+      finalBrands: string[],
+      finalZiel: Ziel,
+      finalRisiko: Risiko,
+      finalBetrag: Betrag,
+      finalNachhaltigkeit: Nachhaltigkeit,
+      finalErtrag: Ertrag,
+      sid: string,
+    ) => {
       setLoading(true);
       const knownBrandObjs = BRANDS.filter((b) => finalBrands.includes(b.ticker));
 
       try {
-        const { session_id: sessionId } = await createDiscoverySession();
-        await submitAnswer(sessionId, 1, beruf || '');
-        await submitAnswer(sessionId, 2, finalZiel);
-        await submitAnswer(sessionId, 3, finalRisiko);
-        await submitAnswer(sessionId, 4, finalBrands);
-        const result = await completeDiscovery(sessionId);
+        await submitAnswer(sid, 5, finalBetrag);
+        await submitAnswer(sid, 6, finalNachhaltigkeit);
+        await submitAnswer(sid, 7, finalErtrag);
+        const result = await completeDiscovery(sid);
         const discovery = {
-          session_id: sessionId,
+          session_id: sid,
           total: result.recommended_stocks.length,
           stocks: result.recommended_stocks,
         };
@@ -856,7 +1069,7 @@ export function StartClient() {
           ? knownBrandObjs
           : BRANDS.filter((b) => defaultTickers.includes(b.ticker));
         const fallback = {
-          session_id: crypto.randomUUID(),
+          session_id: sid,
           total: stocksToShow.length,
           stocks: stocksToShow.map((b) => ({
             ticker: b.ticker,
@@ -872,8 +1085,27 @@ export function StartClient() {
 
       router.push('/discover');
     },
-    [beruf, router],
+    [router],
   );
+
+  // Handles turns 1-4 sequentially before showing the reveal step
+  async function handleBrandsSubmit(finalBrands: string[]) {
+    setBrands(finalBrands);
+    setStep('betrag');
+
+    // Fire off turns 1-4 in background
+    try {
+      const { session_id: sid } = await createDiscoverySession();
+      setSessionId(sid);
+      await submitAnswer(sid, 1, beruf || '');
+      await submitAnswer(sid, 2, ziel!);
+      await submitAnswer(sid, 3, risiko!);
+      await submitAnswer(sid, 4, finalBrands, { brand_data: brandDataMap });
+    } catch {
+      // session will be null; handleContinue will use fallback
+      setSessionId(crypto.randomUUID());
+    }
+  }
 
   if (loading) {
     return <PrismaLoader label="Dein Universe wird zusammengestellt" />;
@@ -894,11 +1126,20 @@ export function StartClient() {
       {step === 'beruf'   && <StepBeruf  onNext={(v) => { setBeruf(v);   setStep('ziel'); }} />}
       {step === 'ziel'    && <StepZiel   onNext={(v) => { setZiel(v);    setStep('risiko'); }} />}
       {step === 'risiko'  && <StepRisiko onNext={(v) => { setRisiko(v);  setStep('brands'); }} />}
-      {step === 'brands'  && <StepBrands onNext={(v) => { setBrands(v);  setStep('reveal'); }} />}
-      {step === 'reveal' && ziel && risiko && (
+      {step === 'brands'  && <StepBrands onNext={handleBrandsSubmit} />}
+      {step === 'betrag'  && (
+        <StepBetrag onNext={(v) => { setBetrag(v); setStep('nachhaltigkeit'); }} />
+      )}
+      {step === 'nachhaltigkeit' && (
+        <StepNachhaltigkeit onNext={(v) => { setNachhaltigkeit(v); setStep('ertrag'); }} />
+      )}
+      {step === 'ertrag' && (
+        <StepErtrag onNext={(v) => { setErtrag(v); setStep('reveal'); }} />
+      )}
+      {step === 'reveal' && ziel && risiko && betrag && nachhaltigkeit && ertrag && (
         <StepReveal
-          profile={{ beruf, ziel, risiko, brands }}
-          onContinue={() => handleContinue(brands, ziel, risiko)}
+          profile={{ beruf, ziel, risiko, brands, betrag, nachhaltigkeit, ertrag }}
+          onContinue={() => handleContinue(brands, ziel, risiko, betrag, nachhaltigkeit, ertrag, sessionId ?? crypto.randomUUID())}
         />
       )}
     </div>

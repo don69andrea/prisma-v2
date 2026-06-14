@@ -6,6 +6,7 @@ import { XCircle } from 'lucide-react';
 import { getFactsheet, getPrices } from '@/lib/api/stocks';
 import { ApiError } from '@/lib/api/client';
 import { Card, CardContent } from '@/components/ui/card';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { StockHeader } from '@/components/factsheet/StockHeader';
 import { ModelRankCards } from '@/components/factsheet/ModelRankCards';
 import { PriceChart } from '@/components/factsheet/PriceChart';
@@ -88,24 +89,51 @@ export function FactsheetView({ ticker, runId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* 1. Signal + Score (was soll ich tun?) */}
       <StockHeader stock={stock} ranking={latest_ranking} />
 
+      {/* 2. Score-Übersicht pro Modell */}
       {latest_ranking && (
-        <ModelRankCards perModelRanks={latest_ranking.per_model_ranks} />
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 px-0.5">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Modell-Scores
+            </span>
+            <InfoTooltip
+              text="Composite Score: Gesamtbewertung aus allen Dimensionen (0–100). ≥70 = BUY, 40–69 = HOLD, <40 = SELL. Value Score bewertet Bewertung (KGV/KBV), Quality Score die Finanzstärke, Income Score die Dividendenqualität."
+              side="bottom"
+            />
+          </div>
+          <ModelRankCards perModelRanks={latest_ranking.per_model_ranks} />
+        </div>
       )}
 
+      {/* 3. KI-Erklärung warum (ML + SHAP) */}
+      <div className="space-y-1">
+        <div className="flex items-center gap-1.5 px-0.5">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            KI-Score &amp; SHAP
+          </span>
+          <InfoTooltip
+            text="Prognose des LightGBM-Modells basierend auf 23 historischen Merkmalen. SHAP (SHapley Additive exPlanations) zeigt, welche Faktoren den Score am stärksten beeinflusst haben. Grün = positiver Einfluss, Rot = negativer Einfluss."
+            side="bottom"
+          />
+        </div>
+        <MLPanel ticker={ticker} />
+      </div>
+
+      {/* 4. Preischart */}
       {pricesQuery.data && (
         <PriceChart ticker={ticker} prices={pricesQuery.data.prices} />
       )}
       {pricesQuery.isLoading && <SkeletonCard className="h-72" />}
 
-      <MLPanel ticker={ticker} />
-
+      {/* 5. Fundamentaldaten / Audit */}
       <AuditPanel ticker={ticker} />
 
       <EligibilityPanel ticker={ticker} />
 
-
+      {/* 6. KI-Memo (Analyse) */}
       <MemoPanel stockId={stock.id} runId={runId} />
     </div>
   );

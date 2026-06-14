@@ -86,10 +86,11 @@ export async function submitAnswer(
   sessionId: string,
   turn: number,
   answer: string | string[],
+  extra?: { brand_data?: Record<string, Record<string, unknown>> },
 ): Promise<AnswerResponse> {
   return apiFetch<AnswerResponse>('/api/v1/discovery/answer', {
     method: 'POST',
-    body: JSON.stringify({ session_id: sessionId, turn, answer }),
+    body: JSON.stringify({ session_id: sessionId, turn, answer, ...extra }),
   });
 }
 

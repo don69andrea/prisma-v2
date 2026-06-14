@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Compass } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { ROUTES } from '@/lib/routes';
@@ -115,8 +116,9 @@ export function NavLinks() {
           <span className="text-[9px] font-semibold tracking-[0.15em] text-[#8b949e] uppercase px-1 opacity-0 select-none">
             &nbsp;
           </span>
-          <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 whitespace-nowrap">
-            🧭 {PROFILE_BADGE_LABEL[profileType] ?? 'Entdecker'}
+          <span className="ml-1 inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 whitespace-nowrap">
+            <Compass className="h-3 w-3 shrink-0" />
+            {PROFILE_BADGE_LABEL[profileType] ?? 'Entdecker'}
           </span>
         </div>
       )}

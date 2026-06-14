@@ -13,7 +13,7 @@ export default function RankingsPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Ranking starten</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Ranking starten.</h1>
         <p className="text-muted-foreground text-sm">
           Wähle ein Universum und starte einen Ranking-Run über alle 5 Modelle.
         </p>

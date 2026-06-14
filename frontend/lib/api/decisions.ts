@@ -1,6 +1,6 @@
 import { apiFetch } from './client';
 
-export type SignalType = 'BUY' | 'HOLD' | 'WATCH';
+export type SignalType = 'BUY' | 'HOLD' | 'SELL';
 
 export interface DecisionSignal {
   ticker: string;
@@ -12,6 +12,7 @@ export interface DecisionSignal {
   ml_score: number;
   macro_score: number;
   is_3a_eligible: boolean;
+  signal_reason?: string;
 }
 
 export interface DecisionListResponse {

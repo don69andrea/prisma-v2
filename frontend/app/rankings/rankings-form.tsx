@@ -7,6 +7,7 @@ import { XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { PrismaBar } from '@/components/ui/PrismaBar';
+import { InfoPopover } from '@/components/InfoPopover';
 import { listUniverses } from '@/lib/api/universes';
 import { createRun } from '@/lib/api/runs';
 
@@ -40,8 +41,11 @@ export function RankingsForm() {
       }}
     >
       <div className="space-y-1">
-        <label htmlFor="universe" className="text-sm font-medium">
+        <label htmlFor="universe" className="inline-flex items-center gap-1 text-sm font-medium">
           Universe
+          <InfoPopover ariaLabel="Was ist ein Universe?">
+            <p>Ein Universum ist eine definierte Auswahl von Aktien die analysiert werden sollen. z.B. alle SMI-Titel</p>
+          </InfoPopover>
         </label>
         <select
           id="universe"
@@ -82,9 +86,14 @@ export function RankingsForm() {
         </div>
       )}
 
-      <Button type="submit" disabled={disabled} aria-busy={isPending}>
-        {isPending ? 'Run wird gestartet…' : 'Run starten'}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button type="submit" disabled={disabled} aria-busy={isPending}>
+          {isPending ? 'Run wird gestartet…' : 'Run starten'}
+        </Button>
+        <InfoPopover ariaLabel="Was ist ein Ranking-Run?">
+          <p>Ein Run ist eine Berechnung die alle Aktien im Universum bewertet und einen Score vergibt</p>
+        </InfoPopover>
+      </div>
       {isPending && <PrismaBar />}
     </form>
   );

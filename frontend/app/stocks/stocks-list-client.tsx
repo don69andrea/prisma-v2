@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Download, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 import { listStocks, type StockRead } from '@/lib/api/stocks';
 import { Input } from '@/components/ui/input';
@@ -313,9 +314,18 @@ export function StocksListClient() {
 
       {!isLoading && (
         <>
-          <p className="text-xs text-muted-foreground">
-            {filteredAndSorted.length} von {data?.items.length ?? 0} Aktien
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{filteredAndSorted.length}</span>{' '}
+              {filteredAndSorted.length === data?.items.length
+                ? `Aktien gefunden`
+                : `von ${data?.items.length ?? 0} Aktien`}
+            </p>
+            <InfoTooltip
+              text="Datenbank aller analysierten Schweizer Aktien (SMI, SMIM, SPI). Klicke auf eine Aktie für die detaillierte Analyse mit KI-Memo, ML-Score und Fundamentaldaten."
+              side="right"
+            />
+          </div>
           <div className="rounded-md border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
@@ -385,8 +395,18 @@ export function StocksListClient() {
                 ))}
                 {filteredAndSorted.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground text-sm">
-                      Keine Aktien gefunden.
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm">
+                      <p className="text-muted-foreground">
+                        Keine Aktien entsprechen den Filterkriterien.
+                      </p>
+                      {hasActiveFilters && (
+                        <button
+                          onClick={resetFilters}
+                          className="mt-2 text-xs text-primary hover:underline"
+                        >
+                          Filter zurücksetzen
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )}

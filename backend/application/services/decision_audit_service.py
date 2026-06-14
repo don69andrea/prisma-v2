@@ -44,7 +44,7 @@ def _signal_for_score(score: float) -> str:
         return "BUY"
     if score >= 40.0:
         return "HOLD"
-    return "WATCH"
+    return "SELL"
 
 
 def _build_explanation(
@@ -68,7 +68,7 @@ def _build_explanation(
 
 
 class DecisionAuditService:
-    """Berechnet ein BUY/HOLD/WATCH-Signal und speichert den Audit-Record.
+    """Berechnet ein BUY/HOLD/SELL-Signal und speichert den Audit-Record.
 
     ml_feature_service / ml_prediction_service sind optional (Any | None).
     Sind sie nicht verfügbar, wird ml_score=50 (NEUTRAL) als Fallback verwendet.

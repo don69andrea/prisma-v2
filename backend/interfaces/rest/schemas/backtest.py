@@ -1,7 +1,6 @@
 """Pydantic-Schemas für Backtest-REST-Endpunkte."""
 
 from datetime import date
-from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
@@ -20,11 +19,11 @@ class RunBacktestRequest(BaseModel):
 
 
 class PortfolioMetricsResponse(BaseModel):
-    total_return: Decimal
-    cagr: Decimal
-    annual_vol: Decimal
-    sharpe: Decimal
-    max_drawdown: Decimal
+    total_return: float
+    cagr: float
+    annual_vol: float
+    sharpe: float
+    max_drawdown: float
 
     @classmethod
     def from_entity(cls, m: PortfolioMetrics) -> "PortfolioMetricsResponse":
@@ -33,9 +32,9 @@ class PortfolioMetricsResponse(BaseModel):
 
 class BacktestSeriesResponse(BaseModel):
     dates: list[date]
-    prisma: list[Decimal]
-    universe: list[Decimal]
-    benchmark: list[Decimal]
+    prisma: list[float]
+    universe: list[float]
+    benchmark: list[float]
 
 
 class BacktestResultResponse(BaseModel):

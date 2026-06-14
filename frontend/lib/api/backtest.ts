@@ -3,11 +3,11 @@ import { apiFetch } from './client';
 export type BacktestMode = 'quant_only' | 'quant_ml' | 'full';
 
 export interface PortfolioMetrics {
-  total_return: string;
-  cagr: string;
-  annual_vol: string;
-  sharpe: string;
-  max_drawdown: string;
+  total_return: number;
+  cagr: number;
+  annual_vol: number;
+  sharpe: number;
+  max_drawdown: number;
 }
 
 export interface BacktestResult {

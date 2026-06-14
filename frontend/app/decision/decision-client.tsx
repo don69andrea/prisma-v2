@@ -303,6 +303,7 @@ function SignalCard({ item }: { item: DecisionSignal }) {
         {shapValues.length > 0 && (
           <SHAPMiniBreakdown shapValues={shapValues} signal={shapSignal} />
         )}
+
         {/* Action row */}
         <div className="flex items-center justify-between gap-2 pt-0.5">
           <button

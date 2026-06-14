@@ -49,6 +49,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
             pb_ratio=info.get("priceToBook"),
             dividend_yield=info.get("dividendYield"),
             eps_chf=info.get("trailingEps"),
+            revenue_growth=info.get("revenueGrowth"),
         )
 
     async def get_price_history(self, ticker: str, days: int = 252) -> pd.DataFrame:

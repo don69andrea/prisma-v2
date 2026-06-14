@@ -329,6 +329,10 @@ class MLFeatureService:
             drawdown_12m=_compute_drawdown_12m(close),
             snb_rate=_snb_rate_on(today),
             chf_eur=chf_eur,
+            pe_ratio=fundamentals.pe_ratio or 0.0,
+            pb_ratio=fundamentals.pb_ratio or 0.0,
+            dividend_yield=fundamentals.dividend_yield or 0.0,
+            revenue_growth=fundamentals.revenue_growth or 0.0,
             forward_return_12m=None,
             target_class=None,
         )
@@ -458,6 +462,10 @@ class MLFeatureService:
                             else _snb_rate_on(snap_date)
                         ),
                         "chf_eur": _fx_rate_on(ticker, snap, _market),
+                        "pe_ratio": fund.pe_ratio or 0.0,
+                        "pb_ratio": fund.pb_ratio or 0.0,
+                        "dividend_yield": fund.dividend_yield or 0.0,
+                        "revenue_growth": fund.revenue_growth or 0.0,
                         "forward_return_12m": fwd_ret,
                         "target_class": None,  # wird cross-sektional befüllt
                     }
@@ -644,6 +652,7 @@ def _stub_fundamentals(ticker: str, market: str = "ch") -> SwissFundamentals:
             pb_ratio=info.get("priceToBook"),
             dividend_yield=info.get("dividendYield"),
             eps_chf=info.get("trailingEps"),
+            revenue_growth=info.get("revenueGrowth"),
         )
     except Exception:
         return SwissFundamentals(
@@ -652,4 +661,5 @@ def _stub_fundamentals(ticker: str, market: str = "ch") -> SwissFundamentals:
             pb_ratio=None,
             dividend_yield=None,
             eps_chf=None,
+            revenue_growth=None,
         )

@@ -219,6 +219,10 @@ def test_feature_vector_to_feature_dict() -> None:
         drawdown_12m=-0.08,
         snb_rate=1.0,
         chf_eur=0.93,
+        pe_ratio=15.0,
+        pb_ratio=1.8,
+        dividend_yield=0.03,
+        revenue_growth=0.06,
         forward_return_12m=None,
         target_class=None,
     )

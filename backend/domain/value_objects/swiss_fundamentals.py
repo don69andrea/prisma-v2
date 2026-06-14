@@ -19,3 +19,4 @@ class SwissFundamentals:
     pb_ratio: float | None
     dividend_yield: float | None
     eps_chf: float | None
+    revenue_growth: float | None = None

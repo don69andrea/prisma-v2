@@ -137,16 +137,27 @@ class DiscoveryService:
         known = {t.upper() for t in profile.known_tickers}
         scored.sort(key=lambda t: (0 if t[0].ticker in known else 1, -t[1]))
 
-        if not scored:
+        # 4. Ergebnis-Limit basierend auf financial_knowledge
+        # Einsteiger sehen weniger Titel um nicht überwältigt zu werden
+        limit = _KNOWLEDGE_RESULT_LIMIT.get(profile.financial_knowledge, 20)
+        result = [stock for stock, _ in scored[:limit]]
+
+        # Fallback: wenn yfinance alle Titel gefiltert hat (Timeout / Rate-Limit auf Render),
+        # geben wir bekannte Titel + Top-Titel nach market_cap zurück anstatt leer.
+        if not result:
             _logger.warning(
-                "Discovery: Alle %d Kandidaten gefiltert (risk=%s, esg=%s, risk_floor=%.1f)",
+                "Discovery: Alle %d Kandidaten gefiltert (risk=%s, esg=%s, risk_floor=%.1f) "
+                "— Fallback auf bekannte Titel + market_cap-Ranking",
                 len(candidates),
                 profile.risk_profile,
                 profile.esg_preference,
                 risk_floor,
             )
+            pool = candidates if candidates else all_stocks
+            known_first = sorted(
+                pool,
+                key=lambda s: (0 if s.ticker in known else 1, -(s.market_cap_chf or 0)),
+            )
+            result = known_first[:limit]
 
-        # 4. Ergebnis-Limit basierend auf financial_knowledge
-        # Einsteiger sehen weniger Titel um nicht überwältigt zu werden
-        limit = _KNOWLEDGE_RESULT_LIMIT.get(profile.financial_knowledge, 20)
-        return [stock for stock, _ in scored[:limit]]
+        return result

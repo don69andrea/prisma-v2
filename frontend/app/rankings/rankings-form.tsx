@@ -42,7 +42,7 @@ export function RankingsForm() {
     >
       <div className="space-y-1">
         <div className="inline-flex items-center gap-1">
-          <label htmlFor="universe" className="text-sm font-medium">Universe</label>
+          <label htmlFor="universe" className="text-sm font-medium">Welche Aktien analysieren?</label>
           <InfoPopover ariaLabel="Mehr Informationen">
             <p>Ein Universum ist eine definierte Auswahl von Aktien die analysiert werden sollen. z.B. alle SMI-Titel</p>
           </InfoPopover>
@@ -81,17 +81,17 @@ export function RankingsForm() {
           <span>
             {mutation.error instanceof Error
               ? mutation.error.message
-              : 'Run konnte nicht gestartet werden'}
+              : 'Analyse konnte nicht gestartet werden'}
           </span>
         </div>
       )}
 
       <div className="flex items-center gap-2">
         <Button type="submit" disabled={disabled} aria-busy={isPending}>
-          {isPending ? 'Run wird gestartet…' : 'Run starten'}
+          {isPending ? 'Analyse wird gestartet…' : 'Analyse starten'}
         </Button>
-        <InfoPopover ariaLabel="Ranking-Run erklären">
-          <p>Ein Run ist eine Berechnung die alle Aktien im Universum bewertet und einen Score vergibt</p>
+        <InfoPopover ariaLabel="Analyse erklären">
+          <p>Eine Analyse bewertet alle Aktien im Universum und vergibt einen Score pro Modell.</p>
         </InfoPopover>
       </div>
       {isPending && <PrismaBar />}

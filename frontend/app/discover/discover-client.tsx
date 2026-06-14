@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Compass } from 'lucide-react';
+import { Bell, Compass } from 'lucide-react';
 
 import { completeDiscovery, type DiscoveredStock, type DiscoveryResponse } from '@/lib/api/discovery';
 import { DISCOVER_STORAGE_KEY } from '@/app/start/start-client';
@@ -51,10 +51,7 @@ function StockCard({ stock }: { stock: DiscoveredStock & { signal?: string; scor
   const is3a = stock.is_3a_eligible === true;
 
   return (
-    <Link
-      href={`/stocks/${stock.ticker}`}
-      className="glass-card p-4 flex flex-col gap-3 hover:border-[#58a6ff]/40 transition-colors"
-    >
+    <div className="glass-card p-4 flex flex-col gap-3 hover:border-[#58a6ff]/40 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="font-semibold text-[#e6edf3] text-sm leading-none">{stock.name}</div>
@@ -91,6 +88,12 @@ function StockCard({ stock }: { stock: DiscoveredStock & { signal?: string; scor
         </div>
       )}
 
+      {stock.signal_reason && (
+        <p className="text-[11px] text-[#8b949e] italic leading-relaxed">
+          &quot;{stock.signal_reason}&quot;
+        </p>
+      )}
+
       <div className="flex items-center justify-between text-xs text-[#8b949e]">
         <div className="flex items-center gap-2">
           <span>{stock.exchange}</span>
@@ -103,10 +106,20 @@ function StockCard({ stock }: { stock: DiscoveredStock & { signal?: string; scor
         )}
       </div>
 
-      <div className="text-[11px] text-[#58a6ff] flex items-center gap-1">
-        Durchleuchten →
+      <div className="flex items-center justify-between">
+        <Link href={`/stocks/${stock.ticker}`} className="text-[11px] text-[#58a6ff] flex items-center gap-1">
+          Durchleuchten →
+        </Link>
+        <Link
+          href={`/alerts?ticker=${stock.ticker}`}
+          className="text-[11px] text-[#8b949e] hover:text-[#58a6ff] transition-colors flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Bell className="h-3 w-3" />
+          Alert
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -232,7 +245,7 @@ export function DiscoverClient() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-28 rounded-xl animate-pulse"
+              className="h-36 rounded-xl animate-pulse"
               style={{ background: '#161b22', border: '1px solid #21262d' }}
             />
           ))}
@@ -245,6 +258,18 @@ export function DiscoverClient() {
         </div>
       ) : (
         <EmptyState />
+      )}
+
+      {hasStocks && (
+        <div className="text-center pt-2">
+          <span className="text-xs text-[#8b949e]">
+            Basierend auf: deinem Risikotyp · Anlageziel · Sektoren
+          </span>
+          {' · '}
+          <Link href="/start" className="text-xs text-[#58a6ff] hover:underline">
+            Profil anpassen →
+          </Link>
+        </div>
       )}
 
       {/* CTA to decision */}

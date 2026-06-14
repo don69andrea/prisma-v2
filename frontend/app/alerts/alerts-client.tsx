@@ -10,14 +10,12 @@ import {
   listAlerts,
   createAlert,
   deleteAlert,
-  type Alert,
   type TriggerType,
   type ChannelType,
 } from '@/lib/api/alerts';
+import { usePrismaMode } from '@/hooks/usePrismaMode';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
 
 const LS_ALERT_FORM_KEY = 'prisma_alert_form_config';
 
@@ -31,7 +29,7 @@ function loadStoredAlertForm() {
 
 const TRIGGER_LABELS: Record<TriggerType, string> = {
   PRICE_CHANGE: 'Kursänderung',
-  SIGNAL_CHANGE: 'Signalwechsel',
+  SIGNAL_CHANGE: 'Signal-Wechsel',
 };
 
 const CHANNEL_ICONS: Record<ChannelType, React.ReactNode> = {
@@ -57,63 +55,6 @@ function InfoBtn({ text }: { text: string }) {
         </span>
       )}
     </span>
-  );
-}
-
-function AlertRow({ alert, onDelete }: { alert: Alert; onDelete: () => void }) {
-  const [confirming, setConfirming] = useState(false);
-
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-3 hover:shadow-sm transition-shadow">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-          <Bell className="h-4 w-4 text-primary" />
-        </div>
-        <div className="min-w-0">
-          <Link
-            href={`/stocks/${alert.ticker}`}
-            className="font-semibold truncate hover:underline"
-          >
-            {alert.ticker}
-          </Link>
-          <p className="text-xs text-muted-foreground">
-            {TRIGGER_LABELS[alert.trigger_type as TriggerType]} ≥ {alert.threshold}%
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 shrink-0">
-        <Badge variant="outline" className="flex items-center gap-1 text-xs">
-          {CHANNEL_ICONS[alert.channel as ChannelType]}
-          <span className="truncate max-w-[120px]">{alert.target}</span>
-        </Badge>
-        {alert.last_triggered_at && (
-          <span className="text-[10px] text-muted-foreground hidden sm:block">
-            {new Date(alert.last_triggered_at).toLocaleDateString('de-CH', { dateStyle: 'short' })}
-          </span>
-        )}
-        {confirming ? (
-          <div className="flex gap-1">
-            <Button size="sm" variant="destructive" onClick={onDelete}>
-              Löschen
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
-              Abbruch
-            </Button>
-          </div>
-        ) : (
-          <Button
-            size="icon"
-            variant="ghost"
-            aria-label="Alert löschen"
-            className="h-7 w-7 text-muted-foreground hover:text-destructive"
-            onClick={() => setConfirming(true)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -180,7 +121,7 @@ function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => v
             onChange={(e) => setTriggerType(e.target.value as TriggerType)}
           >
             <option value="PRICE_CHANGE">Kursänderung</option>
-            <option value="SIGNAL_CHANGE">Signalwechsel</option>
+            <option value="SIGNAL_CHANGE">Signal-Wechsel</option>
           </select>
         </div>
 
@@ -237,11 +178,62 @@ function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => v
   );
 }
 
-export function AlertsClient() {
-  const searchParams = useSearchParams();
-  const initialTicker = searchParams.get('ticker')?.toUpperCase() ?? '';
+// ---------------------------------------------------------------------------
+// Simple Mode — minimal Signal-Wechsel-only view
+// ---------------------------------------------------------------------------
+
+function SimpleCreateForm({ onCreated, initialTicker = '' }: { onCreated: () => void; initialTicker?: string }) {
+  const [ticker, setTicker] = useState(initialTicker);
+  const [error, setError] = useState('');
+
+  const mutation = useMutation({
+    mutationFn: createAlert,
+    onSuccess: () => {
+      setTicker('');
+      setError('');
+      onCreated();
+    },
+    onError: () => setError('Alert konnte nicht erstellt werden.'),
+  });
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ticker.trim()) {
+      setError('Bitte einen Ticker eingeben.');
+      return;
+    }
+    mutation.mutate({
+      ticker: ticker.toUpperCase(),
+      trigger_type: 'SIGNAL_CHANGE',
+      threshold: 0,
+      channel: 'EMAIL',
+      target: '',
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-end gap-3 mt-4">
+      <div className="space-y-1 flex-1 max-w-xs">
+        <label className="text-xs text-muted-foreground">Ticker</label>
+        <input
+          className="w-full rounded border bg-background px-2 py-1.5 text-sm uppercase placeholder:normal-case placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          placeholder="NESN"
+          value={ticker}
+          onChange={(e) => setTicker(e.target.value)}
+          maxLength={20}
+        />
+      </div>
+      <Button type="submit" size="sm" disabled={mutation.isPending}>
+        {mutation.isPending ? 'Wird erstellt…' : 'Alert anlegen'}
+      </Button>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </form>
+  );
+}
+
+function SimpleAlertsView({ initialTicker }: { initialTicker: string }) {
   const queryClient = useQueryClient();
-  const [triggerFilter, setTriggerFilter] = useState<'all' | TriggerType>('all');
+  const [showForm, setShowForm] = useState(!!initialTicker);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['alerts'],
@@ -255,6 +247,112 @@ export function AlertsClient() {
 
   function handleCreated() {
     queryClient.invalidateQueries({ queryKey: ['alerts'] });
+    setShowForm(false);
+  }
+
+  const signalAlerts = useMemo(
+    () => data?.alerts.filter((a) => a.trigger_type === 'SIGNAL_CHANGE') ?? [],
+    [data],
+  );
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        PRISMA benachrichtigt dich wenn sich ein Signal in deiner Watchlist ändert.
+      </p>
+
+      <div className="space-y-2">
+        {isLoading && (
+          <>
+            <Skeleton className="h-11 w-full rounded-lg" />
+            <Skeleton className="h-11 w-full rounded-lg" />
+          </>
+        )}
+
+        {isError && (
+          <p className="text-sm text-destructive text-center py-8">
+            Alerts konnten nicht geladen werden.
+          </p>
+        )}
+
+        {data && signalAlerts.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <Bell className="h-10 w-10 text-muted-foreground/40" />
+            <p className="text-sm font-medium">Kein Alert gesetzt</p>
+            <p className="text-xs text-muted-foreground max-w-xs">
+              Füge einen Alert hinzu wenn sich ein Signal ändert
+            </p>
+          </div>
+        )}
+
+        {signalAlerts.map((alert) => (
+          <div
+            key={alert.id}
+            className="flex items-center justify-between gap-4 rounded-lg border bg-card px-4 py-2.5"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-emerald-400 text-xs font-medium shrink-0">&#10003;</span>
+              <Link
+                href={`/stocks/${alert.ticker}`}
+                className="font-mono font-bold hover:underline truncate"
+              >
+                {alert.ticker}
+              </Link>
+              <span className="text-xs text-muted-foreground">Signal-Wechsel</span>
+              <span className="text-xs text-muted-foreground">Aktiv</span>
+            </div>
+            <button
+              onClick={() => deleteMutation.mutate(alert.id)}
+              className="text-slate-500 hover:text-red-400 shrink-0 transition-colors"
+              aria-label="Alert löschen"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {showForm ? (
+        <SimpleCreateForm onCreated={handleCreated} initialTicker={initialTicker} />
+      ) : (
+        <button
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Alert hinzufügen
+        </button>
+      )}
+
+      <p className="text-xs text-muted-foreground border-t pt-3">
+        Alerts sind Hinweise — keine Anlageberatung. Tägliche Prüfung um 08:00 Uhr Schweizer Zeit.
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pro Mode — full table layout with history
+// ---------------------------------------------------------------------------
+
+function ProAlertsView({ initialTicker }: { initialTicker: string }) {
+  const queryClient = useQueryClient();
+  const [triggerFilter, setTriggerFilter] = useState<'all' | TriggerType>('all');
+  const [showForm, setShowForm] = useState(!!initialTicker);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['alerts'],
+    queryFn: listAlerts,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAlert,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['alerts'] }),
+  });
+
+  function handleCreated() {
+    queryClient.invalidateQueries({ queryKey: ['alerts'] });
+    setShowForm(false);
   }
 
   const triggerCounts = useMemo(() => ({
@@ -268,17 +366,29 @@ export function AlertsClient() {
     return data.alerts.filter((a) => a.trigger_type === triggerFilter);
   }, [data, triggerFilter]);
 
-  return (
-    <div className="space-y-6">
-      <CreateAlertForm onCreated={handleCreated} initialTicker={initialTicker} />
+  const triggeredAlerts = useMemo(
+    () =>
+      (data?.alerts ?? [])
+        .filter((a) => !!a.last_triggered_at)
+        .sort(
+          (a, b) =>
+            new Date(b.last_triggered_at!).getTime() - new Date(a.last_triggered_at!).getTime(),
+        ),
+    [data],
+  );
 
-      {data && data.alerts.length > 0 && (
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold">Meine Alerts</h2>
-          <Badge variant="secondary" className="text-xs" data-testid="alerts-count-badge">
-            {data.alerts.length}
-          </Badge>
-        </div>
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div />
+        <Button size="sm" onClick={() => setShowForm((v) => !v)}>
+          <Plus className="h-4 w-4 mr-1.5" />
+          Alert erstellen
+        </Button>
+      </div>
+
+      {showForm && (
+        <CreateAlertForm onCreated={handleCreated} initialTicker={initialTicker} />
       )}
 
       {data && data.alerts.length > 0 && (
@@ -286,7 +396,7 @@ export function AlertsClient() {
           {([
             { key: 'all',           label: 'Alle',          count: data.alerts.length },
             { key: 'PRICE_CHANGE',  label: 'Kursänderung',  count: triggerCounts.PRICE_CHANGE },
-            { key: 'SIGNAL_CHANGE', label: 'Signalwechsel', count: triggerCounts.SIGNAL_CHANGE },
+            { key: 'SIGNAL_CHANGE', label: 'Signal-Wechsel', count: triggerCounts.SIGNAL_CHANGE },
           ] as const).map(({ key, label, count }) => (
             <button
               key={key}
@@ -305,18 +415,20 @@ export function AlertsClient() {
         </div>
       )}
 
-      <div className="space-y-2">
+      <div>
         {isLoading && (
-          <>
-            <Skeleton className="h-14 w-full rounded-lg" />
-            <Skeleton className="h-14 w-full rounded-lg" />
-          </>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full rounded" />
+            <Skeleton className="h-10 w-full rounded" />
+          </div>
         )}
+
         {isError && (
           <p className="text-sm text-destructive text-center py-8">
             Alerts konnten nicht geladen werden.
           </p>
         )}
+
         {data && data.alerts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <Bell className="h-10 w-10 text-muted-foreground/40" />
@@ -326,13 +438,57 @@ export function AlertsClient() {
             </p>
           </div>
         )}
-        {visibleAlerts.map((alert) => (
-          <AlertRow
-            key={alert.id}
-            alert={alert}
-            onDelete={() => deleteMutation.mutate(alert.id)}
-          />
-        ))}
+
+        {data && data.alerts.length > 0 && (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-xs text-muted-foreground">
+                <th className="text-left py-2 pr-4 font-medium">TICKER</th>
+                <th className="text-left py-2 pr-4 font-medium">BEDINGUNG</th>
+                <th className="text-left py-2 pr-4 font-medium">SCHWELLWERT</th>
+                <th className="text-left py-2 pr-4 font-medium">KANAL</th>
+                <th className="text-left py-2 pr-4 font-medium">STATUS</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {visibleAlerts.map((alert) => (
+                <tr key={alert.id} className="border-b border-border/50">
+                  <td className="py-3 pr-4 font-mono font-bold">
+                    <Link href={`/stocks/${alert.ticker}`} className="hover:underline">
+                      {alert.ticker}
+                    </Link>
+                  </td>
+                  <td className="py-3 pr-4">{TRIGGER_LABELS[alert.trigger_type as TriggerType]}</td>
+                  <td className="py-3 pr-4 text-muted-foreground">
+                    {alert.trigger_type === 'PRICE_CHANGE' && alert.threshold
+                      ? `${alert.threshold}%`
+                      : '—'}
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      {CHANNEL_ICONS[alert.channel as ChannelType]}
+                      <span className="truncate max-w-[120px]">{alert.target}</span>
+                    </span>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span className="text-emerald-400 text-xs font-medium">&#10003; Aktiv</span>
+                  </td>
+                  <td className="py-3">
+                    <button
+                      onClick={() => deleteMutation.mutate(alert.id)}
+                      className="text-slate-500 hover:text-red-400 transition-colors"
+                      aria-label="Alert löschen"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
         {data && data.alerts.length > 0 && visibleAlerts.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-4">
             Keine Alerts für diesen Trigger-Typ.
@@ -340,9 +496,61 @@ export function AlertsClient() {
         )}
       </div>
 
+      {triggeredAlerts.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Alert-Historie
+          </h2>
+          <div className="space-y-1.5">
+            {triggeredAlerts.map((alert) => (
+              <div key={alert.id} className="flex items-center justify-between gap-4 text-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {new Date(alert.last_triggered_at!).toLocaleDateString('de-CH', { dateStyle: 'short' })}
+                  </span>
+                  <span className="font-mono font-bold">{alert.ticker}</span>
+                  <span className="text-muted-foreground">
+                    {TRIGGER_LABELS[alert.trigger_type as TriggerType]}
+                  </span>
+                </div>
+                <Link
+                  href={`/stocks/${alert.ticker}`}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Factsheet
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <p className="text-xs text-muted-foreground border-t pt-3">
         Alerts sind Hinweise — keine Anlageberatung. Tägliche Prüfung um 08:00 Uhr Schweizer Zeit.
       </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Root export — mode-switches between Simple and Pro
+// ---------------------------------------------------------------------------
+
+export function AlertsClient() {
+  const searchParams = useSearchParams();
+  const initialTicker = searchParams.get('ticker')?.toUpperCase() ?? '';
+  const { isSimple } = usePrismaMode();
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {isSimple ? 'Meine Alerts.' : 'Alerts.'}
+        </h1>
+      </div>
+      {isSimple
+        ? <SimpleAlertsView initialTicker={initialTicker} />
+        : <ProAlertsView initialTicker={initialTicker} />}
     </div>
   );
 }

@@ -12,7 +12,7 @@ import { Compass } from 'lucide-react';
 // Types
 // ---------------------------------------------------------------------------
 
-type Step = 'landing' | 'beruf' | 'ziel' | 'risiko' | 'brands' | 'betrag' | 'nachhaltigkeit' | 'ertrag' | 'reveal';
+type Step = 'landing' | 'beruf' | 'ziel' | 'risiko' | 'brands' | 'betrag' | 'nachhaltigkeit' | 'ertrag' | 'reveal' | 'profile-reveal';
 type Betrag = 'under_10k' | '10k_100k' | 'over_100k';
 type Nachhaltigkeit = 'yes' | 'no' | 'indifferent';
 type Ertrag = 'dividends' | 'balanced' | 'growth';
@@ -306,6 +306,9 @@ function StepBeruf({ onNext }: { onNext: (beruf: string) => void }) {
         <p className="text-sm text-[#8b949e]">
           Keine richtige oder falsche Antwort — ich will nur verstehen, wie du denkst.
         </p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Damit wir einschätzen können wie viel Finanzwissen wir voraussetzen dürfen.
+        </p>
       </div>
       <div className="w-full space-y-3">
         <input
@@ -346,6 +349,9 @@ function StepZiel({ onNext }: { onNext: (ziel: Ziel) => void }) {
           <InfoPopover ariaLabel="Mehr Info zu Anlageziel">Was du mit deinem Geld erreichen möchtest</InfoPopover>
         </h2>
         <p className="text-sm text-[#8b949e]">Kein falsches oder richtiges Ziel — ich will nur verstehen.</p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Ein Rentner und ein Wachstumsinvestor brauchen komplett unterschiedliche Aktien.
+        </p>
       </div>
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
         {ZIEL_OPTIONS.map((opt) => {
@@ -389,6 +395,9 @@ function StepRisiko({ onNext }: { onNext: (risiko: Risiko) => void }) {
         </h2>
         <p className="text-sm text-[#8b949e]">
           Du hast CHF 10&apos;000 investiert. Nach 3 Monaten öffnest du die App.
+        </p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Damit wir dir keine Biotech-Titel empfehlen wenn du nachts schlecht schläfst wenn dein Depot im Minus ist.
         </p>
       </div>
 
@@ -466,6 +475,9 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
         <h2 className="text-xl font-semibold text-[#e6edf3]">Welche dieser Schweizer Firmen kennst du?</h2>
         <p className="text-sm text-[#8b949e]">
           Aus dem Alltag, der Arbeit, den Nachrichten. Einfach anklicken.
+        </p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Damit dein Universum Aktien enthält die du auch wirklich verstehst.
         </p>
       </div>
 
@@ -569,6 +581,9 @@ function StepBetrag({ onNext }: { onNext: (betrag: Betrag) => void }) {
           <InfoPopover ariaLabel="Mehr Info zu Anlagebetrag">Dein ungefähres Startkapital hilft uns, passende Aktien zu empfehlen</InfoPopover>
         </h2>
         <p className="text-sm text-[#8b949e]">Es geht nur um eine grobe Einschätzung.</p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Damit der Sicherheits-Check auf deinem Factsheet in echten CHF-Beträgen rechnet.
+        </p>
       </div>
       <div className="w-full space-y-3">
         {BETRAG_OPTIONS.map((opt) => {
@@ -611,6 +626,9 @@ function StepNachhaltigkeit({ onNext }: { onNext: (nachhaltigkeit: Nachhaltigkei
           <InfoPopover ariaLabel="Mehr Info zu Nachhaltigkeit">ESG = Environment (Umwelt), Social (Soziales), Governance (Unternehmensführung) — nachhaltige Unternehmen</InfoPopover>
         </h2>
         <p className="text-sm text-[#8b949e]">ESG-Aktien sind Firmen die nachhaltig wirtschaften.</p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: ESG-Filter schliessen bestimmte Sektoren aus deinem Universum aus.
+        </p>
       </div>
       <div className="w-full space-y-3">
         {NACHHALTIGKEIT_OPTIONS.map((opt) => {
@@ -653,6 +671,9 @@ function StepErtrag({ onNext }: { onNext: (ertrag: Ertrag) => void }) {
           <InfoPopover ariaLabel="Mehr Info zu Rendite-Fokus">Dividenden = regelmässige Auszahlungen, Wachstum = Kursgewinne</InfoPopover>
         </h2>
         <p className="text-sm text-[#8b949e]">Du kannst das später noch anpassen.</p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Dividenden-Aktien und Wachstums-Aktien verhalten sich fundamental anders.
+        </p>
       </div>
       <div className="w-full space-y-3">
         {ERTRAG_OPTIONS.map((opt) => {
@@ -987,6 +1008,23 @@ function PrismaButton({
   );
 }
 
+function ConfidenceBar({ currentTurn }: { currentTurn: number }) {
+  const pct = Math.round((currentTurn / 7) * 100);
+  return (
+    <div className="space-y-1 mt-4 max-w-lg mx-auto px-2">
+      <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="text-[10px] text-center text-slate-500">
+        Dein Profil wird immer präziser. · {pct}%
+      </p>
+    </div>
+  );
+}
+
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -1015,6 +1053,82 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Profile Reveal Screen (shown after completeDiscovery() resolves)
+// ---------------------------------------------------------------------------
+
+function DiscoveryProfileReveal({
+  result,
+  onDiscover,
+}: {
+  result: {
+    risk_profile?: string;
+    investment_goal?: string;
+    preferred_sectors?: string[];
+    investment_amount?: string;
+    sustainability_preference?: string;
+    return_focus?: string;
+    profile_type?: string;
+  };
+  onDiscover: () => void;
+}) {
+  // Set cookie as soon as this screen renders
+  useEffect(() => {
+    document.cookie = 'prisma_onboarding=complete; path=/; max-age=31536000';
+  }, []);
+
+  const rows: { label: string; value: string }[] = [
+    { label: 'Risiko',         value: result.risk_profile ?? '—' },
+    { label: 'Ziel',           value: result.investment_goal ?? '—' },
+    { label: 'Sektoren',       value: (result.preferred_sectors ?? []).join(' · ') || '—' },
+    { label: 'Betrag',         value: result.investment_amount ?? '—' },
+    { label: 'Nachhaltigkeit', value: result.sustainability_preference ?? '—' },
+    { label: 'Dividenden',     value: result.return_focus ?? '—' },
+  ];
+
+  return (
+    <div
+      className="flex flex-col items-center gap-6 py-10 max-w-sm mx-auto"
+      style={{ animation: 'fadeIn 0.6s ease' }}
+      data-testid="discovery-profile-reveal"
+    >
+      <div className="text-center space-y-2">
+        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">Fertig</div>
+        <h2 className="text-2xl font-bold text-[#e6edf3]">Dein Profil ist bereit.</h2>
+        {result.profile_type && (
+          <p className="text-base text-[#8b949e]">{result.profile_type}</p>
+        )}
+      </div>
+
+      <div
+        className="w-full rounded-xl p-5 space-y-3"
+        style={{
+          background: 'rgba(22,27,34,0.85)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(88,166,255,0.2)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}
+      >
+        {rows.map((row) => (
+          <ProfileRow key={row.label} label={row.label} value={row.value} />
+        ))}
+      </div>
+
+      <button
+        onClick={onDiscover}
+        data-testid="btn-meine-aktien"
+        className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-[#0d1117] transition-all hover:opacity-90 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+        style={{
+          background: 'linear-gradient(135deg, #58a6ff 0%, #7ee787 100%)',
+          boxShadow: '0 4px 20px rgba(88,166,255,0.3)',
+        }}
+      >
+        Meine Aktien entdecken →
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -1030,6 +1144,15 @@ export function StartClient() {
   const [sessionId, setSessionId]             = useState<string | null>(null);
   const [kennerMode, setKennerMode]           = useState(false);
   const [loading, setLoading]                 = useState(false);
+  const [discoveryResult, setDiscoveryResult] = useState<{
+    risk_profile?: string;
+    investment_goal?: string;
+    preferred_sectors?: string[];
+    investment_amount?: string;
+    sustainability_preference?: string;
+    return_focus?: string;
+    profile_type?: string;
+  } | null>(null);
   const router = useRouter();
 
   // Build brand_data map for turn 4 (ticker → {sector, name})
@@ -1063,6 +1186,21 @@ export function StartClient() {
         };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(discovery));
         localStorage.setItem(PROFILE_STORAGE_KEY, finalRisiko);
+
+        // Set onboarding cookie before showing profile reveal
+        document.cookie = 'prisma_onboarding=complete; path=/; max-age=31536000';
+
+        setDiscoveryResult({
+          risk_profile: result.profile.risk_profile ?? finalRisiko,
+          investment_goal: result.profile.investment_goal ?? finalZiel,
+          preferred_sectors: result.profile.sector_affinity ?? [],
+          investment_amount: result.profile.investment_amount ?? finalBetrag,
+          sustainability_preference: result.profile.esg_preference ?? finalNachhaltigkeit,
+          return_focus: result.profile.income_preference ?? finalErtrag,
+          profile_type: PROFILE_LABELS[result.profile.risk_profile as Risiko] ?? PROFILE_LABELS[finalRisiko],
+        });
+        setLoading(false);
+        setStep('profile-reveal');
       } catch {
         const defaultTickers = ['NESN', 'ROG', 'NOVN', 'ABBN', 'UBSG', 'LOGN', 'CFR', 'ZURN'];
         const stocksToShow = knownBrandObjs.length > 0
@@ -1081,11 +1219,25 @@ export function StartClient() {
         };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(fallback));
         localStorage.setItem(PROFILE_STORAGE_KEY, finalRisiko);
-      }
 
-      router.push('/discover');
+        // Set onboarding cookie even on fallback
+        document.cookie = 'prisma_onboarding=complete; path=/; max-age=31536000';
+
+        setDiscoveryResult({
+          risk_profile: finalRisiko,
+          investment_goal: finalZiel,
+          preferred_sectors: [],
+          investment_amount: finalBetrag,
+          sustainability_preference: finalNachhaltigkeit,
+          return_focus: finalErtrag,
+          profile_type: PROFILE_LABELS[finalRisiko],
+        });
+        setLoading(false);
+        setStep('profile-reveal');
+      }
     },
-    [router],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
 
   // Handles turns 1-4 sequentially before showing the reveal step
@@ -1115,6 +1267,17 @@ export function StartClient() {
     return <div className="min-h-[60vh]"><KennerSearch onBack={() => setKennerMode(false)} /></div>;
   }
 
+  const STEP_TO_TURN: Partial<Record<Step, number>> = {
+    beruf: 1,
+    ziel: 2,
+    risiko: 3,
+    brands: 4,
+    betrag: 5,
+    nachhaltigkeit: 6,
+    ertrag: 7,
+  };
+  const confidenceTurn = STEP_TO_TURN[step] ?? null;
+
   return (
     <div className="min-h-[60vh]">
       {step === 'landing' && (
@@ -1134,7 +1297,10 @@ export function StartClient() {
         <StepNachhaltigkeit onNext={(v) => { setNachhaltigkeit(v); setStep('ertrag'); }} />
       )}
       {step === 'ertrag' && (
-        <StepErtrag onNext={(v) => { setErtrag(v); setStep('reveal'); }} />
+        <StepErtrag onNext={(v) => {
+          setErtrag(v);
+          handleContinue(brands, ziel!, risiko!, betrag!, nachhaltigkeit!, v, sessionId ?? crypto.randomUUID());
+        }} />
       )}
       {step === 'reveal' && ziel && risiko && betrag && nachhaltigkeit && ertrag && (
         <StepReveal
@@ -1142,6 +1308,16 @@ export function StartClient() {
           onContinue={() => handleContinue(brands, ziel, risiko, betrag, nachhaltigkeit, ertrag, sessionId ?? crypto.randomUUID())}
         />
       )}
+      {step === 'profile-reveal' && discoveryResult && (
+        <DiscoveryProfileReveal
+          result={discoveryResult}
+          onDiscover={() => {
+            document.cookie = 'prisma_onboarding=complete; path=/; max-age=31536000';
+            router.push('/discover');
+          }}
+        />
+      )}
+      {confidenceTurn !== null && <ConfidenceBar currentTurn={confidenceTurn} />}
     </div>
   );
 }

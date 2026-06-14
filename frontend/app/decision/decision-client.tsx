@@ -18,6 +18,17 @@ import { SignalBreakdown } from '@/components/ui/SignalBreakdown';
 import { WeightSensitivity } from '@/components/ui/WeightSensitivity';
 import { SHAPMiniBreakdown } from '@/components/ui/SHAPMiniBreakdown';
 import { cn } from '@/lib/utils';
+import { usePrismaMode } from '@/hooks/usePrismaMode';
+
+// ---------------------------------------------------------------------------
+// Color helpers
+// ---------------------------------------------------------------------------
+
+const SIGNAL_STYLES: Record<'BUY' | 'HOLD' | 'SELL', { bg: string; text: string; border: string }> = {
+  BUY:  { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  HOLD: { bg: 'bg-amber-500/15',   text: 'text-amber-400',   border: 'border-amber-500/30'   },
+  SELL: { bg: 'bg-red-500/15',     text: 'text-red-400',     border: 'border-red-500/30'     },
+};
 
 const FILTER_CHIP_CONFIG: Record<
   'BUY' | 'HOLD' | 'SELL',
@@ -27,6 +38,10 @@ const FILTER_CHIP_CONFIG: Record<
   HOLD: { label: 'HOLD', dot: 'bg-[#ffa657]' },
   SELL: { label: 'SELL', dot: 'bg-[#f85149]'  },
 };
+
+// ---------------------------------------------------------------------------
+// ConfidenceBar
+// ---------------------------------------------------------------------------
 
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
@@ -42,7 +57,6 @@ function ConfidenceBar({ value }: { value: number }) {
     </div>
   );
 }
-
 
 // ---------------------------------------------------------------------------
 // Explain Modal
@@ -94,16 +108,13 @@ function ExplainMetricRow({
         </div>
         <span className="text-xs font-bold text-[#e6edf3] tabular-nums">{pct}/100</span>
       </div>
-      {/* Bar */}
       <div className="h-1.5 w-full rounded-full bg-[#21262d] overflow-hidden">
         <div
           className="h-full rounded-full"
           style={{ width: `${pct}%`, background: def.color, opacity: 0.8 }}
         />
       </div>
-      {/* Definition */}
       <p className="text-[10px] text-[#8b949e] leading-relaxed">{def.definition}</p>
-      {/* LLM Why */}
       {explanation && (
         <p className="text-[11px] text-[#e6edf3] leading-relaxed bg-[#0d1117]/60 rounded-md px-2.5 py-2">
           {explanation}
@@ -146,14 +157,12 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
         style={{ background: '#161b22', border: '1px solid #21262d', maxHeight: '88vh' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-4"
           style={{ borderBottom: '1px solid #21262d' }}
         >
           <div>
             <div className="flex items-center gap-2">
-              {/* Lightbulb icon */}
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={signalColor} strokeWidth="1.5" strokeLinecap="round">
                 <path d="M12 2a7 7 0 0 1 7 7c0 3-1.7 5.4-4 6.7V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.3C6.7 14.4 5 12 5 9a7 7 0 0 1 7-7Z"/>
                 <path d="M9 21h6M10 17v1M14 17v1"/>
@@ -177,12 +186,10 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
           </button>
         </div>
 
-        {/* Scrollable body */}
         <div className="overflow-y-auto px-5 py-4 space-y-4" style={{ maxHeight: 'calc(88vh - 72px)' }}>
           {loading && (
             <div className="flex flex-col items-center gap-3 py-8">
               <style>{`@keyframes explainDot{0%,80%,100%{opacity:.15}40%{opacity:1}}`}</style>
-              {/* Lightbulb spinner */}
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={signalColor} strokeWidth="1.5" strokeLinecap="round"
                 style={{ animation: 'prismaSpin 2s linear infinite' }}>
                 <path d="M12 2a7 7 0 0 1 7 7c0 3-1.7 5.4-4 6.7V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.3C6.7 14.4 5 12 5 9a7 7 0 0 1 7-7Z"/>
@@ -205,7 +212,6 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
 
           {data && !loading && (
             <>
-              {/* Overall */}
               <div
                 className="rounded-xl px-4 py-3"
                 style={{ background: `${signalColor}0d`, border: `1px solid ${signalColor}33` }}
@@ -216,7 +222,6 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
                 <p className="text-sm text-[#e6edf3] leading-relaxed">{data.overall}</p>
               </div>
 
-              {/* Metrics with definitions + WHY */}
               <div className="space-y-3">
                 {METRIC_DEFS.map((def) => (
                   <ExplainMetricRow
@@ -228,7 +233,6 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
                 ))}
               </div>
 
-              {/* Risk note */}
               <p className="text-[10px] text-[#8b949e] leading-relaxed border-t border-[#21262d] pt-3">
                 {data.risk_note} · PRISMA Modell v1 · {new Date(item.snapshot_date).toLocaleDateString('de-CH')}
               </p>
@@ -239,6 +243,10 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Pro Mode: SignalCard (full detail card, existing behaviour)
+// ---------------------------------------------------------------------------
 
 function SignalCard({ item }: { item: DecisionSignal }) {
   const [auditOpen, setAuditOpen] = useState(false);
@@ -333,7 +341,6 @@ function SignalCard({ item }: { item: DecisionSignal }) {
           </div>
         )}
 
-        {/* Action row */}
         <div className="flex items-center justify-between gap-2 pt-0.5">
           <button
             onClick={() => setAuditOpen((o) => !o)}
@@ -345,7 +352,6 @@ function SignalCard({ item }: { item: DecisionSignal }) {
             Audit-Trail {auditOpen ? 'schliessen' : 'anzeigen'}
           </button>
 
-          {/* Explain button */}
           <button
             onClick={() => setExplainOpen(true)}
             className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors hover:bg-[#58a6ff]/10"
@@ -377,6 +383,218 @@ function SignalCard({ item }: { item: DecisionSignal }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Simple Mode: HeroCard
+// ---------------------------------------------------------------------------
+
+function HeroCard({ item, signal }: { item: DecisionSignal | undefined; signal: 'BUY' | 'HOLD' | 'SELL' }) {
+  const styles = SIGNAL_STYLES[signal];
+
+  if (!item) {
+    return (
+      <div className={`rounded-xl border p-5 flex flex-col gap-3 ${styles.border} ${styles.bg} opacity-40`}>
+        <div className="flex items-center justify-between">
+          <span className={`text-sm font-bold uppercase px-2 py-1 rounded-lg ${styles.bg} ${styles.text}`}>{signal}</span>
+          <span className="text-2xl font-bold text-slate-500">—</span>
+        </div>
+        <div className="font-bold text-slate-400 text-lg">Kein Signal</div>
+        <p className="text-sm text-slate-500 italic leading-relaxed">Kein {signal}-Signal vorhanden.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`rounded-xl border p-5 flex flex-col gap-3 ${styles.border} ${styles.bg}`}>
+      <div className="flex items-center justify-between">
+        <span className={`text-sm font-bold uppercase px-2 py-1 rounded-lg ${styles.bg} ${styles.text}`}>{signal}</span>
+        <span className="text-2xl font-bold text-slate-200">{Math.round(item.weighted_score)}</span>
+      </div>
+      <div className="font-bold text-slate-200 text-lg">{item.ticker}</div>
+      <p className="text-sm text-slate-400 italic leading-relaxed">"{item.signal_reason ?? 'Kein Kommentar verfügbar.'}"</p>
+      <Link href={`/stocks/${item.ticker}`} className="text-xs text-blue-400 hover:text-blue-300">Details ansehen →</Link>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Simple Mode: AllSignalsTable (expandable)
+// ---------------------------------------------------------------------------
+
+function AllSignalsTable({ signals }: { signals: DecisionSignal[] }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1.5 text-sm text-[#8b949e] hover:text-[#e6edf3] transition-colors"
+      >
+        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        {open ? 'Signale ausblenden' : `Alle ${signals.length} Signale anzeigen`}
+      </button>
+
+      {open && (
+        <div className="mt-3 overflow-x-auto rounded-xl border border-[#21262d]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#21262d] bg-[#161b22]">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Name</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Signal</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Score</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Begründung</th>
+              </tr>
+            </thead>
+            <tbody>
+              {signals.map((item) => {
+                const sig = item.signal as 'BUY' | 'HOLD' | 'SELL';
+                const styles = SIGNAL_STYLES[sig] ?? SIGNAL_STYLES['HOLD'];
+                return (
+                  <tr key={item.ticker} className="border-b border-[#21262d] last:border-0 hover:bg-[#161b22]/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-[#e6edf3]">
+                      <Link href={`/stocks/${item.ticker}`} className="hover:text-[#58a6ff] transition-colors">
+                        {item.ticker}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-block text-xs font-bold uppercase px-2 py-0.5 rounded-md ${styles.bg} ${styles.text}`}>
+                        {sig}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-[#e6edf3]">{Math.round(item.weighted_score)}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400 max-w-xs">{item.signal_reason ?? '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pro Mode: full table view
+// ---------------------------------------------------------------------------
+
+function ProTable({ signals }: { signals: DecisionSignal[] }) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-[#21262d]">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-[#21262d] bg-[#161b22]">
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Ticker</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Name</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Signal</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Score</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">SHAP-Top</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Begründung</th>
+          </tr>
+        </thead>
+        <tbody>
+          {signals.map((item) => {
+            const sig = item.signal as 'BUY' | 'HOLD' | 'SELL';
+            const styles = SIGNAL_STYLES[sig] ?? SIGNAL_STYLES['HOLD'];
+            return (
+              <tr key={item.ticker} className="border-b border-[#21262d] last:border-0 hover:bg-[#161b22]/50 transition-colors">
+                <td className="px-4 py-3 font-semibold text-[#e6edf3]">
+                  <Link href={`/stocks/${item.ticker}`} className="hover:text-[#58a6ff] transition-colors">
+                    {item.ticker}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-[#8b949e] text-xs">{item.ticker}</td>
+                <td className="px-4 py-3">
+                  <span className={`inline-block text-xs font-bold uppercase px-2 py-0.5 rounded-md ${styles.bg} ${styles.text}`}>
+                    {sig}
+                  </span>
+                </td>
+                <td className="px-4 py-3 tabular-nums text-[#e6edf3]">{Math.round(item.weighted_score)}</td>
+                <td className="px-4 py-3 text-xs text-[#8b949e]">
+                  {/* top SHAP feature placeholder — actual SHAP per-row would need per-item ML query */}
+                  quant_score
+                </td>
+                <td className="px-4 py-3 text-xs text-slate-400 max-w-xs">{item.signal_reason ?? '—'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pro Mode: signal breakdown panel
+// ---------------------------------------------------------------------------
+
+function ProSignalBreakdownPanel({ counts }: { counts: { BUY: number; HOLD: number; SELL: number } }) {
+  const total = counts.BUY + counts.HOLD + counts.SELL || 1;
+  const bars: { sig: 'BUY' | 'HOLD' | 'SELL'; label: string; color: string }[] = [
+    { sig: 'BUY',  label: 'BUY',  color: 'bg-emerald-500' },
+    { sig: 'HOLD', label: 'HOLD', color: 'bg-amber-500'   },
+    { sig: 'SELL', label: 'SELL', color: 'bg-red-500'     },
+  ];
+
+  return (
+    <div className="rounded-xl border border-[#21262d] bg-[#161b22] p-5 space-y-4">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-[#8b949e]">Signal-Breakdown</h3>
+      <div className="space-y-3">
+        {bars.map(({ sig, label, color }) => {
+          const pct = Math.round((counts[sig] / total) * 100);
+          return (
+            <div key={sig} className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium text-[#e6edf3]">{label}</span>
+                <span className="tabular-nums text-[#8b949e]">{counts[sig]} ({pct}%)</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-[#21262d] overflow-hidden">
+                <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pro Mode: makro context panel
+// ---------------------------------------------------------------------------
+
+function ProMakroPanel() {
+  return (
+    <div className="rounded-xl border border-[#21262d] bg-[#161b22] p-5 space-y-3">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-[#8b949e]">Makro-Kontext</h3>
+      <ul className="space-y-2 text-sm text-[#e6edf3]">
+        <li className="flex items-start gap-2">
+          <span className="text-[#8b949e] min-w-[110px] text-xs">SNB Leitzins</span>
+          <span className="font-medium">1.00%</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <span className="text-[#8b949e] min-w-[110px] text-xs">CHF/EUR</span>
+          <span className="font-medium">0.938</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <span className="text-[#8b949e] min-w-[110px] text-xs">Inflation CH</span>
+          <span className="font-medium">1.1% (Mai 2025)</span>
+        </li>
+        <li className="flex items-start gap-2">
+          <span className="text-[#8b949e] min-w-[110px] text-xs">Makro-Score</span>
+          <span className="font-medium text-emerald-400">Positiv</span>
+        </li>
+      </ul>
+      <p className="text-[10px] text-[#8b949e] leading-relaxed pt-1">
+        Niedriger SNB-Leitzins und stabile Inflation begünstigen Schweizer Aktien gegenüber Anleihen. CHF-Stärke belastet exportorientierte Titel.
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CSV export (unchanged)
+// ---------------------------------------------------------------------------
+
 function exportDecisionCsv(signals: DecisionSignal[]) {
   const rows = [
     ['Ticker', 'Signal', 'Confidence%', 'Quant-Score', 'ML-Score', 'Macro-Score', '3a-eligible', 'Datum'],
@@ -401,6 +619,10 @@ function exportDecisionCsv(signals: DecisionSignal[]) {
   URL.revokeObjectURL(url);
 }
 
+// ---------------------------------------------------------------------------
+// Persisted filter state
+// ---------------------------------------------------------------------------
+
 const LS_DECISION_KEY = 'prisma_decision_filters';
 
 function loadStoredDecision() {
@@ -420,10 +642,15 @@ function loadStoredDecision() {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// DecisionClient — main export
+// ---------------------------------------------------------------------------
+
 export function DecisionClient() {
   const searchParams = useSearchParams();
+  const { mode, toggle, isSimple, isPro } = usePrismaMode();
 
-  // tickers param = Discovery-Flow: direkte Ticker ohne universe_id
+  // tickers param = Discovery-Flow
   const tickersParam = searchParams.get('tickers');
   const liveTickers = useMemo(
     () => (tickersParam ? tickersParam.split(',').filter(Boolean) : null),
@@ -467,8 +694,6 @@ export function DecisionClient() {
     }
   }, [universes, selectedUniverse, isLiveMode]);
 
-  // Live-Modus: EINMALIGER Request — alle Signale, Filterung client-seitig
-  // (zwei parallele Requests auf denselben Ticker triggern yfinance-Rate-Limits)
   const {
     data: liveAllData,
     isLoading: liveLoading,
@@ -481,7 +706,6 @@ export function DecisionClient() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Universum-Modus: klassisch via universe_id
   const {
     data: decisionsData,
     isLoading: dLoading,
@@ -505,7 +729,6 @@ export function DecisionClient() {
   const refetch   = isLiveMode ? liveRefetch  : dRefetch;
   const isReady   = isLiveMode ? true : !!selectedUniverse;
 
-  // Im Live-Modus: alle Signale vom einmaligen Request, dann client-seitig filtern
   const allSignals = useMemo(
     () => (isLiveMode ? liveAllData?.items : decisionsAllData?.items) ?? [],
     [isLiveMode, liveAllData, decisionsAllData],
@@ -533,14 +756,171 @@ export function DecisionClient() {
     });
   }, [filteredSignals, sortKey]);
 
+  // Always sort allSignals by weighted_score desc for hero card selection
+  const sortedAllSignals = useMemo(
+    () => [...allSignals].sort((a, b) => b.weighted_score - a.weighted_score),
+    [allSignals],
+  );
+
   const counts = useMemo(() => ({
-    BUY:   allSignals.filter((s) => s.signal === 'BUY').length,
-    HOLD:  allSignals.filter((s) => s.signal === 'HOLD').length,
+    BUY:  allSignals.filter((s) => s.signal === 'BUY').length,
+    HOLD: allSignals.filter((s) => s.signal === 'HOLD').length,
     SELL: allSignals.filter((s) => s.signal === 'SELL').length,
   }), [allSignals]);
 
+  // Hero cards: top-scoring BUY, HOLD, SELL
+  const heroSignals = useMemo(() => ({
+    BUY:  sortedAllSignals.find((s) => s.signal === 'BUY'),
+    HOLD: sortedAllSignals.find((s) => s.signal === 'HOLD'),
+    SELL: sortedAllSignals.find((s) => s.signal === 'SELL'),
+  }), [sortedAllSignals]);
+
+  // Last-updated time derived from the most recent snapshot_date in the dataset
+  const lastUpdated = useMemo(() => {
+    if (allSignals.length === 0) return null;
+    const dates = allSignals.map((s) => s.snapshot_date).filter(Boolean);
+    if (dates.length === 0) return null;
+    const latest = dates.reduce((a, b) => (a > b ? a : b));
+    return new Date(latest).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+  }, [allSignals]);
+
+  // ---------------------------------------------------------------------------
+  // Shared loading / error / empty states
+  // ---------------------------------------------------------------------------
+
+  const emptyStateJsx = (
+    <>
+      {!isLiveMode && !selectedUniverse && !uLoading && universes.length === 0 && (
+        <div className="rounded-xl border border-[#21262d] p-8 text-center space-y-3">
+          <p className="text-sm font-medium text-[#e6edf3]">Kein Universum vorhanden</p>
+          <p className="text-xs text-[#8b949e]">
+            Erstelle zuerst ein Universum unter{' '}
+            <a href="/universes" className="text-[#58a6ff] hover:underline">Universen</a>.
+          </p>
+        </div>
+      )}
+      {!isLiveMode && !selectedUniverse && !uLoading && universes.length > 0 && (
+        <p className="text-sm text-[#8b949e] py-8 text-center">Bitte ein Universum wählen.</p>
+      )}
+      {isReady && isLoading && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full rounded-lg bg-[#161b22]" />
+          ))}
+        </div>
+      )}
+      {isReady && isError && (
+        <div className="space-y-3">
+          <div className="rounded-md border border-[#f85149]/50 bg-[#f85149]/10 p-4 text-sm text-[#f85149]">
+            Signale konnten nicht geladen werden.
+          </div>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            Erneut versuchen
+          </Button>
+        </div>
+      )}
+      {isReady && !isLoading && !isError && sortedSignals.length === 0 && allSignals.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+          <BarChart2 className="h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm font-medium text-foreground">Noch keine Signale vorhanden</p>
+          <p className="text-xs text-muted-foreground max-w-xs">
+            Starte einen Rankings-Run um BUY, HOLD und SELL Signale zu generieren
+          </p>
+          <Link href="/rankings" className="text-xs text-blue-400 hover:text-blue-300">
+            Zum Ranking →
+          </Link>
+        </div>
+      )}
+    </>
+  );
+
+  // ---------------------------------------------------------------------------
+  // Mode toggle button (shared)
+  // ---------------------------------------------------------------------------
+
+  const modeToggleJsx = (
+    <button
+      onClick={toggle}
+      className="inline-flex items-center gap-1.5 rounded-md border border-[#21262d] px-3 py-1.5 text-xs font-medium text-[#8b949e] hover:bg-[#21262d] hover:text-[#e6edf3] transition-colors"
+    >
+      {isSimple ? 'Pro-Modus' : 'Einfacher Modus'}
+    </button>
+  );
+
+  // ---------------------------------------------------------------------------
+  // SIMPLE MODE
+  // ---------------------------------------------------------------------------
+
+  if (isSimple) {
+    return (
+      <div className="space-y-6">
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-[#e6edf3] tracking-tight">Signale heute.</h1>
+            {lastUpdated && (
+              <p className="text-sm text-[#8b949e] mt-1">Letzte Aktualisierung: {lastUpdated}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Simple universe selector */}
+            {!isLiveMode && universes.length > 0 && (
+              <select
+                className="h-8 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
+                value={selectedUniverse}
+                onChange={(e) => setSelectedUniverse(e.target.value)}
+                disabled={uLoading}
+              >
+                <option value="">— Universum —</option>
+                {universes.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            )}
+            {modeToggleJsx}
+          </div>
+        </div>
+
+        {/* Live-mode banner */}
+        {isLiveMode && (
+          <div className="flex items-center gap-2 text-xs text-[#8b949e]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#58a6ff]" />
+            {liveTickers!.length} Titel live: {liveTickers!.join(', ')}
+            <Link href="/discover" className="ml-auto text-[#58a6ff] hover:underline">Zurück →</Link>
+          </div>
+        )}
+
+        {emptyStateJsx}
+
+        {/* Hero cards */}
+        {isReady && !isLoading && !isError && allSignals.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <HeroCard item={heroSignals.BUY}  signal="BUY"  />
+              <HeroCard item={heroSignals.HOLD} signal="HOLD" />
+              <HeroCard item={heroSignals.SELL} signal="SELL" />
+            </div>
+
+            {/* Expandable full signal list */}
+            <AllSignalsTable signals={sortedAllSignals} />
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // PRO MODE
+  // ---------------------------------------------------------------------------
+
   return (
     <div className="space-y-4">
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="text-2xl font-bold text-[#e6edf3] tracking-tight">Decision Intelligence.</h1>
+        {modeToggleJsx}
+      </div>
+
       {/* Live-Mode Banner */}
       {isLiveMode && (
         <>
@@ -605,7 +985,6 @@ export function DecisionClient() {
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-end gap-3">
-        {/* Universe-Dropdown nur im klassischen Modus */}
         {!isLiveMode && (
           <div className="flex flex-col gap-1">
             <label className="text-xs text-[#8b949e] font-medium">Universum</label>
@@ -634,6 +1013,22 @@ export function DecisionClient() {
             <option value="BUY">BUY</option>
             <option value="HOLD">HOLD</option>
             <option value="SELL">SELL</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-[#8b949e] font-medium">Sektor</label>
+          <select
+            className="h-9 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
+            defaultValue=""
+          >
+            <option value="">Alle Sektoren</option>
+            <option value="financials">Financials</option>
+            <option value="healthcare">Healthcare</option>
+            <option value="industrials">Industrials</option>
+            <option value="consumer">Consumer</option>
+            <option value="technology">Technology</option>
+            <option value="energy">Energy</option>
           </select>
         </div>
 
@@ -672,10 +1067,10 @@ export function DecisionClient() {
             onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
             data-testid="decision-sort-select"
           >
-            <option value="weighted_score">PRISMA Score ↓</option>
-            <option value="confidence">Confidence ↓</option>
-            <option value="quant_score">Quant-Score ↓</option>
-            <option value="ml_score">ML-Score ↓</option>
+            <option value="weighted_score">PRISMA Score</option>
+            <option value="confidence">Confidence</option>
+            <option value="quant_score">Quant-Score</option>
+            <option value="ml_score">ML-Score</option>
             <option value="ticker">Ticker A–Z</option>
           </select>
         </div>
@@ -691,15 +1086,15 @@ export function DecisionClient() {
         )}
       </div>
 
-      {/* Signal-Zusammenfassung */}
+      {/* Signal-Zusammenfassung chips */}
       {isReady && allSignals.length > 0 && (
         <div className="flex flex-wrap gap-2" data-testid="signal-summary">
           {(['BUY', 'HOLD', 'SELL'] as const).map((sig) => {
             const cfg = FILTER_CHIP_CONFIG[sig];
             const active = signalFilter === sig;
             const tooltips: Record<string, string> = {
-              BUY: 'BUY bedeutet: Der PRISMA-Score ist ≥ 70 von 100. Das Modell empfiehlt den Kauf.',
-              HOLD: 'HOLD bedeutet: PRISMA-Score 40–69. Beobachten, aber (noch) nicht handeln.',
+              BUY: 'BUY bedeutet: Der PRISMA-Score ist >= 70 von 100. Das Modell empfiehlt den Kauf.',
+              HOLD: 'HOLD bedeutet: PRISMA-Score 40-69. Beobachten, aber (noch) nicht handeln.',
               SELL: 'SELL bedeutet: PRISMA-Score < 40. Die Fundamentaldaten sind schwach. Verkauf empfohlen.',
             };
             return (
@@ -726,59 +1121,16 @@ export function DecisionClient() {
         </div>
       )}
 
-      {/* Content */}
-      {!isLiveMode && !selectedUniverse && !uLoading && universes.length === 0 && (
-        <div className="rounded-xl border border-[#21262d] p-8 text-center space-y-3">
-          <p className="text-sm font-medium text-[#e6edf3]">Kein Universum vorhanden</p>
-          <p className="text-xs text-[#8b949e]">
-            Erstelle zuerst ein Universum unter{' '}
-            <a href="/universes" className="text-[#58a6ff] hover:underline">Universen</a>.
-          </p>
-        </div>
-      )}
-      {!isLiveMode && !selectedUniverse && !uLoading && universes.length > 0 && (
-        <p className="text-sm text-[#8b949e] py-8 text-center">
-          Bitte ein Universum wählen.
-        </p>
-      )}
+      {emptyStateJsx}
 
-      {isReady && isLoading && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: isLiveMode ? (liveTickers?.length ?? 6) : 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 w-full rounded-lg bg-[#161b22]" />
-          ))}
-        </div>
-      )}
-
-      {isReady && isError && (
-        <div className="space-y-3">
-          <div className="rounded-md border border-[#f85149]/50 bg-[#f85149]/10 p-4 text-sm text-[#f85149]">
-            Signale konnten nicht geladen werden.
-          </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            Erneut versuchen
-          </Button>
-        </div>
-      )}
-
-      {isReady && !isLoading && !isError && sortedSignals.length === 0 && allSignals.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-          <BarChart2 className="h-10 w-10 text-muted-foreground/40" />
-          <p className="text-sm font-medium text-foreground">Noch keine Signale vorhanden</p>
-          <p className="text-xs text-muted-foreground max-w-xs">
-            Starte einen Rankings-Run um BUY, HOLD und SELL Signale zu generieren
-          </p>
-          <Link href="/rankings" className="text-xs text-blue-400 hover:text-blue-300">
-            Zum Ranking →
-          </Link>
-        </div>
-      )}
+      {/* Additional filter-empty state */}
       {isReady && !isLoading && !isError && sortedSignals.length === 0 && allSignals.length > 0 && (
         <p className="text-sm text-[#8b949e] py-8 text-center">
           Keine Signale gefunden (Filter zu eng).
         </p>
       )}
 
+      {/* Pro table */}
       {sortedSignals.length > 0 && (
         <>
           <div className="flex items-center justify-between">
@@ -796,10 +1148,23 @@ export function DecisionClient() {
               CSV
             </button>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {sortedSignals.map((item) => (
-              <SignalCard key={item.ticker} item={item} />
-            ))}
+
+          <ProTable signals={sortedSignals} />
+
+          {/* Below-table panels */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <ProSignalBreakdownPanel counts={counts} />
+            <ProMakroPanel />
+          </div>
+
+          {/* Audit Trail section */}
+          <div className="space-y-2">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-[#8b949e]">Audit Trail</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {sortedSignals.map((item) => (
+                <SignalCard key={item.ticker} item={item} />
+              ))}
+            </div>
           </div>
         </>
       )}

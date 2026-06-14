@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-import { getPersonalizedStocks, type DiscoveredStock, type DiscoveryResponse } from '@/lib/api/discovery';
+import { completeDiscovery, type DiscoveredStock, type DiscoveryResponse } from '@/lib/api/discovery';
 import { DISCOVER_STORAGE_KEY } from '@/app/start/start-client';
 
 const SECTOR_LABELS: Record<string, string> = {
@@ -119,11 +119,16 @@ export function DiscoverClient() {
       return;
     }
 
-    // Cached stocks empty — try live fetch
-    getPersonalizedStocks(cached.session_id)
+    // Cached stocks empty — re-complete the session via turn-by-turn API
+    completeDiscovery(cached.session_id)
       .then((data) => {
-        setStocks(data.stocks);
-        localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(data));
+        const updated: DiscoveryResponse = {
+          session_id: cached.session_id,
+          total: data.recommended_stocks.length,
+          stocks: data.recommended_stocks,
+        };
+        setStocks(updated.stocks);
+        localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(updated));
       })
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : 'Unbekannter Fehler';

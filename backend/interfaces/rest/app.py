@@ -50,11 +50,16 @@ _logger = logging.getLogger(__name__)
 async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from backend.infrastructure.workers.alert_worker import create_alert_scheduler
 
-    scheduler = create_alert_scheduler()
-    scheduler.start()
-    _logger.info("APScheduler started — daily alert check at 08:00 Europe/Zurich")
+    try:
+        scheduler = create_alert_scheduler()
+        scheduler.start()
+        _logger.info("APScheduler started — daily alert check at 08:00 Europe/Zurich")
+    except Exception:
+        _logger.exception("Alert-Scheduler konnte nicht gestartet werden — Alerts deaktiviert")
+        scheduler = None
     yield
-    scheduler.shutdown(wait=False)
+    if scheduler is not None:
+        scheduler.shutdown(wait=False)
     # On shutdown: mark any jobs that are still "running" or "pending" as failed
     # so the next restart can safely ignore them instead of treating them as active.
     try:

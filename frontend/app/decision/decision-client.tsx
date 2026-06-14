@@ -15,7 +15,7 @@ import { SignalBadge } from '@/components/ui/SignalBadge';
 import { AuditTrail } from '@/components/ui/AuditTrail';
 import { SignalBreakdown } from '@/components/ui/SignalBreakdown';
 import { WeightSensitivity } from '@/components/ui/WeightSensitivity';
-import { SHAPWaterfallChart } from '@/components/factsheet/SHAPWaterfallChart';
+import { SHAPMiniBreakdown } from '@/components/ui/SHAPMiniBreakdown';
 import { cn } from '@/lib/utils';
 
 const FILTER_CHIP_CONFIG: Record<
@@ -251,7 +251,6 @@ function SignalCard({ item }: { item: DecisionSignal }) {
   });
 
   const shapValues = mlData?.shap_values ?? [];
-  const shapExpectedValue = mlData?.shap_expected_value ?? 0;
   const shapSignal = mlData?.signal ?? 'NEUTRAL';
 
   return (
@@ -300,18 +299,9 @@ function SignalCard({ item }: { item: DecisionSignal }) {
           standardScore={item.weighted_score}
           standardSignal={item.signal as 'BUY' | 'HOLD' | 'WATCH'}
         />
-=======
+
         {shapValues.length > 0 && (
-          <div className="space-y-1.5">
-            <h3 className="text-[11px] font-semibold text-[#8b949e] uppercase tracking-widest">
-              Warum sagt das ML-Modell das?
-            </h3>
-            <SHAPWaterfallChart
-              shapValues={shapValues}
-              expectedValue={shapExpectedValue}
-              signal={shapSignal}
-            />
-          </div>
+          <SHAPMiniBreakdown shapValues={shapValues} signal={shapSignal} />
         )}
         {/* Action row */}
         <div className="flex items-center justify-between gap-2 pt-0.5">

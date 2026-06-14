@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 
 from backend.domain.errors import SwissDataUnavailableError
 from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/v1", tags=["fundamentals"])
     ),
 )
 async def get_fundamentals(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     adapter: YFinanceSwissAdapter = Depends(get_yfinance_adapter),
 ) -> FundamentalsResponse:
     try:

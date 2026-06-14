@@ -58,17 +58,18 @@ test.describe('PRISMA E2E', () => {
     const rows = page.locator('tbody tr');
     await expect(rows.first()).toBeVisible({ timeout: 60_000 });
 
-    // Avg header starts without active sort
-    const avgHeader = page.getByRole('columnheader', { name: /Avg/ });
-    await expect(avgHeader).toHaveAttribute('aria-sort', 'none');
+    // # (rank) header starts in ascending sort (default sort key)
+    // Use # header (no InfoPopover) to avoid click interception issues
+    const rankHeader = page.getByRole('columnheader', { name: '#', exact: true });
+    await expect(rankHeader).toHaveAttribute('aria-sort', 'ascending');
 
-    // First click → ascending
-    await avgHeader.click();
-    await expect(avgHeader).toHaveAttribute('aria-sort', 'ascending');
+    // First click → descending
+    await rankHeader.click();
+    await expect(rankHeader).toHaveAttribute('aria-sort', 'descending');
 
-    // Second click → descending
-    await avgHeader.click();
-    await expect(avgHeader).toHaveAttribute('aria-sort', 'descending');
+    // Second click → ascending again
+    await rankHeader.click();
+    await expect(rankHeader).toHaveAttribute('aria-sort', 'ascending');
 
     // CSV export triggers download
     const [download] = await Promise.all([

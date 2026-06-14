@@ -410,7 +410,7 @@ function HeroCard({ item, signal }: { item: DecisionSignal | undefined; signal: 
         <span className="text-2xl font-bold text-slate-200">{Math.round(item.weighted_score)}</span>
       </div>
       <div className="font-bold text-slate-200 text-lg">{item.ticker}</div>
-      <p className="text-sm text-slate-400 italic leading-relaxed">"{item.signal_reason ?? 'Kein Kommentar verfügbar.'}"</p>
+      <p className="text-sm text-slate-400 italic leading-relaxed">&ldquo;{item.signal_reason ?? 'Kein Kommentar verfügbar.'}&rdquo;</p>
       <Link href={`/stocks/${item.ticker}`} className="text-xs text-blue-400 hover:text-blue-300">Details ansehen →</Link>
     </div>
   );

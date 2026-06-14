@@ -565,7 +565,7 @@ function ProModeView({
             <span style={{ color: CYAN }}>{MOCK_MACRO.fx}</span>
           </div>
           <p className="text-zinc-500 pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-            "{MOCK_MACRO.sentiment}"
+            &ldquo;{MOCK_MACRO.sentiment}&rdquo;
           </p>
         </div>
       </div>

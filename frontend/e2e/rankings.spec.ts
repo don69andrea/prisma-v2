@@ -10,7 +10,7 @@ test.describe('PRISMA E2E', () => {
     await expect(page.getByRole('link', { name: /Rankings/i })).toBeVisible();
     // /discover ("Mein Universum") and /start ("Start") were added to nav
     await expect(page.getByRole('link', { name: /Mein Universum/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Start/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Start', exact: true })).toBeVisible();
   });
 
   test('2. Universe-Flow: neues Universum anlegen', async ({ page }) => {
@@ -32,11 +32,13 @@ test.describe('PRISMA E2E', () => {
   });
 
   test('4. Dashboard: Seite lädt und Tabelle/Empty-State rendert', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('prisma-mode', 'pro');
+    });
     await page.goto('/dashboard');
     await expect(page).toHaveTitle(/Dashboard/);
-    const table = page.getByRole('table');
-    const emptyState = page.getByText(/Noch keine Runs/i);
-    await expect(table.or(emptyState)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Dashboard.' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Top Signale heute\./i)).toBeVisible({ timeout: 10_000 });
   });
 
   test('4. Rankings: Sortierung + CSV-Export', async ({ page }) => {
@@ -48,7 +50,7 @@ test.describe('PRISMA E2E', () => {
 
     await page.goto('/rankings');
     await page.locator('#universe').selectOption(universe.id);
-    await page.getByRole('button', { name: /Run starten/i }).click();
+    await page.getByRole('button', { name: /Analyse starten/i }).click();
 
     await expect(page).toHaveURL(/\/rankings\/[0-9a-f-]+$/, { timeout: 90_000 });
 
@@ -87,7 +89,7 @@ test.describe('PRISMA E2E', () => {
     await expect(page.getByRole('heading', { name: /Rankings/i })).toBeVisible();
 
     await page.locator('#universe').selectOption(universe.id);
-    await page.getByRole('button', { name: /Run starten/i }).click();
+    await page.getByRole('button', { name: /Analyse starten/i }).click();
 
     await expect(page).toHaveURL(/\/rankings\/[0-9a-f-]+$/, { timeout: 90_000 });
     await expect(page.getByRole('heading', { name: /Ranking-Ergebnis/i })).toBeVisible();

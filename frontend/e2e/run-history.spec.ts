@@ -15,7 +15,10 @@ test.describe('Run-History', () => {
       return;
     }
 
-    // 1. Navigate to /rankings
+    // 1. Navigate to /rankings (Pro mode required for run-history component)
+    await page.addInitScript(() => {
+      localStorage.setItem('prisma-mode', 'pro');
+    });
     await page.goto('/rankings');
 
     // 2. "Vergangene Runs" section visible

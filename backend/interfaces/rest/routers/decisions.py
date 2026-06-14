@@ -31,9 +31,7 @@ _logger = logging.getLogger(__name__)
 
 def _signal_reason(signal: str, weighted_score: float, quant_score: float) -> str:
     """Erzeugt eine kurze Alltagssprache-Erklärung des aggregierten Signals."""
-    score_label = (
-        "stark" if quant_score >= 70 else ("moderat" if quant_score >= 45 else "schwach")
-    )
+    score_label = "stark" if quant_score >= 70 else ("moderat" if quant_score >= 45 else "schwach")
     if signal == "BUY":
         return (
             f"Starkes Kaufsignal: Quant-Analyse {score_label}, "
@@ -48,6 +46,7 @@ def _signal_reason(signal: str, weighted_score: float, quant_score: float) -> st
         f"Verkaufssignal: Quant-Analyse {score_label}, "
         f"PRISMA-Score {weighted_score:.0f}/100. Schwache Fundamentaldaten."
     )
+
 
 _MAX_LIVE_TICKERS = 12
 

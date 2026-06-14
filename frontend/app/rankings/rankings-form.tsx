@@ -41,12 +41,12 @@ export function RankingsForm() {
       }}
     >
       <div className="space-y-1">
-        <label htmlFor="universe" className="inline-flex items-center gap-1 text-sm font-medium">
-          Universe
-          <InfoPopover ariaLabel="Was ist ein Universe?">
+        <div className="inline-flex items-center gap-1">
+          <label htmlFor="universe" className="text-sm font-medium">Universe</label>
+          <InfoPopover ariaLabel="Mehr Informationen">
             <p>Ein Universum ist eine definierte Auswahl von Aktien die analysiert werden sollen. z.B. alle SMI-Titel</p>
           </InfoPopover>
-        </label>
+        </div>
         <select
           id="universe"
           value={universeId}
@@ -90,7 +90,7 @@ export function RankingsForm() {
         <Button type="submit" disabled={disabled} aria-busy={isPending}>
           {isPending ? 'Run wird gestartet…' : 'Run starten'}
         </Button>
-        <InfoPopover ariaLabel="Was ist ein Ranking-Run?">
+        <InfoPopover ariaLabel="Ranking-Run erklären">
           <p>Ein Run ist eine Berechnung die alle Aktien im Universum bewertet und einen Score vergibt</p>
         </InfoPopover>
       </div>

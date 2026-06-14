@@ -79,16 +79,10 @@ class SwissQuantScorer:
         factors = ", ".join(parts) if parts else "gemischte Fundamentaldaten"
 
         if signal == "BUY":
-            return (
-                f"Starkes Kaufsignal: {factors}. PRISMA-Score: {composite:.0f}/100."
-            )
+            return f"Starkes Kaufsignal: {factors}. PRISMA-Score: {composite:.0f}/100."
         if signal == "HOLD":
-            return (
-                f"Neutral: {factors}. PRISMA-Score: {composite:.0f}/100. Beobachten."
-            )
-        return (
-            f"Verkaufssignal: {factors}. PRISMA-Score: {composite:.0f}/100."
-        )
+            return f"Neutral: {factors}. PRISMA-Score: {composite:.0f}/100. Beobachten."
+        return f"Verkaufssignal: {factors}. PRISMA-Score: {composite:.0f}/100."
 
     @staticmethod
     def interpret_score(score: float) -> str:

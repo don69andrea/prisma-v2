@@ -23,7 +23,11 @@
 | R2.5-5 | Global API-Key Auth für /admin-Endpoints | T1 | `feat/global-api-auth` | ✅ DONE (PR #156 → main) | — |
 | R2.5-6 | Chat Tool Hints + verbesserter Placeholder | T3 | `feat/chat-tool-hints` | ✅ DONE (PR #162 → develop) | — |
 | R2.5-7 | Decision: strukturiertes Signal-Breakdown-Card (Quant/ML/Makro) | T3 | `feat/decision-signal-breakdown` | ✅ DONE (PR #164 → develop) | — |
-| R2.5-8 | DiscoveryService: ESG- + Income-Preference-Gap schliessen | T2 | `feat/discovery-esg-income` | 🔄 IN PROGRESS | — |
+| R2.5-8 | DiscoveryService: ESG- + Income-Preference-Gap schliessen | T2 | `feat/discovery-esg-income` | ✅ DONE (PR #177 → develop) | — |
+| R2.5-9 | SHAP MiniBreakdown in Decision SignalCard (Top 3 Features) | T4 | `feat/shap-in-decision` | ✅ DONE (PR #179 → develop) | — |
+| R2.5-10 | Monte Carlo Textinterpretation (server-computed) | T8 | `feat/montecarlo-text-v2` | ✅ DONE (PR #180 → develop) | — |
+| R2.5-11 | WeightSensitivity + AllocationComparison wiring + orphan-fix | T18+T21 | `feat/wire-sensitivity-allocation` | ✅ DONE (PR #178 → develop) | — |
+| R2.5-12 | ML 19→23 Features (pe_ratio, pb_ratio, div_yield, rev_growth) | Andrea | `feat/ml-simfin-fundamentals` | ✅ DONE (PR #175 + #182 → develop) | — |
 
 ---
 

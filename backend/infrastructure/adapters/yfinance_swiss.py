@@ -43,12 +43,39 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
     async def get_fundamentals(self, ticker: str) -> SwissFundamentals:
         info = await self._fetch_info(ticker)
         market_cap = info.get("marketCap")
+
+        if market_cap is None:
+            # Fallback: compute market_cap from sharesOutstanding * price.
+            # yfinance sometimes omits "marketCap" for SIX-listed (.SW) tickers
+            # even though the constituent fields are present.
+            shares = info.get("sharesOutstanding")
+            price = info.get("currentPrice") or info.get("regularMarketPrice")
+            if shares is not None and price is not None:
+                market_cap = shares * price
+                _logger.warning(
+                    "%s: marketCap missing from yfinance — estimated from "
+                    "sharesOutstanding (%.0f) × price (%.2f) = %.0f CHF",
+                    ticker,
+                    shares,
+                    price,
+                    market_cap,
+                )
+            else:
+                _logger.warning(
+                    "%s: marketCap unavailable and cannot be estimated "
+                    "(sharesOutstanding=%s, price=%s) — market_cap_chf will be null",
+                    ticker,
+                    shares,
+                    price,
+                )
+
         return SwissFundamentals(
             market_cap_chf=Decimal(str(market_cap)) if market_cap is not None else None,
             pe_ratio=info.get("trailingPE"),
             pb_ratio=info.get("priceToBook"),
             dividend_yield=info.get("dividendYield"),
             eps_chf=info.get("trailingEps"),
+            revenue_growth=info.get("revenueGrowth"),
         )
 
     async def get_price_history(self, ticker: str, days: int = 252) -> pd.DataFrame:

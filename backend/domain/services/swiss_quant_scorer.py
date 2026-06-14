@@ -70,6 +70,8 @@ class SwissQuantScorer:
     def _score_pe(pe: float | None) -> float:
         if pe is None:
             return 50.0
+        if pe <= 0:
+            return 0.0
         if pe < 15:
             return 100.0
         if pe < 20:

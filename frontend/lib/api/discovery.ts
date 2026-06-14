@@ -18,6 +18,10 @@ export interface InvestorProfileResponse {
   investment_goal: string;
   confidence_score: number;
   onboarding_complete: boolean;
+  sector_hint?: string | null;
+  investment_amount?: "under_10k" | "10k_100k" | "over_100k";
+  esg_preference?: "yes" | "no" | "indifferent";
+  income_preference?: "dividends" | "growth" | "balanced";
 }
 
 export interface DiscoveredStock {
@@ -48,6 +52,10 @@ export interface PartialProfile {
   investment_goal: string;
   confidence_score: number;
   onboarding_complete: boolean;
+  sector_hint?: string | null;
+  investment_amount?: "under_10k" | "10k_100k" | "over_100k";
+  esg_preference?: "yes" | "no" | "indifferent";
+  income_preference?: "dividends" | "growth" | "balanced";
 }
 
 export interface AnswerResponse {

@@ -22,6 +22,7 @@ _LLM_PREFIXES = (
     "/memos/batch",
     "/api/v1/chat",
     "/api/v1/macro/score",
+    "/api/v1/portfolio/monte-carlo",
     "/api/v1/portfolio",
     "/api/v1/discovery",
     "/api/v1/steuer",
@@ -29,6 +30,7 @@ _LLM_PREFIXES = (
     "/api/v1/news/ingest",
     "/api/v1/backtests",
     "/api/v1/stocks",
+    "/api/v1/runs",
 )
 
 # 10 LLM-triggering requests per IP per 60 seconds.

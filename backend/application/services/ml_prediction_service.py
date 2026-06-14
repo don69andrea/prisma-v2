@@ -68,6 +68,18 @@ def _load_model() -> tuple[Any, str]:
             meta = json.load(f)
         _model_type_cache = meta.get("model_type", "unknown")
 
+        # ML-3: Feature-Name-Validierung — verhindert Silent-Mismatch nach Feature-Änderungen
+        from backend.domain.value_objects.ml_feature_vector import MLFeatureVector
+
+        stored_features = meta.get("feature_names", [])
+        current_features = list(MLFeatureVector.FEATURE_NAMES)
+        if stored_features and stored_features != current_features:
+            raise ValueError(
+                f"Feature-Mismatch beim Modell-Laden: "
+                f"Modell trainiert mit {len(stored_features)} Features, "
+                f"Code hat {len(current_features)}. Modell muss neu trainiert werden."
+            )
+
     _logger.info("Return-Predictor geladen: %s (%s)", _LATEST_MODEL.name, _model_type_cache)
     return _model_cache, _model_type_cache
 

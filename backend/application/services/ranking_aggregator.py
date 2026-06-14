@@ -93,7 +93,7 @@ def _rank_results(
     current_rank = 1
     for i, (ticker, avg) in enumerate(ranked):
         if i > 0 and avg > ranked[i - 1][1]:
-            current_rank = i + 1
+            current_rank += 1
         results.append(
             TotalRankResult(
                 ticker=ticker,

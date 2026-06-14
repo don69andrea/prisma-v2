@@ -136,4 +136,6 @@ async def monte_carlo(req: MonteCarloRequest) -> MonteCarloResponse:
         prob_500k=result.prob_500k,
         contribution_total=result.contribution_total,
         months=result.months,
+        correlation_degraded=result.correlation_degraded,
+        interpretation=result.interpretation,
     )

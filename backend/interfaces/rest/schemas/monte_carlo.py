@@ -35,3 +35,4 @@ class MonteCarloResponse(BaseModel):
     contribution_total: float
     months: int
     correlation_degraded: bool = False
+    interpretation: str = ""

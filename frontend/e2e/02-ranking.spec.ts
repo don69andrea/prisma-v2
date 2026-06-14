@@ -20,7 +20,7 @@ test("Ranking-Lauf starten und Tabelle mit 5 Zeilen anzeigen", async ({ page, re
   await page.goto("/rankings");
 
   // Select universe from dropdown and start run
-  await page.getByLabel("Universe").selectOption(universe.id);
+  await page.locator("#universe").selectOption(universe.id);
   await page.getByRole("button", { name: /Run starten/i }).click();
 
   // Should navigate to the run detail page

@@ -440,7 +440,7 @@ function FactsheetContent() {
             {factsheet?.stock && <SwissBadge exchange={factsheet.stock.exchange} />}
           </div>
           {lastPrice !== null && (
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2" data-testid="factsheet-metrics">
               <span className="text-2xl font-semibold tabular-nums">
                 {formatPrice(lastPrice, currency)}
               </span>
@@ -487,7 +487,7 @@ function FactsheetContent() {
             variant="default"
             size="sm"
             onClick={handleMemoLesen}
-            data-testid="memo-btn"
+            data-testid="request-memo-btn"
             // NEVER disabled — no disabled prop here
           >
             <FileText className="h-4 w-4 mr-1.5" />

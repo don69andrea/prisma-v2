@@ -3,7 +3,12 @@ import { test, expect } from "@playwright/test";
 test("Alert anlegen, in Liste sehen und löschen", async ({ page, request }) => {
   const apiBase = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:8000";
 
-  // Cleanup: alle bestehenden Alerts löschen um Datenverschmutzung zu verhindern
+  // Set Pro mode so full create form is available
+  await page.addInitScript(() => {
+    localStorage.setItem('prisma-mode', 'pro');
+  });
+
+  // Cleanup: alle bestehenden Alerts löschen
   const listResp = await request.get(`${apiBase}/api/v1/alerts`);
   expect(listResp.ok()).toBeTruthy();
   const listData = await listResp.json() as { alerts: Array<{ id: string }> };
@@ -13,7 +18,10 @@ test("Alert anlegen, in Liste sehen und löschen", async ({ page, request }) => 
 
   // Alerts-Page öffnen
   await page.goto("/alerts");
-  await expect(page.getByRole("heading", { name: "Alerts" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Alerts/i })).toBeVisible();
+
+  // Alert-Formular öffnen (Pro-Modus: erst Button klicken)
+  await page.getByRole("button", { name: /Alert erstellen/i }).click();
 
   // Alert anlegen
   await page.getByPlaceholder("NESN").fill("NOVN");
@@ -26,12 +34,11 @@ test("Alert anlegen, in Liste sehen und löschen", async ({ page, request }) => 
   // Alert erscheint in der Liste
   await expect(page.getByText("NOVN")).toBeVisible({ timeout: 10_000 });
 
-  // Alert löschen (Bestätigung)
+  // Alert löschen
   await page.getByRole("button", { name: /Alert löschen/i }).first().click();
-  await page.getByRole("button", { name: /^Löschen$/ }).click();
 
   // Liste ist wieder leer
   await expect(
-    page.getByText("Keine Alerts konfiguriert.")
+    page.getByText("Keine Kursalarme gesetzt")
   ).toBeVisible({ timeout: 10_000 });
 });

@@ -21,7 +21,7 @@ export function MemoPanel({ stockId, runId }: Props) {
   );
 
   return (
-    <Card>
+    <Card data-testid="memo-card">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-medium flex items-center gap-2">
           <FileText className="h-4 w-4 text-muted-foreground" />

@@ -22,7 +22,7 @@ interface Props {
 
 export function MemoContent({ memo }: Props) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="memo-content">
       {/* Hero */}
       <Card>
         <CardContent className="py-4 flex items-start justify-between gap-3">

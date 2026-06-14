@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -9,6 +10,8 @@ from typing import Any, Literal
 from backend.domain.entities.swiss_stock import SwissStock
 from backend.domain.services.eligibility_filter import EligibilityFilter
 from backend.domain.value_objects.rebalancing_plan import RebalancingPlan, RebalancingStep
+
+_logger = logging.getLogger(__name__)
 
 # Standardkosten pro Trade (z.B. 0.1% = 0.001)
 _DEFAULT_TRANSACTION_COST_RATE = 0.001
@@ -60,6 +63,16 @@ class RebalancingService:
         is_3a_account:
             Wenn True, werden nicht 3a-geeignete Positionen markiert.
         """
+        total_current = sum(current_weights.values())
+        total_target = sum(target_weights.values())
+        if abs(total_current - 1.0) > 0.05:
+            _logger.warning("Ist-Gewichte summieren zu %.3f statt 1.0", total_current)
+        if abs(total_target - 1.0) > 0.05:
+            _logger.warning("Soll-Gewichte summieren zu %.3f statt 1.0", total_target)
+        for ticker, w in current_weights.items():
+            if w < 0:
+                _logger.warning("Leerverkauf erkannt: %s mit Gewicht %.3f", ticker, w)
+
         all_tickers = set(current_weights) | set(target_weights)
         eligibility_map = await self._resolve_eligibility(all_tickers, is_3a_account)
 

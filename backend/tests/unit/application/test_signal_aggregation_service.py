@@ -46,6 +46,10 @@ def _make_features(
         drawdown_12m=-0.15,
         snb_rate=snb_rate,
         chf_eur=0.93,
+        pe_ratio=20.0,
+        pb_ratio=2.5,
+        dividend_yield=0.02,
+        revenue_growth=0.05,
         forward_return_12m=None,
         target_class=None,
     )

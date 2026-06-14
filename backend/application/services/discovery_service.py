@@ -89,8 +89,8 @@ class DiscoveryService:
         try:
             fundamentals = await self._market_data.get_fundamentals(stock.ticker)
             quant_score = self._scorer.score(stock.ticker, fundamentals)
-        except Exception:
-            _logger.debug("Quant-Score für %s nicht verfügbar — übersprungen", stock.ticker)
+        except Exception as exc:
+            _logger.warning("Quant-Score für %s nicht verfügbar — übersprungen: %s", stock.ticker, exc, exc_info=True)
             return None
 
         if quant_score.composite < risk_floor:
@@ -131,6 +131,12 @@ class DiscoveryService:
         # 3. Bekannte Titel zuerst, dann nach Composite-Score absteigend
         known = {t.upper() for t in profile.known_tickers}
         scored.sort(key=lambda t: (0 if t[0].ticker in known else 1, -t[1]))
+
+        if not scored:
+            _logger.warning(
+                "Discovery: Alle %d Kandidaten gefiltert (risk=%s, esg=%s, risk_floor=%.1f)",
+                len(candidates), profile.risk_profile, profile.esg_preference, risk_floor,
+            )
 
         # 4. Ergebnis-Limit basierend auf financial_knowledge
         # Einsteiger sehen weniger Titel um nicht überwältigt zu werden

@@ -23,6 +23,7 @@ _logger = logging.getLogger(__name__)
 _MODEL = "claude-sonnet-4-6"
 _MAX_TOKENS = 1024
 _RAG_K = 5  # max RAG-Chunks für Steuer-Kontext
+_VERRECHNUNGSSTEUER_RATE = 0.15  # Verrechnungssteuer seit 2021: 15% (CH-US DBA)
 
 AnlegerprofitTyp = Literal["privatperson", "vorsorge_3a", "vorsorge_2a", "institution"]
 
@@ -130,7 +131,10 @@ class SteuerAgent:
             ticker=ticker,
             anlegerprofil=anlegerprofil,
             halteperiode_jahre=halteperiode_jahre,
-            steuerarten=["Verrechnungssteuer (35%)", "Vermögenssteuer"],
+            steuerarten=[
+                f"Verrechnungssteuer ({int(_VERRECHNUNGSSTEUER_RATE * 100)}%)",
+                "Vermögenssteuer",
+            ],
             pflichten=[
                 f"Dividenden von {ticker} als Einkommen deklarieren (Formular DA-1 für Rückerstattung).",
                 "VST-Rückerstattung via Formular 103 (bei Schweizer Aktien) beantragen.",

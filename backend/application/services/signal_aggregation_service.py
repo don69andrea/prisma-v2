@@ -84,16 +84,18 @@ class SignalAggregationService:
 
         quant_score = features.quant_score
 
-        # ML-Score: Versuch ML-Prediction; bei fehlendem Modell → Fallback auf Neutral
-        ml_score = 50.0
+        # ML-Score: Versuch ML-Prediction; bei fehlendem Modell → ML-Gewicht auf andere verteilen
+        ml_score: float | None = None
         try:
             prediction = await self._prediction_service.predict(ticker)
             if prediction is not None:
                 ml_score = _ML_SIGNAL_TO_SCORE.get(prediction.signal, 50.0)
         except FileNotFoundError:
-            _logger.info("Kein ML-Modell vorhanden — Fallback auf NEUTRAL für %s", ticker)
+            _logger.info("Kein ML-Modell vorhanden — ML-Gewicht wird umverteilt für %s", ticker)
         except Exception:
-            _logger.exception("ML-Prediction fehlgeschlagen für %s — Fallback NEUTRAL", ticker)
+            _logger.exception(
+                "ML-Prediction fehlgeschlagen für %s — ML-Gewicht wird umverteilt", ticker
+            )
 
         # Per-Ticker Macro-Score wenn MacroIntelligenceAgent verfügbar, sonst global
         if self._macro_agent is not None:
@@ -105,9 +107,19 @@ class SignalAggregationService:
                 macro_score = _snb_macro_score(features.snb_rate)
         else:
             macro_score = _snb_macro_score(features.snb_rate)
-        weighted_score = (
-            self._w_quant * quant_score + self._w_ml * ml_score + self._w_macro * macro_score
-        )
+
+        # Gewichts-Normierung: wenn ML nicht verfügbar, ML-Gewicht auf Quant + Macro verteilen
+        if ml_score is not None:
+            weighted_score = (
+                self._w_quant * quant_score + self._w_ml * ml_score + self._w_macro * macro_score
+            )
+            effective_ml_score = ml_score
+        else:
+            available_weight = self._w_quant + self._w_macro
+            w_quant_norm = self._w_quant / available_weight
+            w_macro_norm = self._w_macro / available_weight
+            weighted_score = w_quant_norm * quant_score + w_macro_norm * macro_score
+            effective_ml_score = 50.0  # Neutral als Report-Wert
         signal = DecisionSignal.signal_for_score(weighted_score)
         confidence = round(weighted_score / 100.0, 4)
         is_eligible = await self._check_3a_eligible(ticker)
@@ -119,7 +131,7 @@ class SignalAggregationService:
             confidence=confidence,
             weighted_score=round(weighted_score, 2),
             quant_score=round(quant_score, 2),
-            ml_score=round(ml_score, 2),
+            ml_score=round(effective_ml_score, 2),
             macro_score=round(macro_score, 2),
             is_3a_eligible=is_eligible,
         )
@@ -143,7 +155,7 @@ class SignalAggregationService:
             return_exceptions=True,
         )
         results: list[DecisionSignal] = []
-        for ticker, outcome in zip(tickers, raw, strict=False):
+        for ticker, outcome in zip(tickers, raw, strict=True):
             if isinstance(outcome, BaseException):
                 _logger.exception(
                     "Signal-Berechnung fehlgeschlagen für %s", ticker, exc_info=outcome

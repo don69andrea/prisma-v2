@@ -25,7 +25,7 @@ _logger = logging.getLogger(__name__)
 # Datum der letzten manuellen Aktualisierung der Makro-Daten.
 # Wenn dieser Wert >7 Tage in der Vergangenheit liegt, wird beim Start eine Warnung geloggt.
 # BITTE bei jeder Aktualisierung der Listen unten dieses Datum anpassen.
-_MACRO_DATA_LAST_UPDATED = date(2025, 6, 13)
+_MACRO_DATA_LAST_UPDATED = date(2026, 6, 14)
 _MACRO_STALENESS_THRESHOLD_DAYS = 7
 
 
@@ -59,6 +59,7 @@ _SNB_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2025, 9, 18), 0.0),
     (date(2025, 12, 11), 0.0),
     (date(2026, 3, 19), 0.0),
+    (date(2026, 6, 14), 0.0),
 ]
 _SNB_RATE_BEFORE_2022 = -0.75
 
@@ -86,6 +87,7 @@ _ECB_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2025, 10, 30), 1.25),
     (date(2026, 1, 30), 1.00),
     (date(2026, 3, 6), 0.75),
+    (date(2026, 6, 14), 0.75),
 ]
 _ECB_RATE_BEFORE_2022 = -0.50
 # ACHTUNG: Manuell gepflegt — zuletzt aktualisiert: 2025-06-13
@@ -132,6 +134,7 @@ _FED_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2025, 9, 17), 4.00),
     (date(2025, 12, 10), 3.75),
     (date(2026, 3, 18), 3.50),
+    (date(2026, 6, 14), 3.50),
 ]
 _FED_RATE_BEFORE_2018 = 1.25
 
@@ -454,14 +457,8 @@ class MLFeatureService:
                         "bb_position": _compute_bb_position(past_prices),
                         "return_1m": _return_nm_from_series(past_prices, 21),
                         "drawdown_12m": _compute_drawdown_12m(past_prices),
-                        "snb_rate": (
-                            _fed_rate_on(snap_date)
-                            if _market == "us"
-                            else _ecb_rate_on(snap_date)
-                            if _market == "eu"
-                            else _snb_rate_on(snap_date)
-                        ),
-                        "chf_eur": _fx_rate_on(ticker, snap, _market),
+                        "snb_rate": _snb_rate_on(snap_date),
+                        "chf_eur": _chf_eur_on(snap),
                         "pe_ratio": fund.pe_ratio or 0.0,
                         "pb_ratio": fund.pb_ratio or 0.0,
                         "dividend_yield": fund.dividend_yield or 0.0,

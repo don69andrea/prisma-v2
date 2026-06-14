@@ -7,6 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
+      force_deploy:
+        description: 'Force deploy without CI (use only in emergencies)'
+        required: false
+        default: 'false'
       target:
         description: "Service zum Deployen"
         required: true
@@ -22,8 +26,8 @@ jobs:
     name: Trigger Render V2 Deploy Hook
     runs-on: ubuntu-latest
     if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      github.event.workflow_run.conclusion == 'success' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.force_deploy == 'true')
     steps:
       - name: Validate secrets are set
         run: |

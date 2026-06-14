@@ -155,6 +155,7 @@ const CATEGORY_TO_SECTOR: Record<string, string> = {
 };
 
 export const DISCOVER_STORAGE_KEY = 'prisma_discover_result';
+export const PROFILE_STORAGE_KEY  = 'prisma_profile';
 
 // ---------------------------------------------------------------------------
 // DownChart SVG — Risk-Feeling-Test
@@ -848,6 +849,7 @@ export function StartClient() {
           stocks: result.recommended_stocks,
         };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(discovery));
+        localStorage.setItem(PROFILE_STORAGE_KEY, finalRisiko);
       } catch {
         const defaultTickers = ['NESN', 'ROG', 'NOVN', 'ABBN', 'UBSG', 'LOGN', 'CFR', 'ZURN'];
         const stocksToShow = knownBrandObjs.length > 0
@@ -865,6 +867,7 @@ export function StartClient() {
           })),
         };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(fallback));
+        localStorage.setItem(PROFILE_STORAGE_KEY, finalRisiko);
       }
 
       router.push('/discover');

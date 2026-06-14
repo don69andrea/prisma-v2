@@ -63,8 +63,8 @@ class BacktestResultResponse(BaseModel):
             benchmark_metrics=PortfolioMetricsResponse.from_entity(r.benchmark_metrics),
             series=BacktestSeriesResponse(
                 dates=r.series.dates,
-                prisma=r.series.prisma,
-                universe=r.series.universe,
-                benchmark=r.series.benchmark,
+                prisma=[float(x) for x in r.series.prisma],
+                universe=[float(x) for x in r.series.universe],
+                benchmark=[float(x) for x in r.series.benchmark],
             ),
         )

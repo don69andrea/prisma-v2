@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("News-Suche — Suche durchführen und Ergebnisse sehen", async ({ page }) => {
   await page.goto("/news");
-  await expect(page.getByRole("heading", { name: "CH-Finanz-News" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "News." })).toBeVisible();
 
   await page.getByTestId("news-query-input").fill("SNB Leitzins");
   await page.getByTestId("news-search-btn").click();

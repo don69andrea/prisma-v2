@@ -11,6 +11,7 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.cost_tracker import CostTracker
+from backend.application.services.crypto_scoring_service import CryptoScoringService
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.narrative_service import NarrativeService
 from backend.application.services.ranking_run_service import RankingRunService
@@ -30,6 +31,10 @@ from backend.domain.repositories.research_memo_repository import ResearchMemoRep
 from backend.domain.repositories.stock_repository import StockRepository
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
+from backend.domain.services.crypto_scorer import CryptoScorer
+from backend.infrastructure.adapters.coingecko_adapter import CoinGeckoAdapter
+from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter
+from backend.infrastructure.adapters.yfinance_crypto import YFinanceCryptoAdapter
 from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.infrastructure.llm.client import LLMClient
 from backend.infrastructure.llm.pricing import PRICING  # Single-Source-of-Truth via DI an LLMClient
@@ -541,3 +546,56 @@ async def get_swiss_filing_retrieval_service(
 
     voyage = get_voyage_client()
     return SwissFilingRetrievalService(repository=repo, voyage_client=voyage)
+
+
+# ---------------------------------------------------------------------------
+# Crypto Module DI-Chain
+# ---------------------------------------------------------------------------
+
+_fear_greed_adapter: FearGreedAdapter | None = None
+_coingecko_adapter: CoinGeckoAdapter | None = None
+_yfinance_crypto_adapter: YFinanceCryptoAdapter | None = None
+
+
+def _get_fear_greed_singleton() -> FearGreedAdapter:
+    global _fear_greed_adapter
+    if _fear_greed_adapter is None:
+        _fear_greed_adapter = FearGreedAdapter()
+    return _fear_greed_adapter
+
+
+def _get_coingecko_singleton() -> CoinGeckoAdapter:
+    global _coingecko_adapter
+    if _coingecko_adapter is None:
+        from backend.config import get_settings
+
+        _coingecko_adapter = CoinGeckoAdapter(api_key=get_settings().coingecko_api_key)
+    return _coingecko_adapter
+
+
+def _get_yfinance_crypto_singleton() -> YFinanceCryptoAdapter:
+    global _yfinance_crypto_adapter
+    if _yfinance_crypto_adapter is None:
+        _yfinance_crypto_adapter = YFinanceCryptoAdapter()
+    return _yfinance_crypto_adapter
+
+
+async def get_fear_greed_adapter() -> FearGreedAdapter:
+    return _get_fear_greed_singleton()
+
+
+async def get_coingecko_adapter() -> CoinGeckoAdapter:
+    return _get_coingecko_singleton()
+
+
+async def get_yfinance_crypto_adapter() -> YFinanceCryptoAdapter:
+    return _get_yfinance_crypto_singleton()
+
+
+async def get_crypto_scoring_service() -> CryptoScoringService:
+    return CryptoScoringService(
+        cg_adapter=_get_coingecko_singleton(),
+        yf_adapter=_get_yfinance_crypto_singleton(),
+        fg_adapter=_get_fear_greed_singleton(),
+        scorer=CryptoScorer(),
+    )

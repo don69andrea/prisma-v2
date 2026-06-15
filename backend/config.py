@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     # Leer oder bekannte Platzhalter = E-Mail-Versand graceful deaktiviert.
     sendgrid_api_key: str = ""
 
+    # CoinGecko API Key (optional — Free Tier: 30 Req/min, 10.000/Monat)
+    coingecko_api_key: str = ""
+
+    # Krypto-Feature aktivieren (default: true)
+    crypto_feature_enabled: bool = True
+
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 

@@ -21,6 +21,7 @@ from backend.interfaces.rest.routers import (
     alerts,
     backtests,
     chat,
+    crypto,
     decision_audit,
     decisions,
     discovery,
@@ -161,5 +162,6 @@ def create_app() -> FastAPI:
     app.include_router(fonds_vergleich.router, dependencies=_auth)
     app.include_router(rebalancing.router, dependencies=_auth)
     app.include_router(alerts.router, dependencies=_auth)
+    app.include_router(crypto.router, dependencies=_auth)
 
     return app

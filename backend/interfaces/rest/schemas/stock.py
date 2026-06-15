@@ -65,9 +65,10 @@ class FundamentalsRead(BaseModel):
     ticker: str
     pe_ratio: float | None
     pb_ratio: float | None
-    fcf_yield: float | None
-    operating_margin: float | None
-    dividend_yield: float | None
+    eps_chf: float | None = None
+    dividend_yield_pct: float | None = None
+    fcf_yield: float | None = None
+    operating_margin: float | None = None
     disclaimer: str
 
 

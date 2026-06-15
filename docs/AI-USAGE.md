@@ -166,6 +166,15 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 
 ## Einträge
 
+## 2026-06-10 · Aktien-Liste mit Suche, Filter & Sortierung (#61 #69)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: Neue `/stocks`-Indexseite mit `StocksListClient` (Live-Suche, 3a-Filter-Checkbox, Spalten-Sortierung mit Lucide-Icons), Nav-Link "Aktien", `ROUTES.stocks` — kein Backend-Change nötig. 11 Vitest-Unit-Tests (TDD-first).
+- **Was gut lief**: Spec-First-Workflow lief reibungslos: Spec committet, Branch angelegt, Tests geschrieben bevor Implementierung — der TDD-Loop erzwang eine klare Komponenten-API (`stocks: StockRead[]`) und testbare Filter-/Sort-Logik. Keine Backend-Arbeit nötig, `listStocks()` war bereits in `lib/api/stocks.ts` vorhanden.
+- **Was nicht klappte**: Node.js ist lokal nicht im PATH → Tests konnten nicht lokal ausgeführt werden. TypeScript-IDE-Diagnostics zeigten false-positive Module-Not-Found-Errors für `vitest` und `@testing-library/react` (kein `npm install` lokal). Außerdem fehlten explizite `HTMLElement`-Typ-Annotationen in `map`/`find`-Callbacks durch fehlende Typ-Inferenz ohne `node_modules`.
+- **Nachbearbeitung nötig bei**: CI-Lauf verifizieren ob alle 11 Tests grün sind. Node.js lokal installieren oder `.nvmrc`/`package.json engines` prüfen.
+- **Lektion**: **Explizite Typ-Annotationen in Test-Callbacks schreiben wenn `node_modules` nicht installiert sind** — ohne Inferenz aus `@testing-library/react` werden `map((r) => ...)` zu implicit-any. Außerdem: **Tool-Verfügbarkeit früh prüfen** (node/npm im PATH) statt erst beim ersten Test-Ausführungsversuch zu scheitern.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
 ## 2026-06-01 · UX-Polish — Nav-Highlight, Deutsche Labels, Spinner, URL-Preselect (PR #161)
 - **Agent**: Claude Code (Sonnet 4.6) — Brainstorming + Plan-Schreiben + paralleler Agent-Ausführung
 - **Scope**: 5 kleine UX-Verbesserungen in 4 Subagent-Tasks: (1) `NavLinks`-Client-Component mit `usePathname()` + `aria-current="page"` für aktiven Tab; (2) Deutsche Status-Labels in `RunHistoryList` ("Abgeschlossen", "Ausstehend", "Läuft…", "Fehlgeschlagen") + "Date"→"Datum"; (3) `Loader2`-Spinner bei laufendem Run + "Neuer Run"→"Zurück zu Rankings" in Detail-Page; (4) `RankingsForm` liest `?universeId=` aus URL + `<Suspense>`-Grenze in `rankings/page.tsx`. 6 neue Tests.
@@ -1002,12 +1011,28 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Autor**: Andrea Petretta (mit Claude Code)
 
 ## 2026-06-09 · PRISMA V2 Swiss Intelligence Layer — Issues #16–#23 (PRs #45–#52)
-
 - **Agent**: Claude Code (Sonnet 4.6) — multi-issue batch, direkte Implementierung ohne Subagent-Dispatching
 - **Scope**: 8 Features in einer Session: Macro Intelligence Agent, Decision Dashboard, Portfolio Intelligence Agent, Decision Audit Trail, Alert Engine, Fonds-Vergleich, VIAC Pitch Deck, Render V2 Setup, Portfolio Rebalancing Engine. Alle auf separaten Feature-Branches; PR pro Issue; alle grün in CI.
 - **Was gut lief**: ML-Isolation-Pattern (`Any | None` optional parameters, kein module-level import ungemergter Typen) ermöglichte grüne CI auf develop für alle Branches. `SwissFundamentals(all None)` als Fallback für `SwissQuantScorer` (scorer erfordert Objekt, nicht None). ruff format NACH mypy-Edits laufen — mypy-Fixes können Format-Violations einführen.
 - **Was nicht klappte**: Alembic-Migration-Chain-Konflikt erst nach Implementierung entdeckt: Migrations 0016 und 0017 hatten beide `down_revision = "0013"` statt 0015 bzw. 0016 — wäre beim ersten Merge-nach-develop gecrasht. Identifiziert durch manuelle Revision-Inspektion aller Branches. Integration-Tests fehlten initial in allen 5 neuen Branches.
 - **Nachbearbeitung nötig bei**: Frontend-UI für Alert Engine, Fonds-Vergleich, Rebalancing (aktuell nur API). Merge-Reihenfolge beachten: PR #42 (ML Layer, migration 0015) muss VOR PR #47 (Audit, 0016) und #48 (Alerts, 0017) auf develop landen.
+- **Autor**: Aurelius45 (mit Claude Code)
+
+## 2026-06-10 · Fundamentaldaten-Widget auf Factsheet (#68)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `GET /api/v1/stocks/{ticker}/fundamentals` + `FundamentalsRead` Pydantic-Schema + `FundamentalsCard` React-Komponente auf `/stocks/[ticker]`. StubFundamentalsProvider liefert Demo-Daten für 13 Ticker; 8 Integrationstests.
+- **Was gut lief**: `StubFundamentalsProvider` war bereits vollständig implementiert — kein neuer Provider-Code nötig. React Fragment Key-Bug (`<>` statt `<React.Fragment key={...}>`) in FundamentalsCard durch Code-Review entdeckt und behoben.
+- **Was nicht klappte**: Initialer Fragment-Key-Fehler: `key` auf `<dt>`/`<dd>` statt auf das Fragment gesetzt — React-Warning im Browser. Fix: `<React.Fragment key={key}>` statt `<>`.
+- **Lektion**: Bei `Array.map()` mit mehreren Root-Elementen immer `<React.Fragment key={...}>` verwenden statt `<>` — `<>` akzeptiert kein `key`-Prop.
+- **Nachbearbeitung nötig bei**: Echte Fundamentaldaten-Quelle (yfinance/finnhub) wenn Stub ersetzt wird.
+- **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-06-10 · 3a-Eignung Panel auf Factsheet (#63)
+- **Agent**: Claude Code (Sonnet 4.6)
+- **Scope**: `GET /api/v1/stocks/{ticker}/3a-eligibility` + `EligibilityPanel` React-Komponente auf `/stocks/[ticker]`. Stub-Regelwerk: country='CH' → eligible, sonst nicht.
+- **Was gut lief**: Bestehende http_client-Fixture aus conftest.py (NESN/AAPL/NOVN) deckt CH- und Non-CH-Cases direkt ab — kein eigenes Fixture nötig.
+- **Was nicht klappte**: Nichts wesentliches.
+- **Nachbearbeitung nötig bei**: Echte BVV2-Whitelist wenn FINMA-Daten verfügbar.
 - **Autor**: Andrea Petretta (mit Claude Code)
 
 ## 2026-05-26 · RAG-Kontext in NarrativeService + CI-Debugging (Issues #138, PR #146)

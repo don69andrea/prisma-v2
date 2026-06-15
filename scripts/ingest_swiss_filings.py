@@ -52,6 +52,8 @@ async def ingest_ticker(
     repo: object,
     voyage: object,
     dry_run: bool,
+    limit_chunks: int | None = None,
+    batch_delay: float = 0.0,
 ) -> dict[str, int]:
     from backend.infrastructure.persistence.repositories.swiss_filing_repository import (
         SQLASwissFilingRepository,
@@ -114,13 +116,17 @@ async def ingest_ticker(
                 _logger.info("%s: Alle Chunks bereits bekannt, überspringe", ticker)
                 continue
 
+            if limit_chunks is not None:
+                new_chunks = new_chunks[:limit_chunks]
+
             if dry_run:
                 _logger.info("%s [DRY-RUN]: würde %d Chunks einbetten", ticker, len(new_chunks))
                 stats["ingested"] += len(new_chunks)
                 continue
 
-            # Voyage AI embedding — alle Chunks auf einmal (max 128 per request)
-            _BATCH = 128
+            # Voyage AI embedding — 8 Chunks/Batch, Delay für Rate-Limit (3 RPM Free Tier)
+            import time
+            _BATCH = 8
             embedded: list[SwissFilingChunk] = []
             for batch_start in range(0, len(new_chunks), _BATCH):
                 batch = new_chunks[batch_start : batch_start + _BATCH]
@@ -144,6 +150,9 @@ async def ingest_ticker(
                             ingested_at=chunk.ingested_at,
                         )
                     )
+                if batch_delay > 0 and batch_start + _BATCH < len(new_chunks):
+                    _logger.info("Rate-Limit Pause: %.0fs ...", batch_delay)
+                    time.sleep(batch_delay)
 
             await repo.save_chunks(embedded)
             stats["ingested"] += len(embedded)
@@ -152,7 +161,7 @@ async def ingest_ticker(
     return stats
 
 
-async def main(tickers: list[str], dry_run: bool) -> None:
+async def main(tickers: list[str], dry_run: bool, limit_chunks: int | None = None, batch_delay: float = 0.0) -> None:
     import voyageai
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -178,7 +187,7 @@ async def main(tickers: list[str], dry_run: bool) -> None:
         adapter = SixFilingsAdapter(http_client=http_client)
         total_ingested = total_skipped = total_errors = 0
         for ticker in tickers:
-            stats = await ingest_ticker(ticker, adapter, parser, repo, voyage, dry_run)
+            stats = await ingest_ticker(ticker, adapter, parser, repo, voyage, dry_run, limit_chunks=limit_chunks, batch_delay=batch_delay)
             total_ingested += stats["ingested"]
             total_skipped += stats["skipped_duplicate"]
             total_errors += stats["errors"]
@@ -205,9 +214,28 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Keine DB-Schreibzugriffe, nur Zählen",
     )
+    parser.add_argument(
+        "--limit-chunks",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Max Chunks pro Filing (für Demo/Free-Tier: z.B. 50)",
+    )
+    parser.add_argument(
+        "--batch-delay",
+        type=float,
+        default=21.0,
+        metavar="SEC",
+        help="Pause zwischen Embedding-Batches in Sekunden (default 21 für 3 RPM Free Tier)",
+    )
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = _parse_args()
-    asyncio.run(main(tickers=args.tickers, dry_run=args.dry_run))
+    asyncio.run(main(
+        tickers=args.tickers,
+        dry_run=args.dry_run,
+        limit_chunks=args.limit_chunks,
+        batch_delay=args.batch_delay,
+    ))

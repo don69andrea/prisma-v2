@@ -43,10 +43,10 @@ class TestStaticFallback:
         links_lower = await adapter.get_filing_links("novn")
         assert len(links_upper) == len(links_lower)
 
-    async def test_rog_has_static_link(self) -> None:
+    async def test_nesn_has_static_link(self) -> None:
         adapter = SixFilingsAdapter(http_client=None)
-        links = await adapter.get_filing_links("ROG")
-        assert any("roche" in lnk.url.lower() for lnk in links)
+        links = await adapter.get_filing_links("NESN")
+        assert any("nestle" in lnk.url.lower() for lnk in links)
 
 
 class TestExtractPdfLinks:

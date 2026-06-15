@@ -27,6 +27,16 @@ function loadStoredAlertForm() {
   return null;
 }
 
+const LS_ALERT_FORM_KEY = 'prisma_alert_form_config';
+
+function loadStoredAlertForm() {
+  try {
+    const raw = localStorage.getItem(LS_ALERT_FORM_KEY);
+    if (raw) return JSON.parse(raw) as { triggerType: TriggerType; threshold: string; channel: ChannelType; target: string };
+  } catch {}
+  return null;
+}
+
 const TRIGGER_LABELS: Record<TriggerType, string> = {
   PRICE_CHANGE: 'Kursänderung',
   SIGNAL_CHANGE: 'Signal-Wechsel',

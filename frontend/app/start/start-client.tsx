@@ -228,6 +228,7 @@ function StepLanding({ onEntdecker, onKenner }: { onEntdecker: () => void; onKen
         {/* Mini crystal */}
         <div className="flex justify-center mb-2">
           <div
+            data-testid="crystal"
             className="w-8 h-8 rotate-45 rounded-sm animate-pulse"
             style={{
               background: 'linear-gradient(135deg, #58a6ff 0%, #7ee787 50%, #bc8cff 100%)',

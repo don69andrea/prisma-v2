@@ -84,7 +84,7 @@ services:
     branch: main
     plan: free
     schedule: "0 6 * * *"
-    startCommand: python -m backend.application.services.news_ingestion_service
+    dockerCommand: python -m backend.application.services.news_ingestion_service
     envVars:
       - key: DATABASE_URL
         fromDatabase:

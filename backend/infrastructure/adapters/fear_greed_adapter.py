@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 import httpx
 
@@ -21,10 +22,10 @@ class FearGreedAdapter:
     """
 
     def __init__(self) -> None:
-        self._cached: dict | None = None
+        self._cached: dict[str, Any] | None = None
         self._cached_at: datetime | None = None
 
-    async def get_current(self) -> dict:
+    async def get_current(self) -> dict[str, Any]:
         """Gibt {"value": int, "label": str, "timestamp": str} zurück."""
         now = datetime.now(tz=UTC)
         if self._cached_at and (now - self._cached_at).total_seconds() < _CACHE_TTL_SECONDS:
@@ -35,7 +36,7 @@ class FearGreedAdapter:
                 resp = await client.get(_URL)
                 resp.raise_for_status()
                 data = resp.json()["data"][0]
-                result: dict = {
+                result: dict[str, Any] = {
                     "value": int(data["value"]),
                     "label": data["value_classification"],
                     "timestamp": data["timestamp"],

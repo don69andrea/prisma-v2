@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pandas as pd
 
 from backend.domain.entities.crypto_asset import CryptoAsset
 
 
-def _make_asset(**kwargs) -> CryptoAsset:
+def _make_asset(**kwargs: Any) -> CryptoAsset:
     defaults = dict(
         ticker_cg="bitcoin",
         ticker_yf="BTC-CHF",
@@ -176,7 +178,7 @@ class TestSignalThresholds:
 
         self.scorer = CryptoScorer()
 
-    def _score(self, **asset_kwargs) -> float:
+    def _score(self, **asset_kwargs: Any) -> float:
         asset = _make_asset(**asset_kwargs)
         tech = _make_technicals(rsi=28.0, macd_above_signal=True, close_trend="up")
         score, _ = self.scorer.score(asset, tech, fear_greed=20, correlation_smi_1y=0.1)

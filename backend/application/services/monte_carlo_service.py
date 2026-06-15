@@ -105,11 +105,11 @@ class MonteCarloService:
 
     async def _fetch_return_params(
         self, holdings: list[HoldingWeight]
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:  # type: ignore[type-arg]
         n = len(holdings)
         mu_list: list[float] = []
         sigma_list: list[float] = []
-        returns_matrix: list[np.ndarray] = []
+        returns_matrix: list[np.ndarray] = []  # type: ignore[type-arg]
 
         for h in holdings:
             hist_mu, hist_sigma, hist_returns = await _fetch_ticker_params(h.ticker)
@@ -147,7 +147,7 @@ class MonteCarloService:
             return 0.0003
 
 
-async def _fetch_ticker_params(ticker: str) -> tuple[float, float, np.ndarray]:
+async def _fetch_ticker_params(ticker: str) -> tuple[float, float, np.ndarray]:  # type: ignore[type-arg]
     try:
         import yfinance as yf
 
@@ -171,9 +171,9 @@ async def _fetch_ticker_params(ticker: str) -> tuple[float, float, np.ndarray]:
 
 def _run_gbm(
     inp: MonteCarloInput,
-    mu_arr: np.ndarray,
-    sigma_arr: np.ndarray,
-    corr_matrix: np.ndarray,
+    mu_arr: np.ndarray,  # type: ignore[type-arg]
+    sigma_arr: np.ndarray,  # type: ignore[type-arg]
+    corr_matrix: np.ndarray,  # type: ignore[type-arg]
 ) -> MonteCarloResult:
     n_assets = len(inp.holdings)
     n_months = inp.years * 12

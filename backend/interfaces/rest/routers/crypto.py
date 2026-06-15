@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Path
 
 from backend.application.services.crypto_scoring_service import CryptoScoringService
@@ -41,7 +43,7 @@ async def get_crypto_signal(
 @router.get("/fear-greed")
 async def get_fear_greed(
     adapter: FearGreedAdapter = Depends(get_fear_greed_adapter),
-) -> dict:
+) -> dict[str, Any]:
     """Aktueller Crypto Fear & Greed Index (0–100)."""
     return await adapter.get_current()
 
@@ -49,7 +51,7 @@ async def get_fear_greed(
 @router.get("/market")
 async def get_crypto_market(
     cg: CoinGeckoAdapter = Depends(get_coingecko_adapter),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Markt-Übersicht für alle 10 Kryptos: Preis CHF, Market Cap, 24h/7d Änderung."""
     from backend.domain.entities.crypto_asset import SUPPORTED_CRYPTOS
 

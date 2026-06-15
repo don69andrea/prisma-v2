@@ -51,8 +51,12 @@ class CryptoScoringService:
 
         results: list[CryptoSignal] = []
         for i, (cg_id, yf_ticker, name, kategorie, has_etp) in enumerate(SUPPORTED_CRYPTOS):
-            tech = all_tech[i] if not isinstance(all_tech[i], Exception) else pd.DataFrame()
-            corr = all_corr[i] if not isinstance(all_corr[i], Exception) else 0.0
+            _raw_tech = all_tech[i]
+            tech: pd.DataFrame = (
+                _raw_tech if isinstance(_raw_tech, pd.DataFrame) else pd.DataFrame()
+            )
+            _raw_corr = all_corr[i]
+            corr: float = float(_raw_corr) if not isinstance(_raw_corr, Exception) else 0.0  # type: ignore[arg-type]
             if isinstance(tech, pd.DataFrame) and tech.empty:
                 _logger.warning("Keine Technikaldaten für %s — übersprungen", yf_ticker)
                 continue
@@ -78,7 +82,7 @@ class CryptoScoringService:
                 asset,
                 tech,
                 fg_value,
-                correlation_smi_1y=float(corr),  # type: ignore[arg-type]
+                correlation_smi_1y=float(corr),
             )
             signal = _score_to_signal(score)
 
@@ -118,7 +122,7 @@ class CryptoScoringService:
                     rsi_14=round(rsi, 1),
                     macd_signal="bullish" if macd_val > macd_sig_val else "bearish",
                     volatility_30d_pct=round(vol_30d, 1),
-                    correlation_smi_1y=round(float(corr), 3),  # type: ignore[arg-type]
+                    correlation_smi_1y=round(float(corr), 3),
                     has_six_etp=has_etp,
                     price_chf=asset.price_chf,
                     market_cap_chf=asset.market_cap_chf,

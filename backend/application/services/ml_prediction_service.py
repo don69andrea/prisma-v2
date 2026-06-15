@@ -86,7 +86,7 @@ def _load_model() -> tuple[Any, str]:
 
 def _build_shap_entries(
     model: Any,
-    x: np.ndarray,
+    x: np.ndarray,  # type: ignore[type-arg]
     feature_names: list[str],
     features_dict: dict[str, float],
     predicted_class: int,

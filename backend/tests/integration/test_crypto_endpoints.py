@@ -99,7 +99,7 @@ async def test_get_signal_by_ticker_returns_200(crypto_client: AsyncClient) -> N
 
 
 async def test_get_signal_invalid_ticker_returns_404(
-    crypto_client: AsyncClient, mock_crypto_service
+    crypto_client: AsyncClient, mock_crypto_service: AsyncMock
 ) -> None:
     mock_crypto_service.score_one.return_value = None
     response = await crypto_client.get(

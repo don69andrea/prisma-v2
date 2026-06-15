@@ -12,7 +12,7 @@ from cachetools import TTLCache
 
 _logger = logging.getLogger(__name__)
 
-_TECH_CACHE: TTLCache = TTLCache(maxsize=50, ttl=300)
+_TECH_CACHE: TTLCache[tuple[str, int], pd.DataFrame] = TTLCache(maxsize=50, ttl=300)
 _CHF_PAIRS = {"BTC-CHF", "ETH-CHF"}
 _CHF_USD_RATE_TICKER = "CHFUSD=X"
 

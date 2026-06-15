@@ -132,7 +132,7 @@ def _mean_variance(
 
         # Sharpe-Ratio-Maximierung via SLSQP
         # Wir minimieren den negativen Sharpe Ratio: -mu^T w / sqrt(w^T Σ w)
-        def neg_sharpe(weights: np.ndarray) -> float:
+        def neg_sharpe(weights: np.ndarray) -> float:  # type: ignore[type-arg]
             port_return = float(mu @ weights)
             port_vol = float(np.sqrt(weights @ cov_matrix @ weights))
             if port_vol < 1e-10:
@@ -140,7 +140,7 @@ def _mean_variance(
             return -port_return / port_vol
 
         # Gradient (analytisch) für schnellere Konvergenz
-        def neg_sharpe_grad(weights: np.ndarray) -> np.ndarray:
+        def neg_sharpe_grad(weights: np.ndarray) -> np.ndarray:  # type: ignore[type-arg]
             port_return = float(mu @ weights)
             port_var = float(weights @ cov_matrix @ weights)
             port_vol = float(np.sqrt(max(port_var, 1e-20)))

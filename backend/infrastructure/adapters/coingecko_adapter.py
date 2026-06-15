@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 from pycoingecko import CoinGeckoAPI
 
@@ -20,10 +21,12 @@ class CoinGeckoAdapter:
 
     def __init__(self, api_key: str = "") -> None:
         self._cg = CoinGeckoAPI(api_key=api_key)
-        self._market_cache: list[dict] | None = None
+        self._market_cache: list[dict[str, Any]] | None = None
         self._market_cached_at: datetime | None = None
 
-    async def get_market_data(self, coin_ids: list[str], vs_currency: str = "chf") -> list[dict]:
+    async def get_market_data(
+        self, coin_ids: list[str], vs_currency: str = "chf"
+    ) -> list[dict[str, Any]]:
         """Markt-Daten für mehrere Coins in einem API-Call (Batch)."""
         now = datetime.now(tz=UTC)
         if (
@@ -34,7 +37,7 @@ class CoinGeckoAdapter:
             return self._market_cache
 
         try:
-            result: list[dict] = await asyncio.to_thread(
+            result: list[dict[str, Any]] = await asyncio.to_thread(
                 self._cg.get_coins_markets,
                 vs_currency=vs_currency,
                 ids=",".join(coin_ids),

@@ -154,8 +154,25 @@ function useSignals() {
   const hold = signals.filter((s) => s.signal === 'HOLD').sort((a, b) => b.weighted_score - a.weighted_score);
   const sell = signals.filter((s) => s.signal === 'SELL').sort((a, b) => b.weighted_score - a.weighted_score);
 
-  // Discover tickers count for the universe size display
-  const discoverTickers = getDiscoverTickers();
+  // Discover tickers count for the universe size display.
+  // We read localStorage once on mount and re-read whenever the storage key
+  // changes (e.g. after Discovery-Completion in another component/tab).
+  const [discoverTickers, setDiscoverTickers] = useState<string[]>(() => getDiscoverTickers());
+
+  useEffect(() => {
+    // Re-read on storage events so the value stays fresh after discovery runs.
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === DISCOVER_STORAGE_KEY) {
+        setDiscoverTickers(getDiscoverTickers());
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    // Also refresh immediately in case the value was written before this
+    // component mounted (same-tab navigation back to dashboard).
+    setDiscoverTickers(getDiscoverTickers());
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   const universeSize = discoverTickers.length > 0 ? discoverTickers.length : signals.length;
 
   return { signals, buy, hold, sell, loading, universeId, universeCount, universeSize };

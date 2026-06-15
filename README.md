@@ -13,11 +13,11 @@
 
 PRISMA V2 ist eine quantitative Stock-Intelligence-Plattform für den Schweizer Markt (SMI/SMIM/SPI), entwickelt im BI-Modul FS 2026 (FHNW) von Andrea Petretta, Helin und Aurelius.
 
-Das System kombiniert quantitative Finanzmodelle, Machine Learning und KI-Narrative zu einem einzigen Entscheidungssystem: **BUY / HOLD / WATCH** — jede Entscheidung begründet, auditierbar, erklärbar.
+Das System kombiniert quantitative Finanzmodelle, Machine Learning und KI-Narrative zu einem einzigen Entscheidungssystem: **BUY / HOLD / SELL** — jede Entscheidung begründet, auditierbar, erklärbar.
 
 Zwei Anwendungsfälle:
 
-**ZIEL 1 — FHNW BI Module:** Den BI-Layer bauen — echtes ML (LightGBM/XGBoost Return Prediction), Agentic AI (Discovery + Portfolio + Macro + Steuer), RAG (pgvector + Voyage AI), Decision Intelligence Dashboard (BUY/HOLD/WATCH). Jede Entscheidung ist begründet, auditierbar, erklärbar.
+**ZIEL 1 — FHNW BI Module:** Den BI-Layer bauen — echtes ML (LightGBM/XGBoost Return Prediction), Agentic AI (Discovery + Portfolio + Macro + Steuer), RAG (pgvector + Voyage AI), Decision Intelligence Dashboard (BUY/HOLD/SELL). Jede Entscheidung ist begründet, auditierbar, erklärbar.
 
 **ZIEL 2 — VIAC Stocks Initiative:** PRISMA V2 als potentielle Infrastruktur für VIAC Stocks (Einzeltitelhandel im **freien Vermögen**). Dafür: Swiss Market Universe (SMI/SMIM/SPI), Langfrist-Score, Steuer-Implikations-Agent, Fonds vs. Einzeltitel Vergleich. Zusätzlich: 3a Eligibility Filter (FINMA-regelbasiert) — zeigt welche SMI-Titel für die gebundene Vorsorge zugelassen wären.
 
@@ -29,7 +29,7 @@ PRISMA V2 ist dein persönlicher KI-Analyst für Schweizer Aktien — vollständ
 
 | Was du willst | Was PRISMA macht |
 |---|---|
-| **Welche Aktien soll ich kaufen?** | BUY / HOLD / WATCH Signale für alle SMI/SMIM-Titel — mit KI-Begründung, nicht nur eine Zahl |
+| **Welche Aktien soll ich kaufen?** | BUY / HOLD / SELL Signale für alle SMI/SMIM-Titel — mit KI-Begründung, nicht nur eine Zahl |
 | **Welche Aktien passen zu mir?** | 5-Schritt Onboarding: Beruf, Ziel, Risikobereitschaft, Lieblingsmarken → persönliches Investor-Profil + Empfehlungen |
 | **Was steckt hinter dieser Aktie?** | KI-Dossier pro Titel: Stärken, Risiken, Analyst-One-Liner, Modell-Konsistenz |
 | **Was soll ich mit meinem Portfolio tun?** | Portfolio eingeben → Agent empfiehlt kaufen/halten/verkaufen (Markowitz oder Risk-Parity) |
@@ -48,7 +48,7 @@ Alle Entscheidungen inkl. vollständigem **Audit Trail** — nachvollziehbar, re
 |---------|--------|
 | Swiss Market Universe (SMI/SMIM) | ✅ Live |
 | Quant Scoring Engine (5 Modelle, SMI-kalibriert) | ✅ Live |
-| BUY/HOLD/WATCH Signal-Dashboard | ✅ Live |
+| BUY/HOLD/SELL Signal-Dashboard | ✅ Live |
 | Narrative Engine (Claude Sonnet, Pydantic) | ✅ Live |
 | Multi-Agent Deep-Dive (Fundamentals + Sentiment + Synthesizer) | ✅ Live |
 | Discovery Engine (5-Schritt Conversational Onboarding) | ✅ Live |
@@ -153,7 +153,7 @@ python scripts/train_return_predictor.py --market all --years 8 \
 | | |
 |---|---|
 | **Macro Intelligence Agent** | **Decision Intelligence Dashboard** |
-| Monitort SNB-Entscheide, CHF/EUR, Inflation CH. Kontextualisiert alle Rankings mit makroökonomischen Signalen. | BUY / HOLD / WATCH Signale mit KI-Begründung, Konfidenz-Balken und vollständigem Audit Trail. Quant 45% + ML 35% + Makro 20%. |
+| Monitort SNB-Entscheide, CHF/EUR, Inflation CH. Kontextualisiert alle Rankings mit makroökonomischen Signalen. | BUY / HOLD / SELL Signale mit KI-Begründung, Konfidenz-Balken und vollständigem Audit Trail. Quant 45% + ML 35% + Makro 20%. |
 | `Agent` · `RAG` | `Dashboard` |
 
 | | |
@@ -265,7 +265,7 @@ docs/
 | **Portfolio Intelligence** | Claude Sonnet + Markowitz/Risk-Parity | Portfolio-Optimierung + Rebalancing-Plan |
 | **Macro Intelligence** | Claude Sonnet + SNB RAG | CHF/SNB/Inflation-Kontext für alle Rankings |
 | **Steuer-Agent** | Claude Haiku + ESTV RAG | CH-Steuerimplikationen für freies Vermögen — immer mit Disclaimer |
-| **Signal-Erklärung** | Claude Sonnet | WHY hinter jedem BUY/HOLD/WATCH — Quant + ML + Makro erklärt |
+| **Signal-Erklärung** | Claude Sonnet | WHY hinter jedem BUY/HOLD/SELL — Quant + ML + Makro erklärt |
 | **MCP-Server** | FastMCP | PRISMA aus Claude Desktop per Natursprache nutzbar |
 | **ML Predictor** | LightGBM / XGBoost | Forward-Return-Klassen, 19 Features, 61.4% Top-Quartil-Recall |
 

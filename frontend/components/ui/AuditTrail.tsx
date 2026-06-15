@@ -7,7 +7,7 @@ export interface AuditTrailProps {
   quantScore: number;
   mlScore: number;
   macroScore: number;
-  signal: 'BUY' | 'HOLD' | 'WATCH' | 'SELL';
+  signal: 'BUY' | 'HOLD' | 'SELL';
   snapshotDate?: string;
   className?: string;
 }

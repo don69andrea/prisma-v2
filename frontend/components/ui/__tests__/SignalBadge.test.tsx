@@ -10,11 +10,6 @@ describe('SignalBadge', () => {
     expect(screen.getByText('74%')).toBeInTheDocument();
   });
 
-  it('zeigt WATCH als BEOBACHTEN ohne Konfidenz', () => {
-    render(<SignalBadge signal="WATCH" />);
-    expect(screen.getByText('BEOBACHTEN')).toBeInTheDocument();
-  });
-
   it('zeigt HOLD korrekt', () => {
     render(<SignalBadge signal="HOLD" />);
     expect(screen.getByText('HOLD')).toBeInTheDocument();

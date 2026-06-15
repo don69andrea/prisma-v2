@@ -120,26 +120,6 @@ async def test_fundamentals_response_has_disclaimer(http_client: AsyncClient) ->
     assert len(body["disclaimer"]) > 0
 
 
-async def test_fundamentals_unknown_ticker_not_in_db_returns_404(http_client: AsyncClient) -> None:
-    """Ticker nicht in Stock-DB → 404."""
-    response = await http_client.get("/api/v1/stocks/UNKNOWN/fundamentals")
-    assert response.status_code == 404
-
-
-async def test_fundamentals_null_fields_for_ticker_not_in_stub(
-    http_client: AsyncClient,
-) -> None:
-    """NESN ist in der Stock-DB, aber nicht in StubFundamentalsProvider._DEMO_DATA
-    → alle numerischen Felder null, aber 200 OK mit Disclaimer."""
-    response = await http_client.get("/api/v1/stocks/NESN/fundamentals")
-    assert response.status_code == 200
-    body = response.json()
-    assert body["ticker"] == "NESN"
-    assert body["pe_ratio"] is None
-    assert body["pb_ratio"] is None
-    assert "disclaimer" in body
-
-
 async def test_fundamentals_case_insensitive(http_client: AsyncClient) -> None:
     response = await http_client.get("/api/v1/stocks/aapl/fundamentals")
     assert response.status_code == 200

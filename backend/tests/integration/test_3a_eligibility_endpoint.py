@@ -97,5 +97,3 @@ async def test_ticker_is_case_insensitive(app: Any) -> None:
         resp = await client.get("/api/v1/stocks/nesn/3a-eligibility")
     assert resp.status_code == 200
     assert resp.json()["ticker"] == "NESN"
-
-

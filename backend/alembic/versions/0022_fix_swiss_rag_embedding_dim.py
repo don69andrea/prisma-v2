@@ -19,7 +19,9 @@ depends_on: Sequence[str] | None = None
 def upgrade() -> None:
     # voyage-3-large liefert 1024 Dimensionen, nicht 2048
     op.execute("DELETE FROM swiss_rag_chunks")
-    op.execute("ALTER TABLE swiss_rag_chunks ALTER COLUMN embedding TYPE vector(1024) USING embedding::vector(1024)")
+    op.execute(
+        "ALTER TABLE swiss_rag_chunks ALTER COLUMN embedding TYPE vector(1024) USING embedding::vector(1024)"
+    )
     # Index neu erstellen mit korrekter Dimension
     op.execute("DROP INDEX IF EXISTS ix_swiss_rag_chunks_embedding_cosine")
     op.execute(
@@ -31,7 +33,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute("DELETE FROM swiss_rag_chunks")
-    op.execute("ALTER TABLE swiss_rag_chunks ALTER COLUMN embedding TYPE vector(2048) USING embedding::vector(2048)")
+    op.execute(
+        "ALTER TABLE swiss_rag_chunks ALTER COLUMN embedding TYPE vector(2048) USING embedding::vector(2048)"
+    )
     op.execute("DROP INDEX IF EXISTS ix_swiss_rag_chunks_embedding_cosine")
     op.execute(
         "CREATE INDEX ix_swiss_rag_chunks_embedding_cosine "

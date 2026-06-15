@@ -27,28 +27,33 @@ test.describe('Run-History', () => {
     // 2. "Vergangene Runs" section visible
     await expect(page.getByText('Vergangene Runs')).toBeVisible({ timeout: 15_000 });
 
-    // 3. Filter by completed status — newest runs may be pending/running (disabled checkboxes)
-    await page.selectOption('[data-testid="run-history-status-filter"]', 'completed');
+    // 3. Wait for run list to load — React Query populates runsQuery.data async.
+    // Any checkbox appearing (even disabled) proves the list has rendered.
+    // Without this, selectOption runs on an empty list → filter shows 0 rows.
+    await expect(page.locator('input[type="checkbox"]').first()).toBeVisible({ timeout: 20_000 });
 
-    // 4. Click first 2 enabled checkboxes
+    // 4. Filter by completed status — newest runs may be pending/running (disabled checkboxes)
+    await page.locator('[data-testid="run-history-status-filter"]').selectOption('completed');
+
+    // 5. Click first 2 enabled checkboxes
     const enabledCheckboxes = page.locator('input[type="checkbox"]:not([disabled])');
     await expect(enabledCheckboxes.first()).toBeVisible({ timeout: 15_000 });
     await enabledCheckboxes.nth(0).check();
     await enabledCheckboxes.nth(1).check();
 
-    // 5. "Vergleichen" button now enabled
+    // 6. "Vergleichen" button now enabled
     const compareBtn = page.getByRole('button', { name: /vergleichen/i });
     await expect(compareBtn).toBeEnabled();
     await compareBtn.click();
 
-    // 6. URL matches compare-page format
+    // 7. URL matches compare-page format
     await expect(page).toHaveURL(/\/rankings\/compare\?a=[0-9a-f-]+&b=[0-9a-f-]+/, { timeout: 10_000 });
 
-    // 6. Both run headers visible
+    // 8. Both run headers visible
     await expect(page.getByText('Run A', { exact: true })).toBeVisible();
     await expect(page.getByText('Run B', { exact: true })).toBeVisible();
 
-    // 7. Either a comparison table OR the "no common stocks" warning is visible
+    // 9. Either a comparison table OR the "no common stocks" warning is visible
     const hasTable = await page.locator('table tbody tr').first().isVisible().catch(() => false);
     const hasWarning = await page.getByText(/keine gemeinsamen Stocks/i).isVisible().catch(() => false);
     expect(hasTable || hasWarning).toBeTruthy();

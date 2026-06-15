@@ -88,12 +88,6 @@ function StockCard({ stock }: { stock: DiscoveredStock & { signal?: string; scor
         </div>
       )}
 
-      {stock.signal_reason && (
-        <p className="text-[11px] text-[#8b949e] italic leading-relaxed">
-          &quot;{stock.signal_reason}&quot;
-        </p>
-      )}
-
       <div className="flex items-center justify-between text-xs text-[#8b949e]">
         <div className="flex items-center gap-2">
           <span>{stock.exchange}</span>

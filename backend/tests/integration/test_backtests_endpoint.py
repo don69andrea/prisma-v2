@@ -155,9 +155,9 @@ def _backtest_body(run_id: UUID = _RUN_ID, top_n: int = 2) -> dict[str, Any]:
 # ── POST /api/v1/backtests ────────────────────────────────────────────────
 
 
-async def test_post_backtest_returns_200(http_client: AsyncClient) -> None:
+async def test_post_backtest_returns_201(http_client: AsyncClient) -> None:
     response = await http_client.post("/api/v1/backtests", json=_backtest_body())
-    assert response.status_code == 200
+    assert response.status_code == 201
 
 
 async def test_post_backtest_response_has_id_and_run_id(http_client: AsyncClient) -> None:

@@ -35,9 +35,7 @@ async def get_fundamentals(
     if raw_yield:
         raw_float = float(raw_yield)
         # yfinance gibt dividendYield manchmal als Dezimal (0.038), manchmal als Prozent (3.8)
-        yield_pct: float | None = round(
-            raw_float if raw_float > 1 else raw_float * 100, 2
-        )
+        yield_pct: float | None = round(raw_float if raw_float > 1 else raw_float * 100, 2)
     else:
         yield_pct = None
 

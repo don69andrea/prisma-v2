@@ -23,6 +23,25 @@ Zwei Anwendungsfälle:
 
 ---
 
+## Was kann PRISMA V2?
+
+PRISMA V2 ist dein persönlicher KI-Analyst für Schweizer Aktien — vollständig erklärbar, kein Black Box.
+
+| Was du willst | Was PRISMA macht |
+|---|---|
+| **Welche Aktien soll ich kaufen?** | BUY / HOLD / WATCH Signale für alle SMI/SMIM-Titel — mit KI-Begründung, nicht nur eine Zahl |
+| **Welche Aktien passen zu mir?** | 5-Schritt Onboarding: Beruf, Ziel, Risikobereitschaft, Lieblingsmarken → persönliches Investor-Profil + Empfehlungen |
+| **Was steckt hinter dieser Aktie?** | KI-Dossier pro Titel: Stärken, Risiken, Analyst-One-Liner, Modell-Konsistenz |
+| **Was soll ich mit meinem Portfolio tun?** | Portfolio eingeben → Agent empfiehlt kaufen/halten/verkaufen (Markowitz oder Risk-Parity) |
+| **Wie beeinflusst SNB/CHF/Inflation mein Portfolio?** | Makro-Agent: SNB-Entscheide, CHF/EUR, Inflation — kontextualisiert alle Rankings |
+| **VIAC-Fonds oder Einzeltitel?** | Direkter Vergleich: Expected Return, Volatility, Sharpe, Max Drawdown |
+| **Welche Titel darf ich für die 3. Säule kaufen?** | 3a Eligibility Filter — FINMA-regelbasiert, binär, auditierbar |
+| **Wie hat sich meine Strategie historisch geschlagen?** | Backtest vs. SMI Benchmark: Sharpe, Max Drawdown, annualisierte Rendite |
+
+Alle Entscheidungen inkl. vollständigem **Audit Trail** — nachvollziehbar, reproduzierbar, erklärbar.
+
+---
+
 ## Status
 
 | Bereich | Status |
@@ -41,6 +60,83 @@ Zwei Anwendungsfälle:
 | MCP-Server (Claude Desktop Integration) | ✅ Live |
 | Decision Audit Trail | ✅ Live |
 | Demo-Flow + Präsentation | ⬜ In Arbeit |
+
+---
+
+## Lokales Setup
+
+**Voraussetzungen:** Docker, Python 3.12+, Node 20+
+
+```bash
+# Repo klonen
+git clone https://github.com/don69andrea/prisma-v2.git
+cd prisma-v2
+
+# Environment vorbereiten
+cp .env.example .env
+# .env anpassen: ANTHROPIC_API_KEY, DATABASE_URL, VOYAGE_API_KEY
+
+# PostgreSQL starten
+docker compose up -d
+
+# Backend
+pip install -e ".[dev]"
+alembic upgrade head
+uvicorn backend.interfaces.rest.main:app --reload
+
+# Frontend
+cd frontend && npm install && npm run dev
+```
+
+### Demo-Daten seeden
+
+```bash
+# Swiss Stocks: SMI-20
+python scripts/seed_smi_universe.py
+
+# US-Stocks: Tech-Big-12 (empfohlen für reichhaltige Demo)
+python scripts/seed_tech_catalog.py
+```
+
+Alle Seed-Skripte sind idempotent (`ON CONFLICT DO NOTHING`).
+
+### Tests
+
+```bash
+pytest backend/tests/unit -q          # 704 Unit-Tests (~3s)
+pytest backend/tests/integration -q   # braucht laufende DB
+```
+
+### ML-Modell neu trainieren
+
+```bash
+# Standard (nur CH, ~5 Minuten)
+python scripts/train_return_predictor.py
+
+# Volles Universum mit SimFin Point-in-Time Fundamentaldaten (~25 Minuten)
+python scripts/train_return_predictor.py --market all --years 8 \
+    --simfin-key <KEY>   # kostenloser Key: simfin.com
+```
+
+→ Vollständige Trainings-Anleitung: [`docs/ml-training.md`](./docs/ml-training.md)
+
+---
+
+## Dokumentation
+
+| Dokument | Inhalt |
+|----------|--------|
+| [`docs/ml-training.md`](./docs/ml-training.md) | ML-Pipeline: Features, Universum, SimFin, Walk-Forward, Ergebnisse |
+| [`docs/adr/`](./docs/adr/) | Architecture Decision Records (8 ADRs) |
+| [`docs/specs/`](./docs/specs/) | Spec-First: ein .md pro Feature vor erstem Commit |
+| [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) | KI-Einsatz im Projekt — Transparenz, Lektionen, Reflexionen |
+| [`CLAUDE.md`](./CLAUDE.md) | Kontext für Claude Code — Status, Tasks, Swiss Market Regeln |
+| [`AGENTS.md`](./AGENTS.md) | Coding-Konventionen (Python, TypeScript, Tests, Async-Patterns) |
+
+---
+
+<details>
+<summary><strong>Deep Dive — Architektur, Features, AI-Layer, Tech-Stack</strong></summary>
 
 ---
 
@@ -222,77 +318,7 @@ feature/aurelius-* ─┘
 
 ---
 
-## Lokales Setup
-
-**Voraussetzungen:** Docker, Python 3.12+, Node 20+
-
-```bash
-# Repo klonen
-git clone https://github.com/don69andrea/prisma-v2.git
-cd prisma-v2
-
-# Environment vorbereiten
-cp .env.example .env
-# .env anpassen: ANTHROPIC_API_KEY, DATABASE_URL, VOYAGE_API_KEY
-
-# PostgreSQL starten
-docker compose up -d
-
-# Backend
-pip install -e ".[dev]"
-alembic upgrade head
-uvicorn backend.interfaces.rest.main:app --reload
-
-# Frontend
-cd frontend && npm install && npm run dev
-```
-
-### Demo-Daten seeden
-
-```bash
-# Swiss Stocks: SMI-20
-python scripts/seed_smi_universe.py
-
-# US-Stocks: Tech-Big-12 (empfohlen für reichhaltige Demo)
-python scripts/seed_tech_catalog.py
-```
-
-Alle Seed-Skripte sind idempotent (`ON CONFLICT DO NOTHING`).
-
-### Tests
-
-```bash
-pytest backend/tests/unit -q          # 704 Unit-Tests (~3s)
-pytest backend/tests/integration -q   # braucht laufende DB
-```
-
-### ML-Modell neu trainieren
-
-```bash
-# Standard (nur CH, ~5 Minuten)
-python scripts/train_return_predictor.py
-
-# Volles Universum mit SimFin Point-in-Time Fundamentaldaten (~25 Minuten)
-python scripts/train_return_predictor.py --market all --years 8 \
-    --simfin-key <KEY>   # kostenloser Key: simfin.com
-```
-
-→ Vollständige Trainings-Anleitung: [`docs/ml-training.md`](./docs/ml-training.md)
-
----
-
-## Dokumentation
-
-| Dokument | Inhalt |
-|----------|--------|
-| [`docs/ml-training.md`](./docs/ml-training.md) | ML-Pipeline: Features, Universum, SimFin, Walk-Forward, Ergebnisse |
-| [`docs/adr/`](./docs/adr/) | Architecture Decision Records (8 ADRs) |
-| [`docs/specs/`](./docs/specs/) | Spec-First: ein .md pro Feature vor erstem Commit |
-| [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) | KI-Einsatz im Projekt — Transparenz, Lektionen, Reflexionen |
-| [`CLAUDE.md`](./CLAUDE.md) | Kontext für Claude Code — Status, Tasks, Swiss Market Regeln |
-| [`AGENTS.md`](./AGENTS.md) | Coding-Konventionen (Python, TypeScript, Tests, Async-Patterns) |
-
----
+</details>
 
 > **Disclaimer:** PRISMA V2 ist ein Bildungs- und Forschungsprojekt (FHNW BI Module FS 2026). Keine der hier generierten Analysen, Rankings, Scores oder Signale stellt eine Anlageberatung dar. Historische Performance ist kein Indikator für zukünftige Ergebnisse. Investitionsentscheide liegen ausschliesslich beim Anleger.
 

@@ -202,6 +202,12 @@ AUFGABE — erkläre in je 2 präzisen Sätzen pro Feld:
             messages=[{"role": "user", "content": user_msg}],
         )
         raw = response.content[0].text.strip()
+        # Strip markdown fences if Haiku wraps JSON in ```json ... ```
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
         data = json.loads(raw)
         return ExplainResponse(
             ticker=ticker,

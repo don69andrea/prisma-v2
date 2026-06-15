@@ -1,6 +1,9 @@
 """SignalValidationService — berechnet historische Trefferquote von PRISMA-Signalen."""
+
 from __future__ import annotations
+
 import logging
+
 import numpy as np
 
 _logger = logging.getLogger(__name__)

@@ -3,13 +3,15 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from backend.application.services.backtest_service import (
     BacktestService,
     NoResultsFound,
     RunNotFound,
 )
-from backend.interfaces.rest.dependencies import get_backtest_service
+from backend.application.services.signal_validation_service import SignalValidationService
+from backend.interfaces.rest.dependencies import get_backtest_service, get_yfinance_adapter
 from backend.interfaces.rest.schemas.backtest import BacktestResultResponse, RunBacktestRequest
 
 router = APIRouter(prefix="/api/v1/backtests", tags=["backtests"])
@@ -55,15 +57,6 @@ async def get_backtest_result(
         raise HTTPException(status_code=404, detail="Backtest-Ergebnis nicht gefunden") from None
     return BacktestResultResponse.from_entity(result)
 
-
-# ---------------------------------------------------------------------------
-# Signal-Validierung: /api/v1/backtest/signal-validation/{ticker}
-# ---------------------------------------------------------------------------
-
-from pydantic import BaseModel
-
-from backend.application.services.signal_validation_service import SignalValidationService
-from backend.interfaces.rest.dependencies import get_yfinance_adapter
 
 signal_router = APIRouter(prefix="/api/v1/backtest", tags=["backtests"])
 

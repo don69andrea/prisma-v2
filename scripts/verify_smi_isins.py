@@ -33,7 +33,7 @@ SMI_TICKERS = [
     "SIKA",
     "HOLN",
     "PGHN",
-    "KRIN",
+    "KNIN",
     "CFR",
     "STMN",
 ]
@@ -56,7 +56,7 @@ CURRENT_ISINS = {
     "SIKA": "CH0418792922",   # ersetzt BALN (delisted nach Fusion mit Helvetia 2025)
     "HOLN": "CH0012214059",
     "PGHN": "CH0024608827",
-    "KRIN": "CH0334776754",
+    "KNIN": "CH0025238863",   # korrigiert: KRIN→KNIN (Issue #26)
     "CFR": "CH0210483332",
     "STMN": "CH0012280076",   # korrigiert: CH0012050267 hatte Luhn-Fehler
 }

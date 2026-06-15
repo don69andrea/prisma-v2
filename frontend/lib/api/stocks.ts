@@ -11,7 +11,7 @@ export interface StockRead {
   country: string | null;
   currency: string;
   exchange: string | null;
-  market_cap_chf: number | null;
+  market_cap_chf: string | null;
 }
 
 export interface LatestRankingSnapshot {

@@ -25,7 +25,7 @@ class SQLASwissFilingRepository(SwissFilingRepository):
                 SwissFilingChunkORM.url_hash == url_hash,
                 SwissFilingChunkORM.chunk_idx == chunk_idx,
             )
-            row = (await session.execute(stmt)).first()
+            row = (await session.execute(stmt)).scalar_one_or_none()
             return row is not None
 
     async def save_chunks(self, chunks: list[SwissFilingChunk]) -> None:

@@ -216,7 +216,8 @@ def _run_gbm(
     final = portfolio[:, -1]
 
     contribution_total = inp.monthly_contribution * n_months
-    prob_positive = float(np.mean(final > contribution_total))
+    total_invested = contribution_total + inp.initial_value
+    prob_positive = float(np.mean(final > total_invested))
     prob_500k = float(np.mean(final > _TARGET_500K))
 
     partial_result = MonteCarloResult(

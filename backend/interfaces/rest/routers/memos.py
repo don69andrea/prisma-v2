@@ -83,7 +83,7 @@ class MemoResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-@router.post("/generate", response_model=MemoResponse)
+@router.post("/generate", response_model=MemoResponse, status_code=201)
 async def generate_memo(
     request: GenerateMemoRequest,
     service: NarrativeService = Depends(get_narrative_service),

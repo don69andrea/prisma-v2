@@ -11,6 +11,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects import postgresql
 
 revision: str = "0014"
 down_revision: str | None = "0013"
@@ -45,7 +46,7 @@ def upgrade() -> None:
         sa.Column("chunk_idx", sa.Integer(), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("embedding", Vector(2048), nullable=False),
-        sa.Column("metadata", sa.dialects.postgresql.JSONB(), nullable=True),
+        sa.Column("metadata", postgresql.JSONB(), nullable=True),
         sa.ForeignKeyConstraint(
             ["news_document_id"],
             ["news_documents.id"],

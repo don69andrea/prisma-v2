@@ -6,11 +6,12 @@ import type { LatestRankingSnapshot, StockRead } from '@/lib/api/stocks';
 import { SwissBadge } from '@/components/ui/swiss-badge';
 import { ExportReportButton } from './ExportReportButton';
 
-function formatMarketCap(value: number): string {
-  if (value >= 1e12) return `CHF ${(value / 1e12).toFixed(1)} Bio.`;
-  if (value >= 1e9) return `CHF ${(value / 1e9).toFixed(1)} Mrd.`;
-  if (value >= 1e6) return `CHF ${(value / 1e6).toFixed(0)} Mio.`;
-  return `CHF ${value.toFixed(0)}`;
+function formatMarketCap(value: string): string {
+  const n = Number(value);
+  if (n >= 1e12) return `CHF ${(n / 1e12).toFixed(1)} Bio.`;
+  if (n >= 1e9) return `CHF ${(n / 1e9).toFixed(1)} Mrd.`;
+  if (n >= 1e6) return `CHF ${(n / 1e6).toFixed(0)} Mio.`;
+  return `CHF ${n.toFixed(0)}`;
 }
 
 interface Props {

@@ -39,10 +39,10 @@ SMI_TICKERS = [
     "SGKN",
     "SLHN",
     "SCMN",
-    "BALN",
+    "SIKA",  # ersetzt BALN (delisted nach Fusion mit Helvetia 2025)
     "HOLN",
     "PGHN",
-    "KRIN",
+    "KNIN",  # korrigiert: KRIN→KNIN (Issue #26)
     "CFR",
     "STMN",
 ]

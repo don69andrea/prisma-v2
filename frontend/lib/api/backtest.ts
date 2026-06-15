@@ -13,6 +13,10 @@ export interface PortfolioMetrics {
 export interface BacktestResult {
   id: string;
   model_run_id: string;
+  start_date: string;
+  end_date: string;
+  top_n: number;
+  benchmark_ticker: string;
   series: {
     dates: string[];
     prisma: number[];

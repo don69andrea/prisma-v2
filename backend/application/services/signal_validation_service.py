@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import numpy as np
 
@@ -12,7 +13,14 @@ _LOOKBACK_DAYS = 3 * 365
 
 
 class SignalValidationResult:
-    def __init__(self, ticker, return_pct, buy_and_hold_pct, win_rate_pct, label):
+    def __init__(
+        self,
+        ticker: str,
+        return_pct: float,
+        buy_and_hold_pct: float,
+        win_rate_pct: float,
+        label: str,
+    ) -> None:
         self.ticker = ticker
         self.return_pct = return_pct
         self.buy_and_hold_pct = buy_and_hold_pct
@@ -21,7 +29,7 @@ class SignalValidationResult:
 
 
 class SignalValidationService:
-    def __init__(self, market_data_provider) -> None:
+    def __init__(self, market_data_provider: Any) -> None:
         self._market = market_data_provider
 
     async def validate(self, ticker: str) -> SignalValidationResult | None:
@@ -79,7 +87,7 @@ class SignalValidationService:
         )
 
 
-def _generate_label(ticker, prisma, bah, win_rate):
+def _generate_label(ticker: str, prisma: float, bah: float, win_rate: float) -> str:
     diff = prisma - bah
     if win_rate >= 60 and diff > 5:
         return f"PRISMA hat bei {ticker} historisch gut funktioniert."

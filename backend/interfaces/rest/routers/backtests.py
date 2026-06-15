@@ -11,6 +11,7 @@ from backend.application.services.backtest_service import (
     RunNotFound,
 )
 from backend.application.services.signal_validation_service import SignalValidationService
+from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.interfaces.rest.dependencies import get_backtest_service, get_yfinance_adapter
 from backend.interfaces.rest.schemas.backtest import BacktestResultResponse, RunBacktestRequest
 
@@ -79,7 +80,7 @@ class SignalValidationResponse(BaseModel):
 )
 async def get_signal_validation(
     ticker: str,
-    adapter=Depends(get_yfinance_adapter),
+    adapter: YFinanceSwissAdapter = Depends(get_yfinance_adapter),
 ) -> SignalValidationResponse:
     service = SignalValidationService(market_data_provider=adapter)
     result = await service.validate(ticker)

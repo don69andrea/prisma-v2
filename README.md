@@ -135,7 +135,7 @@ python scripts/train_return_predictor.py --market all --years 8 \
 
 ---
 
-<details>
+<details open>
 <summary><strong>Deep Dive — Architektur, Features, AI-Layer, Tech-Stack</strong></summary>
 
 ---

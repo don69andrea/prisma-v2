@@ -11,19 +11,15 @@
 
 ## Was ist PRISMA V2?
 
-PRISMA V2 ist eine quantitative Stock-Intelligence-Plattform für den Schweizer
-Markt (SMI/SMIM/SPI) — entwickelt im BI-Modul der FHNW Hochschule für
-Wirtschaft (FS 2026) von Andrea Petretta, Helin und Aurelius. Zwei Ziele:
+PRISMA V2 ist eine quantitative Stock-Intelligence-Plattform für den Schweizer Markt (SMI/SMIM/SPI), entwickelt im BI-Modul FS 2026 (FHNW) von Andrea Petretta, Helin und Aurelius.
 
-**ZIEL 1 — FHNW BI Module:** Den BI-Layer bauen — echtes ML (LightGBM/XGBoost
-Return Prediction), Agentic AI (Discovery + Portfolio + Macro + Steuer), RAG
-(pgvector + Voyage AI), Decision Intelligence Dashboard (BUY/HOLD/WATCH).
-Jede Entscheidung ist begründet, auditierbar, erklärbar.
+Das System kombiniert quantitative Finanzmodelle, Machine Learning und KI-Narrative zu einem einzigen Entscheidungssystem: **BUY / HOLD / WATCH** — jede Entscheidung begründet, auditierbar, erklärbar.
 
-**ZIEL 2 — VIAC Stocks Initiative:** PRISMA V2 als potentielle Infrastruktur
-für VIAC Stocks (Einzeltitelhandel in der 3. Säule). Dafür: 3a Eligibility
-Filter (FINMA-regelbasiert), Langfrist-Score, Steuer-Implikations-Agent,
-Fonds vs. Einzeltitel Vergleich.
+Zwei Anwendungsfälle:
+
+**ZIEL 1 — FHNW BI Module:** Den BI-Layer bauen — echtes ML (LightGBM/XGBoost Return Prediction), Agentic AI (Discovery + Portfolio + Macro + Steuer), RAG (pgvector + Voyage AI), Decision Intelligence Dashboard (BUY/HOLD/WATCH). Jede Entscheidung ist begründet, auditierbar, erklärbar.
+
+**ZIEL 2 — VIAC Stocks Initiative:** PRISMA V2 als potentielle Infrastruktur für VIAC Stocks (Einzeltitelhandel im **freien Vermögen**). Dafür: Swiss Market Universe (SMI/SMIM/SPI), Langfrist-Score, Steuer-Implikations-Agent, Fonds vs. Einzeltitel Vergleich. Zusätzlich: 3a Eligibility Filter (FINMA-regelbasiert) — zeigt welche SMI-Titel für die gebundene Vorsorge zugelassen wären.
 
 ---
 
@@ -48,17 +44,53 @@ Fonds vs. Einzeltitel Vergleich.
 
 ---
 
-## WAS BEREITS EXISTIERT
+## Features
 
-| Komponente | Beschreibung |
+### BI-Layer (FHNW)
+
+| | |
 |---|---|
-| **Quant Core** | 5 Scoring-Modelle (Quality, Trend, Value, Momentum, Diversification) — SMI-kalibriert |
-| **Narrative Engine** | Claude Sonnet + Pydantic. Research-Memos: Stärken, Risiken, One-Liner — validiert |
-| **Multi-Agent Pipeline** | Fundamentals + Sentiment + Synthesizer-Agent — parallelisierte Dossiers |
-| **Discovery Engine** | 5-Schritt-Onboarding: Beruf → Ziel → Risiko-Test → Schweizer Brands → Profil-Reveal |
-| **Decision Dashboard** | BUY/HOLD/WATCH mit Audit Trail, Quant 45% + ML 35% + Makro 20% |
-| **Swiss RAG** | pgvector + Voyage AI, SIX-Filings, Nestlé-Chunks verifiziert |
-| **MCP-Server** | PRISMA aus Claude Desktop per Natursprache nutzbar |
+| **ML Return Prediction** | **Portfolio Intelligence Agent** |
+| LightGBM/XGBoost auf Quant-Faktoren trainiert. Prediziert Forward-Returns in drei Klassen — echtes ML statt nur Ranking. Walk-Forward-Validation, kein Look-Ahead-Bias. 61.4% Top-Quartil-Recall. | 5. Agent: Kennt dein aktuelles Portfolio. Empfiehlt was du hinzufügen/entfernen sollst — nicht nur abstrakte Rankings. Mean-Variance oder Risk-Parity Optimierung. |
+| `ML` | `Agent` |
+
+| | |
+|---|---|
+| **Macro Intelligence Agent** | **Decision Intelligence Dashboard** |
+| Monitort SNB-Entscheide, CHF/EUR, Inflation CH. Kontextualisiert alle Rankings mit makroökonomischen Signalen. | BUY / HOLD / WATCH Signale mit KI-Begründung, Konfidenz-Balken und vollständigem Audit Trail. Quant 45% + ML 35% + Makro 20%. |
+| `Agent` · `RAG` | `Dashboard` |
+
+| | |
+|---|---|
+| **Discovery Engine** | **Narrative Engine** |
+| 5-Schritt Conversational Onboarding: Beruf → Ziel → Risiko-Test → Schweizer Brands → Profil-Reveal. Claude Haiku + Session-State. | Claude Sonnet + Tool-Use + Pydantic. Strukturierte Research-Memos: Stärken, Risiken, Modell-Widersprüche, Analyst-One-Liner — kein Freitext. |
+| `AI` · `Agent` | `AI` |
+
+### Swiss / VIAC Layer
+
+| | |
+|---|---|
+| **Swiss Market Universe** | **3a Eligibility Filter** |
+| SMI (20), SMIM (30), SPI (200+) als primäres Universum. SIX Exchange Daten via yfinance (`.SW`-Suffix), CHF-denominiert, CH-ISIN mit Luhn-Mod-10 validiert. | FINMA-regelbasiert (kein LLM). Welche Titel wären für die gebundene Vorsorge zugelassen? Binär, transparent, auditierbar. Kriterien: Domizil, Anlageklasse, Liquidität (ADV), kein Hebel. |
+| `Swiss` | `VIAC` |
+
+| | |
+|---|---|
+| **Swiss RAG** | **Steuer-Implikations-Agent** |
+| SIX Exchange Filings + NZZ/SRF News auf Deutsch. Voyage AI Embeddings (multilingual). Schweizer Kontext für jeden SMI/SMIM-Titel. | RAG über ESTV-Merkblätter + BVV2. Erklärt Verrechnungssteuer, Wertschriftverzeichnis, Rückforderung. Immer mit Disclaimer: *"Keine Steuerberatung."* |
+| `RAG` · `Swiss` | `Agent` · `RAG` · `VIAC` |
+
+| | |
+|---|---|
+| **Langfrist-Score** | **Fonds vs. Einzeltitel** |
+| Score 0–10 für den 30-Jahres-Horizont: Dividendenstabilität, Bilanzqualität, ESG-Trend, Schweizer Verwurzelung. Sichtbar im Factsheet neben den 5 Quant-Modell-Cards. | VIAC-Strategiefonds (z.B. VIAC Global 100) vs. selbst zusammengestelltes Einzeltitel-Portfolio. Metrics: Expected Return, Volatility, Sharpe, Max Drawdown. |
+| `VIAC` · `ML` | `VIAC` · `Dashboard` |
+
+| | |
+|---|---|
+| **Multi-Agent Deep-Dive** | **MCP-Server** |
+| Fundamentals-Agent + Sentiment-Agent + Synthesizer-Agent — parallelisierte Dossiers für Top-N Picks. | PRISMA direkt aus Claude Desktop per Natursprache nutzbar: *"Zeig mir Top-20% Quality + Trend Titel"* |
+| `Agent` | `MCP` |
 
 ---
 
@@ -120,7 +152,9 @@ backend/
 scripts/              # Seed-Skripte (idempotent), ML-Training
 docs/
 ├── ml-training.md    # ML-Pipeline: Features, Universum, SimFin, Ergebnisse
-└── adr/              # Architecture Decision Records (0001–0008)
+├── adr/              # Architecture Decision Records (0001–0008)
+├── specs/            # Spec-First: ein .md pro Feature vor erstem Commit
+└── superpowers/plans # Implementationspläne (Plan-as-Contract)
 ```
 
 ---
@@ -134,6 +168,7 @@ docs/
 | **Discovery Engine** | Claude Haiku + Session-State | 5-Schritt Onboarding: Beruf → Ziel → Risiko → Brands → Investor-Profil |
 | **Portfolio Intelligence** | Claude Sonnet + Markowitz/Risk-Parity | Portfolio-Optimierung + Rebalancing-Plan |
 | **Macro Intelligence** | Claude Sonnet + SNB RAG | CHF/SNB/Inflation-Kontext für alle Rankings |
+| **Steuer-Agent** | Claude Haiku + ESTV RAG | CH-Steuerimplikationen für freies Vermögen — immer mit Disclaimer |
 | **Signal-Erklärung** | Claude Sonnet | WHY hinter jedem BUY/HOLD/WATCH — Quant + ML + Makro erklärt |
 | **MCP-Server** | FastMCP | PRISMA aus Claude Desktop per Natursprache nutzbar |
 | **ML Predictor** | LightGBM / XGBoost | Forward-Return-Klassen, 19 Features, 61.4% Top-Quartil-Recall |
@@ -146,7 +181,7 @@ docs/
 |-----------|-------------|
 | **Backend** | Python 3.12 · FastAPI · SQLAlchemy 2.0 async · Alembic |
 | **Datenbank** | PostgreSQL 16 · pgvector |
-| **AI / LLM** | Claude API (Sonnet/Haiku) · MCP SDK (FastMCP) |
+| **AI / LLM** | Claude API (Sonnet/Haiku) · MCP SDK (FastMCP) · Voyage AI |
 | **ML** | LightGBM · XGBoost · scikit-learn · pandas · SimFin (Training) |
 | **Frontend** | Next.js 14 · TypeScript · Tailwind CSS · Recharts |
 | **Testing** | pytest (704 Unit-Tests) · Playwright · Vitest |
@@ -159,21 +194,31 @@ docs/
 
 | Aufgabe | Modell | Warum |
 |---------|--------|-------|
+| Architektur, VIAC-Strategie, Trade-offs | Claude Opus | Urteilskraft > Schreibgeschwindigkeit |
 | Research-Memos, Signal-Erklärungen | `claude-sonnet-4-6` | Balance Qualität + Speed |
 | Discovery-Klassifikation, Haiku-Responses | `claude-haiku-4-5-20251001` | Schnell + günstig für kurze Tasks |
 | Forward-Return-Prediction | LightGBM / XGBoost | Deterministisch, erklärbar, auditierbar |
 
 ---
 
-## ENTWICKLUNGS-WORKFLOW
+## Entwicklungs-Workflow
+
+```
+Brainstorming → Spec-First → Plan-as-Contract → Subagent-Driven Execution → Two-Stage Review → Reflexion
+```
+
+1. **Brainstorming** — Architekturentscheidungen mit dem Team durchspielen, eine Frage pro Turn
+2. **Spec-First** — Jedes Feature startet mit `docs/specs/YYYY-MM-DD-*.md`. Kein Code ohne freigegebene Spec
+3. **Plan-as-Contract** — Detaillierte Implementationspläne als verbindlicher Vertrag
+4. **Subagent-Driven Execution** — Frischer Subagent pro Task, kein Kontext-Spill zwischen Tasks
+5. **Two-Stage Review** — Spec-Compliance-Review + Code-Quality-Review als separate Subagents
+6. **Reflexion** — Jeder PR mit AI-Beteiligung landet in `docs/AI-USAGE.md`
 
 ```
 feature/andrea-*  ──┐
-feature/helin-*   ──┼──► develop ──► main
+feature/helin-*   ──┼──► main  (via PR, CI grün, 1 Review)
 feature/aurelius-* ─┘
 ```
-
-Alle Features via Pull Request. CI muss grün sein vor Merge. Coverage ≥ 80%.
 
 ---
 
@@ -188,7 +233,7 @@ cd prisma-v2
 
 # Environment vorbereiten
 cp .env.example .env
-# .env anpassen: ANTHROPIC_API_KEY, DATABASE_URL
+# .env anpassen: ANTHROPIC_API_KEY, DATABASE_URL, VOYAGE_API_KEY
 
 # PostgreSQL starten
 docker compose up -d
@@ -201,6 +246,18 @@ uvicorn backend.interfaces.rest.main:app --reload
 # Frontend
 cd frontend && npm install && npm run dev
 ```
+
+### Demo-Daten seeden
+
+```bash
+# Swiss Stocks: SMI-20
+python scripts/seed_smi_universe.py
+
+# US-Stocks: Tech-Big-12 (empfohlen für reichhaltige Demo)
+python scripts/seed_tech_catalog.py
+```
+
+Alle Seed-Skripte sind idempotent (`ON CONFLICT DO NOTHING`).
 
 ### Tests
 
@@ -230,6 +287,8 @@ python scripts/train_return_predictor.py --market all --years 8 \
 |----------|--------|
 | [`docs/ml-training.md`](./docs/ml-training.md) | ML-Pipeline: Features, Universum, SimFin, Walk-Forward, Ergebnisse |
 | [`docs/adr/`](./docs/adr/) | Architecture Decision Records (8 ADRs) |
+| [`docs/specs/`](./docs/specs/) | Spec-First: ein .md pro Feature vor erstem Commit |
+| [`docs/AI-USAGE.md`](./docs/AI-USAGE.md) | KI-Einsatz im Projekt — Transparenz, Lektionen, Reflexionen |
 | [`CLAUDE.md`](./CLAUDE.md) | Kontext für Claude Code — Status, Tasks, Swiss Market Regeln |
 | [`AGENTS.md`](./AGENTS.md) | Coding-Konventionen (Python, TypeScript, Tests, Async-Patterns) |
 

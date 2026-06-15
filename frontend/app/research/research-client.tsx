@@ -246,7 +246,7 @@ function SimpleModeView({
         >
           Research ist dein PRISMA-Assistent. Stelle Fragen auf Deutsch oder Englisch.
         </p>
-        <p className="text-sm text-zinc-400 leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed">
           Frag PRISMA. Basierend auf Schweizer Geschäftsberichten,
           Makrodaten und deinem Universum.
         </p>
@@ -379,7 +379,7 @@ function ProModeView({
           }}
         >
           {agentLog.length === 0 && summary === null && (
-            <span className="text-zinc-600 flex items-center gap-1">
+            <span className="text-muted-foreground flex items-center gap-1">
               <span style={{ color: CYAN }}>{'>'}</span>{' '}
               <span className="animate-pulse">_</span>
             </span>
@@ -388,7 +388,7 @@ function ProModeView({
           {agentLog.map((entry, i) => {
             if (entry.type === 'ready') {
               return (
-                <span key={i} className="text-zinc-400">
+                <span key={i} className="text-muted-foreground">
                   <span style={{ color: CYAN }}>{'>'}</span> Antwort bereit.
                 </span>
               );
@@ -398,7 +398,7 @@ function ProModeView({
                 key={i}
                 className={cn(
                   'flex items-center gap-2',
-                  entry.done ? 'text-zinc-400' : 'text-zinc-500',
+                  entry.done ? 'text-muted-foreground' : 'text-muted-foreground',
                 )}
               >
                 <span style={{ color: CYAN }}>{'>'}</span>
@@ -479,7 +479,7 @@ function ProModeView({
           className="rounded-md border p-4 space-y-2"
           style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
         >
-          <p className="text-[10px] tracking-widest uppercase text-zinc-500 mb-3">Quellen</p>
+          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">Quellen</p>
           {(allSources.length > 0 ? allSources : MOCK_SOURCES).map((s) => (
             <a
               key={s.label}
@@ -518,7 +518,7 @@ function ProModeView({
           className="rounded-md border p-4 space-y-2"
           style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
         >
-          <p className="text-[10px] tracking-widest uppercase text-zinc-500 mb-3">
+          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">
             Agent-Aktivitat
           </p>
           {AGENT_STEPS.map((step, i) => {
@@ -555,16 +555,16 @@ function ProModeView({
           className="rounded-md border p-4 space-y-2"
           style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
         >
-          <p className="text-[10px] tracking-widest uppercase text-zinc-500 mb-3">Makro-Kontext</p>
-          <div className="flex items-center justify-between text-zinc-400">
+          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">Makro-Kontext</p>
+          <div className="flex items-center justify-between text-muted-foreground">
             <span>SNB</span>
             <span style={{ color: CYAN }}>{MOCK_MACRO.rate}</span>
           </div>
-          <div className="flex items-center justify-between text-zinc-400">
+          <div className="flex items-center justify-between text-muted-foreground">
             <span>CHF/EUR</span>
             <span style={{ color: CYAN }}>{MOCK_MACRO.fx}</span>
           </div>
-          <p className="text-zinc-500 pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <p className="text-muted-foreground pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
             &ldquo;{MOCK_MACRO.sentiment}&rdquo;
           </p>
         </div>
@@ -674,7 +674,7 @@ export function ResearchClient() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
             <Terminal className="h-5 w-5" style={{ color: CYAN }} />
-            <span className="text-xs tracking-widest uppercase text-zinc-500 font-mono">
+            <span className="text-xs tracking-widest uppercase text-muted-foreground font-mono">
               PRISMA · Research
             </span>
           </div>

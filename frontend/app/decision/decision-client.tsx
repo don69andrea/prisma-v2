@@ -395,10 +395,10 @@ function HeroCard({ item, signal }: { item: DecisionSignal | undefined; signal: 
       <div className={`rounded-xl border p-5 flex flex-col gap-3 ${styles.border} ${styles.bg} opacity-40`}>
         <div className="flex items-center justify-between">
           <span className={`text-sm font-bold uppercase px-2 py-1 rounded-lg ${styles.bg} ${styles.text}`}>{signal}</span>
-          <span className="text-2xl font-bold text-slate-500">—</span>
+          <span className="text-2xl font-bold text-muted-foreground">—</span>
         </div>
-        <div className="font-bold text-slate-400 text-lg">Kein Signal</div>
-        <p className="text-sm text-slate-500 italic leading-relaxed">Kein {signal}-Signal vorhanden.</p>
+        <div className="font-bold text-muted-foreground text-lg">Kein Signal</div>
+        <p className="text-sm text-muted-foreground italic leading-relaxed">Kein {signal}-Signal vorhanden.</p>
       </div>
     );
   }
@@ -407,10 +407,10 @@ function HeroCard({ item, signal }: { item: DecisionSignal | undefined; signal: 
     <div className={`rounded-xl border p-5 flex flex-col gap-3 ${styles.border} ${styles.bg}`}>
       <div className="flex items-center justify-between">
         <span className={`text-sm font-bold uppercase px-2 py-1 rounded-lg ${styles.bg} ${styles.text}`}>{signal}</span>
-        <span className="text-2xl font-bold text-slate-200">{Math.round(item.weighted_score)}</span>
+        <span className="text-2xl font-bold text-foreground">{Math.round(item.weighted_score)}</span>
       </div>
-      <div className="font-bold text-slate-200 text-lg">{item.ticker}</div>
-      <p className="text-sm text-slate-400 italic leading-relaxed">&ldquo;{item.signal_reason ?? 'Kein Kommentar verfügbar.'}&rdquo;</p>
+      <div className="font-bold text-foreground text-lg">{item.ticker}</div>
+      <p className="text-sm text-muted-foreground italic leading-relaxed">&ldquo;{item.signal_reason ?? 'Kein Kommentar verfügbar.'}&rdquo;</p>
       <Link href={`/stocks/${item.ticker}`} className="text-xs text-blue-400 hover:text-blue-300">Details ansehen →</Link>
     </div>
   );
@@ -461,7 +461,7 @@ function AllSignalsTable({ signals }: { signals: DecisionSignal[] }) {
                       </span>
                     </td>
                     <td className="px-4 py-3 tabular-nums text-[#e6edf3]">{Math.round(item.weighted_score)}</td>
-                    <td className="px-4 py-3 text-xs text-slate-400 max-w-xs">{item.signal_reason ?? '—'}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs">{item.signal_reason ?? '—'}</td>
                   </tr>
                 );
               })}
@@ -513,7 +513,7 @@ function ProTable({ signals }: { signals: DecisionSignal[] }) {
                   {/* top SHAP feature placeholder — actual SHAP per-row would need per-item ML query */}
                   quant_score
                 </td>
-                <td className="px-4 py-3 text-xs text-slate-400 max-w-xs">{item.signal_reason ?? '—'}</td>
+                <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs">{item.signal_reason ?? '—'}</td>
               </tr>
             );
           })}

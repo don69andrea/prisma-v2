@@ -1012,13 +1012,13 @@ function ConfidenceBar({ currentTurn }: { currentTurn: number }) {
   const pct = Math.round((currentTurn / 7) * 100);
   return (
     <div className="space-y-1 mt-4 max-w-lg mx-auto px-2">
-      <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
         <div
           className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="text-[10px] text-center text-slate-500">
+      <p className="text-[10px] text-center text-muted-foreground">
         Dein Profil wird immer präziser. · {pct}%
       </p>
     </div>

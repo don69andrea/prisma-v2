@@ -414,7 +414,7 @@ function ProDashboard() {
         )}
 
         {!loading && topBuySignals.length > 0 && (
-          <div className="rounded-xl border border-border bg-slate-900/40 divide-y divide-slate-800/60">
+          <div className="rounded-xl border border-border bg-card divide-y divide-border">
             {topBuySignals.map((sig) => (
               <ProSignalRow key={sig.ticker} signal={sig} />
             ))}
@@ -435,7 +435,7 @@ function ProDashboard() {
             3 neue Meldungen <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        <div className="rounded-xl border border-border bg-slate-900/40 p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
           <Link href="/news" className="hover:text-foreground transition-colors">
             Aktuelle Nachrichten zu Schweizer Aktien im Research-Bereich.
           </Link>
@@ -461,7 +461,7 @@ function PrismaModeSwitcher() {
     <div className="mb-6 flex justify-end">
       <button
         onClick={toggle}
-        className="inline-flex items-center gap-2 rounded-lg border border-border bg-slate-800/40 px-3 py-1.5 text-xs text-muted-foreground hover:bg-slate-700 hover:text-foreground transition-colors"
+        className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         aria-label={mode === 'simple' ? 'Zu Pro-Modus wechseln' : 'Zu Einfach-Modus wechseln'}
       >
         {mode === 'simple' ? (

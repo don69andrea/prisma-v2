@@ -60,8 +60,8 @@ export function ExportReportButton({ ticker }: Props) {
         className={cn(
           'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
           'border backdrop-blur-sm',
-          state === 'idle' && 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-purple-500/60 hover:text-white',
-          state === 'loading' && 'bg-slate-900/60 border-purple-500/40 text-purple-300 cursor-not-allowed',
+          state === 'idle' && 'bg-muted-foreground/60 border-border text-muted-foreground hover:border-purple-500/60 hover:text-white',
+          state === 'loading' && 'bg-muted-foreground/60 border-purple-500/40 text-purple-300 cursor-not-allowed',
           state === 'done' && 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400',
           state === 'error' && 'bg-red-950/60 border-red-500/40 text-red-400',
         )}
@@ -79,11 +79,11 @@ export function ExportReportButton({ ticker }: Props) {
         <div className="flex items-center gap-2">
           {STEPS.map((s, i) => (
             <div key={s} className="flex items-center gap-1">
-              {i > 0 && <span className="text-slate-700 text-[10px]">&#8594;</span>}
+              {i > 0 && <span className="text-muted-foreground text-[10px]">&#8594;</span>}
               <span
                 className={cn(
                   'text-[10px] transition-colors duration-300',
-                  i < step ? 'text-emerald-500' : i === step ? 'text-purple-400' : 'text-slate-700',
+                  i < step ? 'text-emerald-500' : i === step ? 'text-purple-400' : 'text-muted-foreground',
                 )}
               >
                 {i < step ? '✓' : ''} {s}

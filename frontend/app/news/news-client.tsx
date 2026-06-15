@@ -114,7 +114,7 @@ function SimpleNewsCard({ item }: { item: NewsChunkResult }) {
       {/* Affected tickers */}
       {item.tickers.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap text-xs">
-          <span className="text-slate-500">Betrifft:</span>
+          <span className="text-muted-foreground">Betrifft:</span>
           {item.tickers.slice(0, 4).map((t) => (
             <Link
               key={t}
@@ -233,14 +233,14 @@ function MarktSentimentPanel() {
       <div className="space-y-2">
         {SENTIMENT_BARS.map((s) => (
           <div key={s.label} className="flex items-center gap-3">
-            <span className="text-xs text-slate-400 w-14">{s.label}</span>
-            <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <span className="text-xs text-muted-foreground w-14">{s.label}</span>
+            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full ${s.color} rounded-full`}
                 style={{ width: `${s.pct}%` }}
               />
             </div>
-            <span className="text-xs text-slate-400 w-8 text-right">{s.pct}%</span>
+            <span className="text-xs text-muted-foreground w-8 text-right">{s.pct}%</span>
           </div>
         ))}
       </div>

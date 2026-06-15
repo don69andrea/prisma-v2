@@ -312,7 +312,7 @@ function SimpleAlertsView({ initialTicker }: { initialTicker: string }) {
             </div>
             <button
               onClick={() => deleteMutation.mutate(alert.id)}
-              className="text-slate-500 hover:text-red-400 shrink-0 transition-colors"
+              className="text-muted-foreground hover:text-red-400 shrink-0 transition-colors"
               aria-label="Alert löschen"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -486,7 +486,7 @@ function ProAlertsView({ initialTicker }: { initialTicker: string }) {
                   <td className="py-3">
                     <button
                       onClick={() => deleteMutation.mutate(alert.id)}
-                      className="text-slate-500 hover:text-red-400 transition-colors"
+                      className="text-muted-foreground hover:text-red-400 transition-colors"
                       aria-label="Alert löschen"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

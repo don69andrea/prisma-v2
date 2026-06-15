@@ -63,7 +63,7 @@ class SQLARankingRunRepository(RankingRunRepository):
         row = await self._session.get(RankingRunORM, run_id)
         if row is not None:
             row.results = results
-            await self._session.commit()
+            await self._session.flush()
 
     async def get_results(self, run_id: UUID) -> list[dict[str, Any]] | None:
         row = await self._session.get(RankingRunORM, run_id)

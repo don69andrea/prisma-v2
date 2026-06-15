@@ -28,9 +28,8 @@ export interface DiscoveredStock {
   ticker: string;
   name: string;
   sector: string | null;
-  market_cap_chf: number | null;
+  market_cap_chf: string | null;
   exchange: string;
-  signal_reason?: string;
 }
 
 export interface DiscoveryResponse {
@@ -68,14 +67,7 @@ export interface AnswerResponse {
 
 export interface CompleteDiscoveryResponse {
   profile: PartialProfile;
-  recommended_stocks: Array<{
-    ticker: string;
-    name: string;
-    sector: string | null;
-    market_cap_chf: number | null;
-    exchange: string;
-    signal_reason?: string;
-  }>;
+  recommended_stocks: DiscoveredStock[];
 }
 
 export async function createDiscoverySession(): Promise<DiscoverySessionResponse> {

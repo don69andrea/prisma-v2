@@ -1,6 +1,6 @@
 """Pydantic-Schemas für Backtest-REST-Endpunkte."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -48,6 +48,7 @@ class BacktestResultResponse(BaseModel):
     universe_metrics: PortfolioMetricsResponse
     benchmark_metrics: PortfolioMetricsResponse
     series: BacktestSeriesResponse
+    created_at: datetime
 
     @classmethod
     def from_entity(cls, r: BacktestResult) -> "BacktestResultResponse":
@@ -67,4 +68,5 @@ class BacktestResultResponse(BaseModel):
                 universe=[float(x) for x in r.series.universe],
                 benchmark=[float(x) for x in r.series.benchmark],
             ),
+            created_at=r.created_at,
         )

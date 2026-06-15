@@ -21,6 +21,7 @@ router = APIRouter(prefix="/api/v1/backtests", tags=["backtests"])
 @router.post(
     "",
     response_model=BacktestResultResponse,
+    status_code=201,
     summary="Backtest ausführen",
     description="Simuliert PRISMA Top-N, Universum und Benchmark über den angegebenen Zeitraum.",
 )

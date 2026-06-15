@@ -568,6 +568,7 @@ def _get_coingecko_singleton() -> CoinGeckoAdapter:
     global _coingecko_adapter
     if _coingecko_adapter is None:
         from backend.config import get_settings
+
         _coingecko_adapter = CoinGeckoAdapter(api_key=get_settings().coingecko_api_key)
     return _coingecko_adapter
 

@@ -1,4 +1,5 @@
 """CoinGecko API-Adapter für Marktdaten in CHF (Free Tier, kein API-Key nötig)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -22,9 +23,7 @@ class CoinGeckoAdapter:
         self._market_cache: list[dict] | None = None
         self._market_cached_at: datetime | None = None
 
-    async def get_market_data(
-        self, coin_ids: list[str], vs_currency: str = "chf"
-    ) -> list[dict]:
+    async def get_market_data(self, coin_ids: list[str], vs_currency: str = "chf") -> list[dict]:
         """Markt-Daten für mehrere Coins in einem API-Call (Batch)."""
         now = datetime.now(tz=UTC)
         if (

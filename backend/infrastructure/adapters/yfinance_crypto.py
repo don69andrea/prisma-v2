@@ -1,4 +1,5 @@
 """yFinance-Adapter für Krypto-OHLCV und technische Indikatoren (pandas-ta)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -71,9 +72,7 @@ class YFinanceCryptoAdapter:
                 crypto_df.columns = [col[0] for col in crypto_df.columns]
             if isinstance(smi_df.columns, pd.MultiIndex):
                 smi_df.columns = [col[0] for col in smi_df.columns]
-            combined = pd.DataFrame(
-                {"crypto": crypto_df["Close"], "smi": smi_df["Close"]}
-            ).dropna()
+            combined = pd.DataFrame({"crypto": crypto_df["Close"], "smi": smi_df["Close"]}).dropna()
             return float(combined.corr().iloc[0, 1])
         except Exception:
             _logger.warning("SMI-Korrelation für %s nicht berechenbar", ticker_yf)

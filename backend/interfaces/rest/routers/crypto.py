@@ -1,4 +1,5 @@
 """REST-Router für /api/v1/crypto/*."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Path
@@ -51,4 +52,5 @@ async def get_crypto_market(
 ) -> list[dict]:
     """Markt-Übersicht für alle 10 Kryptos: Preis CHF, Market Cap, 24h/7d Änderung."""
     from backend.domain.entities.crypto_asset import SUPPORTED_CRYPTOS
+
     return await cg.get_market_data([c[0] for c in SUPPORTED_CRYPTOS])

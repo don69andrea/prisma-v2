@@ -1,4 +1,5 @@
 """Integrationstests für /api/v1/crypto/* — HTTP-Schicht ohne externe APIs."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -18,7 +19,13 @@ def _make_signal(ticker: str = "BTC", score: float = 65.0) -> CryptoSignal:
         name="Bitcoin" if ticker == "BTC" else ticker,
         signal="BUY",
         score=score,
-        score_components={"momentum": 20.0, "trend": 18.0, "sentiment": 14.0, "markt": 8.0, "risiko": 5.0},
+        score_components={
+            "momentum": 20.0,
+            "trend": 18.0,
+            "sentiment": 14.0,
+            "markt": 8.0,
+            "risiko": 5.0,
+        },
         signal_reason_de="Test-Signal.",
         fear_greed_value=35,
         fear_greed_label="Fear",
@@ -73,7 +80,15 @@ async def test_get_signals_returns_list(crypto_client: AsyncClient) -> None:
 async def test_get_signals_has_required_fields(crypto_client: AsyncClient) -> None:
     response = await crypto_client.get("/api/v1/crypto/signals", headers={"X-API-Key": "test"})
     first = response.json()[0]
-    for field in ["ticker", "signal", "score", "score_components", "rsi_14", "fear_greed_value", "has_six_etp"]:
+    for field in [
+        "ticker",
+        "signal",
+        "score",
+        "score_components",
+        "rsi_14",
+        "fear_greed_value",
+        "has_six_etp",
+    ]:
         assert field in first, f"Missing field: {field}"
 
 
@@ -83,9 +98,13 @@ async def test_get_signal_by_ticker_returns_200(crypto_client: AsyncClient) -> N
     assert response.json()["ticker"] == "BTC"
 
 
-async def test_get_signal_invalid_ticker_returns_404(crypto_client: AsyncClient, mock_crypto_service) -> None:
+async def test_get_signal_invalid_ticker_returns_404(
+    crypto_client: AsyncClient, mock_crypto_service
+) -> None:
     mock_crypto_service.score_one.return_value = None
-    response = await crypto_client.get("/api/v1/crypto/signals/UNKNOWN", headers={"X-API-Key": "test"})
+    response = await crypto_client.get(
+        "/api/v1/crypto/signals/UNKNOWN", headers={"X-API-Key": "test"}
+    )
     assert response.status_code == 404
 
 
@@ -95,7 +114,9 @@ async def test_get_fear_greed_returns_200(crypto_client: AsyncClient) -> None:
         new_callable=AsyncMock,
         return_value={"value": 35, "label": "Fear", "timestamp": "1234567890"},
     ):
-        response = await crypto_client.get("/api/v1/crypto/fear-greed", headers={"X-API-Key": "test"})
+        response = await crypto_client.get(
+            "/api/v1/crypto/fear-greed", headers={"X-API-Key": "test"}
+        )
     assert response.status_code == 200
     body = response.json()
     assert "value" in body

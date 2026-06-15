@@ -1,4 +1,5 @@
 """Fear & Greed Index-Adapter via alternative.me (kostenlos, kein API-Key)."""
+
 from __future__ import annotations
 
 import logging

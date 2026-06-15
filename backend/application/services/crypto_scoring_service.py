@@ -1,4 +1,5 @@
 """CryptoScoringService — orchestriert alle Datenquellen und berechnet CryptoSignals."""
+
 from __future__ import annotations
 
 import asyncio
@@ -74,15 +75,26 @@ class CryptoScoringService:
             )
 
             score, components = self._scorer.score(
-                asset, tech, fg_value, correlation_smi_1y=float(corr)  # type: ignore[arg-type]
+                asset,
+                tech,
+                fg_value,
+                correlation_smi_1y=float(corr),  # type: ignore[arg-type]
             )
             signal = _score_to_signal(score)
 
             rsi = float(tech["RSI_14"].iloc[-1]) if "RSI_14" in tech.columns else 50.0
-            macd_val = float(tech["MACD_12_26_9"].iloc[-1]) if "MACD_12_26_9" in tech.columns else 0.0
-            macd_sig_val = float(tech["MACDs_12_26_9"].iloc[-1]) if "MACDs_12_26_9" in tech.columns else 0.0
+            macd_val = (
+                float(tech["MACD_12_26_9"].iloc[-1]) if "MACD_12_26_9" in tech.columns else 0.0
+            )
+            macd_sig_val = (
+                float(tech["MACDs_12_26_9"].iloc[-1]) if "MACDs_12_26_9" in tech.columns else 0.0
+            )
             returns = tech["Close"].pct_change().dropna()
-            vol_30d = float(returns.rolling(30).std().iloc[-1] * (365**0.5) * 100) if len(returns) >= 30 else 0.0
+            vol_30d = (
+                float(returns.rolling(30).std().iloc[-1] * (365**0.5) * 100)
+                if len(returns) >= 30
+                else 0.0
+            )
 
             reason = generate_signal_reason(
                 signal=signal,

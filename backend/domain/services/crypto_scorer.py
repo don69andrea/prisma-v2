@@ -1,4 +1,5 @@
 """CryptoScorer — technisch-sentimentaler Score für Kryptowährungen (0–100)."""
+
 from __future__ import annotations
 
 import pandas as pd

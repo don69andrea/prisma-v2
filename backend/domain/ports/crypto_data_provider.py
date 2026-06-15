@@ -1,4 +1,5 @@
 """Port-Interface für Krypto-Datenquellen (Hexagonale Architektur)."""
+
 from __future__ import annotations
 
 from typing import Protocol

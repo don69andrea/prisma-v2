@@ -1,4 +1,5 @@
 """Pydantic Response-Modelle für /api/v1/crypto/*."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel

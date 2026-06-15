@@ -1,4 +1,5 @@
 """CryptoSignal — Scoring-Ergebnis für eine Kryptowährung."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

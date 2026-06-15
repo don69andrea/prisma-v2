@@ -101,12 +101,12 @@ class SQLANewsRepository(NewsRepository):
                 nd.source,
                 nd.tickers,
                 nd.published_at,
-                1 - ((nc.embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048)))
+                1 - ((nc.embedding::halfvec(1024)) <=> ('{query_vector_str}'::vector(1024)::halfvec(1024)))
                                    AS similarity
             FROM news_chunks nc
             JOIN news_documents nd ON nd.id = nc.news_document_id
             WHERE 1=1 {ticker_filter}
-            ORDER BY (nc.embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048))
+            ORDER BY (nc.embedding::halfvec(1024)) <=> ('{query_vector_str}'::vector(1024)::halfvec(1024))
             LIMIT :k
         """
         from sqlalchemy import text

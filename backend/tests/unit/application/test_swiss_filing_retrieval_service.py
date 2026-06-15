@@ -35,7 +35,7 @@ def _build_service(
 ) -> tuple[SwissFilingRetrievalService, MagicMock, AsyncMock]:
     mock_voyage = MagicMock()
     mock_embed_result = MagicMock()
-    mock_embed_result.embeddings = [[0.1] * 2048]
+    mock_embed_result.embeddings = [[0.1] * 1024]
     mock_voyage.embed.return_value = mock_embed_result
 
     mock_repo = AsyncMock()

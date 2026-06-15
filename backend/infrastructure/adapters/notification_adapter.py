@@ -13,12 +13,16 @@ _SENDGRID_URL = "https://api.sendgrid.com/v3/mail/send"
 _FROM_EMAIL = "alerts@prisma-v2.app"
 _TIMEOUT = 10.0
 
+# Bekannte Platzhalter-Werte, die in .env-Templates oder Demo-Setups vorkommen.
+# Ein Key aus dieser Menge löst denselben graceful-Skip aus wie ein leerer Key.
+_PLACEHOLDER_KEYS = {"your-sendgrid-key", "your-key", "placeholder", "change-me"}
+
 
 async def send_email(to: str, subject: str, body: str) -> bool:
     """Sendet E-Mail via SendGrid. Gibt True zurück wenn erfolgreich."""
     api_key = os.environ.get("SENDGRID_API_KEY", "")
-    if not api_key:
-        _logger.warning("SENDGRID_API_KEY nicht gesetzt — E-Mail nicht gesendet an %s", to)
+    if not api_key or api_key.lower() in _PLACEHOLDER_KEYS:
+        _logger.warning("SENDGRID_API_KEY nicht konfiguriert — E-Mail nicht gesendet an %s", to)
         return False
 
     payload = {

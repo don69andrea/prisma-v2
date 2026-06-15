@@ -3,13 +3,16 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from backend.application.services.backtest_service import (
     BacktestService,
     NoResultsFound,
     RunNotFound,
 )
-from backend.interfaces.rest.dependencies import get_backtest_service
+from backend.application.services.signal_validation_service import SignalValidationService
+from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
+from backend.interfaces.rest.dependencies import get_backtest_service, get_yfinance_adapter
 from backend.interfaces.rest.schemas.backtest import BacktestResultResponse, RunBacktestRequest
 
 router = APIRouter(prefix="/api/v1/backtests", tags=["backtests"])
@@ -54,3 +57,41 @@ async def get_backtest_result(
     if result is None:
         raise HTTPException(status_code=404, detail="Backtest-Ergebnis nicht gefunden") from None
     return BacktestResultResponse.from_entity(result)
+
+
+signal_router = APIRouter(prefix="/api/v1/backtest", tags=["backtests"])
+
+
+class SignalValidationResponse(BaseModel):
+    return_pct: float
+    buy_and_hold_pct: float
+    win_rate_pct: float
+    label: str
+
+
+@signal_router.get(
+    "/signal-validation/{ticker}",
+    response_model=SignalValidationResponse,
+    summary="Signal-Validierung",
+    description=(
+        "Mini-Backtest: Vergleicht PRISMA-Signal-Rendite mit Buy&Hold über 3 Jahre "
+        "und gibt die Gewinn-Trade-Quote zurück."
+    ),
+)
+async def get_signal_validation(
+    ticker: str,
+    adapter: YFinanceSwissAdapter = Depends(get_yfinance_adapter),
+) -> SignalValidationResponse:
+    service = SignalValidationService(market_data_provider=adapter)
+    result = await service.validate(ticker)
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Nicht genug historische Daten für {ticker}.",
+        )
+    return SignalValidationResponse(
+        return_pct=result.return_pct,
+        buy_and_hold_pct=result.buy_and_hold_pct,
+        win_rate_pct=result.win_rate_pct,
+        label=result.label,
+    )

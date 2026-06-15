@@ -163,7 +163,14 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
             ex_date = datetime.fromtimestamp(float(ex_ts), tz=UTC).strftime("%Y-%m-%d")
 
         raw_yield = info.get("dividendYield")
-        dividend_yield_pct: float | None = round(float(raw_yield) * 100, 2) if raw_yield else None
+        if raw_yield:
+            raw_float = float(raw_yield)
+            # yfinance gibt dividendYield manchmal als Dezimal (0.038), manchmal als Prozent (3.8)
+            dividend_yield_pct: float | None = round(
+                raw_float if raw_float > 1 else raw_float * 100, 2
+            )
+        else:
+            dividend_yield_pct = None
 
         last_val = info.get("lastDividendValue")
         last_dividend_chf: float | None = float(last_val) if last_val is not None else None

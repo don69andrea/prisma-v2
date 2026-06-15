@@ -120,7 +120,7 @@ async def test_fundamentals_response_has_disclaimer(http_client: AsyncClient) ->
     assert len(body["disclaimer"]) > 0
 
 
-async def test_fundamentals_unknown_ticker_returns_404(http_client: AsyncClient) -> None:
+async def test_fundamentals_unknown_ticker_not_in_db_returns_404(http_client: AsyncClient) -> None:
     """Ticker nicht in Stock-DB → 404."""
     response = await http_client.get("/api/v1/stocks/UNKNOWN/fundamentals")
     assert response.status_code == 404

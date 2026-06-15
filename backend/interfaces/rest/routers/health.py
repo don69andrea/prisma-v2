@@ -11,7 +11,7 @@ from backend.infrastructure.persistence.session import get_session_factory
 
 router = APIRouter(tags=["health"])
 
-_VERSION = os.environ.get("APP_VERSION", "2.0.0")
+_VERSION = os.environ.get("APP_VERSION", "2.1.0")
 _logger = logging.getLogger(__name__)
 
 

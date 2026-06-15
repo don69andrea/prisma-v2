@@ -8,7 +8,7 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
-EMBEDDING_DIM = 2048
+EMBEDDING_DIM = 1024
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,7 @@ class SwissFilingChunk:
     doc_type: str  # "Jahresbericht" | "Halbjahresbericht" | "Annual Report"
     chunk_idx: int
     content: str
-    embedding: list[float]  # must be EMBEDDING_DIM=2048
+    embedding: list[float]  # must be EMBEDDING_DIM=1024 (voyage-3-large)
     metadata: dict[str, Any]
     ingested_at: datetime
 

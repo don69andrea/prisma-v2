@@ -50,7 +50,7 @@ async def test_rag_retrieve_default_k(http_client: AsyncClient, truncate_embeddi
         mock_voyage.return_value = None
         with patch("backend.interfaces.rest.dependencies.LLMClient") as mock_llm_class:
             mock_llm = AsyncMock()
-            mock_llm.embed.return_value = [[0.0] * 2048]
+            mock_llm.embed.return_value = [[0.0] * 1024]
             mock_llm_class.return_value = mock_llm
 
             response = await http_client.post("/api/v1/rag/retrieve", json={"query": "test query"})
@@ -62,7 +62,7 @@ async def test_rag_retrieve_response(http_client: AsyncClient, truncate_embeddin
     """Response hat korrekte Struktur."""
     with patch("backend.interfaces.rest.dependencies.LLMClient") as mock_llm_class:
         mock_llm = AsyncMock()
-        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_llm.embed.return_value = [[0.0] * 1024]
         mock_llm_class.return_value = mock_llm
 
         response = await http_client.post("/api/v1/rag/retrieve", json={"query": "test", "k": 5})
@@ -76,7 +76,7 @@ async def test_rag_retrieve_no_results(http_client: AsyncClient, truncate_embedd
     """Bei leerer DB ist total=0."""
     with patch("backend.interfaces.rest.dependencies.LLMClient") as mock_llm_class:
         mock_llm = AsyncMock()
-        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_llm.embed.return_value = [[0.0] * 1024]
         mock_llm_class.return_value = mock_llm
 
         response = await http_client.post(
@@ -94,7 +94,7 @@ async def test_rag_retrieve_ticker_filter(
     """Ticker-Filter wird akzeptiert."""
     with patch("backend.interfaces.rest.dependencies.LLMClient") as mock_llm_class:
         mock_llm = AsyncMock()
-        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_llm.embed.return_value = [[0.0] * 1024]
         mock_llm_class.return_value = mock_llm
 
         response = await http_client.post(

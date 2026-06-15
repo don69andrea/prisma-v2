@@ -53,9 +53,9 @@ function getDiscoverTickers(): string[] {
 // ---------------------------------------------------------------------------
 
 const SIGNAL_STYLE: Record<string, { badge: string; bg: string; border: string }> = {
-  BUY:  { badge: 'bg-emerald-500/20 text-emerald-400', bg: 'bg-emerald-950/20', border: 'border-emerald-800/40' },
-  HOLD: { badge: 'bg-amber-500/20 text-amber-400',    bg: 'bg-amber-950/20',   border: 'border-amber-800/40'   },
-  SELL: { badge: 'bg-red-500/20 text-red-400',        bg: 'bg-red-950/20',     border: 'border-red-800/40'     },
+  BUY:  { badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20', border: 'border-emerald-200 dark:border-emerald-800/40' },
+  HOLD: { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',         bg: 'bg-amber-50 dark:bg-amber-950/20',     border: 'border-amber-200 dark:border-amber-800/40'     },
+  SELL: { badge: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',                 bg: 'bg-red-50 dark:bg-red-950/20',         border: 'border-red-200 dark:border-red-800/40'         },
 };
 
 // ---------------------------------------------------------------------------
@@ -73,13 +73,13 @@ function SimpleSignalCard({ signal }: { signal: DecisionSignal }) {
         <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${style.badge}`}>
           {signal.signal}
         </span>
-        <span className="text-sm font-bold text-slate-200">
+        <span className="text-sm font-bold text-foreground">
           {signal.weighted_score.toFixed(0)}/100
         </span>
       </div>
-      <div className="font-semibold text-slate-200">{signal.ticker}</div>
+      <div className="font-semibold text-foreground">{signal.ticker}</div>
       {signal.signal_reason && (
-        <p className="mt-1 text-xs text-slate-400 leading-relaxed">
+        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
           &quot;{signal.signal_reason}&quot;
         </p>
       )}
@@ -96,23 +96,23 @@ function ProSignalRow({ signal }: { signal: DecisionSignal }) {
   return (
     <Link
       href={`/stocks/${signal.ticker}`}
-      className="flex items-start gap-3 rounded-lg px-3 py-3 hover:bg-slate-800/50 transition-colors group"
+      className="flex items-start gap-3 rounded-lg px-3 py-3 hover:bg-muted/50 transition-colors group"
     >
       <span className={`mt-0.5 shrink-0 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${style.badge}`}>
         {signal.signal}
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-sm font-semibold text-slate-200">{signal.ticker}</span>
-          <span className="text-xs text-slate-500 tabular-nums">{signal.weighted_score.toFixed(0)}/100</span>
+          <span className="font-mono text-sm font-semibold text-foreground">{signal.ticker}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">{signal.weighted_score.toFixed(0)}/100</span>
         </div>
         {signal.signal_reason && (
-          <p className="mt-0.5 text-xs text-slate-500 leading-relaxed truncate">
+          <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed truncate">
             {signal.signal_reason}
           </p>
         )}
       </div>
-      <ArrowRight className="h-3.5 w-3.5 text-slate-600 group-hover:text-slate-400 shrink-0 mt-1 transition-colors" />
+      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0 mt-1 transition-colors" />
     </Link>
   );
 }
@@ -197,13 +197,13 @@ function SimpleDashboard() {
     <div className="space-y-8 max-w-2xl">
       {/* Greeting */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-100">{getGreeting()}.</h1>
-        <p className="mt-1 text-xs text-slate-500">Stand: {stand}</p>
+        <h1 className="text-2xl font-bold text-foreground">{getGreeting()}.</h1>
+        <p className="mt-1 text-xs text-muted-foreground">Stand: {stand}</p>
       </div>
 
       {/* Hero signals */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">
+        <h2 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           Deine 3 stärksten Signale.
         </h2>
 
@@ -216,8 +216,8 @@ function SimpleDashboard() {
         )}
 
         {!loading && heroSignals.length === 0 && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 text-center">
-            <p className="text-sm text-slate-500 mb-3">
+          <div className="rounded-xl border border-border bg-muted/40 p-6 text-center">
+            <p className="text-sm text-muted-foreground mb-3">
               Noch keine Signale vorhanden.
             </p>
             <Link
@@ -242,7 +242,7 @@ function SimpleDashboard() {
       {universeSize > 0 && (
         <Link
           href="/discover"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowRight className="h-3.5 w-3.5" />
           Alle {universeSize} Aktien in deinem Universum
@@ -280,10 +280,10 @@ function ProDashboard() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Dashboard.</h1>
-          <p className="mt-1 text-xs text-slate-500">Stand: {stand}</p>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard.</h1>
+          <p className="mt-1 text-xs text-muted-foreground">Stand: {stand}</p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-1.5">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 border border-border rounded-lg px-3 py-1.5">
           <BarChart2 className="h-3.5 w-3.5" />
           Pro-Modus
         </div>
@@ -292,8 +292,8 @@ function ProDashboard() {
       {/* Two-column overview */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {/* Markt-Überblick */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-3">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Markt-Überblick.
           </h2>
           {macroQuery.isLoading && (
@@ -306,42 +306,42 @@ function ProDashboard() {
           {macro && (
             <dl className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500 flex items-center gap-1.5">
+                <dt className="text-muted-foreground flex items-center gap-1.5">
                   <TrendingUp className="h-3.5 w-3.5" />
                   Makro-Klima
                 </dt>
-                <dd className="font-semibold text-slate-200">{macro.climate}</dd>
+                <dd className="font-semibold text-foreground">{macro.climate}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500">SNB Leitzins</dt>
-                <dd className="font-semibold text-slate-200">{macro.leitzins.toFixed(2)}%</dd>
+                <dt className="text-muted-foreground">SNB Leitzins</dt>
+                <dd className="font-semibold text-foreground">{macro.leitzins.toFixed(2)}%</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500">CHF / EUR</dt>
-                <dd className="font-semibold text-slate-200">{macro.chf_eur.toFixed(4)}</dd>
+                <dt className="text-muted-foreground">CHF / EUR</dt>
+                <dd className="font-semibold text-foreground">{macro.chf_eur.toFixed(4)}</dd>
               </div>
               {macro.inflation_ch !== null && (
                 <div className="flex items-center justify-between">
-                  <dt className="text-slate-500">Inflation CH</dt>
-                  <dd className="font-semibold text-slate-200">{macro.inflation_ch.toFixed(1)}%</dd>
+                  <dt className="text-muted-foreground">Inflation CH</dt>
+                  <dd className="font-semibold text-foreground">{macro.inflation_ch.toFixed(1)}%</dd>
                 </div>
               )}
               {macro.pmi_ch !== null && (
                 <div className="flex items-center justify-between">
-                  <dt className="text-slate-500">PMI CH</dt>
-                  <dd className="font-semibold text-slate-200">{macro.pmi_ch.toFixed(1)}</dd>
+                  <dt className="text-muted-foreground">PMI CH</dt>
+                  <dd className="font-semibold text-foreground">{macro.pmi_ch.toFixed(1)}</dd>
                 </div>
               )}
             </dl>
           )}
           {!macroQuery.isLoading && !macro && (
-            <p className="text-xs text-slate-600">Makro-Daten nicht verfügbar.</p>
+            <p className="text-xs text-muted-foreground">Makro-Daten nicht verfügbar.</p>
           )}
         </div>
 
         {/* Dein Universum */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 space-y-3">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-3">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Dein Universum.
           </h2>
           {loading && (
@@ -353,29 +353,29 @@ function ProDashboard() {
           {!loading && (
             <dl className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500 flex items-center gap-1.5">
+                <dt className="text-muted-foreground flex items-center gap-1.5">
                   <Layers className="h-3.5 w-3.5" />
                   Aktien
                 </dt>
-                <dd className="font-semibold text-slate-200">{universeSize}</dd>
+                <dd className="font-semibold text-foreground">{universeSize}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500 text-emerald-500/80">BUY</dt>
+                <dt className="text-muted-foreground text-emerald-500/80">BUY</dt>
                 <dd className="font-semibold text-emerald-400">{buy.length}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500 text-amber-500/80">HOLD</dt>
+                <dt className="text-muted-foreground text-amber-500/80">HOLD</dt>
                 <dd className="font-semibold text-amber-400">{hold.length}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500 text-red-500/80">SELL</dt>
+                <dt className="text-muted-foreground text-red-500/80">SELL</dt>
                 <dd className="font-semibold text-red-400">{sell.length}</dd>
               </div>
             </dl>
           )}
           <Link
             href="/discover"
-            className="mt-2 inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             Universum anpassen <ArrowRight className="h-3 w-3" />
           </Link>
@@ -385,7 +385,7 @@ function ProDashboard() {
       {/* Top Signale */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Top Signale heute.
           </h2>
           <Link
@@ -405,7 +405,7 @@ function ProDashboard() {
         )}
 
         {!loading && topBuySignals.length === 0 && (
-          <div className="rounded-lg border border-slate-800 p-4 text-sm text-slate-500">
+          <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground">
             Keine BUY-Signale vorhanden.{' '}
             <Link href="/rankings" className="text-blue-400 hover:text-blue-300 transition-colors">
               Ranking-Run starten →
@@ -414,7 +414,7 @@ function ProDashboard() {
         )}
 
         {!loading && topBuySignals.length > 0 && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/40 divide-y divide-slate-800/60">
+          <div className="rounded-xl border border-border bg-slate-900/40 divide-y divide-slate-800/60">
             {topBuySignals.map((sig) => (
               <ProSignalRow key={sig.ticker} signal={sig} />
             ))}
@@ -425,7 +425,7 @@ function ProDashboard() {
       {/* News placeholder */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             News heute.
           </h2>
           <Link
@@ -435,8 +435,8 @@ function ProDashboard() {
             3 neue Meldungen <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 text-sm text-slate-500">
-          <Link href="/news" className="hover:text-slate-300 transition-colors">
+        <div className="rounded-xl border border-border bg-slate-900/40 p-4 text-sm text-muted-foreground">
+          <Link href="/news" className="hover:text-foreground transition-colors">
             Aktuelle Nachrichten zu Schweizer Aktien im Research-Bereich.
           </Link>
         </div>
@@ -461,7 +461,7 @@ function PrismaModeSwitcher() {
     <div className="mb-6 flex justify-end">
       <button
         onClick={toggle}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/40 px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors"
+        className="inline-flex items-center gap-2 rounded-lg border border-border bg-slate-800/40 px-3 py-1.5 text-xs text-muted-foreground hover:bg-slate-700 hover:text-foreground transition-colors"
         aria-label={mode === 'simple' ? 'Zu Pro-Modus wechseln' : 'Zu Einfach-Modus wechseln'}
       >
         {mode === 'simple' ? (

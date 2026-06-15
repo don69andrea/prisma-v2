@@ -2,23 +2,22 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { FundamentalsRead } from '@/lib/api/fundamentals';
+import type { FundamentalsData } from '@/lib/api/fundamentals';
 
 function fmt(value: number | null, digits = 2, suffix = ''): string {
   if (value === null) return '—';
   return `${value.toFixed(digits)}${suffix}`;
 }
 
-const ROWS: Array<{ label: string; key: keyof FundamentalsRead; format: (v: number | null) => string }> = [
+const ROWS: Array<{ label: string; key: keyof FundamentalsData; format: (v: number | null) => string }> = [
   { label: 'KGV (P/E)', key: 'pe_ratio', format: (v) => fmt(v, 1, '×') },
   { label: 'KBV (P/B)', key: 'pb_ratio', format: (v) => fmt(v, 1, '×') },
-  { label: 'FCF-Rendite', key: 'fcf_yield', format: (v) => fmt(v !== null ? v * 100 : null, 1, '%') },
-  { label: 'Operating Margin', key: 'operating_margin', format: (v) => fmt(v !== null ? v * 100 : null, 1, '%') },
-  { label: 'Dividendenrendite', key: 'dividend_yield', format: (v) => fmt(v !== null ? v * 100 : null, 2, '%') },
+  { label: 'Gewinn je Aktie (CHF)', key: 'eps_chf', format: (v) => fmt(v, 2, ' CHF') },
+  { label: 'Dividendenrendite', key: 'dividend_yield_pct', format: (v) => fmt(v, 2, '%') },
 ];
 
 interface FundamentalsCardProps {
-  data: FundamentalsRead;
+  data: FundamentalsData;
 }
 
 export function FundamentalsCard({ data }: FundamentalsCardProps) {

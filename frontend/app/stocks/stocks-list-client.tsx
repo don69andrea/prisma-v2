@@ -130,12 +130,20 @@ function loadStoredStocksFilters() {
 export function StocksListClient() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
-  const [exchange, setExchange] = useState(() => loadStoredStocksFilters()?.exchange ?? '');
-  const [sector, setSector] = useState(() => searchParams.get('sector') ?? loadStoredStocksFilters()?.sector ?? '');
-  const [only3a, setOnly3a] = useState(() => loadStoredStocksFilters()?.only3a ?? false);
+  const [exchange, setExchange] = useState('');
+  const [sector, setSector] = useState(() => searchParams.get('sector') ?? '');
+  const [only3a, setOnly3a] = useState(false);
   const [capFilter, setCapFilter] = useState<CapFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  useEffect(() => {
+    const s = loadStoredStocksFilters();
+    if (!s) return;
+    if (!searchParams.get('sector') && s.sector) setSector(s.sector);
+    if (s.exchange) setExchange(s.exchange);
+    if (typeof s.only3a === 'boolean') setOnly3a(s.only3a);
+  }, [searchParams]);
 
   useEffect(() => {
     localStorage.setItem(LS_STOCKS_KEY, JSON.stringify({ exchange, sector, only3a }));

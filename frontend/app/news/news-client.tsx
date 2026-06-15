@@ -458,8 +458,15 @@ export function NewsClient() {
   const { isSimple } = usePrismaMode();
 
   // Manual search state
-  const [query, setQuery] = useState(() => loadStoredSearch()?.query ?? '');
-  const [ticker, setTicker] = useState(() => loadStoredSearch()?.ticker ?? '');
+  const [query, setQuery] = useState('');
+  const [ticker, setTicker] = useState('');
+
+  useEffect(() => {
+    const s = loadStoredSearch();
+    if (!s) return;
+    if (s.query) setQuery(s.query);
+    if (s.ticker) setTicker(s.ticker);
+  }, []);
   const [searchResults, setSearchResults] = useState<NewsChunkResult[] | null>(null);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'nzz' | 'srf'>('all');
   const [sortMode, setSortMode] = useState<'relevance' | 'date'>('relevance');

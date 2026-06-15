@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { TrendingUp, TrendingDown, Minus, Plus, Trash2, Download, PieChart, AlertTriangle } from 'lucide-react';
@@ -225,10 +225,18 @@ function loadStoredPortfolio() {
 }
 
 export function PortfolioClient() {
-  const [totalValue, setTotalValue] = useState(() => loadStoredPortfolio()?.totalValue ?? '100000');
-  const [is3a, setIs3a] = useState(() => loadStoredPortfolio()?.is3a ?? false);
-  const [positions, setPositions] = useState<PositionRow[]>(() => loadStoredPortfolio()?.positions ?? DEFAULT_POSITIONS);
+  const [totalValue, setTotalValue] = useState('100000');
+  const [is3a, setIs3a] = useState(false);
+  const [positions, setPositions] = useState<PositionRow[]>(DEFAULT_POSITIONS);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const s = loadStoredPortfolio();
+    if (!s) return;
+    if (s.totalValue) setTotalValue(s.totalValue);
+    if (typeof s.is3a === 'boolean') setIs3a(s.is3a);
+    if (s.positions?.length) setPositions(s.positions);
+  }, []);
 
   const totalCurrentWeight = positions.reduce((sum, p) => sum + (parseFloat(p.current) || 0), 0);
   const totalTargetWeight = positions.reduce((sum, p) => sum + (parseFloat(p.target) || 0), 0);

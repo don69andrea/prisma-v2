@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { AlertTriangle, Check, Copy } from 'lucide-react';
 
@@ -132,10 +132,18 @@ function SteuerResult({ data }: { data: SteuerEinschaetzungResponse }) {
 }
 
 export function SteuerClient() {
-  const [ticker, setTicker] = useState(() => loadStoredSteuer()?.ticker ?? 'NESN');
-  const [profil, setProfil] = useState<Anlegerprofil>(() => loadStoredSteuer()?.profil ?? 'vorsorge_3a');
-  const [halteperiode, setHalteperiode] = useState(() => loadStoredSteuer()?.halteperiode ?? 30);
+  const [ticker, setTicker] = useState('NESN');
+  const [profil, setProfil] = useState<Anlegerprofil>('vorsorge_3a');
+  const [halteperiode, setHalteperiode] = useState(30);
   const [result, setResult] = useState<SteuerEinschaetzungResponse | null>(null);
+
+  useEffect(() => {
+    const s = loadStoredSteuer();
+    if (!s) return;
+    if (s.ticker) setTicker(s.ticker);
+    if (s.profil) setProfil(s.profil);
+    if (typeof s.halteperiode === 'number') setHalteperiode(s.halteperiode);
+  }, []);
 
   const mutation = useMutation({
     mutationFn: () =>

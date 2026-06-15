@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Download, Plus, Trash2 } from 'lucide-react';
 
@@ -156,11 +156,16 @@ function loadStoredFonds() {
 }
 
 export function FondsClient() {
-  const [selectedFonds, setSelectedFonds] = useState(() => loadStoredFonds()?.selectedFonds ?? '');
-  const [positions, setPositions] = useState<Position[]>(
-    () => loadStoredFonds()?.positions ?? DEFAULT_FONDS_POSITIONS,
-  );
+  const [selectedFonds, setSelectedFonds] = useState('');
+  const [positions, setPositions] = useState<Position[]>(DEFAULT_FONDS_POSITIONS);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const s = loadStoredFonds();
+    if (!s) return;
+    if (s.selectedFonds) setSelectedFonds(s.selectedFonds);
+    if (s.positions?.length) setPositions(s.positions);
+  }, []);
 
   const { data: fondsList, isLoading: fondsLoading, isError: fondsError, refetch } = useQuery({
     queryKey: ['fonds'],

@@ -661,12 +661,19 @@ export function DecisionClient() {
   const [selectedUniverse, setSelectedUniverse] = useState<string>(
     () => searchParams.get('universe') ?? '',
   );
-  const [signalFilter, setSignalFilter] = useState<SignalType | ''>(() => loadStoredDecision()?.signalFilter ?? '');
-  const [eligibleOnly, setEligibleOnly] = useState(() => loadStoredDecision()?.eligibleOnly ?? false);
-  const [sortKey, setSortKey] = useState<'weighted_score' | 'confidence' | 'quant_score' | 'ml_score' | 'ticker'>(
-    () => loadStoredDecision()?.sortKey ?? 'weighted_score',
-  );
-  const [minConfidence, setMinConfidence] = useState(() => loadStoredDecision()?.minConfidence ?? 0);
+  const [signalFilter, setSignalFilter] = useState<SignalType | ''>('');
+  const [eligibleOnly, setEligibleOnly] = useState(false);
+  const [sortKey, setSortKey] = useState<'weighted_score' | 'confidence' | 'quant_score' | 'ml_score' | 'ticker'>('weighted_score');
+  const [minConfidence, setMinConfidence] = useState(0);
+
+  useEffect(() => {
+    const s = loadStoredDecision();
+    if (!s) return;
+    if (s.signalFilter !== undefined) setSignalFilter(s.signalFilter);
+    if (typeof s.eligibleOnly === 'boolean') setEligibleOnly(s.eligibleOnly);
+    if (s.sortKey) setSortKey(s.sortKey);
+    if (typeof s.minConfidence === 'number') setMinConfidence(s.minConfidence);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(LS_DECISION_KEY, JSON.stringify({ signalFilter, eligibleOnly, minConfidence, sortKey }));

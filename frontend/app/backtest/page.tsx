@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
@@ -223,10 +223,19 @@ function BacktestContent() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<TabMode>('single');
   const [runId, setRunId] = useState(searchParams.get('run_id') ?? '');
-  const [startDate, setStartDate] = useState(() => searchParams.get('start') ?? loadStoredConfig()?.startDate ?? '2025-01-01');
-  const [endDate, setEndDate] = useState(() => searchParams.get('end') ?? loadStoredConfig()?.endDate ?? '2025-12-31');
-  const [topN, setTopN] = useState(() => Number(searchParams.get('top_n') ?? String(loadStoredConfig()?.topN ?? 3)));
-  const [benchmark, setBenchmark] = useState(() => searchParams.get('benchmark') ?? loadStoredConfig()?.benchmark ?? '^SSMI');
+  const [startDate, setStartDate] = useState(() => searchParams.get('start') ?? '2025-01-01');
+  const [endDate, setEndDate] = useState(() => searchParams.get('end') ?? '2025-12-31');
+  const [topN, setTopN] = useState(() => Number(searchParams.get('top_n') ?? '3'));
+  const [benchmark, setBenchmark] = useState(() => searchParams.get('benchmark') ?? '^SSMI');
+
+  useEffect(() => {
+    const s = loadStoredConfig();
+    if (!s) return;
+    if (!searchParams.get('start') && s.startDate) setStartDate(s.startDate);
+    if (!searchParams.get('end') && s.endDate) setEndDate(s.endDate);
+    if (!searchParams.get('top_n') && s.topN) setTopN(s.topN);
+    if (!searchParams.get('benchmark') && s.benchmark) setBenchmark(s.benchmark);
+  }, [searchParams]);
 
   // Single-mode state
   const [result, setResult] = useState<BacktestResult | null>(null);

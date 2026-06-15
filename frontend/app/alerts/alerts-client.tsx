@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -60,11 +60,20 @@ function InfoBtn({ text }: { text: string }) {
 
 function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => void; initialTicker?: string }) {
   const [ticker, setTicker] = useState(initialTicker);
-  const [triggerType, setTriggerType] = useState<TriggerType>(() => loadStoredAlertForm()?.triggerType ?? 'PRICE_CHANGE');
-  const [threshold, setThreshold] = useState(() => loadStoredAlertForm()?.threshold ?? '5');
-  const [channel, setChannel] = useState<ChannelType>(() => loadStoredAlertForm()?.channel ?? 'EMAIL');
-  const [target, setTarget] = useState(() => loadStoredAlertForm()?.target ?? '');
+  const [triggerType, setTriggerType] = useState<TriggerType>('PRICE_CHANGE');
+  const [threshold, setThreshold] = useState('5');
+  const [channel, setChannel] = useState<ChannelType>('EMAIL');
+  const [target, setTarget] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const s = loadStoredAlertForm();
+    if (!s) return;
+    if (s.triggerType) setTriggerType(s.triggerType);
+    if (s.threshold) setThreshold(s.threshold);
+    if (s.channel) setChannel(s.channel);
+    if (s.target) setTarget(s.target);
+  }, []);
 
   const mutation = useMutation({
     mutationFn: createAlert,

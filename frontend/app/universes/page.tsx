@@ -30,7 +30,7 @@ export default function UniversesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Universen</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Universen.</h1>
           <p className="text-muted-foreground text-sm">
             Aktien-Universen verwalten — Basis für jeden Ranking-Run.
           </p>

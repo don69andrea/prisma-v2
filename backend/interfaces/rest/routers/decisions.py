@@ -28,6 +28,26 @@ from backend.interfaces.rest.schemas.decision import (
 router = APIRouter(prefix="/api/v1/decisions", tags=["decisions"])
 _logger = logging.getLogger(__name__)
 
+
+def _signal_reason(signal: str, weighted_score: float, quant_score: float) -> str:
+    """Erzeugt eine kurze Alltagssprache-Erklärung des aggregierten Signals."""
+    score_label = "stark" if quant_score >= 70 else ("moderat" if quant_score >= 45 else "schwach")
+    if signal == "BUY":
+        return (
+            f"Starkes Kaufsignal: Quant-Analyse {score_label}, "
+            f"PRISMA-Score {weighted_score:.0f}/100."
+        )
+    if signal == "HOLD":
+        return (
+            f"Neutral halten: Quant-Analyse {score_label}, "
+            f"PRISMA-Score {weighted_score:.0f}/100. Beobachten."
+        )
+    return (
+        f"Verkaufssignal: Quant-Analyse {score_label}, "
+        f"PRISMA-Score {weighted_score:.0f}/100. Schwache Fundamentaldaten."
+    )
+
+
 _MAX_LIVE_TICKERS = 12
 
 
@@ -59,6 +79,7 @@ def _build_response(
             ml_score=s.ml_score,
             macro_score=s.macro_score,
             is_3a_eligible=s.is_3a_eligible,
+            signal_reason=_signal_reason(s.signal, s.weighted_score, s.quant_score),
         )
         for s in signals
     ]
@@ -68,7 +89,7 @@ def _build_response(
 @router.get(
     "/live",
     response_model=DecisionListResponse,
-    summary="BUY/HOLD/WATCH Signale für beliebige Ticker (kein Universe nötig)",
+    summary="BUY/HOLD/SELL Signale für beliebige Ticker (kein Universe nötig)",
     description=(
         "Berechnet Signale direkt für eine komma-separierte Ticker-Liste. "
         "Ideal für Discovery-Flow: keine universe_id erforderlich. Max. 25 Ticker."
@@ -149,7 +170,7 @@ async def explain_decision(
     user_msg = f"""
 Ticker: {ticker}
 Signal: {body.signal} ({round(body.confidence * 100)}% Konfidenz)
-Gewichteter Gesamtscore: {body.weighted_score:.1f}/100 → {body.signal} (BUY ≥65 / HOLD 40–64 / WATCH <40)
+Gewichteter Gesamtscore: {body.weighted_score:.1f}/100 → {body.signal} (BUY ≥65 / HOLD 40–64 / SELL <40)
 
 METRIKEN:
 1. Quant-Score: {body.quant_score:.0f}/100 × 0.45 = {body.quant_score * 0.45:.1f} Punkte
@@ -201,7 +222,7 @@ AUFGABE — erkläre in je 2 präzisen Sätzen pro Feld:
 @router.get(
     "",
     response_model=DecisionListResponse,
-    summary="BUY/HOLD/WATCH Signale für ein Universum",
+    summary="BUY/HOLD/SELL Signale für ein Universum",
     description=(
         "Berechnet aggregierte Handelssignale (Quant 45% + ML 35% + Macro 20%) "
         "für alle Ticker eines Universums. Optionale Filter: signal-Typ, 3a-Eligible. "
@@ -210,7 +231,7 @@ AUFGABE — erkläre in je 2 präzisen Sätzen pro Feld:
 )
 async def list_decisions(
     universe_id: UUID = Query(..., description="Universum-ID"),
-    signal: str | None = Query(default=None, description="Filter: BUY | HOLD | WATCH"),
+    signal: str | None = Query(default=None, description="Filter: BUY | HOLD | SELL"),
     eligible_only: bool = Query(default=False, description="Nur 3a-eligible Titel zurückgeben"),
     universe_service: UniverseService = Depends(get_universe_service),
     aggregation_service: SignalAggregationService = Depends(get_signal_aggregation_service),
@@ -228,10 +249,10 @@ async def list_decisions(
 
     if signal is not None:
         signal_upper = signal.upper()
-        if signal_upper not in {"BUY", "HOLD", "WATCH"}:
+        if signal_upper not in {"BUY", "HOLD", "SELL"}:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="signal muss BUY, HOLD oder WATCH sein.",
+                detail="signal muss BUY, HOLD oder SELL sein.",
             )
         signals = [s for s in signals if s.signal == signal_upper]
 
@@ -249,6 +270,7 @@ async def list_decisions(
             ml_score=s.ml_score,
             macro_score=s.macro_score,
             is_3a_eligible=s.is_3a_eligible,
+            signal_reason=_signal_reason(s.signal, s.weighted_score, s.quant_score),
         )
         for s in signals
     ]

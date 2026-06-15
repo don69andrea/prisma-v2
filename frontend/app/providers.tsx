@@ -5,7 +5,7 @@ import { useState, useEffect, type ReactNode } from 'react';
 
 import { LoadingScreen } from '@/components/LoadingScreen';
 
-const LOADING_DURATION_MS = 6500;
+const LOADING_DURATION_MS = 1200;
 
 interface ProvidersProps {
   children: ReactNode;

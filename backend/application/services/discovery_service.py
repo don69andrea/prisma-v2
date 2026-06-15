@@ -112,13 +112,10 @@ class DiscoveryService:
                 .subquery()
             )
 
-            stmt = (
-                select(MLFeatureORM.ticker, MLFeatureORM.quant_score)
-                .join(
-                    latest_date_subq,
-                    (MLFeatureORM.ticker == latest_date_subq.c.ticker)
-                    & (MLFeatureORM.snapshot_date == latest_date_subq.c.max_date),
-                )
+            stmt = select(MLFeatureORM.ticker, MLFeatureORM.quant_score).join(
+                latest_date_subq,
+                (MLFeatureORM.ticker == latest_date_subq.c.ticker)
+                & (MLFeatureORM.snapshot_date == latest_date_subq.c.max_date),
             )
 
             rows = await self._db_session.execute(stmt)
@@ -180,9 +177,7 @@ class DiscoveryService:
             and stock.sector is not None
             and stock.sector.lower() in _NON_ESG_SECTORS
         ):
-            _logger.debug(
-                "ESG-Filter: %s (Sektor '%s') ausgeschlossen", stock.ticker, stock.sector
-            )
+            _logger.debug("ESG-Filter: %s (Sektor '%s') ausgeschlossen", stock.ticker, stock.sector)
             return None
 
         # 2. Quant-Score bestimmen
@@ -249,7 +244,11 @@ class DiscoveryService:
             and stock.sector is not None
             and stock.sector.lower() in _NON_ESG_SECTORS
         ):
-            _logger.debug("ESG-Filter: %s (Sektor '%s') ausgeschlossen", stock.ticker, stock.sector)
+            _logger.debug(
+                "ESG-Filter: %s (Sektor '%s') ausgeschlossen",
+                stock.ticker,
+                stock.sector,
+            )
             return None
 
         try:
@@ -270,9 +269,10 @@ class DiscoveryService:
         # Income-Präferenz: Bonus-Score basierend auf Dividendenrendite
         adjusted = quant_score.composite
         dividend_yield = (fundamentals.dividend_yield or 0.0) if fundamentals else 0.0
-        if profile.income_preference == "dividends" and dividend_yield >= _DIVIDEND_YIELD_THRESHOLD:
+        pref = profile.income_preference
+        if pref == "dividends" and dividend_yield >= _DIVIDEND_YIELD_THRESHOLD:
             adjusted = min(adjusted + 10.0, 100.0)
-        elif profile.income_preference == "growth" and dividend_yield < _DIVIDEND_YIELD_THRESHOLD:
+        elif pref == "growth" and dividend_yield < _DIVIDEND_YIELD_THRESHOLD:
             adjusted = min(adjusted + 5.0, 100.0)
 
         return (stock, adjusted)

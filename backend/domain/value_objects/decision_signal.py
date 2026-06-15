@@ -1,4 +1,4 @@
-"""Domain Value Object: Decision Signal — aggregiertes BUY/HOLD/WATCH-Signal."""
+"""Domain Value Object: Decision Signal — aggregiertes BUY/HOLD/SELL-Signal."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from typing import ClassVar
 class DecisionSignal:
     """Aggregiertes Handelssignal aus Quant + ML + Macro.
 
-    signal: "BUY" | "HOLD" | "WATCH"
+    signal: "BUY" | "HOLD" | "SELL"
     confidence: 0.0–1.0 (normalisierter weighted_score / 100)
     component_scores: Komponenten-Beiträge (0–100 je)
     is_3a_eligible: Säule-3a-Eignung
@@ -30,7 +30,7 @@ class DecisionSignal:
     _SIGNAL_THRESHOLDS: ClassVar[dict[str, tuple[float, float]]] = {
         "BUY": (65.0, 100.0),
         "HOLD": (40.0, 65.0),
-        "WATCH": (0.0, 40.0),
+        "SELL": (0.0, 40.0),
     }
 
     @classmethod
@@ -39,4 +39,4 @@ class DecisionSignal:
             return "BUY"
         if weighted_score >= 40.0:
             return "HOLD"
-        return "WATCH"
+        return "SELL"

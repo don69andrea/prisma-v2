@@ -20,16 +20,16 @@ function computeScore(
   return quant * (wQuant / 100) + ml * (wMl / 100) + macro * (wMacro / 100);
 }
 
-function scoreToSignal(score: number): 'BUY' | 'HOLD' | 'WATCH' {
+function scoreToSignal(score: number): 'BUY' | 'HOLD' | 'SELL' {
   if (score >= 70) return 'BUY';
   if (score >= 40) return 'HOLD';
-  return 'WATCH';
+  return 'SELL';
 }
 
 const SIGNAL_COLORS = {
   BUY: '#7ee787',
   HOLD: '#ffa657',
-  WATCH: '#8b949e',
+  SELL: '#f85149',
 };
 
 interface SliderRowProps {
@@ -74,7 +74,7 @@ export interface WeightSensitivityProps {
   macroScore: number;
   /** The standard-weighted score returned by the API */
   standardScore: number;
-  standardSignal: 'BUY' | 'HOLD' | 'WATCH';
+  standardSignal: 'BUY' | 'HOLD' | 'SELL';
   className?: string;
 }
 

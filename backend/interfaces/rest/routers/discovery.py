@@ -148,17 +148,29 @@ async def submit_answer(
         tickers = answer if isinstance(answer, list) else [answer]
         sector_affinity, known_tickers = classifier.classify_turn4(
             tickers,
-            {},  # brand_data wird vom Frontend mitgeliefert
+            body.brand_data or {},
         )
         updates["sector_affinity"] = sector_affinity
         updates["known_tickers"] = known_tickers
+
+    elif body.turn == 5:
+        amount_text = answer if isinstance(answer, str) else str(answer)
+        updates["investment_amount"] = classifier.classify_turn_amount(amount_text)
+
+    elif body.turn == 6:
+        esg_text = answer if isinstance(answer, str) else str(answer)
+        updates["esg_preference"] = classifier.classify_turn_esg(esg_text)
+
+    elif body.turn == 7:
+        income_text = answer if isinstance(answer, str) else str(answer)
+        updates["income_preference"] = classifier.classify_turn_income(income_text)
 
     updated_profile = profile.model_copy(update=updates)
     new_confidence = classifier.calculate_confidence(updated_profile)
     updated_profile = updated_profile.model_copy(update={"confidence_score": new_confidence})
     await repo.save(updated_profile)
 
-    next_turn = body.turn + 1 if new_confidence < 0.8 and body.turn < 4 else None
+    next_turn = body.turn + 1 if body.turn < 7 else None
     return AnswerResponse(
         session_id=body.session_id,
         next_turn=next_turn,

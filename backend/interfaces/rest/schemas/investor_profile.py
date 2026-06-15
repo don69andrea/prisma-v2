@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -66,8 +66,9 @@ class SessionResponse(BaseModel):
 
 class AnswerRequest(BaseModel):
     session_id: str
-    turn: int = Field(ge=1, le=4)
+    turn: int = Field(ge=1, le=7)
     answer: str | list[str]
+    brand_data: dict[str, dict[str, Any]] | None = None
 
 
 class AnswerResponse(BaseModel):

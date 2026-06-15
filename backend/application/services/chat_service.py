@@ -184,7 +184,7 @@ _TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "properties": {
                 "signal": {
                     "type": "string",
-                    "enum": ["BUY", "HOLD", "WATCH"],
+                    "enum": ["BUY", "HOLD", "SELL"],
                     "description": "Swiss Quant Signal",
                 },
                 "eligible_3a": {"type": "boolean", "description": "Nur 3a-geeignete Titel"},

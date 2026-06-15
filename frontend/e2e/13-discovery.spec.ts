@@ -29,20 +29,35 @@ test.describe("Discovery Flow — /start", () => {
     await page.getByTestId("risiko-moderate").click();
     await page.getByRole("button", { name: /Weiter/i }).click();
 
-    // Schritt 4/4: Brands anklicken (mindestens eine)
+    // Schritt 4/7: Brands anklicken (mindestens eine)
     await expect(page.getByTestId("brand-NESN")).toBeVisible();
     await page.getByTestId("brand-NESN").click();
     await page.getByTestId("brand-ROG").click();
     await page.getByRole("button", { name: /Profil fertigstellen|Überspringen/i }).click();
 
-    // Reveal: Kristall-Animation erscheint zuerst
-    await expect(page.getByTestId("crystal")).toBeVisible();
+    // Schritt 5/7: Betrag wählen
+    await expect(page.getByTestId("betrag-under_10k")).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId("betrag-under_10k").click();
+    await page.getByRole("button", { name: /Weiter/i }).click();
 
-    // Profil-Karte erscheint nach Kristall-Phase
-    await expect(page.getByTestId("profile-card")).toBeVisible({ timeout: 5_000 });
+    // Schritt 6/7: Nachhaltigkeit wählen
+    await expect(page.getByTestId("nachhaltigkeit-yes")).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId("nachhaltigkeit-yes").click();
+    await page.getByRole("button", { name: /Weiter/i }).click();
 
-    // Continue-Button erscheint
-    await expect(page.getByTestId("btn-continue")).toBeVisible({ timeout: 5_000 });
+    // Schritt 7/7: Ertrag wählen
+    await expect(page.getByTestId("ertrag-dividends")).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId("ertrag-dividends").click();
+    await page.getByRole("button", { name: /Profil fertigstellen/i }).click();
+
+    // Profil-Reveal erscheint nach Fertigstellen
+    await expect(page.getByTestId("discovery-profile-reveal")).toBeVisible({ timeout: 10_000 });
+
+    // Profil-Text erscheint
+    await expect(page.getByText("Dein Profil ist bereit.")).toBeVisible({ timeout: 5_000 });
+
+    // Weiter-Button erscheint
+    await expect(page.getByTestId("btn-meine-aktien")).toBeVisible({ timeout: 5_000 });
   });
 
   test("Continue-Button leitet zu /discover weiter", async ({ page }) => {
@@ -59,9 +74,24 @@ test.describe("Discovery Flow — /start", () => {
     // Schritt 4 überspringen
     await page.getByRole("button", { name: /Überspringen/i }).click();
 
-    // Warten bis Continue-Button sichtbar
-    await expect(page.getByTestId("btn-continue")).toBeVisible({ timeout: 5_000 });
-    await page.getByTestId("btn-continue").click();
+    // Schritt 5/7: Betrag wählen
+    await expect(page.getByTestId("betrag-under_10k")).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId("betrag-under_10k").click();
+    await page.getByRole("button", { name: /Weiter/i }).click();
+
+    // Schritt 6/7: Nachhaltigkeit wählen
+    await expect(page.getByTestId("nachhaltigkeit-yes")).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId("nachhaltigkeit-yes").click();
+    await page.getByRole("button", { name: /Weiter/i }).click();
+
+    // Schritt 7/7: Ertrag wählen
+    await expect(page.getByTestId("ertrag-dividends")).toBeVisible({ timeout: 5_000 });
+    await page.getByTestId("ertrag-dividends").click();
+    await page.getByRole("button", { name: /Profil fertigstellen/i }).click();
+
+    // Warten bis Weiter-Button sichtbar
+    await expect(page.getByTestId("btn-meine-aktien")).toBeVisible({ timeout: 10_000 });
+    await page.getByTestId("btn-meine-aktien").click();
 
     // Sollte zu /discover navigieren
     await expect(page).toHaveURL(/\/discover/, { timeout: 10_000 });

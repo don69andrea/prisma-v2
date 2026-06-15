@@ -4,8 +4,8 @@ import Link from 'next/link';
 
 import { Providers } from '@/app/providers';
 import { NavLinks } from '@/app/nav-links';
-import { ChatDrawer } from '@/components/chat/ChatDrawer';
 import { ApiStatusBadge } from '@/components/ui/ApiStatusBadge';
+import { ModeToggle } from '@/components/ui/ModeToggle';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { PrismaLogo } from '@/components/ui/PrismaLogo';
 import { NavigationProgressBar } from '@/components/ui/PrismaBar';
@@ -42,6 +42,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
               </Link>
               <NavLinks />
               <div className="ml-auto flex items-center gap-2 pl-4">
+                <ModeToggle />
                 <ApiStatusBadge />
                 <ThemeToggle />
               </div>
@@ -62,7 +63,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
           </header>
           <NavigationProgressBar />
           <main className="container py-8">{children}</main>
-          <ChatDrawer />
         </Providers>
       </body>
     </html>

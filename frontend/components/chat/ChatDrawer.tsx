@@ -180,12 +180,12 @@ export function ChatDrawer() {
         <div className="flex flex-wrap gap-1.5 px-3 py-2 border-t border-slate-800/60">
           <span className="text-[10px] font-medium text-slate-500 self-center">Ich kann:</span>
           {[
-            "🔍 Aktien suchen",
-            "🔧 Aktien filtern",
-            "📄 Factsheets laden",
-            "📊 Aktien vergleichen",
-            "🌍 Makrokontext abfragen",
-            "🏆 Rankings anzeigen",
+            "Aktien suchen",
+            "Aktien filtern",
+            "Factsheets laden",
+            "Aktien vergleichen",
+            "Makrokontext abfragen",
+            "Rankings anzeigen",
           ].map((cap) => (
             <span
               key={cap}

@@ -63,7 +63,7 @@ export function SimulatorClient() {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-purple-400" />
-            3a Retirement Simulator
+            3a Retirement Simulator.
           </h1>
           <p className="text-slate-400 text-sm">
             10&apos;000 Monte-Carlo-Simulationen · Geometric Brownian Motion · Swiss 3a

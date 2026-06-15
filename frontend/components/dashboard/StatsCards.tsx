@@ -4,6 +4,7 @@ import { Clock, Layers, TrendingUp, Star, Sparkles } from 'lucide-react';
 import type { RunResponse, RankingRunStatus } from '@/lib/api/runs';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { InfoPopover } from '@/components/InfoPopover';
 
 const STATUS_LABEL: Record<RankingRunStatus, string> = {
   pending: 'Ausstehend',
@@ -43,7 +44,12 @@ export function StatsCards({ latestRun, universeCount, stockCount, topPick }: Pr
         <CardContent className="py-4 space-y-1">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>Letzter Run</span>
+            <div className="flex items-center gap-1">
+              <span>Letzter Run</span>
+              <InfoPopover ariaLabel="Info: Letzter Run">
+                Wie oft wurde eine Analyse durchgeführt
+              </InfoPopover>
+            </div>
           </div>
           {latestRun ? (
             <>
@@ -85,7 +91,12 @@ export function StatsCards({ latestRun, universeCount, stockCount, topPick }: Pr
         <CardContent className="py-4 space-y-1">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <TrendingUp className="h-4 w-4" />
-            <span>Stocks</span>
+            <div className="flex items-center gap-1">
+              <span>Stocks</span>
+              <InfoPopover ariaLabel="Info: Stocks">
+                Anzahl der Schweizer Aktien die PRISMA kennt und analysieren kann
+              </InfoPopover>
+            </div>
           </div>
           <p className="text-2xl font-bold">{stockCount}</p>
         </CardContent>
@@ -96,7 +107,12 @@ export function StatsCards({ latestRun, universeCount, stockCount, topPick }: Pr
         <CardContent className="py-4 space-y-1">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <Star className="h-4 w-4" />
-            <span>Top-Pick</span>
+            <div className="flex items-center gap-1">
+              <span>Top-Pick</span>
+              <InfoPopover ariaLabel="Info: Top-Pick">
+                Aktien mit einem PRISMA-Score von mindestens 70 von 100
+              </InfoPopover>
+            </div>
           </div>
           {topPick ? (
             <Link

@@ -153,7 +153,7 @@ class TestSignalThresholds:
 
     def test_high_score_produces_strong_buy(self):
         score = self._score(price_change_7d_pct=25.0, market_cap_rank=1, ath_change_pct=-20.0)
-        assert score >= CryptoScorer.STRONG_BUY_THRESHOLD
+        assert score >= self.scorer.STRONG_BUY_THRESHOLD
 
     def test_score_is_bounded_0_to_100(self):
         asset = _make_asset(price_change_7d_pct=100.0)

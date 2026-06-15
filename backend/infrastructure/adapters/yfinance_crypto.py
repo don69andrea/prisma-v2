@@ -1,4 +1,4 @@
-"""yFinance-Adapter für Krypto-OHLCV und technische Indikatoren (pandas-ta)."""
+"""yFinance-Adapter für Krypto-OHLCV und technische Indikatoren (pandas/numpy)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,6 @@ import asyncio
 import logging
 
 import pandas as pd
-import pandas_ta as ta  # noqa: F401 — registriert DataFrame-Extension
 import yfinance as yf
 from cachetools import TTLCache
 
@@ -15,6 +14,57 @@ _logger = logging.getLogger(__name__)
 _TECH_CACHE: TTLCache[tuple[str, int], pd.DataFrame] = TTLCache(maxsize=50, ttl=300)
 _CHF_PAIRS = {"BTC-CHF", "ETH-CHF"}
 _CHF_USD_RATE_TICKER = "CHFUSD=X"
+
+
+def _rsi(close: pd.Series, length: int = 14) -> pd.Series:
+    delta = close.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(alpha=1 / length, min_periods=length, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1 / length, min_periods=length, adjust=False).mean()
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
+
+
+def _macd(
+    close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    ema_fast = close.ewm(span=fast, adjust=False).mean()
+    ema_slow = close.ewm(span=slow, adjust=False).mean()
+    macd_line = ema_fast - ema_slow
+    signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+    hist = macd_line - signal_line
+    return macd_line, signal_line, hist
+
+
+def _bbands(
+    close: pd.Series, length: int = 20, std: float = 2.0
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    mid = close.rolling(length).mean()
+    rolling_std = close.rolling(length).std(ddof=1)
+    upper = mid + std * rolling_std
+    lower = mid - std * rolling_std
+    return upper, mid, lower
+
+
+def _ema(close: pd.Series, length: int) -> pd.Series:
+    return close.ewm(span=length, adjust=False).mean()
+
+
+def _add_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    close = df["Close"]
+    df["RSI_14"] = _rsi(close, 14)
+    macd_line, signal_line, hist = _macd(close, 12, 26, 9)
+    df["MACD_12_26_9"] = macd_line
+    df["MACDs_12_26_9"] = signal_line
+    df["MACDh_12_26_9"] = hist
+    bbu, bbm, bbl = _bbands(close, 20, 2.0)
+    df["BBU_20_2.0"] = bbu
+    df["BBM_20_2.0"] = bbm
+    df["BBL_20_2.0"] = bbl
+    df["EMA_20"] = _ema(close, 20)
+    df["EMA_50"] = _ema(close, 50)
+    return df
 
 
 class YFinanceCryptoAdapter:
@@ -49,12 +99,7 @@ class YFinanceCryptoAdapter:
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = [col[0] for col in df.columns]
 
-        df.ta.rsi(length=14, append=True)
-        df.ta.macd(fast=12, slow=26, signal=9, append=True)
-        df.ta.bbands(length=20, std=2.0, append=True)
-        df.ta.ema(length=20, append=True)
-        df.ta.ema(length=50, append=True)
-
+        df = _add_indicators(df)
         df = df.dropna(subset=["RSI_14", "MACD_12_26_9"])
         _TECH_CACHE[cache_key] = df
         return df

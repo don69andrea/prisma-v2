@@ -11,6 +11,7 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.cost_tracker import CostTracker
+from backend.application.services.crypto_scoring_service import CryptoScoringService
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.narrative_service import NarrativeService
 from backend.application.services.ranking_run_service import RankingRunService
@@ -30,7 +31,6 @@ from backend.domain.repositories.research_memo_repository import ResearchMemoRep
 from backend.domain.repositories.stock_repository import StockRepository
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
-from backend.application.services.crypto_scoring_service import CryptoScoringService
 from backend.domain.services.crypto_scorer import CryptoScorer
 from backend.infrastructure.adapters.coingecko_adapter import CoinGeckoAdapter
 from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter

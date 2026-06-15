@@ -434,10 +434,11 @@ function ProDashboard() {
 }
 
 // ---------------------------------------------------------------------------
-// Mode toggle strip
+// PRISMA mode switcher (Simple ↔ Pro) — separate from the global Dark/Light
+// ModeToggle in layout.tsx
 // ---------------------------------------------------------------------------
 
-function ModeToggle() {
+function PrismaModeSwitcher() {
   const { mode, toggle } = usePrismaMode();
   return (
     <div className="mb-6 flex justify-end">
@@ -471,7 +472,7 @@ export function DashboardClient() {
 
   return (
     <div>
-      <ModeToggle />
+      <PrismaModeSwitcher />
       {isSimple ? <SimpleDashboard /> : <ProDashboard />}
     </div>
   );

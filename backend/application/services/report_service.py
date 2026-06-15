@@ -141,8 +141,12 @@ class ReportService:
         )
 
     def _render_pdf(self, html: str) -> bytes:
-        import weasyprint
-
+        try:
+            import weasyprint
+        except ImportError as exc:
+            raise ImportError(
+                "WeasyPrint nicht installiert. Benötigt: pip install weasyprint + Systemlibs pango/cairo."
+            ) from exc
         return cast(bytes, weasyprint.HTML(string=html).write_pdf())
 
     async def _cache_get(self, ticker: str) -> bytes | None:

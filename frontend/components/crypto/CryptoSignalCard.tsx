@@ -13,7 +13,7 @@ export function CryptoSignalCard({ signal }: CryptoSignalCardProps) {
   const pct = Math.round(signal.score);
 
   return (
-    <div className="rounded-lg border border-border/50 bg-card p-4 flex flex-col gap-3">
+    <div className="rounded-lg border border-border/50 bg-card p-4 flex flex-col gap-3" data-testid="crypto-signal-card">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="font-bold text-base">{signal.name}</div>

@@ -51,7 +51,7 @@ export function CryptoClient() {
 
       {/* Simple Mode: Top-3 BUY-Signale */}
       {mode === 'simple' && (
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="simple-section">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Beste Einstiegschancen
           </h2>
@@ -60,9 +60,9 @@ export function CryptoClient() {
               {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48" />)}
             </div>
           ) : signalsError ? (
-            <p className="text-sm text-red-400">Signale konnten nicht geladen werden.</p>
+            <p className="text-sm text-red-400" data-testid="signals-error">Signale konnten nicht geladen werden.</p>
           ) : buySignals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine BUY-Signale aktuell.</p>
+            <p className="text-sm text-muted-foreground" data-testid="no-buy-signals">Keine BUY-Signale aktuell.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {buySignals.map((s) => <CryptoSignalCard key={s.ticker} signal={s} />)}
@@ -73,7 +73,7 @@ export function CryptoClient() {
 
       {/* Pro Mode: Vollständige Tabelle */}
       {mode === 'pro' && (
-        <div className="space-y-3">
+        <div className="space-y-3" data-testid="pro-section">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Alle Signale (Pro)
           </h2>
@@ -122,7 +122,7 @@ export function CryptoClient() {
       )}
 
       {/* Disclaimer — immer sichtbar */}
-      <div className="rounded border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200/80 leading-relaxed">
+      <div className="rounded border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200/80 leading-relaxed" data-testid="crypto-disclaimer">
         {DISCLAIMER}
       </div>
     </div>

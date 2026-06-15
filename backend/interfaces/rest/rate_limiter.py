@@ -53,7 +53,11 @@ class LLMRateLimiterMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         path = request.url.path
         if not any(path.startswith(prefix) for prefix in _LLM_PREFIXES):
-            return await call_next(request)
+            try:
+                return await call_next(request)
+            except Exception:
+                _logger.exception("Unhandled exception for %s", path)
+                return JSONResponse({"detail": "Interner Serverfehler."}, status_code=500)
 
         client_ip = request.client.host if request.client else "unknown"
         key = f"{client_ip}:{path}"
@@ -73,4 +77,8 @@ class LLMRateLimiterMiddleware(BaseHTTPMiddleware):
                 )
             bucket.append(now)
 
-        return await call_next(request)
+        try:
+            return await call_next(request)
+        except Exception:
+            _logger.exception("Unhandled exception for %s", path)
+            return JSONResponse({"detail": "Interner Serverfehler."}, status_code=500)

@@ -17,7 +17,7 @@ export function FearGreedGauge({ value, label, className }: FearGreedGaugeProps)
   const rotation = pct * 1.8 - 90;
 
   return (
-    <div className={cn('flex flex-col items-center gap-2', className)}>
+    <div className={cn('flex flex-col items-center gap-2', className)} data-testid="fear-greed-gauge">
       <div className="relative w-40 h-20 overflow-hidden">
         <div
           className="absolute inset-0 rounded-t-full"
@@ -39,7 +39,7 @@ export function FearGreedGauge({ value, label, className }: FearGreedGaugeProps)
         />
       </div>
       <div className="text-center">
-        <div className="text-2xl font-black tabular-nums" style={{ color }}>
+        <div className="text-2xl font-black tabular-nums" style={{ color }} data-testid="fear-greed-value">
           {value}
         </div>
         <div className="text-xs text-muted-foreground mt-0.5">{germanLabel}</div>

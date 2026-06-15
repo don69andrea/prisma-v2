@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
 SUPPORTED_CRYPTOS: list[tuple[str, str, str, str, bool]] = [
     # (ticker_coingecko, ticker_yfinance, name, kategorie, has_six_etp)
     ("bitcoin",      "BTC-CHF",  "Bitcoin",      "Layer1/Store of Value", True),

@@ -29,7 +29,7 @@ class CryptoSignalResponse(BaseModel):
     timestamp: str
 
     @classmethod
-    def from_domain(cls, signal: CryptoSignal) -> "CryptoSignalResponse":
+    def from_domain(cls, signal: CryptoSignal) -> CryptoSignalResponse:
         return cls(
             ticker=signal.ticker,
             name=signal.name,

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from backend.domain.entities.crypto_asset import CryptoAsset
 

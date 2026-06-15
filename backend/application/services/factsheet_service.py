@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from backend.application.services.stock_service import StockNotFound
+from backend.application.services.stock_service import StockNotFound, _normalize_ticker
 from backend.domain.entities.stock import Stock
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.stock_repository import StockRepository
@@ -25,8 +25,9 @@ class FactsheetService:
         Raises:
             StockNotFound: Wenn kein Stock mit diesem Ticker existiert.
         """
-        stock = await self._stock_repo.get_by_ticker(ticker)
+        normalized = _normalize_ticker(ticker)
+        stock = await self._stock_repo.get_by_ticker(normalized)
         if stock is None:
             raise StockNotFound(ticker)
-        raw = await self._run_repo.get_latest_ticker_result(ticker)
+        raw = await self._run_repo.get_latest_ticker_result(normalized)
         return stock, raw

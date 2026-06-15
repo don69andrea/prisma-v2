@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from pydantic import BaseModel, Field, ValidationError
 
+from backend.application.services.stock_service import _normalize_ticker
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.domain.services.eligibility_filter import EligibilityFilter
 from backend.domain.value_objects.portfolio_allocation import PortfolioAllocation, PortfolioPosition
@@ -267,7 +268,7 @@ class PortfolioAgent:
         )
 
     async def _check_eligible(self, ticker: str) -> bool:
-        stock = await self._repo.get_by_ticker(ticker.upper())
+        stock = await self._repo.get_by_ticker(_normalize_ticker(ticker))
         if stock is None:
             return False
         return self._eligibility.check(stock).eligible

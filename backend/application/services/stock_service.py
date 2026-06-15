@@ -8,6 +8,15 @@ _MAX_LIMIT = 200
 _DEFAULT_LIMIT = 50
 
 
+def _normalize_ticker(ticker: str) -> str:
+    """Normalisiert einen Ticker für DB-Lookups: uppercase + Exchange-Suffix entfernen.
+
+    Beispiele: 'NESN.SW' → 'NESN', 'rog.sw' → 'ROG', 'AAPL' → 'AAPL'.
+    yfinance-Aufrufe müssen den Original-Ticker (mit .SW) weiterhin verwenden.
+    """
+    return ticker.upper().split(".")[0]
+
+
 class StockNotFound(Exception):
     def __init__(self, ticker: str) -> None:
         super().__init__(f"Stock '{ticker.upper()}' not found")
@@ -29,12 +38,13 @@ class StockService:
         """Sucht eine Stock-Entity anhand des Ticker-Symbols (case-insensitive).
 
         Args:
-            ticker: Ticker-Symbol (wird intern zu Uppercase normalisiert).
+            ticker: Ticker-Symbol (wird intern normalisiert: uppercase + Exchange-Suffix
+                    wie .SW wird entfernt, da die DB Ticker ohne Suffix speichert).
 
         Returns:
             Stock-Entity oder None wenn kein Treffer gefunden.
         """
-        return await self._repository.get_by_ticker(ticker.upper())
+        return await self._repository.get_by_ticker(_normalize_ticker(ticker))
 
     async def list_stocks(
         self,
@@ -72,7 +82,8 @@ class StockService:
             StockNotFound: Wenn kein Stock mit diesem Ticker existiert.
         """
         ticker_upper = ticker.upper()
-        stock = await self._repository.get_by_ticker(ticker_upper)
+        normalized = _normalize_ticker(ticker)
+        stock = await self._repository.get_by_ticker(normalized)
         if stock is None:
             raise StockNotFound(ticker_upper)
 

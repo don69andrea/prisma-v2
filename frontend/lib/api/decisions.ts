@@ -12,7 +12,7 @@ export interface DecisionSignal {
   ml_score: number;
   macro_score: number;
   is_3a_eligible: boolean;
-  signal_reason?: string;
+  signal_reason: string;
 }
 
 export interface DecisionListResponse {

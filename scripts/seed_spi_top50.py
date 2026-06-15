@@ -79,7 +79,7 @@ SPI_TOP50 = [
     ("WIFN", "CH0024611193", "Wizz Air Holdings (CH listing)", "Industrials"),
     ("GRPN", "CH0027975538", "Gurit Holding AG", "Materials"),
     ("HUBN", "CH0023636605", "Huber Holding AG", "Industrials"),
-    ("XMTCH", "CH0012221716", "iShares SMI ETF (XSWX-listed)", "ETF"),  # * ISIN placeholder
+    ("XMTCH", "CH0017142719", "iShares SMI ETF (XSWX-listed)", "ETF"),  # ISIN verifizieren via SIX
     ("VZUGN", "CH0052015044", "V-ZUG Holding AG (Namen)", "Consumer Disc."),
 ]
 

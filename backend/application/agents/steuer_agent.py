@@ -23,7 +23,7 @@ _logger = logging.getLogger(__name__)
 _MODEL = "claude-sonnet-4-6"
 _MAX_TOKENS = 1024
 _RAG_K = 5  # max RAG-Chunks für Steuer-Kontext
-_VERRECHNUNGSSTEUER_RATE = 0.15  # Verrechnungssteuer seit 2021: 15% (CH-US DBA)
+_VERRECHNUNGSSTEUER_RATE = 0.35  # Verrechnungssteuer Schweiz: 35% (Art. 4 VStG)
 
 AnlegerprofitTyp = Literal["privatperson", "vorsorge_3a", "vorsorge_2a", "institution"]
 
@@ -116,8 +116,9 @@ class SteuerAgent:
         # Ticker-spezifische Kontextualisierung des Fallback-Textes
         profil_label = {
             "privatperson": "Privatperson",
-            "unternehmen": "Unternehmen",
             "vorsorge_3a": "Säule-3a-Investor",
+            "vorsorge_2a": "Säule-2a-Investor (Pensionskasse)",
+            "institution": "Institutioneller Anleger",
         }.get(anlegerprofil, anlegerprofil)
 
         halte_hinweis = (

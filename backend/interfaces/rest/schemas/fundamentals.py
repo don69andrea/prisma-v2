@@ -13,4 +13,6 @@ class FundamentalsResponse(BaseModel):
     pb_ratio: float | None
     eps_chf: float | None
     dividend_yield_pct: float | None
+    fcf_yield: float | None = None
+    operating_margin: float | None = None
     disclaimer: str

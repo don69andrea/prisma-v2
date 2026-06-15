@@ -31,7 +31,7 @@ export function EligibilityPanel({ data }: EligibilityPanelProps) {
             ))}
           </ul>
         )}
-        <p className="text-xs text-muted-foreground border-t pt-2">{data.disclaimer}</p>
+        <p className="text-xs text-muted-foreground border-t pt-2">{data.reason}</p>
       </CardContent>
     </Card>
   );

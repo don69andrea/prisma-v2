@@ -30,6 +30,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_column("ml_features", "drawdown_12m")
+    op.drop_column("ml_features", "return_1m")
     op.drop_column("ml_features", "bb_position")
     op.drop_column("ml_features", "macd_hist")
     op.drop_column("ml_features", "vol_trend")

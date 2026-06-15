@@ -67,8 +67,8 @@ class SQLAAlertRepository(AlertRepository):
             channel=r.channel,  # type: ignore[arg-type]
             target=r.target,
             is_active=r.is_active,
-            created_at=r.created_at,  # type: ignore[arg-type]
-            last_triggered_at=r.last_triggered_at,  # type: ignore[arg-type]
+            created_at=r.created_at,
+            last_triggered_at=r.last_triggered_at,
             last_signal=r.last_signal,
             baseline_price=r.baseline_price,
         )

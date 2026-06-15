@@ -19,15 +19,16 @@ const MARKET_CAP_3A_THRESHOLD = 100_000_000; // 100M CHF
 export function is3aEligible(stock: StockRead): boolean {
   if (stock.exchange !== 'XSWX') return false;
   if (!stock.market_cap_chf) return false;
-  return stock.market_cap_chf >= MARKET_CAP_3A_THRESHOLD;
+  return Number(stock.market_cap_chf) >= MARKET_CAP_3A_THRESHOLD;
 }
 
-function formatMarketCap(value: number | null): string {
+function formatMarketCap(value: string | null): string {
   if (value === null) return '—';
-  if (value >= 1e12) return `${(value / 1e12).toFixed(1)} Bio.`;
-  if (value >= 1e9)  return `${(value / 1e9).toFixed(1)} Mrd.`;
-  if (value >= 1e6)  return `${(value / 1e6).toFixed(0)} Mio.`;
-  return `CHF ${value.toFixed(0)}`;
+  const n = Number(value);
+  if (n >= 1e12) return `${(n / 1e12).toFixed(1)} Bio.`;
+  if (n >= 1e9)  return `${(n / 1e9).toFixed(1)} Mrd.`;
+  if (n >= 1e6)  return `${(n / 1e6).toFixed(0)} Mio.`;
+  return `CHF ${n.toFixed(0)}`;
 }
 
 const EXCHANGE_OPTIONS = [
@@ -50,9 +51,10 @@ function matchesCap(stock: StockRead, cap: CapFilter): boolean {
   if (cap === 'all') return true;
   const v = stock.market_cap_chf;
   if (v === null) return cap === 'small';
-  if (cap === 'large') return v >= 10e9;
-  if (cap === 'mid')   return v >= 2e9 && v < 10e9;
-  return v < 2e9;
+  const n = Number(v);
+  if (cap === 'large') return n >= 10e9;
+  if (cap === 'mid')   return n >= 2e9 && n < 10e9;
+  return n < 2e9;
 }
 
 export function sortStocks(
@@ -66,8 +68,8 @@ export function sortStocks(
     if (key === 'ticker') {
       cmp = a.ticker.localeCompare(b.ticker);
     } else if (key === 'market_cap') {
-      const aVal = a.market_cap_chf ?? 0;
-      const bVal = b.market_cap_chf ?? 0;
+      const aVal = a.market_cap_chf !== null ? Number(a.market_cap_chf) : 0;
+      const bVal = b.market_cap_chf !== null ? Number(b.market_cap_chf) : 0;
       cmp = aVal - bVal;
     } else if (key === 'sector') {
       const aSec = a.sector ?? '';

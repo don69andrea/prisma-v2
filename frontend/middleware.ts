@@ -11,9 +11,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check onboarding cookie
+  // Check onboarding cookie — redirect all protected paths (including '/') to /start
   const onboardingComplete = request.cookies.get('prisma_onboarding')?.value;
-  if (!onboardingComplete && pathname !== '/') {
+  if (!onboardingComplete) {
     return NextResponse.redirect(new URL('/start', request.url));
   }
 

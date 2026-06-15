@@ -32,7 +32,12 @@ async def get_fundamentals(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     raw_yield = data.dividend_yield
-    yield_pct = round(float(raw_yield) * 100, 2) if raw_yield else None
+    if raw_yield:
+        raw_float = float(raw_yield)
+        # yfinance gibt dividendYield manchmal als Dezimal (0.038), manchmal als Prozent (3.8)
+        yield_pct: float | None = round(raw_float if raw_float > 1 else raw_float * 100, 2)
+    else:
+        yield_pct = None
 
     return FundamentalsResponse(
         ticker=ticker.upper(),

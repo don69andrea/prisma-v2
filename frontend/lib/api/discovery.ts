@@ -30,6 +30,7 @@ export interface DiscoveredStock {
   sector: string | null;
   market_cap_chf: string | null;
   exchange: string;
+  signal_reason?: string;
 }
 
 export interface DiscoveryResponse {

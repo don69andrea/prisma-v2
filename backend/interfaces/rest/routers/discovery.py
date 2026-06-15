@@ -56,13 +56,87 @@ def _get_profile_classifier(llm: LLMClient = Depends(get_llm_client)) -> Profile
     return ProfileClassifier(llm_client=llm)
 
 
-def _to_stock_response(s: SwissStock) -> DiscoveredStockResponse:
+_SECTOR_DE: dict[str, str] = {
+    "consumer": "Konsumgüter",
+    "pharma": "Pharma & Gesundheit",
+    "healthcare": "Gesundheit",
+    "finance": "Finanzen",
+    "financial services": "Finanzen",
+    "industrials": "Industrie",
+    "tech": "Technologie",
+    "technology": "Technologie",
+    "luxury": "Luxus & Lifestyle",
+    "materials": "Rohstoffe",
+    "energy": "Energie",
+    "utilities": "Versorger",
+    "real estate": "Immobilien",
+}
+
+_RISK_LABEL: dict[str, str] = {
+    "conservative": "konservative Anleger — stabiler Wert",
+    "moderate": "ausgewogene Anleger",
+    "aggressive": "wachstumsorientierte Anleger",
+}
+
+_GOAL_LABEL: dict[str, str] = {
+    "housing": "Eigenheimfinanzierung",
+    "retirement": "Altersvorsorge",
+    "freedom": "finanzielle Freiheit",
+    "beat_savings": "bessere Rendite als Sparkonto",
+    "other": "dein Anlageziel",
+}
+
+
+def _build_signal_reason(s: SwissStock, profile: InvestorProfile) -> str:
+    parts: list[str] = []
+
+    # Bekannter Titel → persönlicher Bezug
+    if s.ticker in {t.upper() for t in profile.known_tickers}:
+        parts.append("bereits auf deinem Radar")
+
+    # Sektor-Affinität
+    if s.sector and profile.sector_affinity:
+        sector_lower = s.sector.lower()
+        matched = next(
+            (a for a in profile.sector_affinity if a.lower() == sector_lower),
+            None,
+        )
+        if matched:
+            label = _SECTOR_DE.get(sector_lower, s.sector)
+            parts.append(f"passt zu deiner Präferenz für {label}")
+
+    # Risikoprofil
+    risk_label = _RISK_LABEL.get(profile.risk_profile)
+    if risk_label:
+        parts.append(f"geeignet für {risk_label}")
+
+    # Einkommenspräferenz
+    if profile.income_preference == "dividends":
+        parts.append("Dividendentitel")
+    elif profile.income_preference == "growth":
+        parts.append("Wachstumstitel")
+
+    # Zeithorizont
+    if profile.time_horizon == "long":
+        parts.append("langfristiger Anlagehorizont")
+    elif profile.time_horizon == "short":
+        parts.append("kurzfristiger Anlagehorizont")
+
+    if not parts:
+        goal = _GOAL_LABEL.get(profile.investment_goal, "dein Anlageziel")
+        return f"Empfohlen für {goal}"
+
+    return ", ".join(parts[:3]).capitalize() + "."
+
+
+def _to_stock_response(s: SwissStock, profile: InvestorProfile) -> DiscoveredStockResponse:
     return DiscoveredStockResponse(
         ticker=s.ticker,
         name=s.name,
         sector=s.sector,
         market_cap_chf=s.market_cap_chf,
         exchange=s.exchange,
+        signal_reason=_build_signal_reason(s, profile),
     )
 
 
@@ -206,7 +280,7 @@ async def complete_discovery(
     stocks = await service.get_personalized_universe(completed)
     return CompleteResponse(
         profile=_to_profile_response(completed),
-        recommended_stocks=[_to_stock_response(s) for s in stocks],
+        recommended_stocks=[_to_stock_response(s, completed) for s in stocks],
     )
 
 
@@ -265,5 +339,5 @@ async def discover(
     return DiscoveryResponse(
         session_id=session_id,
         total=len(stocks),
-        stocks=[_to_stock_response(s) for s in stocks],
+        stocks=[_to_stock_response(s, profile) for s in stocks],
     )

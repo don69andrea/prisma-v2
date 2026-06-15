@@ -47,6 +47,7 @@ class DiscoveredStockResponse(BaseModel):
     sector: str | None
     market_cap_chf: Decimal | None
     exchange: str
+    signal_reason: str = ""
 
 
 class DiscoveryResponse(BaseModel):

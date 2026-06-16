@@ -9,12 +9,36 @@ from pydantic import BaseModel, Field
 
 
 class PortfolioAllocateRequest(BaseModel):
-    run_id: UUID
-    top_n: int = Field(default=10, ge=2, le=20)
-    eligible_only: bool = False
+    """Request für die KI-Portfolio-Allokation aus einem bestehenden Ranking-Run.
+
+    Hinweis: Erwartet ausschliesslich einen Verweis (`run_id`) auf einen bereits
+    abgeschlossenen Ranking-Run — keine direkte Eingabe eigener Ticker/Stückzahlen.
+    Für die Verwaltung eines eigenen Portfolios (Ist-/Soll-Gewichte) siehe
+    `RebalancingRequest` (Endpoint: POST /api/v1/portfolio/rebalance).
+    """
+
+    run_id: UUID = Field(
+        ...,
+        description="ID eines bereits abgeschlossenen Ranking-Runs, dessen Top-Picks alloziert werden",
+    )
+    top_n: int = Field(
+        default=10,
+        ge=2,
+        le=20,
+        description="Anzahl der Top-Picks aus dem Ranking-Run, die berücksichtigt werden",
+    )
+    eligible_only: bool = Field(
+        default=False,
+        description="Nur BVV2/FINMA-Säule-3a-geeignete Titel aus dem Ranking-Run berücksichtigen",
+    )
     method: str = Field(
         default="score_weighted",
         pattern="^(score_weighted|risk_parity|mean_variance)$",
+        description=(
+            "Allokationsmethode: score_weighted (proportional zum quant_score), "
+            "risk_parity (umgekehrt proportional zur 30d-Volatilität) oder "
+            "mean_variance (Markowitz Mean-Variance mit Ledoit-Wolf Shrinkage)"
+        ),
     )
 
 

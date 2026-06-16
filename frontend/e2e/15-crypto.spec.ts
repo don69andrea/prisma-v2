@@ -442,7 +442,8 @@ test.describe('Pro Mode — Score-Aufschlüsselung', () => {
     await firstButton.click();
     // Nach Öffnen: Komponenten-Labels sichtbar
     await expect(page.getByText('Momentum')).toBeVisible();
-    await expect(page.getByText('Trend')).toBeVisible();
+    // exact: true, da "14d Trend"-Spaltenheader in Pro-Tabelle sonst auch matcht
+    await expect(page.getByText('Trend', { exact: true })).toBeVisible();
     // exact: true, da "Sentiment" sonst auch im Seiten-Untertitel
     // ("...technisch-sentimentale Prognose...") als Substring matcht.
     await expect(page.getByText('Sentiment', { exact: true })).toBeVisible();

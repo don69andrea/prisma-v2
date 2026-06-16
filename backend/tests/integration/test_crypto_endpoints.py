@@ -190,3 +190,65 @@ async def test_get_latest_history_overview_returns_200(crypto_history_client: As
     body = response.json()
     tickers = {item["ticker"] for item in body}
     assert tickers == {"BTC", "ETH"}
+
+
+# ── CRYPTO_FEATURE_ENABLED=false ────────────────────────────────────────────
+
+
+@pytest.fixture
+async def crypto_disabled_client(mock_crypto_service):
+    from backend.config import Settings, get_settings
+    from backend.interfaces.rest.app import create_app
+    from backend.interfaces.rest.dependencies import get_crypto_scoring_service
+
+    app = create_app()
+    app.dependency_overrides[get_crypto_scoring_service] = lambda: mock_crypto_service
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        database_url="postgresql+asyncpg://x:x@x/x",
+        environment="test",
+        crypto_feature_enabled=False,
+    )
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
+async def test_signals_returns_404_when_feature_disabled(
+    crypto_disabled_client: AsyncClient,
+) -> None:
+    response = await crypto_disabled_client.get(
+        "/api/v1/crypto/signals", headers={"X-API-Key": "test"}
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Crypto-Feature ist deaktiviert."
+
+
+async def test_signal_by_ticker_returns_404_when_feature_disabled(
+    crypto_disabled_client: AsyncClient,
+) -> None:
+    response = await crypto_disabled_client.get(
+        "/api/v1/crypto/signals/BTC", headers={"X-API-Key": "test"}
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Crypto-Feature ist deaktiviert."
+
+
+async def test_fear_greed_returns_404_when_feature_disabled(
+    crypto_disabled_client: AsyncClient,
+) -> None:
+    response = await crypto_disabled_client.get(
+        "/api/v1/crypto/fear-greed", headers={"X-API-Key": "test"}
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Crypto-Feature ist deaktiviert."
+
+
+async def test_market_returns_404_when_feature_disabled(
+    crypto_disabled_client: AsyncClient,
+) -> None:
+    response = await crypto_disabled_client.get(
+        "/api/v1/crypto/market", headers={"X-API-Key": "test"}
+    )
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Crypto-Feature ist deaktiviert."

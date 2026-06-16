@@ -15,6 +15,9 @@ export interface BacktestResult {
   model_run_id: string;
   start_date: string;
   end_date: string;
+  /** Tatsächlich abgedecktes Fenster der Marktdaten (kann kürzer sein als start_date/end_date). */
+  actual_start_date: string;
+  actual_end_date: string;
   top_n: number;
   benchmark_ticker: string;
   series: {

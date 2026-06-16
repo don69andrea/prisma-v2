@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from backend.application.services.chat_service import ChatMessage, ChatService
-from backend.interfaces.rest.dependencies import require_admin_api_key
+from backend.interfaces.rest.dependencies import get_chat_service, require_admin_api_key
 from backend.interfaces.rest.schemas.chat import ChatRequest
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
@@ -25,8 +25,10 @@ _logger = logging.getLogger(__name__)
     ),
     dependencies=[Depends(require_admin_api_key)],
 )
-async def chat(req: ChatRequest) -> StreamingResponse:
-    svc = ChatService()
+async def chat(
+    req: ChatRequest,
+    svc: ChatService = Depends(get_chat_service),
+) -> StreamingResponse:
     messages = [ChatMessage(role=m.role, content=m.content) for m in req.history]
     messages.append(ChatMessage(role="user", content=req.message))
 

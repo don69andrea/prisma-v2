@@ -183,6 +183,70 @@ const CATEGORY_TO_SECTOR: Record<string, string> = {
 export const DISCOVER_STORAGE_KEY = 'prisma_discover_result';
 export const PROFILE_STORAGE_KEY  = 'prisma_profile';
 
+// W-1 (F-DISC-1): Discovery-Flow-State wird hier gespiegelt, damit ein
+// Browser-Reload mitten im Flow den Fortschritt nicht verwirft.
+export const DISCOVERY_FLOW_STORAGE_KEY = 'prisma_discovery_flow_state';
+
+interface DiscoveryFlowState {
+  step: Step;
+  beruf: string;
+  ziel: Ziel | null;
+  risiko: Risiko | null;
+  brands: string[];
+  betrag: Betrag | null;
+  nachhaltigkeit: Nachhaltigkeit | null;
+  ertrag: Ertrag | null;
+  sessionId: string | null;
+}
+
+// Resume ist nur für Steps innerhalb des Frage-Flows sinnvoll — "landing",
+// "reveal" und "profile-reveal" werden nie wiederhergestellt.
+const RESUMABLE_STEPS: ReadonlySet<Step> = new Set([
+  'beruf', 'ziel', 'risiko', 'brands', 'betrag', 'nachhaltigkeit', 'ertrag',
+]);
+
+function loadDiscoveryFlowState(): DiscoveryFlowState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(DISCOVERY_FLOW_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<DiscoveryFlowState>;
+    if (!parsed.step || !RESUMABLE_STEPS.has(parsed.step)) return null;
+    return {
+      step: parsed.step,
+      beruf: parsed.beruf ?? '',
+      ziel: parsed.ziel ?? null,
+      risiko: parsed.risiko ?? null,
+      brands: parsed.brands ?? [],
+      betrag: parsed.betrag ?? null,
+      nachhaltigkeit: parsed.nachhaltigkeit ?? null,
+      ertrag: parsed.ertrag ?? null,
+      sessionId: parsed.sessionId ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveDiscoveryFlowState(state: DiscoveryFlowState) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(DISCOVERY_FLOW_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // sessionStorage kann z.B. im privaten Modus nicht verfügbar sein — Flow
+    // funktioniert dann weiter, nur ohne Reload-Persistenz.
+  }
+}
+
+function clearDiscoveryFlowState() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(DISCOVERY_FLOW_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 // ---------------------------------------------------------------------------
 // DownChart SVG — Risk-Feeling-Test
 // ---------------------------------------------------------------------------
@@ -1134,15 +1198,20 @@ function DiscoveryProfileReveal({
 // ---------------------------------------------------------------------------
 
 export function StartClient() {
-  const [step, setStep]                       = useState<Step>('landing');
-  const [beruf, setBeruf]                     = useState('');
-  const [ziel, setZiel]                       = useState<Ziel | null>(null);
-  const [risiko, setRisiko]                   = useState<Risiko | null>(null);
-  const [brands, setBrands]                   = useState<string[]>([]);
-  const [betrag, setBetrag]                   = useState<Betrag | null>(null);
-  const [nachhaltigkeit, setNachhaltigkeit]   = useState<Nachhaltigkeit | null>(null);
-  const [ertrag, setErtrag]                   = useState<Ertrag | null>(null);
-  const [sessionId, setSessionId]             = useState<string | null>(null);
+  // W-1 (F-DISC-1): Beim Mount wird ein eventuell vorhandener Flow-State aus
+  // sessionStorage gelesen, damit ein Reload mitten im Flow fortgesetzt statt
+  // neu gestartet wird.
+  const restored = loadDiscoveryFlowState();
+
+  const [step, setStep]                       = useState<Step>(restored?.step ?? 'landing');
+  const [beruf, setBeruf]                     = useState(restored?.beruf ?? '');
+  const [ziel, setZiel]                       = useState<Ziel | null>(restored?.ziel ?? null);
+  const [risiko, setRisiko]                   = useState<Risiko | null>(restored?.risiko ?? null);
+  const [brands, setBrands]                   = useState<string[]>(restored?.brands ?? []);
+  const [betrag, setBetrag]                   = useState<Betrag | null>(restored?.betrag ?? null);
+  const [nachhaltigkeit, setNachhaltigkeit]   = useState<Nachhaltigkeit | null>(restored?.nachhaltigkeit ?? null);
+  const [ertrag, setErtrag]                   = useState<Ertrag | null>(restored?.ertrag ?? null);
+  const [sessionId, setSessionId]             = useState<string | null>(restored?.sessionId ?? null);
   const [kennerMode, setKennerMode]           = useState(false);
   const [loading, setLoading]                 = useState(false);
   const [discoveryResult, setDiscoveryResult] = useState<{
@@ -1155,6 +1224,22 @@ export function StartClient() {
     profile_type?: string;
   } | null>(null);
   const router = useRouter();
+
+  // W-2 (F-DISC-2): Promise von handleBrandsSubmit (Session erstellen + Turns
+  // 1-4 senden), damit handleContinue darauf warten kann statt mit einer nie
+  // registrierten randomUUID zu raten.
+  const sessionReadyRef = useRef<Promise<string> | null>(null);
+
+  // Spiegelt den Flow-State bei jeder relevanten Änderung in sessionStorage.
+  useEffect(() => {
+    if (!RESUMABLE_STEPS.has(step)) {
+      clearDiscoveryFlowState();
+      return;
+    }
+    saveDiscoveryFlowState({
+      step, beruf, ziel, risiko, brands, betrag, nachhaltigkeit, ertrag, sessionId,
+    });
+  }, [step, beruf, ziel, risiko, brands, betrag, nachhaltigkeit, ertrag, sessionId]);
 
   // Build brand_data map for turn 4 (ticker → {sector, name})
   const brandDataMap = BRANDS.reduce<Record<string, Record<string, string>>>((acc, b) => {
@@ -1241,23 +1326,55 @@ export function StartClient() {
     [],
   );
 
-  // Handles turns 1-4 sequentially before showing the reveal step
-  async function handleBrandsSubmit(finalBrands: string[]) {
+  // Handles turns 1-4 sequentially before showing the reveal step.
+  // W-2 (F-DISC-2): Das zurückgegebene Promise wird in sessionReadyRef
+  // gehalten, damit handleContinue (Turns 5-7) garantiert auf die echte,
+  // beim Backend registrierte sessionId wartet statt mit einer randomUUID
+  // zu raten, falls der Nutzer schneller weiterklickt als Turns 1-4 dauern.
+  function handleBrandsSubmit(finalBrands: string[]) {
     setBrands(finalBrands);
     setStep('betrag');
 
     // Fire off turns 1-4 in background
-    try {
-      const { session_id: sid } = await createDiscoverySession();
-      setSessionId(sid);
-      await submitAnswer(sid, 1, beruf || '');
-      await submitAnswer(sid, 2, ziel!);
-      await submitAnswer(sid, 3, risiko!);
-      await submitAnswer(sid, 4, finalBrands, { brand_data: brandDataMap });
-    } catch {
-      // session will be null; handleContinue will use fallback
-      setSessionId(crypto.randomUUID());
-    }
+    const sessionReady = (async () => {
+      try {
+        const { session_id: sid } = await createDiscoverySession();
+        setSessionId(sid);
+        await submitAnswer(sid, 1, beruf || '');
+        await submitAnswer(sid, 2, ziel!);
+        await submitAnswer(sid, 3, risiko!);
+        await submitAnswer(sid, 4, finalBrands, { brand_data: brandDataMap });
+        return sid;
+      } catch {
+        // session creation/turns 1-4 failed; handleContinue will use fallback
+        const fallbackSid = crypto.randomUUID();
+        setSessionId(fallbackSid);
+        return fallbackSid;
+      }
+    })();
+
+    sessionReadyRef.current = sessionReady;
+    return sessionReady;
+  }
+
+  // W-2 (F-DISC-2): Wartet — falls vorhanden — auf das Promise aus
+  // handleBrandsSubmit (Session erstellen + Turns 1-4), bevor Turns 5-7
+  // gesendet werden. So kann kein Klick mehr mit einer nie registrierten
+  // randomUUID laufen, nur weil der Nutzer schneller war als der Hintergrund-
+  // Request.
+  async function startContinue(
+    finalBrands: string[],
+    finalZiel: Ziel,
+    finalRisiko: Risiko,
+    finalBetrag: Betrag,
+    finalNachhaltigkeit: Nachhaltigkeit,
+    finalErtrag: Ertrag,
+  ) {
+    setLoading(true);
+    const resolvedSessionId = sessionReadyRef.current
+      ? await sessionReadyRef.current
+      : sessionId ?? crypto.randomUUID();
+    await handleContinue(finalBrands, finalZiel, finalRisiko, finalBetrag, finalNachhaltigkeit, finalErtrag, resolvedSessionId);
   }
 
   if (loading) {
@@ -1300,13 +1417,13 @@ export function StartClient() {
       {step === 'ertrag' && (
         <StepErtrag onNext={(v) => {
           setErtrag(v);
-          handleContinue(brands, ziel!, risiko!, betrag!, nachhaltigkeit!, v, sessionId ?? crypto.randomUUID());
+          void startContinue(brands, ziel!, risiko!, betrag!, nachhaltigkeit!, v);
         }} />
       )}
       {step === 'reveal' && ziel && risiko && betrag && nachhaltigkeit && ertrag && (
         <StepReveal
           profile={{ beruf, ziel, risiko, brands, betrag, nachhaltigkeit, ertrag }}
-          onContinue={() => handleContinue(brands, ziel, risiko, betrag, nachhaltigkeit, ertrag, sessionId ?? crypto.randomUUID())}
+          onContinue={() => void startContinue(brands, ziel, risiko, betrag, nachhaltigkeit, ertrag)}
         />
       )}
       {step === 'profile-reveal' && discoveryResult && (

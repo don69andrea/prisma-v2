@@ -13,6 +13,7 @@ import {
   type SwissChunkResult,
 } from '@/lib/api/rag';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -133,19 +134,29 @@ type AgentLogEntry =
   | { type: 'step'; agent: string; action: string; done: boolean; duration?: number }
   | { type: 'ready' };
 
-function useAgentLog(active: boolean) {
+// `settled` reflects the real RAG-call completion (mutations no longer pending).
+// The intermediate steps still play out on a fixed timeline for visual feedback,
+// but the final "ready" entry is gated on the actual promise resolution instead
+// of a hardcoded delay, so the log never claims completion before the real data
+// has arrived (and doesn't lag behind it either).
+function useAgentLog(active: boolean, settled: boolean, runId: number) {
   const [log, setLog] = useState<AgentLogEntry[]>([]);
   const startRef = useRef<number[]>([]);
+  const readyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const readyFiredRef = useRef(false);
 
   useEffect(() => {
     if (!active) {
       setLog([]);
       startRef.current = [];
+      readyFiredRef.current = false;
+      if (readyTimerRef.current) clearTimeout(readyTimerRef.current);
       return;
     }
 
     setLog([]);
     startRef.current = [];
+    readyFiredRef.current = false;
 
     const delays = [0, 500, 1300];
     const durations = [800, 1200, 400];
@@ -179,12 +190,26 @@ function useAgentLog(active: boolean) {
 
     const readyDelay = delays[AGENT_STEPS.length - 1] + durations[AGENT_STEPS.length - 1] + 100;
     const t3 = setTimeout(() => {
+      readyFiredRef.current = true;
       setLog((prev) => [...prev, { type: 'ready' }]);
     }, readyDelay);
     timers.push(t3);
+    readyTimerRef.current = t3;
 
     return () => timers.forEach(clearTimeout);
-  }, [active]);
+    // `runId` deliberately re-runs this setup for each new search, even if
+    // `active` stays `true` across consecutive submits.
+  }, [active, runId]);
+
+  // Fire "ready" as soon as the real RAG calls settle, instead of waiting for
+  // the fixed-timer fallback above — whichever happens first wins for the
+  // steps already shown, but completion itself always reflects reality.
+  useEffect(() => {
+    if (!active || !settled || readyFiredRef.current) return;
+    readyFiredRef.current = true;
+    if (readyTimerRef.current) clearTimeout(readyTimerRef.current);
+    setLog((prev) => [...prev, { type: 'ready' }]);
+  }, [active, settled]);
 
   return log;
 }
@@ -502,7 +527,18 @@ function ProModeView({
           className="rounded-md border p-4 space-y-2"
           style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
         >
-          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">Quellen</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] tracking-widest uppercase text-muted-foreground">Quellen</p>
+            {allSources.length === 0 && (
+              <Badge
+                variant="warning"
+                className="text-[9px] py-0 px-1.5 normal-case font-mono"
+                data-testid="research-sources-demo-badge"
+              >
+                Beispieldaten
+              </Badge>
+            )}
+          </div>
           {(allSources.length > 0 ? allSources : MOCK_SOURCES).map((s) => (
             <a
               key={s.label}
@@ -578,7 +614,16 @@ function ProModeView({
           className="rounded-md border p-4 space-y-2"
           style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
         >
-          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">Makro-Kontext</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] tracking-widest uppercase text-muted-foreground">Makro-Kontext</p>
+            <Badge
+              variant="warning"
+              className="text-[9px] py-0 px-1.5 normal-case font-mono"
+              data-testid="research-macro-demo-badge"
+            >
+              Beispieldaten
+            </Badge>
+          </div>
           <div className="flex items-center justify-between text-muted-foreground">
             <span>SNB</span>
             <span style={{ color: CYAN }}>{MOCK_MACRO.rate}</span>
@@ -620,8 +665,10 @@ export function ResearchClient() {
   const [summary, setSummary] = useState<string | null>(null);
   const [agentActive, setAgentActive] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [ragSettled, setRagSettled] = useState(false);
+  const [searchId, setSearchId] = useState(0);
 
-  const agentLog = useAgentLog(agentActive);
+  const agentLog = useAgentLog(agentActive, ragSettled, searchId);
 
   const swissMutation = useMutation({
     mutationFn: () =>
@@ -650,13 +697,15 @@ export function ResearchClient() {
     },
   });
 
-  // Derive summary whenever both mutations settle
+  // Derive summary whenever both mutations settle. `ragSettled` flips to true
+  // here too, which lets the agent log's "ready" entry fire on the real
+  // promise resolution instead of only on its fixed-timer fallback.
   useEffect(() => {
     const swissDone = !swissMutation.isPending && swissMutation.isSuccess;
     const secDone = !secMutation.isPending && secMutation.isSuccess;
     if (swissDone || secDone) {
       setSummary(buildSummary(swissResults, secResults, query));
-      setAgentActive(false);
+      setRagSettled(true);
     }
   }, [
     swissMutation.isPending,
@@ -693,7 +742,9 @@ export function ResearchClient() {
       setSummary(null);
       setSwissResults(null);
       setSecResults(null);
+      setRagSettled(false);
       setAgentActive(true);
+      setSearchId((id) => id + 1);
       swissMutation.mutate();
       secMutation.mutate();
     },

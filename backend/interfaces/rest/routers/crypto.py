@@ -21,10 +21,13 @@ from backend.interfaces.rest.dependencies import (
     get_crypto_scoring_service,
     get_crypto_signal_repository,
     get_fear_greed_adapter,
+    require_crypto_enabled,
 )
 from backend.interfaces.rest.schemas.crypto import CryptoSignalResponse
 
-router = APIRouter(prefix="/api/v1/crypto", tags=["crypto"])
+router = APIRouter(
+    prefix="/api/v1/crypto", tags=["crypto"], dependencies=[Depends(require_crypto_enabled)]
+)
 
 
 @router.get("/signals", response_model=list[CryptoSignalResponse])

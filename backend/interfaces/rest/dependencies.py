@@ -632,3 +632,32 @@ async def get_crypto_scoring_service() -> CryptoScoringService:
         scorer=CryptoScorer(),
         pattern_service=_get_crypto_pattern_singleton(),
     )
+
+
+async def require_crypto_enabled(settings: Settings = Depends(get_settings)) -> None:
+    """Gattet das Crypto-Modul über CRYPTO_FEATURE_ENABLED (W-12 / F-BTCR-2).
+
+    Liefert 404 statt z.B. 503, damit das Modul bei deaktiviertem Flag so
+    aussieht, als gäbe es die Routen gar nicht — kein Hinweis auf ein
+    existierendes, aber gesperrtes Feature.
+    """
+    if not settings.crypto_feature_enabled:
+        raise HTTPException(status_code=404, detail="Crypto-Feature ist deaktiviert.")
+
+
+# ---------------------------------------------------------------------------
+# Chat DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_chat_service(
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+) -> Any:
+    """Erstellt den ChatService mit CostTracker (W-16/F-COMM-3).
+
+    Ohne Injection würden Claude-Calls aus dem Chat-Endpoint nie im
+    Admin-Cost-Dashboard (GET /api/v1/admin/costs) auftauchen.
+    """
+    from backend.application.services.chat_service import ChatService
+
+    return ChatService(cost_tracker=cost_tracker)

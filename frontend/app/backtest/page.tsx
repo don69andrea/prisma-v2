@@ -498,8 +498,19 @@ function BacktestContent() {
                 <div>
                   <CardTitle>Performance-Vergleich</CardTitle>
                   <CardDescription data-testid="backtest-result-meta">
-                    {startDate} – {endDate} · Top {topN} · {benchmark}
+                    {result.actual_start_date} – {result.actual_end_date} · Top {topN} · {benchmark}
                   </CardDescription>
+                  {(result.actual_start_date !== result.start_date ||
+                    result.actual_end_date !== result.end_date) && (
+                    <p
+                      className="mt-1 text-xs text-amber-600 dark:text-amber-400"
+                      data-testid="backtest-window-truncated-hint"
+                    >
+                      Hinweis: Angefordertes Zeitfenster ({result.start_date} – {result.end_date}) war
+                      länger als die verfügbaren Marktdaten. Angezeigt wird das tatsächlich abgedeckte
+                      Fenster.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button

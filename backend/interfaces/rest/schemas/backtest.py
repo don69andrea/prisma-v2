@@ -42,6 +42,8 @@ class BacktestResultResponse(BaseModel):
     model_run_id: UUID
     start_date: date
     end_date: date
+    actual_start_date: date
+    actual_end_date: date
     top_n: int
     benchmark_ticker: str
     prisma_metrics: PortfolioMetricsResponse
@@ -57,6 +59,8 @@ class BacktestResultResponse(BaseModel):
             model_run_id=r.model_run_id,
             start_date=r.start_date,
             end_date=r.end_date,
+            actual_start_date=r.actual_start_date,
+            actual_end_date=r.actual_end_date,
             top_n=r.top_n,
             benchmark_ticker=r.benchmark_ticker,
             prisma_metrics=PortfolioMetricsResponse.from_entity(r.prisma_metrics),

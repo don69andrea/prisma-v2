@@ -105,12 +105,21 @@ class BacktestService:
         # 8. Build dates list (shared index)
         dates = [ts.date() for ts in prisma_series.index]
 
-        # 9. Build result
+        # 9. Determine the actually covered window. get_prices() always
+        #    returns the last 504 trading days regardless of start_date,
+        #    so the effective window can be shorter than requested — the
+        #    response must expose this explicitly (Bug: F-BTCR-1 / W-11).
+        actual_start_date = dates[0] if dates else start_date
+        actual_end_date = dates[-1] if dates else end_date
+
+        # 10. Build result
         result = BacktestResult(
             id=uuid4(),
             model_run_id=model_run_id,
             start_date=start_date,
             end_date=end_date,
+            actual_start_date=actual_start_date,
+            actual_end_date=actual_end_date,
             top_n=top_n,
             benchmark_ticker=benchmark_ticker,
             prisma_metrics=self._compute_metrics(prisma_series),

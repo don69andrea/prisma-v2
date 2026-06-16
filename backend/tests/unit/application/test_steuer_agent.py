@@ -119,3 +119,29 @@ class TestSteuerAgent:
         agent = _build_agent(json.dumps(modified))
         result = await agent.einschaetzen("NESN", "privatperson", 10)
         assert result.anlegerprofil == "privatperson"
+
+    async def test_fallback_differentiates_ch_vs_us_ticker(self) -> None:
+        # LLM liefert ungültiges JSON → Fallback-Pfad für beide Ticker erzwungen.
+        ch_agent = _build_agent("INVALID JSON {{{")
+        us_agent = _build_agent("INVALID JSON {{{")
+
+        ch_result = await ch_agent.einschaetzen("NESN", "privatperson", 5)
+        us_result = await us_agent.einschaetzen("TSLA", "privatperson", 5)
+
+        assert ch_result.model_version == "fallback"
+        assert us_result.model_version == "fallback"
+
+        # CH-Aktien: Verrechnungssteuer + Formular 103 sind korrekt.
+        assert any("Verrechnungssteuer" in s for s in ch_result.steuerarten)
+        assert any("Formular 103" in p for p in ch_result.pflichten)
+
+        # US-Aktien: KEINE Schweizer Verrechnungssteuer / Formular 103 — andere
+        # Steuerarten (US-Quellensteuer / DA-1-Anhang / W8BEN).
+        assert not any("Verrechnungssteuer" in s for s in us_result.steuerarten)
+        assert not any("Formular 103" in p for p in us_result.pflichten)
+        assert any("US-Quellensteuer" in s for s in us_result.steuerarten)
+        assert any("DA-1" in p or "W8BEN" in p or "W-8BEN" in p for p in us_result.pflichten)
+
+        # Die beiden Outputs müssen sich materiell unterscheiden.
+        assert ch_result.steuerarten != us_result.steuerarten
+        assert ch_result.pflichten != us_result.pflichten

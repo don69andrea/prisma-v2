@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
-from backend.application.services.rebalancing_service import RebalancingService
+from backend.application.services.rebalancing_service import (
+    RebalancingService,
+    UnknownTickersError,
+)
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.interfaces.rest.dependencies import get_swiss_stock_repository
 from backend.interfaces.rest.schemas.rebalancing import (
@@ -35,12 +38,18 @@ async def compute_rebalancing_plan(
         transaction_cost_rate=body.transaction_cost_rate,
         stock_repo=swiss_repo,
     )
-    plan = await service.compute_plan(
-        total_portfolio_value_chf=body.total_portfolio_value_chf,
-        current_weights=body.current_weights,
-        target_weights=body.target_weights,
-        is_3a_account=body.is_3a_account,
-    )
+    try:
+        plan = await service.compute_plan(
+            total_portfolio_value_chf=body.total_portfolio_value_chf,
+            current_weights=body.current_weights,
+            target_weights=body.target_weights,
+            is_3a_account=body.is_3a_account,
+        )
+    except UnknownTickersError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unbekannte Ticker (nicht im Aktien-Universum): {', '.join(exc.tickers)}",
+        ) from exc
     return RebalancingPlanResponse(
         plan_id=plan.plan_id,
         steps=[

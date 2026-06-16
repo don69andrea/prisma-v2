@@ -7,6 +7,7 @@ Features: 5 Quant-Scores, 12M/6M/3M-Return, Vol(30d/90d), RSI(14),
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import date
 from typing import Any
@@ -24,7 +25,7 @@ _logger = logging.getLogger(__name__)
 # Datum der letzten manuellen Aktualisierung der Makro-Daten.
 # Wenn dieser Wert >7 Tage in der Vergangenheit liegt, wird beim Start eine Warnung geloggt.
 # BITTE bei jeder Aktualisierung der Listen unten dieses Datum anpassen.
-_MACRO_DATA_LAST_UPDATED = date(2025, 6, 13)
+_MACRO_DATA_LAST_UPDATED = date(2026, 6, 14)
 _MACRO_STALENESS_THRESHOLD_DAYS = 7
 
 
@@ -54,6 +55,11 @@ _SNB_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2024, 12, 12), 0.5),
     (date(2025, 3, 20), 0.25),
     (date(2025, 6, 19), 0.0),
+    # Zinssätze per 2026-06-13 — manuell aktualisieren wenn neue Sitzungen stattfinden
+    (date(2025, 9, 18), 0.0),
+    (date(2025, 12, 11), 0.0),
+    (date(2026, 3, 19), 0.0),
+    (date(2026, 6, 14), 0.0),
 ]
 _SNB_RATE_BEFORE_2022 = -0.75
 
@@ -76,6 +82,12 @@ _ECB_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2025, 3, 6), 2.25),
     (date(2025, 4, 17), 2.00),
     (date(2025, 6, 5), 1.75),
+    # Zinssätze per 2026-06-13 — manuell aktualisieren wenn neue Sitzungen stattfinden
+    (date(2025, 9, 12), 1.50),
+    (date(2025, 10, 30), 1.25),
+    (date(2026, 1, 30), 1.00),
+    (date(2026, 3, 6), 0.75),
+    (date(2026, 6, 14), 0.75),
 ]
 _ECB_RATE_BEFORE_2022 = -0.50
 # ACHTUNG: Manuell gepflegt — zuletzt aktualisiert: 2025-06-13
@@ -117,6 +129,12 @@ _FED_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2024, 11, 8), 4.75),
     (date(2024, 12, 19), 4.50),
     (date(2025, 3, 20), 4.25),
+    # Zinssätze per 2026-06-13 — manuell aktualisieren wenn neue Sitzungen stattfinden
+    (date(2025, 6, 18), 4.25),
+    (date(2025, 9, 17), 4.00),
+    (date(2025, 12, 10), 3.75),
+    (date(2026, 3, 18), 3.50),
+    (date(2026, 6, 14), 3.50),
 ]
 _FED_RATE_BEFORE_2018 = 1.25
 
@@ -226,8 +244,12 @@ def _compute_drawdown_12m(close: pd.Series) -> float:
     lookback = min(len(close), 252)
     window = close.tail(lookback)
     rolling_max = window.cummax()
-    drawdowns = (window - rolling_max) / rolling_max
-    return float(drawdowns.min())
+    # W-11: replace zero rolling_max with NaN to avoid division-by-zero
+    # (can occur for delisted tickers with zero prices)
+    safe_max = rolling_max.replace(0, float("nan"))
+    drawdowns = (window - safe_max) / safe_max
+    result = drawdowns.min()
+    return 0.0 if pd.isna(result) else float(result)
 
 
 def _score_wachstum(f: SwissFundamentals) -> float:
@@ -286,6 +308,7 @@ class MLFeatureService:
         today = date.today()
         close = prices["Close"].squeeze()
         volume = prices["Volume"].squeeze() if "Volume" in prices.columns else None
+        chf_eur = await asyncio.to_thread(_current_chf_eur)  # K-11: offload blocking yfinance call
 
         return MLFeatureVector(
             ticker=ticker_upper,
@@ -308,7 +331,11 @@ class MLFeatureService:
             return_1m=_return_nm_from_series(close, 21),
             drawdown_12m=_compute_drawdown_12m(close),
             snb_rate=_snb_rate_on(today),
-            chf_eur=_current_chf_eur(),
+            chf_eur=chf_eur,
+            pe_ratio=fundamentals.pe_ratio or 0.0,
+            pb_ratio=fundamentals.pb_ratio or 0.0,
+            dividend_yield=fundamentals.dividend_yield or 0.0,
+            revenue_growth=fundamentals.revenue_growth or 0.0,
             forward_return_12m=None,
             target_class=None,
         )
@@ -430,14 +457,12 @@ class MLFeatureService:
                         "bb_position": _compute_bb_position(past_prices),
                         "return_1m": _return_nm_from_series(past_prices, 21),
                         "drawdown_12m": _compute_drawdown_12m(past_prices),
-                        "snb_rate": (
-                            _fed_rate_on(snap_date)
-                            if _market == "us"
-                            else _ecb_rate_on(snap_date)
-                            if _market == "eu"
-                            else _snb_rate_on(snap_date)
-                        ),
-                        "chf_eur": _fx_rate_on(ticker, snap, _market),
+                        "snb_rate": _snb_rate_on(snap_date),
+                        "chf_eur": _chf_eur_on(snap),
+                        "pe_ratio": fund.pe_ratio or 0.0,
+                        "pb_ratio": fund.pb_ratio or 0.0,
+                        "dividend_yield": fund.dividend_yield or 0.0,
+                        "revenue_growth": fund.revenue_growth or 0.0,
                         "forward_return_12m": fwd_ret,
                         "target_class": None,  # wird cross-sektional befüllt
                     }
@@ -615,12 +640,16 @@ def _stub_fundamentals(ticker: str, market: str = "ch") -> SwissFundamentals:
 
         yf_sym = ticker.upper() if market in ("eu", "us") else _ticker_to_yf(ticker.upper())
         info = yf.Ticker(yf_sym).info
+        # W-12: Decimal("0") is falsy, so `Decimal(...) or None` incorrectly returns None
+        # for a valid zero market cap. Use explicit None-check instead.
+        _mc = info.get("marketCap")
         return SwissFundamentals(
-            market_cap_chf=Decimal(str(info.get("marketCap") or 0)) or None,
+            market_cap_chf=Decimal(str(_mc)) if _mc is not None else None,
             pe_ratio=info.get("trailingPE"),
             pb_ratio=info.get("priceToBook"),
             dividend_yield=info.get("dividendYield"),
             eps_chf=info.get("trailingEps"),
+            revenue_growth=info.get("revenueGrowth"),
         )
     except Exception:
         return SwissFundamentals(
@@ -629,4 +658,5 @@ def _stub_fundamentals(ticker: str, market: str = "ch") -> SwissFundamentals:
             pb_ratio=None,
             dividend_yield=None,
             eps_chf=None,
+            revenue_growth=None,
         )

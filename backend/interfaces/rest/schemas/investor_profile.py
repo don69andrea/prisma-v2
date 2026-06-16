@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -47,6 +47,7 @@ class DiscoveredStockResponse(BaseModel):
     sector: str | None
     market_cap_chf: Decimal | None
     exchange: str
+    signal_reason: str = ""
 
 
 class DiscoveryResponse(BaseModel):
@@ -66,8 +67,9 @@ class SessionResponse(BaseModel):
 
 class AnswerRequest(BaseModel):
     session_id: str
-    turn: int = Field(ge=1, le=4)
+    turn: int = Field(ge=1, le=7)
     answer: str | list[str]
+    brand_data: dict[str, dict[str, Any]] | None = None
 
 
 class AnswerResponse(BaseModel):

@@ -9,6 +9,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from backend.application.services.swiss_market_service import SwissMarketService
+from backend.domain.errors import YahooFinanceBlockedError
 from backend.domain.value_objects.langfrist_score import LangfristScore
 from backend.interfaces.rest.app import create_app
 from backend.interfaces.rest.dependencies import get_swiss_market_service
@@ -30,6 +31,8 @@ def mock_swiss_service() -> Any:
     async def _score_langfrist(ticker: str) -> LangfristScore:
         if ticker.upper() == "NESN":
             return _NESN_SCORE
+        if ticker.upper() == "BLOCKED":
+            raise YahooFinanceBlockedError(ticker.upper(), cause="401 Invalid Crumb")
         raise ValueError(f"Swiss Stock '{ticker.upper()}' nicht gefunden")
 
     svc.score_langfrist = _score_langfrist
@@ -61,6 +64,16 @@ async def test_langfrist_score_unknown_ticker(app: Any) -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get("/api/v1/stocks/UNKN/langfrist-score")
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_langfrist_score_yahoo_blocked_returns_503(app: Any) -> None:
+    """Yahoo blockt Render's Cloud-IP-Range (HTTP 401 'Invalid Crumb') — muss als
+    saubere 503 mit klarer Meldung ankommen, nicht als roher 500."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/stocks/BLOCKED/langfrist-score")
+    assert resp.status_code == 503
+    assert "nicht verfügbar" in resp.json()["detail"]
 
 
 @pytest.mark.asyncio

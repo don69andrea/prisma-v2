@@ -21,7 +21,6 @@ jobs:
 
       - name: Install backend dependencies
         run: pip install -e ".[dev]"
-        working-directory: backend
 
       - name: Run LLM smoke test with LLM-as-Judge
         env:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.decision_audit_service import DecisionAuditService
@@ -40,12 +40,12 @@ def get_audit_service(
     response_model=DecisionAuditListResponse,
     summary="Audit Trail für einen Ticker",
     description=(
-        "Gibt die letzten Entscheidungen (BUY/HOLD/WATCH) mit vollständiger "
+        "Gibt die letzten Entscheidungen (BUY/HOLD/SELL) mit vollständiger "
         "Begründung zurück — Quant-Score, ML-Signal, Makro-Score, Gewichtung."
     ),
 )
 async def get_audit_trail(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     limit: int = Query(default=10, ge=1, le=50),
     service: DecisionAuditService = Depends(get_audit_service),
 ) -> DecisionAuditListResponse:
@@ -78,12 +78,12 @@ async def get_audit_trail(
     status_code=status.HTTP_201_CREATED,
     summary="Signal berechnen und Audit-Record speichern",
     description=(
-        "Berechnet das aktuelle BUY/HOLD/WATCH-Signal für einen Ticker "
+        "Berechnet das aktuelle BUY/HOLD/SELL-Signal für einen Ticker "
         "und persistiert den vollständigen Audit-Record inkl. Begründung."
     ),
 )
 async def compute_and_save_audit(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: DecisionAuditService = Depends(get_audit_service),
 ) -> DecisionAuditRecordResponse:
     try:

@@ -50,6 +50,8 @@ jobs:
           context: .
           file: ./Dockerfile.frontend
           push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://prisma-v2-backend.onrender.com
           tags: |
             ghcr.io/${{ steps.tags.outputs.owner_lc }}/prisma-frontend:${{ steps.tags.outputs.version }}
             ghcr.io/${{ steps.tags.outputs.owner_lc }}/prisma-frontend:latest

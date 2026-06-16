@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class InvestorProfile(BaseModel):
@@ -56,6 +56,21 @@ class InvestorProfile(BaseModel):
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    @model_validator(mode="after")
+    def _validate_onboarding_consistency(self) -> InvestorProfile:
+        """Wenn Onboarding abgeschlossen ist, muss der Discovery-Flow durchlaufen worden sein.
+
+        Konkret: Turn 1 setzt 'profession', d.h. wenn onboarding_complete=True aber
+        profession=None, wurde der Flow nie gestartet — das ist ein Fehler.
+        'moderate' ist ein valides explizites Risikoprofil und darf hier nicht abgelehnt werden.
+        """
+        if self.onboarding_complete and self.profession is None:
+            raise ValueError(
+                "onboarding_complete=True erfordert einen abgeschlossenen Discovery-Flow "
+                "(profession muss gesetzt sein — Turn 1 wurde nicht beantwortet)."
+            )
+        return self
 
     @property
     def risk_label(self) -> str:

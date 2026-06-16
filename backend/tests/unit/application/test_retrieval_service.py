@@ -33,7 +33,7 @@ class TestRetrievalService:
         mock_repo: AsyncMock,
         mock_llm: AsyncMock,
     ) -> None:
-        mock_llm.embed.return_value = [[0.1] * 2048]
+        mock_llm.embed.return_value = [[0.1] * 1024]
         mock_repo.find_nearest.return_value = [
             RetrievalResult(
                 chunk_id=uuid4(),
@@ -55,7 +55,7 @@ class TestRetrievalService:
         mock_repo: AsyncMock,
         mock_llm: AsyncMock,
     ) -> None:
-        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_llm.embed.return_value = [[0.0] * 1024]
         mock_repo.find_nearest.return_value = []
         await service.retrieve("test", k=50)
         assert mock_repo.find_nearest.call_args[1]["k"] == 20
@@ -78,7 +78,7 @@ class TestRetrievalService:
         mock_repo: AsyncMock,
         mock_llm: AsyncMock,
     ) -> None:
-        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_llm.embed.return_value = [[0.0] * 1024]
         mock_repo.find_nearest.return_value = [
             RetrievalResult(uuid4(), uuid4(), 0, "c1", 0.95, "AAPL", "10-K"),
             RetrievalResult(uuid4(), uuid4(), 1, "c2", 0.87, "AAPL", "10-Q"),
@@ -93,7 +93,7 @@ class TestRetrievalService:
         mock_repo: AsyncMock,
         mock_llm: AsyncMock,
     ) -> None:
-        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_llm.embed.return_value = [[0.0] * 1024]
         mock_repo.find_nearest.return_value = []
         await service.retrieve("test")
         assert mock_repo.find_nearest.call_args[1]["k"] == 5
@@ -105,7 +105,7 @@ class TestRetrievalService:
         mock_repo: AsyncMock,
         mock_llm: AsyncMock,
     ) -> None:
-        mock_llm.embed.return_value = [[0.0] * 2048]
+        mock_llm.embed.return_value = [[0.0] * 1024]
         mock_repo.find_nearest.return_value = []
         await service.retrieve("test", ticker="AAPL")
         assert mock_repo.find_nearest.call_args[1]["ticker"] == "AAPL"

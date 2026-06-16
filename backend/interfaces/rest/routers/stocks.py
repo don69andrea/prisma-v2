@@ -1,10 +1,11 @@
 """REST-Router für Stock-Endpunkte unter /api/v1/stocks."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.stock_service import StockNotFound, StockService
 from backend.application.services.swiss_market_service import SwissMarketService
+from backend.domain.errors import SwissDataUnavailableError, YahooFinanceBlockedError
 from backend.interfaces.rest.dependencies import (
     get_factsheet_service,
     get_stock_service,
@@ -22,6 +23,10 @@ from backend.interfaces.rest.schemas.stock import (
 
 router = APIRouter(prefix="/api/v1", tags=["stocks"])
 
+_MARKET_DATA_UNAVAILABLE_DETAIL = (
+    "Marktdaten momentan nicht verfügbar (Yahoo Finance API eingeschränkt)."
+)
+
 
 @router.get(
     "/stocks/{ticker}",
@@ -30,7 +35,7 @@ router = APIRouter(prefix="/api/v1", tags=["stocks"])
     description="Gibt einen einzelnen Stock anhand des Ticker-Symbols zurück (case-insensitive).",
 )
 async def get_stock_by_ticker(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: StockService = Depends(get_stock_service),
 ) -> StockRead:
     stock = await service.get_by_ticker(ticker)
@@ -84,7 +89,7 @@ async def list_stocks(
     description="Gibt Stammdaten und neueste Ranking-Momentaufnahme für einen Ticker zurück.",
 )
 async def get_factsheet(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: FactsheetService = Depends(get_factsheet_service),
 ) -> StockFactsheet:
     try:
@@ -102,7 +107,7 @@ async def get_factsheet(
     description="Gibt die letzten `days` Handelstage als Preiszeitreihe zurück (Stub-Daten).",
 )
 async def get_prices(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     days: int = Query(default=252, ge=1, le=504, description="Anzahl Handelstage, 1–504"),
     service: StockService = Depends(get_stock_service),
 ) -> PriceSeriesResponse:
@@ -127,12 +132,14 @@ async def get_prices(
     ),
 )
 async def get_langfrist_score(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: SwissMarketService = Depends(get_swiss_market_service),
 ) -> LangfristScoreResponse:
     try:
         score = await service.score_langfrist(ticker)
-    except ValueError as exc:
+    except YahooFinanceBlockedError as exc:
+        raise HTTPException(status_code=503, detail=_MARKET_DATA_UNAVAILABLE_DETAIL) from exc
+    except (ValueError, SwissDataUnavailableError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return LangfristScoreResponse(
         ticker=score.ticker,

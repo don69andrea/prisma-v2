@@ -31,8 +31,17 @@ class MLFeatureORM(Base):
 
     # Technische Indikatoren
     return_12m: Mapped[float] = mapped_column(Float(), nullable=False)
+    return_6m: Mapped[float | None] = mapped_column(Float(), nullable=True)
+    return_3m: Mapped[float | None] = mapped_column(Float(), nullable=True)
     vol_30d: Mapped[float] = mapped_column(Float(), nullable=False)
+    vol_90d: Mapped[float | None] = mapped_column(Float(), nullable=True)
     rsi_14: Mapped[float] = mapped_column(Float(), nullable=False)
+    price_to_52w_high: Mapped[float | None] = mapped_column(Float(), nullable=True)
+    vol_trend: Mapped[float | None] = mapped_column(Float(), nullable=True)
+    macd_hist: Mapped[float | None] = mapped_column(Float(), nullable=True)
+    bb_position: Mapped[float | None] = mapped_column(Float(), nullable=True)
+    return_1m: Mapped[float | None] = mapped_column(Float(), nullable=True)
+    drawdown_12m: Mapped[float | None] = mapped_column(Float(), nullable=True)
 
     # Makro-Features
     snb_rate: Mapped[float] = mapped_column(Float(), nullable=False)

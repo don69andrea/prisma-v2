@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { AlertTriangle, Check, Copy } from 'lucide-react';
 
@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 const LS_STEUER_KEY = 'prisma_steuer_config';
 
@@ -79,9 +80,15 @@ function SteuerResult({ data }: { data: SteuerEinschaetzungResponse }) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base">
-            {data.ticker} · {data.anlegerprofil} · {data.halteperiode_jahre} Jahre
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">
+              {data.ticker} · {data.anlegerprofil} · {data.halteperiode_jahre} Jahre
+            </CardTitle>
+            <InfoTooltip
+              text="Verrechnungssteuer: Die Schweiz erhebt 35% auf Dividenden. Als Schweizer Privatanleger kannst du diese vollständig zurückfordern (via Steuererklärung). Im 3a-Depot wird sie automatisch angerechnet."
+              side="top"
+            />
+          </div>
           <button
             onClick={handleCopy}
             className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -125,10 +132,18 @@ function SteuerResult({ data }: { data: SteuerEinschaetzungResponse }) {
 }
 
 export function SteuerClient() {
-  const [ticker, setTicker] = useState(() => loadStoredSteuer()?.ticker ?? 'NESN');
-  const [profil, setProfil] = useState<Anlegerprofil>(() => loadStoredSteuer()?.profil ?? 'vorsorge_3a');
-  const [halteperiode, setHalteperiode] = useState(() => loadStoredSteuer()?.halteperiode ?? 30);
+  const [ticker, setTicker] = useState('NESN');
+  const [profil, setProfil] = useState<Anlegerprofil>('vorsorge_3a');
+  const [halteperiode, setHalteperiode] = useState(30);
   const [result, setResult] = useState<SteuerEinschaetzungResponse | null>(null);
+
+  useEffect(() => {
+    const s = loadStoredSteuer();
+    if (!s) return;
+    if (s.ticker) setTicker(s.ticker);
+    if (s.profil) setProfil(s.profil);
+    if (typeof s.halteperiode === 'number') setHalteperiode(s.halteperiode);
+  }, []);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -153,7 +168,9 @@ export function SteuerClient() {
         <CardContent>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="mb-1 block text-sm font-medium">Ticker</label>
+              <label className="mb-1 flex items-center gap-1 text-sm font-medium">
+                Ticker
+              </label>
               <Input
                 value={ticker}
                 onChange={(e) => setTicker(e.target.value.toUpperCase())}
@@ -162,7 +179,13 @@ export function SteuerClient() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Anlegerprofil</label>
+              <label className="mb-1 flex items-center gap-1.5 text-sm font-medium">
+                Anlegerprofil
+                <InfoTooltip
+                  text="Privatperson: Kapitalgewinne steuerfrei. Säule 3a: Steuerbegünstigte Vorsorge — Dividenden automatisch verrechnet. Pensionskasse (2a): Sonderregeln. Institution: Gewinne als Einkommen versteuert."
+                  side="top"
+                />
+              </label>
               <select
                 value={profil}
                 onChange={(e) => setProfil(e.target.value as Anlegerprofil)}
@@ -175,7 +198,13 @@ export function SteuerClient() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Halteperiode (Jahre)</label>
+              <label className="mb-1 flex items-center gap-1.5 text-sm font-medium">
+                Halteperiode (Jahre)
+                <InfoTooltip
+                  text="Schweizer Aktiengewinne sind steuerfrei — unabhängig von der Haltedauer. Es gibt aber Unterschiede je nach Anlagezweck (Privat vs. Professionell). Dividenden werden unabhängig von der Haltedauer als Einkommen versteuert."
+                  side="top"
+                />
+              </label>
               <Input
                 type="number"
                 value={halteperiode}

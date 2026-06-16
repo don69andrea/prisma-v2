@@ -18,6 +18,10 @@ export interface InvestorProfileResponse {
   investment_goal: string;
   confidence_score: number;
   onboarding_complete: boolean;
+  sector_hint?: string | null;
+  investment_amount?: "under_10k" | "10k_100k" | "over_100k";
+  esg_preference?: "yes" | "no" | "indifferent";
+  income_preference?: "dividends" | "growth" | "balanced";
 }
 
 export interface DiscoveredStock {
@@ -26,6 +30,7 @@ export interface DiscoveredStock {
   sector: string | null;
   market_cap_chf: string | null;
   exchange: string;
+  signal_reason?: string;
 }
 
 export interface DiscoveryResponse {
@@ -41,10 +46,17 @@ export interface DiscoverySessionResponse {
 }
 
 export interface PartialProfile {
-  beruf?: string;
-  ziel?: 'housing' | 'retirement' | 'freedom' | 'beat_savings' | 'other';
-  risiko?: 'conservative' | 'moderate' | 'aggressive';
-  brands?: string[];
+  session_id: string;
+  risk_profile: string;
+  sector_affinity: string[];
+  time_horizon: string;
+  investment_goal: string;
+  confidence_score: number;
+  onboarding_complete: boolean;
+  sector_hint?: string | null;
+  investment_amount?: "under_10k" | "10k_100k" | "over_100k";
+  esg_preference?: "yes" | "no" | "indifferent";
+  income_preference?: "dividends" | "growth" | "balanced";
 }
 
 export interface AnswerResponse {
@@ -56,13 +68,7 @@ export interface AnswerResponse {
 
 export interface CompleteDiscoveryResponse {
   profile: PartialProfile;
-  recommended_stocks: Array<{
-    ticker: string;
-    name: string;
-    sector: string | null;
-    market_cap_chf: string | null;
-    exchange: string;
-  }>;
+  recommended_stocks: DiscoveredStock[];
 }
 
 export async function createDiscoverySession(): Promise<DiscoverySessionResponse> {
@@ -75,10 +81,11 @@ export async function submitAnswer(
   sessionId: string,
   turn: number,
   answer: string | string[],
+  extra?: { brand_data?: Record<string, Record<string, unknown>> },
 ): Promise<AnswerResponse> {
   return apiFetch<AnswerResponse>('/api/v1/discovery/answer', {
     method: 'POST',
-    body: JSON.stringify({ session_id: sessionId, turn, answer }),
+    body: JSON.stringify({ session_id: sessionId, turn, answer, ...extra }),
   });
 }
 

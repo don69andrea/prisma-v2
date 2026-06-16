@@ -15,8 +15,9 @@ from typing import Any
 
 import pandas as pd
 import yfinance as yf
+from yfinance.exceptions import YFRateLimitError
 
-from backend.domain.errors import SwissDataUnavailableError
+from backend.domain.errors import SwissDataUnavailableError, YahooFinanceBlockedError
 from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
 from backend.domain.value_objects.dividend_data import DividendData, DividendEntry
 from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
@@ -25,6 +26,44 @@ _logger = logging.getLogger(__name__)
 
 _RETRIES = 2
 _BASE_DELAY = 1.0
+
+# Substrings, die typisch für eine Yahoo-Finance-Blockade sind (z.B. wenn
+# yfinance von Render's Cloud-IP-Range aufgerufen wird). Yahoo blockt diese
+# Ranges dauerhaft mit HTTP 401 ("Invalid Crumb") oder drosselt sie mit 429
+# Rate-Limiting — kein Bug in unserem Code, externe Blockade.
+_YAHOO_BLOCK_SIGNATURES: tuple[str, ...] = (
+    "401",
+    "invalid crumb",
+    "unauthorized",
+    "rate limit",
+    "too many requests",
+)
+
+
+def _is_yahoo_block_error(exc: Exception) -> bool:
+    """True wenn die Exception auf eine Yahoo-Finance-Blockade hindeutet.
+
+    YFRateLimitError wird per isinstance erkannt (robuster als String-Matching,
+    da yfinance diese Exception-Klasse für 429-Drosselung dediziert wirft, ohne
+    dass die Message zwangsläufig eines der Substrings enthalten muss).
+    """
+    if isinstance(exc, YFRateLimitError):
+        return True
+    message = str(exc).lower()
+    return any(signature in message for signature in _YAHOO_BLOCK_SIGNATURES)
+
+
+def _translate_exhausted_error(exc: Exception, ticker: str) -> Exception:
+    """Übersetzt eine nach Retry-Exhaustion verbleibende Exception.
+
+    Yahoo-Block-typische Fehler (HTTP 401, "Invalid Crumb", "Unauthorized")
+    werden in YahooFinanceBlockedError übersetzt, damit Router einheitlich
+    `except SwissDataUnavailableError` fangen können statt rohe
+    yfinance-Exceptions durchsickern zu lassen.
+    """
+    if _is_yahoo_block_error(exc):
+        return YahooFinanceBlockedError(ticker, cause=str(exc))
+    return exc
 
 
 class YFinanceSwissAdapter(SwissMarketDataProvider):
@@ -43,19 +82,46 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
     async def get_fundamentals(self, ticker: str) -> SwissFundamentals:
         info = await self._fetch_info(ticker)
         market_cap = info.get("marketCap")
+
+        if market_cap is None:
+            # Fallback: compute market_cap from sharesOutstanding * price.
+            # yfinance sometimes omits "marketCap" for SIX-listed (.SW) tickers
+            # even though the constituent fields are present.
+            shares = info.get("sharesOutstanding")
+            price = info.get("currentPrice") or info.get("regularMarketPrice")
+            if shares is not None and price is not None:
+                market_cap = shares * price
+                _logger.warning(
+                    "%s: marketCap missing from yfinance — estimated from "
+                    "sharesOutstanding (%.0f) × price (%.2f) = %.0f CHF",
+                    ticker,
+                    shares,
+                    price,
+                    market_cap,
+                )
+            else:
+                _logger.warning(
+                    "%s: marketCap unavailable and cannot be estimated "
+                    "(sharesOutstanding=%s, price=%s) — market_cap_chf will be null",
+                    ticker,
+                    shares,
+                    price,
+                )
+
         return SwissFundamentals(
             market_cap_chf=Decimal(str(market_cap)) if market_cap is not None else None,
             pe_ratio=info.get("trailingPE"),
             pb_ratio=info.get("priceToBook"),
             dividend_yield=info.get("dividendYield"),
             eps_chf=info.get("trailingEps"),
+            revenue_growth=info.get("revenueGrowth"),
         )
 
     async def get_price_history(self, ticker: str, days: int = 252) -> pd.DataFrame:
         if days <= 0:
             raise ValueError(f"days must be positive, got {days}")
         yf_ticker = self.build_yf_ticker(ticker)
-        return await self._fetch_history(yf_ticker, days)
+        return await self._fetch_history(yf_ticker, days, ticker)
 
     async def get_isin(self, ticker: str) -> str | None:
         """Ruft die ISIN über yfinance ab.
@@ -94,9 +160,9 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
                     )
                     await asyncio.sleep(delay)
 
-        raise last_exc  # type: ignore[misc]
+        raise _translate_exhausted_error(last_exc, ticker)  # type: ignore[arg-type]
 
-    async def _fetch_history(self, yf_ticker: str, days: int) -> pd.DataFrame:
+    async def _fetch_history(self, yf_ticker: str, days: int, ticker: str) -> pd.DataFrame:
         last_exc: Exception | None = None
 
         for attempt in range(_RETRIES + 1):
@@ -117,7 +183,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
                     )
                     await asyncio.sleep(delay)
 
-        raise last_exc  # type: ignore[misc]
+        raise _translate_exhausted_error(last_exc, ticker)  # type: ignore[arg-type]
 
     async def get_dividends(self, ticker: str) -> DividendData:
         """Ruft Dividendendaten via yfinance ab.
@@ -128,7 +194,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
         """
         yf_ticker = self.build_yf_ticker(ticker)
         info = await self._fetch_info(ticker)
-        div_series = await self._fetch_dividends(yf_ticker)
+        div_series = await self._fetch_dividends(yf_ticker, ticker)
 
         ex_ts = info.get("exDividendDate")
         ex_date: str | None = None
@@ -136,7 +202,14 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
             ex_date = datetime.fromtimestamp(float(ex_ts), tz=UTC).strftime("%Y-%m-%d")
 
         raw_yield = info.get("dividendYield")
-        dividend_yield_pct: float | None = round(float(raw_yield) * 100, 2) if raw_yield else None
+        if raw_yield:
+            raw_float = float(raw_yield)
+            # yfinance gibt dividendYield manchmal als Dezimal (0.038), manchmal als Prozent (3.8)
+            dividend_yield_pct: float | None = round(
+                raw_float if raw_float > 1 else raw_float * 100, 2
+            )
+        else:
+            dividend_yield_pct = None
 
         last_val = info.get("lastDividendValue")
         last_dividend_chf: float | None = float(last_val) if last_val is not None else None
@@ -159,7 +232,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
             ),
         )
 
-    async def _fetch_dividends(self, yf_ticker: str) -> pd.Series:
+    async def _fetch_dividends(self, yf_ticker: str, ticker: str) -> pd.Series:
         last_exc: Exception | None = None
 
         for attempt in range(_RETRIES + 1):
@@ -180,7 +253,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
                     )
                     await asyncio.sleep(delay)
 
-        raise last_exc  # type: ignore[misc]
+        raise _translate_exhausted_error(last_exc, ticker)  # type: ignore[arg-type]
 
     @staticmethod
     def _sync_info(yf_ticker: str) -> dict[str, Any]:

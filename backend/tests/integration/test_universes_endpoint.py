@@ -10,7 +10,10 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 from backend.domain.entities.universe import Universe
-from backend.domain.repositories.universe_repository import UniverseRepository
+from backend.domain.repositories.universe_repository import (
+    DuplicateUniverseNameError,
+    UniverseRepository,
+)
 from backend.interfaces.rest.app import create_app
 from backend.interfaces.rest.dependencies import get_universe_repository
 
@@ -33,6 +36,9 @@ class InMemoryUniverseRepository(UniverseRepository):
         return sorted(self._store.values(), key=lambda u: u.name)
 
     async def save(self, universe: Universe) -> None:
+        for existing in self._store.values():
+            if existing.id != universe.id and existing.name == universe.name:
+                raise DuplicateUniverseNameError(universe.name)
         self._store[universe.id] = universe
 
 
@@ -150,6 +156,22 @@ async def test_create_universe_missing_field_returns_422(http_client: AsyncClien
     assert response.status_code == 422
 
 
+async def test_create_universe_duplicate_name_returns_409(http_client: AsyncClient) -> None:
+    """Regression K-4/F-BTCR-3: Namens-Duplikat darf nicht als 500 durchschlagen."""
+    first = await http_client.post(
+        "/api/v1/universes",
+        json={"name": "Duplicate-Name", "region": "CH", "tickers": ["NESN"]},
+    )
+    assert first.status_code == 201
+
+    second = await http_client.post(
+        "/api/v1/universes",
+        json={"name": "Duplicate-Name", "region": "US", "tickers": ["AAPL"]},
+    )
+    assert second.status_code == 409
+    assert second.json()["detail"] == "Ein Universe mit diesem Namen existiert bereits."
+
+
 # ---------------------------------------------------------------------------
 # Tests: GET /api/v1/universes/{id}
 # ---------------------------------------------------------------------------
@@ -221,13 +243,13 @@ async def test_sync_universe_sp500_synced_count_is_positive(http_client: AsyncCl
     assert body["synced_count"] + len(body["failed_tickers"]) == 2  # SP500 hat 2 Tickers
 
 
-async def test_sync_universe_smi_tickers_not_in_stub_land_in_failed(
+async def test_sync_universe_smi_tickers_now_in_stub_land_synced(
     http_client: AsyncClient,
 ) -> None:
-    """SMI-Tickers (NESN/NOVN/ROG) fehlen im StubFundamentalsProvider → alle failed."""
+    """SMI-Tickers (NESN/NOVN/ROG) sind im StubFundamentalsProvider — alle synced."""
     body = (await http_client.post(f"/api/v1/universes/{_SMI_ID}/sync")).json()
-    assert body["synced_count"] == 0
-    assert set(body["failed_tickers"]) == {"NESN", "NOVN", "ROG"}
+    assert body["synced_count"] == 3
+    assert body["failed_tickers"] == []
 
 
 async def test_sync_universe_ticker_count_invariant(http_client: AsyncClient) -> None:

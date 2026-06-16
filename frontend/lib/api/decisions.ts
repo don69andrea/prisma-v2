@@ -1,6 +1,6 @@
 import { apiFetch } from './client';
 
-export type SignalType = 'BUY' | 'HOLD' | 'WATCH';
+export type SignalType = 'BUY' | 'HOLD' | 'SELL';
 
 export interface DecisionSignal {
   ticker: string;
@@ -12,6 +12,7 @@ export interface DecisionSignal {
   ml_score: number;
   macro_score: number;
   is_3a_eligible: boolean;
+  signal_reason: string;
 }
 
 export interface DecisionListResponse {
@@ -61,6 +62,9 @@ export async function liveDecisions(
   signal?: SignalType,
   eligibleOnly?: boolean,
 ): Promise<DecisionListResponse> {
+  if (tickers.length > 12) {
+    throw new Error(`Maximal 12 Ticker erlaubt (${tickers.length} übergeben)`)
+  }
   const params = new URLSearchParams({ tickers: tickers.join(',') });
   if (signal) params.set('signal', signal);
   if (eligibleOnly) params.set('eligible_only', 'true');

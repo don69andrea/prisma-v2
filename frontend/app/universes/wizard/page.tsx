@@ -71,7 +71,7 @@ export default function WizardPage() {
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Universe mit KI generieren</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Universe mit KI generieren.</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Beschreibe, welches Universe du suchst — Claude wählt passende Tickers aus dem
           verfügbaren Stock-Katalog.

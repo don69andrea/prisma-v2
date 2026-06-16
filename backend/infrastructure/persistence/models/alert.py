@@ -1,6 +1,7 @@
 """SQLAlchemy ORM-Modell für die alerts-Tabelle."""
 
 import uuid
+from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Float, Index, String, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -19,10 +20,10 @@ class AlertORM(Base):
     channel: Mapped[str] = mapped_column(String(20), nullable=False)
     target: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
-    last_triggered_at: Mapped[DateTime | None] = mapped_column(
+    last_triggered_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     last_signal: Mapped[str | None] = mapped_column(String(10), nullable=True)

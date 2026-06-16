@@ -16,6 +16,7 @@ import { ApiError } from '@/lib/api/client';
 
 import { RankingsTable } from './rankings-table';
 import { PortfolioAllocationPanel } from '@/components/rankings/PortfolioAllocationPanel';
+import { AllocationComparisonPanel } from '@/components/rankings/AllocationComparisonPanel';
 import { TopTenLeaderboard } from '@/components/rankings/TopTenLeaderboard';
 
 
@@ -81,7 +82,7 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
             <ArrowLeft className="mr-1 h-4 w-4" />
             Zurück zu Rankings
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis.</h1>
         </div>
         {isCompleted && rankingsQuery.data && (
           <div className="flex items-center gap-2">
@@ -174,6 +175,7 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
           <TopTenLeaderboard items={rankingsQuery.data} runId={params.runId} />
           <RankingsTable items={rankingsQuery.data} runId={params.runId} swissTickers={swissTickers} />
           <PortfolioAllocationPanel runId={params.runId} />
+          <AllocationComparisonPanel runId={params.runId} />
         </>
       )}
 

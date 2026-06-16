@@ -731,9 +731,10 @@ class NarrativeService:
     def _build_error_memo_schema(
         self, *, stock: Stock, ranking: dict[str, Any]
     ) -> ResearchMemoSchema:
+        raw_rank = ranking.get("total_rank")
         return ResearchMemoSchema(
             ticker=stock.ticker,
-            total_rank=int(ranking["total_rank"]),
+            total_rank=int(raw_rank) if raw_rank is not None else 1,
             one_liner="Memo-Generierung fehlgeschlagen — bitte Run regenerieren",
             ranking_interpretation=(
                 "Automatisch generiertes Memo nicht erzeugbar. Bitte Raw-Response"

@@ -48,15 +48,12 @@ services:
       # VoyageAI Embedding-Key
       - key: VOYAGE_API_KEY
         sync: false
-      # FinancialModelingPrep API key (free tier, 250 calls/day)
-      - key: FMP_API_KEY
-        sync: false
       # MCP-Tool-API-Key für X-API-Key auf /api/v1/runs (getrennt vom Admin-Key)
       - key: TOOL_API_KEY
         sync: false
       # App-Version — wird von /health zurückgegeben
       - key: APP_VERSION
-        value: "2.0.0"
+        value: "2.1.0"
 
   - type: web
     name: prisma-v2-frontend
@@ -69,12 +66,49 @@ services:
       # NEXT_PUBLIC_* variables are baked into the Next.js bundle at build time.
       # Render passes envVars as both build-time ARGs and runtime env vars for
       # Docker services, so setting it here is sufficient.
-      # Value must point to the public URL of prisma-v2-backend on Render,
-      # e.g. https://prisma-v2-backend.onrender.com
       - key: NEXT_PUBLIC_API_URL
         value: https://prisma-v2-backend.onrender.com
+      # Muss identisch mit API_KEY im Backend sein — manuell im Dashboard setzen.
+      - key: NEXT_PUBLIC_API_KEY
+        sync: false
     buildFilter:
       paths:
         - frontend/**
         - Dockerfile.frontend
         - render.yaml
+
+  - type: cron
+    name: prisma-news-ingestion
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    branch: main
+    plan: free
+    schedule: "0 6 * * *"
+    dockerCommand: python -m backend.application.services.news_ingestion_service
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prisma-v2-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false
+
+  - type: cron
+    name: prisma-crypto-daily
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    branch: main
+    plan: free
+    schedule: "30 6 * * *"
+    dockerCommand: python -m backend.scripts.crypto_daily_snapshot
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prisma-v2-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: COINGECKO_API_KEY
+        sync: false

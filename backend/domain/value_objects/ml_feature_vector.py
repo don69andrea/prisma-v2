@@ -42,6 +42,12 @@ class MLFeatureVector:
     snb_rate: float  # SNB Leitzins (%)
     chf_eur: float  # CHF/EUR Wechselkurs (CHF pro EUR)
 
+    # Fundamental-Features (yfinance / SimFin; 0.0 wenn nicht verfügbar)
+    pe_ratio: float  # Kurs-Gewinn-Verhältnis (trailing)
+    pb_ratio: float  # Kurs-Buchwert-Verhältnis
+    dividend_yield: float  # Dividendenrendite (z.B. 0.03 = 3%)
+    revenue_growth: float  # Umsatzwachstum YoY (z.B. 0.10 = +10%)
+
     # Trainingslabel (None für aktuelle Inferenz)
     forward_return_12m: float | None  # 12-Monats-Vorwärtsrendite
     target_class: int | None  # 0=Bottom, 1=Mid, 2=Top Quartil
@@ -68,6 +74,10 @@ class MLFeatureVector:
             "drawdown_12m": self.drawdown_12m,
             "snb_rate": self.snb_rate,
             "chf_eur": self.chf_eur,
+            "pe_ratio": self.pe_ratio,
+            "pb_ratio": self.pb_ratio,
+            "dividend_yield": self.dividend_yield,
+            "revenue_growth": self.revenue_growth,
         }
 
     FEATURE_NAMES: tuple[str, ...] = (
@@ -90,4 +100,8 @@ class MLFeatureVector:
         "drawdown_12m",
         "snb_rate",
         "chf_eur",
+        "pe_ratio",
+        "pb_ratio",
+        "dividend_yield",
+        "revenue_growth",
     )

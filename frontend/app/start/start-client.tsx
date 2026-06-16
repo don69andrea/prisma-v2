@@ -5,12 +5,17 @@ import { useRouter } from 'next/navigation';
 
 import { completeDiscovery, createDiscoverySession, submitAnswer } from '@/lib/api/discovery';
 import { PrismaLoader } from '@/components/ui/PrismaLogo';
+import { InfoPopover } from '@/components/InfoPopover';
+import { Compass } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-type Step = 'landing' | 'beruf' | 'ziel' | 'risiko' | 'brands' | 'reveal';
+type Step = 'landing' | 'beruf' | 'ziel' | 'risiko' | 'brands' | 'betrag' | 'nachhaltigkeit' | 'ertrag' | 'reveal' | 'profile-reveal';
+type Betrag = 'under_10k' | '10k_100k' | 'over_100k';
+type Nachhaltigkeit = 'yes' | 'no' | 'indifferent';
+type Ertrag = 'dividends' | 'balanced' | 'growth';
 
 type Ziel = 'housing' | 'retirement' | 'freedom' | 'beat_savings';
 type Risiko = 'conservative' | 'moderate' | 'aggressive';
@@ -20,6 +25,9 @@ interface Profile {
   ziel: Ziel;
   risiko: Risiko;
   brands: string[];
+  betrag: Betrag;
+  nachhaltigkeit: Nachhaltigkeit;
+  ertrag: Ertrag;
 }
 
 // ---------------------------------------------------------------------------
@@ -73,6 +81,24 @@ const ZIEL_OPTIONS: { value: Ziel; label: string; sub: string }[] = [
   { value: 'retirement',   label: 'Altersvorsorge',         sub: 'Ich denke langfristig.' },
   { value: 'freedom',      label: 'Finanzielle Freiheit',   sub: 'Ich will unabhängiger werden.' },
   { value: 'beat_savings', label: 'Besser als Sparkonto',   sub: 'Das Geld soll mehr arbeiten.' },
+];
+
+const BETRAG_OPTIONS: { value: Betrag; label: string; sub: string }[] = [
+  { value: 'under_10k',  label: 'Einsteiger',  sub: "< CHF 10'000 — Ideal zum Starten ohne grosses Risiko" },
+  { value: '10k_100k',   label: 'Wachstum',    sub: "CHF 10'000 – 100'000 — Echtes Depot aufbauen" },
+  { value: 'over_100k',  label: 'Investor',    sub: "> CHF 100'000 — Professionelle Portfoliooptimierung" },
+];
+
+const NACHHALTIGKEIT_OPTIONS: { value: Nachhaltigkeit; label: string; sub: string }[] = [
+  { value: 'yes',         label: 'Nachhaltigkeit ist wichtig', sub: 'Ich bevorzuge ESG-konforme Unternehmen' },
+  { value: 'no',          label: 'Rendite geht vor',           sub: 'Performance ist mein primäres Ziel' },
+  { value: 'indifferent', label: 'Spielt keine Rolle',         sub: 'Ich möchte alle Möglichkeiten sehen' },
+];
+
+const ERTRAG_OPTIONS: { value: Ertrag; label: string; sub: string }[] = [
+  { value: 'dividends', label: 'Dividenden', sub: 'Ich möchte regelmässige Ausschüttungen erhalten' },
+  { value: 'balanced',  label: 'Ausgewogen', sub: 'Mix aus Ausschüttungen und Kursgewinnen' },
+  { value: 'growth',    label: 'Wachstum',   sub: 'Ich setze auf langfristige Kurssteigerungen' },
 ];
 
 /** SVG-Gesichtsicons als Emoji-Ersatz für Risiko-Buttons. */
@@ -155,6 +181,71 @@ const CATEGORY_TO_SECTOR: Record<string, string> = {
 };
 
 export const DISCOVER_STORAGE_KEY = 'prisma_discover_result';
+export const PROFILE_STORAGE_KEY  = 'prisma_profile';
+
+// W-1 (F-DISC-1): Discovery-Flow-State wird hier gespiegelt, damit ein
+// Browser-Reload mitten im Flow den Fortschritt nicht verwirft.
+export const DISCOVERY_FLOW_STORAGE_KEY = 'prisma_discovery_flow_state';
+
+interface DiscoveryFlowState {
+  step: Step;
+  beruf: string;
+  ziel: Ziel | null;
+  risiko: Risiko | null;
+  brands: string[];
+  betrag: Betrag | null;
+  nachhaltigkeit: Nachhaltigkeit | null;
+  ertrag: Ertrag | null;
+  sessionId: string | null;
+}
+
+// Resume ist nur für Steps innerhalb des Frage-Flows sinnvoll — "landing",
+// "reveal" und "profile-reveal" werden nie wiederhergestellt.
+const RESUMABLE_STEPS: ReadonlySet<Step> = new Set([
+  'beruf', 'ziel', 'risiko', 'brands', 'betrag', 'nachhaltigkeit', 'ertrag',
+]);
+
+function loadDiscoveryFlowState(): DiscoveryFlowState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(DISCOVERY_FLOW_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<DiscoveryFlowState>;
+    if (!parsed.step || !RESUMABLE_STEPS.has(parsed.step)) return null;
+    return {
+      step: parsed.step,
+      beruf: parsed.beruf ?? '',
+      ziel: parsed.ziel ?? null,
+      risiko: parsed.risiko ?? null,
+      brands: parsed.brands ?? [],
+      betrag: parsed.betrag ?? null,
+      nachhaltigkeit: parsed.nachhaltigkeit ?? null,
+      ertrag: parsed.ertrag ?? null,
+      sessionId: parsed.sessionId ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveDiscoveryFlowState(state: DiscoveryFlowState) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(DISCOVERY_FLOW_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // sessionStorage kann z.B. im privaten Modus nicht verfügbar sein — Flow
+    // funktioniert dann weiter, nur ohne Reload-Persistenz.
+  }
+}
+
+function clearDiscoveryFlowState() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(DISCOVERY_FLOW_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 // ---------------------------------------------------------------------------
 // DownChart SVG — Risk-Feeling-Test
@@ -201,6 +292,7 @@ function StepLanding({ onEntdecker, onKenner }: { onEntdecker: () => void; onKen
         {/* Mini crystal */}
         <div className="flex justify-center mb-2">
           <div
+            data-testid="crystal"
             className="w-8 h-8 rotate-45 rounded-sm animate-pulse"
             style={{
               background: 'linear-gradient(135deg, #58a6ff 0%, #7ee787 50%, #bc8cff 100%)',
@@ -227,7 +319,7 @@ function StepLanding({ onEntdecker, onKenner }: { onEntdecker: () => void; onKen
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           }}
         >
-          <div className="text-2xl mb-3">🧭</div>
+          <Compass className="h-8 w-8 mb-3 text-blue-400 mx-auto" />
           <div className="font-semibold text-[#e6edf3]">Ich weiss noch nicht, wo ich anfangen soll.</div>
           <div className="text-sm text-[#8b949e] mt-1">Zeig mir den Weg.</div>
           <div className="mt-4 text-xs text-[#58a6ff] group-hover:translate-x-1 transition-transform inline-block">
@@ -272,12 +364,15 @@ function StepBeruf({ onNext }: { onNext: (beruf: string) => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
-      <StepIndicator current={1} total={4} />
+      <StepIndicator current={1} total={7} />
       <div className="text-center space-y-2">
         <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
         <h2 className="text-xl font-semibold text-[#e6edf3]">Was machst du beruflich?</h2>
         <p className="text-sm text-[#8b949e]">
           Keine richtige oder falsche Antwort — ich will nur verstehen, wie du denkst.
+        </p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Damit wir einschätzen können wie viel Finanzwissen wir voraussetzen dürfen.
         </p>
       </div>
       <div className="w-full space-y-3">
@@ -311,11 +406,17 @@ function StepZiel({ onNext }: { onNext: (ziel: Ziel) => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
-      <StepIndicator current={2} total={4} />
+      <StepIndicator current={2} total={7} />
       <div className="text-center space-y-2">
         <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3]">Wofür ist das Geld irgendwann gedacht?</h2>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Wofür ist das Geld irgendwann gedacht?
+          <InfoPopover ariaLabel="Mehr Info zu Anlageziel">Was du mit deinem Geld erreichen möchtest</InfoPopover>
+        </h2>
         <p className="text-sm text-[#8b949e]">Kein falsches oder richtiges Ziel — ich will nur verstehen.</p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Ein Rentner und ein Wachstumsinvestor brauchen komplett unterschiedliche Aktien.
+        </p>
       </div>
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
         {ZIEL_OPTIONS.map((opt) => {
@@ -350,12 +451,18 @@ function StepRisiko({ onNext }: { onNext: (risiko: Risiko) => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
-      <StepIndicator current={3} total={4} />
+      <StepIndicator current={3} total={7} />
       <div className="text-center space-y-2">
         <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3]">Stell dir vor: Du siehst das auf deinem Konto.</h2>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Stell dir vor: Du siehst das auf deinem Konto.
+          <InfoPopover ariaLabel="Mehr Info zu Risikotyp">Wie du auf Wertverluste reagierst</InfoPopover>
+        </h2>
         <p className="text-sm text-[#8b949e]">
           Du hast CHF 10&apos;000 investiert. Nach 3 Monaten öffnest du die App.
+        </p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Damit wir dir keine Biotech-Titel empfehlen wenn du nachts schlecht schläfst wenn dein Depot im Minus ist.
         </p>
       </div>
 
@@ -427,12 +534,15 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
 
   return (
     <div className="flex flex-col items-center gap-6 py-10 max-w-2xl mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
-      <StepIndicator current={4} total={4} />
+      <StepIndicator current={4} total={7} />
       <div className="text-center space-y-2">
         <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
         <h2 className="text-xl font-semibold text-[#e6edf3]">Welche dieser Schweizer Firmen kennst du?</h2>
         <p className="text-sm text-[#8b949e]">
           Aus dem Alltag, der Arbeit, den Nachrichten. Einfach anklicken.
+        </p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Damit dein Universum Aktien enthält die du auch wirklich verstehst.
         </p>
       </div>
 
@@ -523,6 +633,141 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
   );
 }
 
+function StepBetrag({ onNext }: { onNext: (betrag: Betrag) => void }) {
+  const [selected, setSelected] = useState<Betrag | null>(null);
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
+      <StepIndicator current={5} total={7} />
+      <div className="text-center space-y-2">
+        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Wie viel möchtest du ungefähr investieren?
+          <InfoPopover ariaLabel="Mehr Info zu Anlagebetrag">Dein ungefähres Startkapital hilft uns, passende Aktien zu empfehlen</InfoPopover>
+        </h2>
+        <p className="text-sm text-[#8b949e]">Es geht nur um eine grobe Einschätzung.</p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Damit der Sicherheits-Check auf deinem Factsheet in echten CHF-Beträgen rechnet.
+        </p>
+      </div>
+      <div className="w-full space-y-3">
+        {BETRAG_OPTIONS.map((opt) => {
+          const active = selected === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setSelected(opt.value)}
+              data-testid={`betrag-${opt.value}`}
+              className="w-full rounded-xl p-4 text-left transition-all"
+              style={{
+                background: active ? 'rgba(88,166,255,0.12)' : '#161b22',
+                border: `1px solid ${active ? '#58a6ff' : '#21262d'}`,
+                boxShadow: active ? '0 0 16px rgba(88,166,255,0.2)' : 'none',
+              }}
+            >
+              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
+              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+            </button>
+          );
+        })}
+      </div>
+      <PrismaButton onClick={() => selected && onNext(selected)} disabled={!selected}>
+        Weiter
+      </PrismaButton>
+    </div>
+  );
+}
+
+function StepNachhaltigkeit({ onNext }: { onNext: (nachhaltigkeit: Nachhaltigkeit) => void }) {
+  const [selected, setSelected] = useState<Nachhaltigkeit | null>(null);
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
+      <StepIndicator current={6} total={7} />
+      <div className="text-center space-y-2">
+        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Wie wichtig ist dir Nachhaltigkeit?
+          <InfoPopover ariaLabel="Mehr Info zu Nachhaltigkeit">ESG = Environment (Umwelt), Social (Soziales), Governance (Unternehmensführung) — nachhaltige Unternehmen</InfoPopover>
+        </h2>
+        <p className="text-sm text-[#8b949e]">ESG-Aktien sind Firmen die nachhaltig wirtschaften.</p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: ESG-Filter schliessen bestimmte Sektoren aus deinem Universum aus.
+        </p>
+      </div>
+      <div className="w-full space-y-3">
+        {NACHHALTIGKEIT_OPTIONS.map((opt) => {
+          const active = selected === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setSelected(opt.value)}
+              data-testid={`nachhaltigkeit-${opt.value}`}
+              className="w-full rounded-xl p-4 text-left transition-all"
+              style={{
+                background: active ? 'rgba(126,231,135,0.1)' : '#161b22',
+                border: `1px solid ${active ? '#7ee787' : '#21262d'}`,
+                boxShadow: active ? '0 0 16px rgba(126,231,135,0.2)' : 'none',
+              }}
+            >
+              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
+              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+            </button>
+          );
+        })}
+      </div>
+      <PrismaButton onClick={() => selected && onNext(selected)} disabled={!selected}>
+        Weiter
+      </PrismaButton>
+    </div>
+  );
+}
+
+function StepErtrag({ onNext }: { onNext: (ertrag: Ertrag) => void }) {
+  const [selected, setSelected] = useState<Ertrag | null>(null);
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
+      <StepIndicator current={7} total={7} />
+      <div className="text-center space-y-2">
+        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+          Was ist dir bei der Rendite wichtiger?
+          <InfoPopover ariaLabel="Mehr Info zu Rendite-Fokus">Dividenden = regelmässige Auszahlungen, Wachstum = Kursgewinne</InfoPopover>
+        </h2>
+        <p className="text-sm text-[#8b949e]">Du kannst das später noch anpassen.</p>
+        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+          Warum wir das fragen: Dividenden-Aktien und Wachstums-Aktien verhalten sich fundamental anders.
+        </p>
+      </div>
+      <div className="w-full space-y-3">
+        {ERTRAG_OPTIONS.map((opt) => {
+          const active = selected === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setSelected(opt.value)}
+              data-testid={`ertrag-${opt.value}`}
+              className="w-full rounded-xl p-4 text-left transition-all"
+              style={{
+                background: active ? 'rgba(188,140,255,0.1)' : '#161b22',
+                border: `1px solid ${active ? '#bc8cff' : '#21262d'}`,
+                boxShadow: active ? '0 0 16px rgba(188,140,255,0.2)' : 'none',
+              }}
+            >
+              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
+              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+            </button>
+          );
+        })}
+      </div>
+      <PrismaButton onClick={() => selected && onNext(selected)} disabled={!selected}>
+        Profil fertigstellen
+      </PrismaButton>
+    </div>
+  );
+}
+
 function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () => void }) {
   const [phase, setPhase] = useState<'crystal' | 'card'>('crystal');
   const risikoLabel = PROFILE_LABELS[profile.risiko];
@@ -581,7 +826,7 @@ function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () 
 
       <div className="text-center space-y-1">
         <div className="text-xs text-[#8b949e] tracking-widest uppercase">PRISMA hat dein Investorprofil erstellt</div>
-        <h2 className="text-2xl font-bold text-[#e6edf3]">Dein Profil</h2>
+        <h2 className="text-2xl font-bold text-[#e6edf3]">Dein Profil.</h2>
       </div>
 
       {/* Profile card — glass morphism */}
@@ -600,11 +845,50 @@ function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () 
           <ProfileRow label="Typ"          value={risikoLabel} />
           <ProfileRow label="Zeithorizont" value={horizon} />
           <ProfileRow
-            label="Risikoprofil"
+            label="Kenntnisse"
             value={
-              profile.risiko === 'conservative' ? 'Konservativ — Stabilität vor Rendite'
-              : profile.risiko === 'moderate'   ? 'Moderat — du wartest bei –20%'
-              :                                   'Chancenorientiert — Krisen nutzen'
+              profile.beruf ? 'Erfasst' : 'Einsteiger'
+            }
+          />
+          <ProfileRow
+            label="Anlageziel"
+            value={
+              profile.ziel === 'housing'      ? 'Neue Wohnung'
+              : profile.ziel === 'retirement' ? 'Altersvorsorge'
+              : profile.ziel === 'freedom'    ? 'Finanzielle Freiheit'
+              :                                 'Besser als Sparkonto'
+            }
+          />
+          <ProfileRow
+            label="Risikotyp"
+            value={
+              profile.risiko === 'conservative' ? 'Sicherheitsorientiert'
+              : profile.risiko === 'moderate'   ? 'Ausgewogen'
+              :                                   'Chancenorientiert'
+            }
+          />
+          <ProfileRow
+            label="Anlagebetrag"
+            value={
+              profile.betrag === 'under_10k'  ? "< CHF 10'000"
+              : profile.betrag === '10k_100k' ? "CHF 10'000 – 100'000"
+              :                                 "> CHF 100'000"
+            }
+          />
+          <ProfileRow
+            label="Nachhaltigkeit"
+            value={
+              profile.nachhaltigkeit === 'yes'         ? 'ESG-Fokus'
+              : profile.nachhaltigkeit === 'no'        ? 'Rendite-Fokus'
+              :                                          'Neutral'
+            }
+          />
+          <ProfileRow
+            label="Rendite"
+            value={
+              profile.ertrag === 'dividends' ? 'Dividenden'
+              : profile.ertrag === 'balanced' ? 'Ausgewogen'
+              :                                 'Wachstum'
             }
           />
           {topSectors.length > 0 && (
@@ -789,6 +1073,23 @@ function PrismaButton({
   );
 }
 
+function ConfidenceBar({ currentTurn }: { currentTurn: number }) {
+  const pct = Math.round((currentTurn / 7) * 100);
+  return (
+    <div className="space-y-1 mt-4 max-w-lg mx-auto px-2">
+      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <p className="text-[10px] text-center text-muted-foreground">
+        Dein Profil wird immer präziser. · {pct}%
+      </p>
+    </div>
+  );
+}
+
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -817,44 +1118,182 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Profile Reveal Screen (shown after completeDiscovery() resolves)
+// ---------------------------------------------------------------------------
+
+function DiscoveryProfileReveal({
+  result,
+  onDiscover,
+}: {
+  result: {
+    risk_profile?: string;
+    investment_goal?: string;
+    preferred_sectors?: string[];
+    investment_amount?: string;
+    sustainability_preference?: string;
+    return_focus?: string;
+    profile_type?: string;
+  };
+  onDiscover: () => void;
+}) {
+  // Set cookie as soon as this screen renders
+  useEffect(() => {
+    document.cookie = 'prisma_onboarding=complete; path=/; max-age=31536000';
+  }, []);
+
+  const rows: { label: string; value: string }[] = [
+    { label: 'Risiko',         value: result.risk_profile ?? '—' },
+    { label: 'Ziel',           value: result.investment_goal ?? '—' },
+    { label: 'Sektoren',       value: (result.preferred_sectors ?? []).join(' · ') || '—' },
+    { label: 'Betrag',         value: result.investment_amount ?? '—' },
+    { label: 'Nachhaltigkeit', value: result.sustainability_preference ?? '—' },
+    { label: 'Dividenden',     value: result.return_focus ?? '—' },
+  ];
+
+  return (
+    <div
+      className="flex flex-col items-center gap-6 py-10 max-w-sm mx-auto"
+      style={{ animation: 'fadeIn 0.6s ease' }}
+      data-testid="discovery-profile-reveal"
+    >
+      <div className="text-center space-y-2">
+        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">Fertig</div>
+        <h2 className="text-2xl font-bold text-[#e6edf3]">Dein Profil ist bereit.</h2>
+        {result.profile_type && (
+          <p className="text-base text-[#8b949e]">{result.profile_type}</p>
+        )}
+      </div>
+
+      <div
+        className="w-full rounded-xl p-5 space-y-3"
+        style={{
+          background: 'rgba(22,27,34,0.85)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(88,166,255,0.2)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}
+      >
+        {rows.map((row) => (
+          <ProfileRow key={row.label} label={row.label} value={row.value} />
+        ))}
+      </div>
+
+      <button
+        onClick={onDiscover}
+        data-testid="btn-meine-aktien"
+        className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-[#0d1117] transition-all hover:opacity-90 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+        style={{
+          background: 'linear-gradient(135deg, #58a6ff 0%, #7ee787 100%)',
+          boxShadow: '0 4px 20px rgba(88,166,255,0.3)',
+        }}
+      >
+        Meine Aktien entdecken →
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
 export function StartClient() {
-  const [step, setStep]             = useState<Step>('landing');
-  const [beruf, setBeruf]           = useState('');
-  const [ziel, setZiel]             = useState<Ziel | null>(null);
-  const [risiko, setRisiko]         = useState<Risiko | null>(null);
-  const [brands, setBrands]         = useState<string[]>([]);
-  const [kennerMode, setKennerMode] = useState(false);
-  const [loading, setLoading]       = useState(false);
+  // W-1 (F-DISC-1): Beim Mount wird ein eventuell vorhandener Flow-State aus
+  // sessionStorage gelesen, damit ein Reload mitten im Flow fortgesetzt statt
+  // neu gestartet wird.
+  const restored = loadDiscoveryFlowState();
+
+  const [step, setStep]                       = useState<Step>(restored?.step ?? 'landing');
+  const [beruf, setBeruf]                     = useState(restored?.beruf ?? '');
+  const [ziel, setZiel]                       = useState<Ziel | null>(restored?.ziel ?? null);
+  const [risiko, setRisiko]                   = useState<Risiko | null>(restored?.risiko ?? null);
+  const [brands, setBrands]                   = useState<string[]>(restored?.brands ?? []);
+  const [betrag, setBetrag]                   = useState<Betrag | null>(restored?.betrag ?? null);
+  const [nachhaltigkeit, setNachhaltigkeit]   = useState<Nachhaltigkeit | null>(restored?.nachhaltigkeit ?? null);
+  const [ertrag, setErtrag]                   = useState<Ertrag | null>(restored?.ertrag ?? null);
+  const [sessionId, setSessionId]             = useState<string | null>(restored?.sessionId ?? null);
+  const [kennerMode, setKennerMode]           = useState(false);
+  const [loading, setLoading]                 = useState(false);
+  const [discoveryResult, setDiscoveryResult] = useState<{
+    risk_profile?: string;
+    investment_goal?: string;
+    preferred_sectors?: string[];
+    investment_amount?: string;
+    sustainability_preference?: string;
+    return_focus?: string;
+    profile_type?: string;
+  } | null>(null);
   const router = useRouter();
 
+  // W-2 (F-DISC-2): Promise von handleBrandsSubmit (Session erstellen + Turns
+  // 1-4 senden), damit handleContinue darauf warten kann statt mit einer nie
+  // registrierten randomUUID zu raten.
+  const sessionReadyRef = useRef<Promise<string> | null>(null);
+
+  // Spiegelt den Flow-State bei jeder relevanten Änderung in sessionStorage.
+  useEffect(() => {
+    if (!RESUMABLE_STEPS.has(step)) {
+      clearDiscoveryFlowState();
+      return;
+    }
+    saveDiscoveryFlowState({
+      step, beruf, ziel, risiko, brands, betrag, nachhaltigkeit, ertrag, sessionId,
+    });
+  }, [step, beruf, ziel, risiko, brands, betrag, nachhaltigkeit, ertrag, sessionId]);
+
+  // Build brand_data map for turn 4 (ticker → {sector, name})
+  const brandDataMap = BRANDS.reduce<Record<string, Record<string, string>>>((acc, b) => {
+    acc[b.ticker] = { sector: CATEGORY_TO_SECTOR[b.category] ?? b.category, name: b.name };
+    return acc;
+  }, {});
+
   const handleContinue = useCallback(
-    async (finalBrands: string[], finalZiel: Ziel, finalRisiko: Risiko) => {
+    async (
+      finalBrands: string[],
+      finalZiel: Ziel,
+      finalRisiko: Risiko,
+      finalBetrag: Betrag,
+      finalNachhaltigkeit: Nachhaltigkeit,
+      finalErtrag: Ertrag,
+      sid: string,
+    ) => {
       setLoading(true);
       const knownBrandObjs = BRANDS.filter((b) => finalBrands.includes(b.ticker));
 
       try {
-        const { session_id: sessionId } = await createDiscoverySession();
-        await submitAnswer(sessionId, 1, beruf || '');
-        await submitAnswer(sessionId, 2, finalZiel);
-        await submitAnswer(sessionId, 3, finalRisiko);
-        await submitAnswer(sessionId, 4, finalBrands);
-        const result = await completeDiscovery(sessionId);
+        await submitAnswer(sid, 5, finalBetrag);
+        await submitAnswer(sid, 6, finalNachhaltigkeit);
+        await submitAnswer(sid, 7, finalErtrag);
+        const result = await completeDiscovery(sid);
         const discovery = {
-          session_id: sessionId,
+          session_id: sid,
           total: result.recommended_stocks.length,
           stocks: result.recommended_stocks,
         };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(discovery));
+        localStorage.setItem(PROFILE_STORAGE_KEY, finalRisiko);
+
+        // Set onboarding cookie before showing profile reveal
+        document.cookie = 'prisma_onboarding=complete; path=/; max-age=31536000';
+
+        setDiscoveryResult({
+          risk_profile: result.profile.risk_profile ?? finalRisiko,
+          investment_goal: result.profile.investment_goal ?? finalZiel,
+          preferred_sectors: result.profile.sector_affinity ?? [],
+          investment_amount: result.profile.investment_amount ?? finalBetrag,
+          sustainability_preference: result.profile.esg_preference ?? finalNachhaltigkeit,
+          return_focus: result.profile.income_preference ?? finalErtrag,
+          profile_type: PROFILE_LABELS[result.profile.risk_profile as Risiko] ?? PROFILE_LABELS[finalRisiko],
+        });
+        setLoading(false);
+        setStep('profile-reveal');
       } catch {
         const defaultTickers = ['NESN', 'ROG', 'NOVN', 'ABBN', 'UBSG', 'LOGN', 'CFR', 'ZURN'];
         const stocksToShow = knownBrandObjs.length > 0
           ? knownBrandObjs
           : BRANDS.filter((b) => defaultTickers.includes(b.ticker));
         const fallback = {
-          session_id: crypto.randomUUID(),
+          session_id: sid,
           total: stocksToShow.length,
           stocks: stocksToShow.map((b) => ({
             ticker: b.ticker,
@@ -865,12 +1304,78 @@ export function StartClient() {
           })),
         };
         localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(fallback));
-      }
+        localStorage.setItem(PROFILE_STORAGE_KEY, finalRisiko);
 
-      router.push('/discover');
+        // Set onboarding cookie even on fallback
+        document.cookie = 'prisma_onboarding=complete; path=/; max-age=31536000';
+
+        setDiscoveryResult({
+          risk_profile: finalRisiko,
+          investment_goal: finalZiel,
+          preferred_sectors: [],
+          investment_amount: finalBetrag,
+          sustainability_preference: finalNachhaltigkeit,
+          return_focus: finalErtrag,
+          profile_type: PROFILE_LABELS[finalRisiko],
+        });
+        setLoading(false);
+        setStep('profile-reveal');
+      }
     },
-    [beruf, router],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
+
+  // Handles turns 1-4 sequentially before showing the reveal step.
+  // W-2 (F-DISC-2): Das zurückgegebene Promise wird in sessionReadyRef
+  // gehalten, damit handleContinue (Turns 5-7) garantiert auf die echte,
+  // beim Backend registrierte sessionId wartet statt mit einer randomUUID
+  // zu raten, falls der Nutzer schneller weiterklickt als Turns 1-4 dauern.
+  function handleBrandsSubmit(finalBrands: string[]) {
+    setBrands(finalBrands);
+    setStep('betrag');
+
+    // Fire off turns 1-4 in background
+    const sessionReady = (async () => {
+      try {
+        const { session_id: sid } = await createDiscoverySession();
+        setSessionId(sid);
+        await submitAnswer(sid, 1, beruf || '');
+        await submitAnswer(sid, 2, ziel!);
+        await submitAnswer(sid, 3, risiko!);
+        await submitAnswer(sid, 4, finalBrands, { brand_data: brandDataMap });
+        return sid;
+      } catch {
+        // session creation/turns 1-4 failed; handleContinue will use fallback
+        const fallbackSid = crypto.randomUUID();
+        setSessionId(fallbackSid);
+        return fallbackSid;
+      }
+    })();
+
+    sessionReadyRef.current = sessionReady;
+    return sessionReady;
+  }
+
+  // W-2 (F-DISC-2): Wartet — falls vorhanden — auf das Promise aus
+  // handleBrandsSubmit (Session erstellen + Turns 1-4), bevor Turns 5-7
+  // gesendet werden. So kann kein Klick mehr mit einer nie registrierten
+  // randomUUID laufen, nur weil der Nutzer schneller war als der Hintergrund-
+  // Request.
+  async function startContinue(
+    finalBrands: string[],
+    finalZiel: Ziel,
+    finalRisiko: Risiko,
+    finalBetrag: Betrag,
+    finalNachhaltigkeit: Nachhaltigkeit,
+    finalErtrag: Ertrag,
+  ) {
+    setLoading(true);
+    const resolvedSessionId = sessionReadyRef.current
+      ? await sessionReadyRef.current
+      : sessionId ?? crypto.randomUUID();
+    await handleContinue(finalBrands, finalZiel, finalRisiko, finalBetrag, finalNachhaltigkeit, finalErtrag, resolvedSessionId);
+  }
 
   if (loading) {
     return <PrismaLoader label="Dein Universe wird zusammengestellt" />;
@@ -879,6 +1384,17 @@ export function StartClient() {
   if (kennerMode) {
     return <div className="min-h-[60vh]"><KennerSearch onBack={() => setKennerMode(false)} /></div>;
   }
+
+  const STEP_TO_TURN: Partial<Record<Step, number>> = {
+    beruf: 1,
+    ziel: 2,
+    risiko: 3,
+    brands: 4,
+    betrag: 5,
+    nachhaltigkeit: 6,
+    ertrag: 7,
+  };
+  const confidenceTurn = STEP_TO_TURN[step] ?? null;
 
   return (
     <div className="min-h-[60vh]">
@@ -891,13 +1407,35 @@ export function StartClient() {
       {step === 'beruf'   && <StepBeruf  onNext={(v) => { setBeruf(v);   setStep('ziel'); }} />}
       {step === 'ziel'    && <StepZiel   onNext={(v) => { setZiel(v);    setStep('risiko'); }} />}
       {step === 'risiko'  && <StepRisiko onNext={(v) => { setRisiko(v);  setStep('brands'); }} />}
-      {step === 'brands'  && <StepBrands onNext={(v) => { setBrands(v);  setStep('reveal'); }} />}
-      {step === 'reveal' && ziel && risiko && (
+      {step === 'brands'  && <StepBrands onNext={handleBrandsSubmit} />}
+      {step === 'betrag'  && (
+        <StepBetrag onNext={(v) => { setBetrag(v); setStep('nachhaltigkeit'); }} />
+      )}
+      {step === 'nachhaltigkeit' && (
+        <StepNachhaltigkeit onNext={(v) => { setNachhaltigkeit(v); setStep('ertrag'); }} />
+      )}
+      {step === 'ertrag' && (
+        <StepErtrag onNext={(v) => {
+          setErtrag(v);
+          void startContinue(brands, ziel!, risiko!, betrag!, nachhaltigkeit!, v);
+        }} />
+      )}
+      {step === 'reveal' && ziel && risiko && betrag && nachhaltigkeit && ertrag && (
         <StepReveal
-          profile={{ beruf, ziel, risiko, brands }}
-          onContinue={() => handleContinue(brands, ziel, risiko)}
+          profile={{ beruf, ziel, risiko, brands, betrag, nachhaltigkeit, ertrag }}
+          onContinue={() => void startContinue(brands, ziel, risiko, betrag, nachhaltigkeit, ertrag)}
         />
       )}
+      {step === 'profile-reveal' && discoveryResult && (
+        <DiscoveryProfileReveal
+          result={discoveryResult}
+          onDiscover={() => {
+            document.cookie = 'prisma_onboarding=complete; path=/; max-age=31536000';
+            router.push('/discover');
+          }}
+        />
+      )}
+      {confidenceTurn !== null && <ConfidenceBar currentTurn={confidenceTurn} />}
     </div>
   );
 }

@@ -73,4 +73,4 @@ async def test_post_audit_computes_and_returns_record(app: Any) -> None:
     assert resp.status_code in (200, 201)
     data = resp.json()
     assert data["ticker"] == "NESN"
-    assert data["signal"] in ("BUY", "HOLD", "WATCH")
+    assert data["signal"] in ("BUY", "HOLD", "SELL")

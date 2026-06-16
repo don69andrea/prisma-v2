@@ -85,7 +85,11 @@ class SQLANewsRepository(NewsRepository):
         ticker: str | None = None,
     ) -> list[NewsRetrievalResult]:
         ticker_filter = "AND :ticker = ANY(nd.tickers)" if ticker else ""
-        query_vector_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+        # K-6: Validate embedding values — NaN/Inf would cause a PostgreSQL parsing error.
+        validated = [float(v) for v in query_embedding]
+        if any(not math.isfinite(v) for v in validated):
+            raise ValueError("Embedding contains non-finite values (NaN/Inf)")
+        query_vector_str = "[" + ",".join(f"{v:.8f}" for v in validated) + "]"
         raw_sql = f"""
             SELECT
                 nc.id              AS chunk_id,
@@ -97,12 +101,12 @@ class SQLANewsRepository(NewsRepository):
                 nd.source,
                 nd.tickers,
                 nd.published_at,
-                1 - ((nc.embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048)))
+                1 - ((nc.embedding::halfvec(1024)) <=> ('{query_vector_str}'::vector(1024)::halfvec(1024)))
                                    AS similarity
             FROM news_chunks nc
             JOIN news_documents nd ON nd.id = nc.news_document_id
             WHERE 1=1 {ticker_filter}
-            ORDER BY (nc.embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048))
+            ORDER BY (nc.embedding::halfvec(1024)) <=> ('{query_vector_str}'::vector(1024)::halfvec(1024))
             LIMIT :k
         """
         from sqlalchemy import text

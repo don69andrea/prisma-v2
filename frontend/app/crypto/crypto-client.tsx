@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { getCryptoSignals, getFearGreed } from '@/lib/api/crypto';
+import { ApiError } from '@/lib/api/client';
 import { FearGreedGauge } from '@/components/crypto/FearGreedGauge';
 import { CryptoSignalCard } from '@/components/crypto/CryptoSignalCard';
 import { CryptoProRow } from '@/components/crypto/CryptoProRow';
@@ -11,6 +12,10 @@ import { usePrismaMode } from '@/hooks/usePrismaMode';
 
 const DISCLAIMER = `⚠️ Kryptowährungen sind hochvolatile Spekulations-Assets. Kein 3a-Instrument. Kein gesetzliches Zahlungsmittel in der Schweiz. Kapitalgewinne für Privatanleger steuerfrei (CH) — Vermögen ist steuerpflichtig (ESTV-Jahreswert). PRISMA-Signale sind keine Anlageberatung. Nur für freies Vermögen geeignet.`;
 
+function isCryptoFeatureDisabled(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404;
+}
+
 export function CryptoClient() {
   const { mode } = usePrismaMode();
 
@@ -18,13 +23,26 @@ export function CryptoClient() {
     queryKey: ['crypto-signals'],
     queryFn: getCryptoSignals,
     staleTime: 10 * 60 * 1000,
+    retry: (failureCount, error) => !isCryptoFeatureDisabled(error) && failureCount < 3,
   });
 
   const { data: fearGreed, isLoading: fgLoading } = useQuery({
     queryKey: ['fear-greed'],
     queryFn: getFearGreed,
     staleTime: 60 * 60 * 1000,
+    retry: (failureCount, error) => !isCryptoFeatureDisabled(error) && failureCount < 3,
   });
+
+  if (isCryptoFeatureDisabled(signalsError)) {
+    return (
+      <div
+        className="rounded-lg border border-border/50 bg-card p-6 text-center text-sm text-muted-foreground"
+        data-testid="crypto-feature-disabled"
+      >
+        Das Crypto-Feature ist aktuell nicht verfügbar.
+      </div>
+    );
+  }
 
   const buySignals = signals?.filter((s) =>
     s.signal === 'STRONG_BUY' || s.signal === 'BUY'

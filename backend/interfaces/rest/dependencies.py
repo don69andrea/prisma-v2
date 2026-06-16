@@ -599,3 +599,14 @@ async def get_crypto_scoring_service() -> CryptoScoringService:
         fg_adapter=_get_fear_greed_singleton(),
         scorer=CryptoScorer(),
     )
+
+
+async def require_crypto_enabled(settings: Settings = Depends(get_settings)) -> None:
+    """Gattet das Crypto-Modul über CRYPTO_FEATURE_ENABLED (W-12 / F-BTCR-2).
+
+    Liefert 404 statt z.B. 503, damit das Modul bei deaktiviertem Flag so
+    aussieht, als gäbe es die Routen gar nicht — kein Hinweis auf ein
+    existierendes, aber gesperrtes Feature.
+    """
+    if not settings.crypto_feature_enabled:
+        raise HTTPException(status_code=404, detail="Crypto-Feature ist deaktiviert.")

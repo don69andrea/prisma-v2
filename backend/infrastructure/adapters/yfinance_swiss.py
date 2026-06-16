@@ -15,6 +15,7 @@ from typing import Any
 
 import pandas as pd
 import yfinance as yf
+from yfinance.exceptions import YFRateLimitError
 
 from backend.domain.errors import SwissDataUnavailableError, YahooFinanceBlockedError
 from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
@@ -28,16 +29,26 @@ _BASE_DELAY = 1.0
 
 # Substrings, die typisch für eine Yahoo-Finance-Blockade sind (z.B. wenn
 # yfinance von Render's Cloud-IP-Range aufgerufen wird). Yahoo blockt diese
-# Ranges dauerhaft mit HTTP 401 — kein Bug in unserem Code, externe Blockade.
+# Ranges dauerhaft mit HTTP 401 ("Invalid Crumb") oder drosselt sie mit 429
+# Rate-Limiting — kein Bug in unserem Code, externe Blockade.
 _YAHOO_BLOCK_SIGNATURES: tuple[str, ...] = (
     "401",
     "invalid crumb",
     "unauthorized",
+    "rate limit",
+    "too many requests",
 )
 
 
 def _is_yahoo_block_error(exc: Exception) -> bool:
-    """True wenn die Exception-Message auf eine Yahoo-Finance-Blockade hindeutet."""
+    """True wenn die Exception auf eine Yahoo-Finance-Blockade hindeutet.
+
+    YFRateLimitError wird per isinstance erkannt (robuster als String-Matching,
+    da yfinance diese Exception-Klasse für 429-Drosselung dediziert wirft, ohne
+    dass die Message zwangsläufig eines der Substrings enthalten muss).
+    """
+    if isinstance(exc, YFRateLimitError):
+        return True
     message = str(exc).lower()
     return any(signature in message for signature in _YAHOO_BLOCK_SIGNATURES)
 

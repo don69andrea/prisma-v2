@@ -198,6 +198,30 @@ async def test_get_dividends_yahoo_block_raises_blocked_error(
 @pytest.mark.asyncio
 @patch("backend.infrastructure.adapters.yfinance_swiss.asyncio.sleep", new_callable=AsyncMock)
 @patch("backend.infrastructure.adapters.yfinance_swiss.yf")
+async def test_get_fundamentals_yahoo_rate_limit_raises_blocked_error(
+    mock_yf: MagicMock, mock_sleep: AsyncMock
+) -> None:
+    """Yahoo drosselt mit YFRateLimitError (429) — eigene Exception-Klasse,
+
+    deren Message ("Too Many Requests. Rate limited. Try after a while.")
+    keines der ursprünglichen String-Substrings ("401", "invalid crumb",
+    "unauthorized") enthält. Muss per isinstance-Check erkannt werden, sonst
+    fällt sie als raw 500 durch (separater Production-Vorfall vom 16.06.2026).
+    """
+    from yfinance.exceptions import YFRateLimitError
+
+    mock_yf.Ticker.side_effect = YFRateLimitError()
+
+    adapter = YFinanceSwissAdapter()
+    with pytest.raises(YahooFinanceBlockedError) as exc_info:
+        await adapter.get_fundamentals("NESN")
+
+    assert isinstance(exc_info.value, SwissDataUnavailableError)
+
+
+@pytest.mark.asyncio
+@patch("backend.infrastructure.adapters.yfinance_swiss.asyncio.sleep", new_callable=AsyncMock)
+@patch("backend.infrastructure.adapters.yfinance_swiss.yf")
 async def test_get_fundamentals_generic_error_not_translated(
     mock_yf: MagicMock, mock_sleep: AsyncMock
 ) -> None:

@@ -44,6 +44,22 @@ class Settings(BaseSettings):
     # Leer = opt-in disabled, kein Auth-Enforcement.
     tool_api_key: str = ""
 
+    # FinancialModelingPrep API-Key (kostenloser Tier, 250 Calls/Tag).
+    # Leer oder bekannte Platzhalter ("your-fmp-key") = FMP-Adapter
+    # deaktiviert; kein Fehler, kein HTTP-Call. Kein Boot-Fehler in
+    # Entwicklung/CI ohne echten Key.
+    fmp_api_key: str = ""
+
+    # SendGrid API-Key für Alert-E-Mails.
+    # Leer oder bekannte Platzhalter = E-Mail-Versand graceful deaktiviert.
+    sendgrid_api_key: str = ""
+
+    # CoinGecko API Key (optional — Free Tier: 30 Req/min, 10.000/Monat)
+    coingecko_api_key: str = ""
+
+    # Krypto-Feature aktivieren (default: true)
+    crypto_feature_enabled: bool = True
+
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 

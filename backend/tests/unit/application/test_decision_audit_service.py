@@ -59,7 +59,7 @@ def test_signal_for_score_thresholds() -> None:
     assert _signal_for_score(65.0) == "BUY"
     assert _signal_for_score(64.9) == "HOLD"
     assert _signal_for_score(40.0) == "HOLD"
-    assert _signal_for_score(39.9) == "WATCH"
+    assert _signal_for_score(39.9) == "SELL"
 
 
 def test_snb_macro_score_values() -> None:
@@ -106,7 +106,7 @@ async def test_compute_and_save_returns_record() -> None:
 
     assert record is not None
     assert record.ticker == "NESN"
-    assert record.signal in {"BUY", "HOLD", "WATCH"}
+    assert record.signal in {"BUY", "HOLD", "SELL"}
     assert record.explanation_de != ""
     assert "NESN" in record.explanation_de
     audit_repo.save.assert_called_once_with(record)

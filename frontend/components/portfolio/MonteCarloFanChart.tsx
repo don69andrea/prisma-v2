@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 interface Props {
   p5: number[];
@@ -75,7 +76,7 @@ export function MonteCarloFanChart({ p5, p50, p95, contributionLine, years, corr
     <div className="space-y-2">
       {correlationDegraded && (
         <div className="rounded-lg px-3 py-2 text-xs flex items-start gap-2" style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', color: '#ca8a04' }}>
-          <span className="mt-0.5 shrink-0">⚠</span>
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
           <span>Korrelationsdaten unvollständig — Simulation ohne Titelkorrelationen berechnet. Diversifikationseffekte können über- oder unterschätzt sein.</span>
         </div>
       )}

@@ -1,12 +1,13 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { InfoPopover } from '@/components/InfoPopover';
 import {
   Table,
   TableBody,
@@ -36,6 +37,13 @@ const METRIC_ROWS: Array<{ label: string; key: keyof PortfolioMetrics; pct: bool
   { label: 'Max. Drawdown', key: 'max_drawdown', pct: true  },
 ];
 
+const METRIC_TOOLTIPS: Partial<Record<keyof PortfolioMetrics, string>> = {
+  cagr:         'Compound Annual Growth Rate = Jährliche Wachstumsrate. Zeigt das durchschnittliche Jahreswachstum in Prozent.',
+  annual_vol:   'Schwankungsbreite des Portfolios. Hohe Volatilität = starke Kursschwankungen.',
+  sharpe:       'Misst die Rendite im Verhältnis zum Risiko. >1 ist gut, >2 ist sehr gut. Je höher, desto besser wurde das Risiko entlohnt.',
+  max_drawdown: 'Der grösste Wertverlust vom Höchststand zum Tiefpunkt. -20% bedeutet: Das Portfolio ist zwischenzeitlich um 20% gefallen.',
+};
+
 const MODE_LABELS: Record<BacktestMode, string> = {
   quant_only: 'Quant only',
   quant_ml: 'Quant+ML',
@@ -48,10 +56,9 @@ const MODE_COLORS: Record<BacktestMode, string> = {
   full: '#10b981',
 };
 
-function fmtMetric(v: string, pct: boolean): string {
-  const n = parseFloat(v);
-  if (isNaN(n)) return '—';
-  return pct ? `${(n * 100).toFixed(1)}%` : n.toFixed(2);
+function fmtMetric(v: number, pct: boolean): string {
+  if (v == null || isNaN(v)) return '—';
+  return pct ? `${(v * 100).toFixed(1)}%` : v.toFixed(2);
 }
 
 function exportMetricsCsv(
@@ -120,7 +127,16 @@ function MetricsTable({
       <TableBody>
         {METRIC_ROWS.map(({ label, key, pct }) => (
           <TableRow key={label}>
-            <TableCell className="text-muted-foreground text-sm">{label}</TableCell>
+            <TableCell className="text-muted-foreground text-sm">
+              <span className="inline-flex items-center gap-0.5">
+                {label}
+                {METRIC_TOOLTIPS[key] && (
+                  <InfoPopover ariaLabel={`Info: ${label}`}>
+                    {METRIC_TOOLTIPS[key]}
+                  </InfoPopover>
+                )}
+              </span>
+            </TableCell>
             <TableCell className="text-right font-medium tabular-nums">{fmtMetric(prisma[key], pct)}</TableCell>
             <TableCell className="text-right tabular-nums">{fmtMetric(universum[key], pct)}</TableCell>
             <TableCell className="text-right tabular-nums">{fmtMetric(benchmark[key], pct)}</TableCell>
@@ -160,7 +176,16 @@ function ComparisonMetricsTable({
       <TableBody>
         {METRIC_ROWS.map(({ label, key, pct }) => (
           <TableRow key={label}>
-            <TableCell className="text-muted-foreground text-sm">{label}</TableCell>
+            <TableCell className="text-muted-foreground text-sm">
+              <span className="inline-flex items-center gap-0.5">
+                {label}
+                {METRIC_TOOLTIPS[key] && (
+                  <InfoPopover ariaLabel={`Info: ${label}`}>
+                    {METRIC_TOOLTIPS[key]}
+                  </InfoPopover>
+                )}
+              </span>
+            </TableCell>
             {presentModes.map((m) => {
               const r = results[m]!;
               return (
@@ -198,10 +223,19 @@ function BacktestContent() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<TabMode>('single');
   const [runId, setRunId] = useState(searchParams.get('run_id') ?? '');
-  const [startDate, setStartDate] = useState(() => searchParams.get('start') ?? loadStoredConfig()?.startDate ?? '2025-01-01');
-  const [endDate, setEndDate] = useState(() => searchParams.get('end') ?? loadStoredConfig()?.endDate ?? '2025-12-31');
-  const [topN, setTopN] = useState(() => Number(searchParams.get('top_n') ?? String(loadStoredConfig()?.topN ?? 3)));
-  const [benchmark, setBenchmark] = useState(() => searchParams.get('benchmark') ?? loadStoredConfig()?.benchmark ?? '^SSMI');
+  const [startDate, setStartDate] = useState(() => searchParams.get('start') ?? '2025-01-01');
+  const [endDate, setEndDate] = useState(() => searchParams.get('end') ?? '2025-12-31');
+  const [topN, setTopN] = useState(() => Number(searchParams.get('top_n') ?? '3'));
+  const [benchmark, setBenchmark] = useState(() => searchParams.get('benchmark') ?? '^SSMI');
+
+  useEffect(() => {
+    const s = loadStoredConfig();
+    if (!s) return;
+    if (!searchParams.get('start') && s.startDate) setStartDate(s.startDate);
+    if (!searchParams.get('end') && s.endDate) setEndDate(s.endDate);
+    if (!searchParams.get('top_n') && s.topN) setTopN(s.topN);
+    if (!searchParams.get('benchmark') && s.benchmark) setBenchmark(s.benchmark);
+  }, [searchParams]);
 
   // Single-mode state
   const [result, setResult] = useState<BacktestResult | null>(null);
@@ -369,7 +403,12 @@ function BacktestContent() {
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Benchmark</label>
+        <label className="mb-1 flex items-center gap-1 text-sm font-medium">
+          Benchmark
+          <InfoPopover ariaLabel="Info: Benchmark">
+            Vergleichsmassstab. Meist ein Index wie der SMI oder SPI. Gut wenn deine Strategie den Benchmark übertrifft.
+          </InfoPopover>
+        </label>
         <Input
           value={benchmark}
           onChange={(e) => setBenchmark(e.target.value)}
@@ -413,7 +452,14 @@ function BacktestContent() {
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Backtest</CardTitle>
+              <CardTitle>
+                <span className="inline-flex items-center gap-1">
+                  Backtest
+                  <InfoPopover ariaLabel="Info: Backtest">
+                    Ein Backtest testet eine Investitionsstrategie an historischen Daten. Du siehst wie die Strategie in der Vergangenheit abgeschnitten hätte.
+                  </InfoPopover>
+                </span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <form
@@ -452,8 +498,19 @@ function BacktestContent() {
                 <div>
                   <CardTitle>Performance-Vergleich</CardTitle>
                   <CardDescription data-testid="backtest-result-meta">
-                    {startDate} – {endDate} · Top {topN} · {benchmark}
+                    {result.actual_start_date} – {result.actual_end_date} · Top {topN} · {benchmark}
                   </CardDescription>
+                  {(result.actual_start_date !== result.start_date ||
+                    result.actual_end_date !== result.end_date) && (
+                    <p
+                      className="mt-1 text-xs text-amber-600 dark:text-amber-400"
+                      data-testid="backtest-window-truncated-hint"
+                    >
+                      Hinweis: Angefordertes Zeitfenster ({result.start_date} – {result.end_date}) war
+                      länger als die verfügbaren Marktdaten. Angezeigt wird das tatsächlich abgedeckte
+                      Fenster.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -620,7 +677,7 @@ function BacktestContent() {
                   {(['quant_only', 'quant_ml', 'full'] as BacktestMode[]).map((m) => {
                     const r = compResults[m];
                     if (!r) return null;
-                    const sharpe = parseFloat(r.prisma_metrics.sharpe);
+                    const sharpe = r.prisma_metrics.sharpe;
                     return (
                       <div
                         key={m}
@@ -634,7 +691,12 @@ function BacktestContent() {
                         >
                           {isNaN(sharpe) ? '—' : sharpe.toFixed(2)}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">Sharpe Ratio</p>
+                        <p className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-0.5">
+                          Sharpe Ratio
+                          <InfoPopover ariaLabel="Info: Sharpe Ratio">
+                            Misst die Rendite im Verhältnis zum Risiko. &gt;1 ist gut, &gt;2 ist sehr gut. Je höher, desto besser wurde das Risiko entlohnt.
+                          </InfoPopover>
+                        </p>
                       </div>
                     );
                   })}

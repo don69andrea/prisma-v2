@@ -1,8 +1,8 @@
-import { TrendingUp, Minus, Eye } from 'lucide-react';
+import { TrendingUp, Minus } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
-export type SignalType = 'BUY' | 'HOLD' | 'WATCH' | 'SELL';
+export type SignalType = 'BUY' | 'HOLD' | 'SELL';
 
 interface SignalBadgeProps {
   signal: SignalType;
@@ -27,14 +27,6 @@ const SIGNAL_CONFIG = {
     border: 'border-[#ffa657]/30',
     label:  'HOLD',
     Icon:   Minus,
-    rotate: '',
-  },
-  WATCH: {
-    bg:     'bg-[#0d1f3c]',
-    text:   'text-[#58a6ff]',
-    border: 'border-[#58a6ff]/30',
-    label:  'BEOBACHTEN',
-    Icon:   Eye,
     rotate: '',
   },
   SELL: {
@@ -70,7 +62,7 @@ export function SignalBadge({
   animated = false,
   className,
 }: SignalBadgeProps) {
-  const cfg   = SIGNAL_CONFIG[signal] ?? SIGNAL_CONFIG.WATCH;
+  const cfg   = SIGNAL_CONFIG[signal] ?? SIGNAL_CONFIG.HOLD;
   const szcfg = SIZE_CONFIG[size];
 
   return (

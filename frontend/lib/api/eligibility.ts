@@ -6,7 +6,7 @@ export interface EligibilityResponse {
   ticker: string;
   eligible: boolean;
   reasons: EligibilityReason[];
-  reason?: string;
+  reason: string;
 }
 
 export async function getEligibility(ticker: string): Promise<EligibilityResponse> {

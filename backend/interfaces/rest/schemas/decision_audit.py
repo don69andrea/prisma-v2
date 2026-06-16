@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 class DecisionAuditRecordResponse(BaseModel):
     id: UUID
     ticker: str
-    signal: str = Field(..., description="BUY | HOLD | WATCH")
+    signal: str = Field(..., description="BUY | HOLD | SELL")
     weighted_score: float
     quant_score: float
     ml_score: float

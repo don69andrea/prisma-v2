@@ -41,6 +41,14 @@ class BacktestResult(BaseModel):
     model_run_id: UUID
     start_date: date
     end_date: date
+    # Tatsaechlich abgedecktes Fenster der zugrunde liegenden Marktdaten.
+    # Der Marktdaten-Provider liefert maximal die letzten 504 Handelstage —
+    # bei einem `start_date` weiter in der Vergangenheit wird das Fenster
+    # stillschweigend gekuerzt. Diese Felder machen das tatsaechliche
+    # Fenster fuer Konsumenten (z.B. Frontend) transparent.
+    # Bug: F-BTCR-1 / W-11.
+    actual_start_date: date
+    actual_end_date: date
     top_n: int
     benchmark_ticker: str
     prisma_metrics: PortfolioMetrics

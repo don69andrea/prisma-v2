@@ -146,12 +146,12 @@ class SQLAEmbeddingRepository(EmbeddingRepository):
                 ec.metadata,
                 d.ticker,
                 d.doc_type,
-                1 - ((ec.embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048)))
+                1 - ((ec.embedding::halfvec(1024)) <=> ('{query_vector_str}'::vector(1024)::halfvec(1024)))
                                AS similarity
             FROM embedding_chunks ec
             JOIN documents d ON d.id = ec.document_id
             WHERE 1=1 {ticker_filter}
-            ORDER BY (ec.embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048))
+            ORDER BY (ec.embedding::halfvec(1024)) <=> ('{query_vector_str}'::vector(1024)::halfvec(1024))
             LIMIT :k
         """
         params: dict[str, object] = {"k": k}

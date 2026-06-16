@@ -7,7 +7,7 @@ export interface AuditTrailProps {
   quantScore: number;
   mlScore: number;
   macroScore: number;
-  signal: 'BUY' | 'HOLD' | 'WATCH' | 'SELL';
+  signal: 'BUY' | 'HOLD' | 'SELL';
   snapshotDate?: string;
   className?: string;
 }
@@ -21,7 +21,6 @@ const ROWS = [
 const SIGNAL_RANGE: Record<string, string> = {
   BUY:  '≥ 65',
   HOLD: '40–64',
-  WATCH: '< 40',
   SELL: '< 40',
 };
 

@@ -10,13 +10,14 @@ from pydantic import BaseModel, Field
 class DecisionSignalResponse(BaseModel):
     ticker: str
     snapshot_date: date
-    signal: str = Field(..., description="BUY | HOLD | WATCH")
+    signal: str = Field(..., description="BUY | HOLD | SELL")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Normalisierter Weighted Score")
     weighted_score: float = Field(..., ge=0.0, le=100.0)
     quant_score: float = Field(..., ge=0.0, le=100.0)
     ml_score: float = Field(..., ge=0.0, le=100.0)
     macro_score: float = Field(..., ge=0.0, le=100.0)
     is_3a_eligible: bool
+    signal_reason: str = Field(default="", description="Alltagssprache-Erklärung des Signals")
 
 
 class DecisionListResponse(BaseModel):

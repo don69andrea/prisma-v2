@@ -53,3 +53,27 @@ class SwissDataUnavailableError(Exception):
     def __init__(self, ticker: str) -> None:
         self.ticker = ticker
         super().__init__(f"Keine yfinance-Daten für Swiss Ticker '{ticker}.SW'")
+
+
+class YahooFinanceBlockedError(SwissDataUnavailableError):
+    """Yahoo Finance blockiert den Request (z.B. HTTP 401 "Invalid Crumb").
+
+    Tritt bekanntermassen auf, wenn yfinance von Cloud-Hosting-IP-Ranges
+    (z.B. Render) aus aufgerufen wird — Yahoo blockt diese Ranges dauerhaft.
+    Kein Bug in unserem Code, sondern eine externe Einschränkung.
+
+    Subklasse von SwissDataUnavailableError, damit bestehende
+    `except SwissDataUnavailableError`-Blöcke beide Fälle weiterhin
+    einheitlich abfangen — Router können bei Bedarf trotzdem zwischen
+    "Ticker unbekannt" (404) und "Datenquelle blockiert" (503) unterscheiden,
+    indem sie zuerst auf diese spezifischere Klasse matchen.
+    """
+
+    def __init__(self, ticker: str, *, cause: str = "") -> None:
+        self.ticker = ticker
+        detail = f" ({cause})" if cause else ""
+        Exception.__init__(
+            self,
+            f"Yahoo Finance blockiert den Zugriff für '{ticker}.SW'{detail} — "
+            "Marktdaten momentan nicht verfügbar (externe Datenquelle eingeschränkt).",
+        )

@@ -8,7 +8,7 @@ export interface SignalBreakdownProps {
   mlScore?: number;      // 0-100
   macroScore?: number;   // 0-100
   finalScore?: number;   // weighted_score 0-100
-  signal: 'BUY' | 'HOLD' | 'WATCH';
+  signal: 'BUY' | 'HOLD' | 'SELL';
   className?: string;
 }
 
@@ -42,7 +42,7 @@ const COMPONENTS = [
 const SIGNAL_CONFIG = {
   BUY:   { color: '#7ee787', label: 'BUY',   threshold: '≥ 70' },
   HOLD:  { color: '#ffa657', label: 'HOLD',  threshold: '40–69' },
-  WATCH: { color: '#8b949e', label: 'WATCH', threshold: '< 40' },
+  SELL: { color: '#f85149', label: 'SELL', threshold: '< 40' },
 } as const;
 
 export function SignalBreakdown({
@@ -138,7 +138,7 @@ export function SignalBreakdown({
 
       {/* Threshold legend */}
       <p className="text-[9px] text-[#8b949e]/60 leading-tight">
-        BUY ≥ 70 · HOLD 40–69 · WATCH &lt; 40 · Quant×0.45 + ML×0.35 + Makro×0.20
+        BUY ≥ 70 · HOLD 40–69 · SELL &lt; 40 · Quant×0.45 + ML×0.35 + Makro×0.20
       </p>
     </div>
   );

@@ -70,16 +70,25 @@ class SQLABacktestResultRepository(BacktestResultRepository):
         row = await self._session.get(BacktestResultORM, result_id)
         if row is None:
             return None
+        series = _series_from_dict(row.series)
+        # actual_start_date/actual_end_date are not persisted as separate
+        # columns (no migration needed) — they are derived from the series
+        # dates, which is the same source the service uses when first
+        # computing them. Bug: F-BTCR-1 / W-11.
+        actual_start_date = series.dates[0] if series.dates else row.start_date
+        actual_end_date = series.dates[-1] if series.dates else row.end_date
         return BacktestResult(
             id=row.id,
             model_run_id=row.model_run_id,
             start_date=row.start_date,
             end_date=row.end_date,
+            actual_start_date=actual_start_date,
+            actual_end_date=actual_end_date,
             top_n=row.top_n,
             benchmark_ticker=row.benchmark_ticker,
             prisma_metrics=_metrics_from_dict(row.prisma_metrics),
             universe_metrics=_metrics_from_dict(row.universe_metrics),
             benchmark_metrics=_metrics_from_dict(row.benchmark_metrics),
-            series=_series_from_dict(row.series),
+            series=series,
             created_at=row.created_at,
         )

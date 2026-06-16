@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Download, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 import { listStocks, type StockRead } from '@/lib/api/stocks';
 import { Input } from '@/components/ui/input';
@@ -18,15 +19,16 @@ const MARKET_CAP_3A_THRESHOLD = 100_000_000; // 100M CHF
 export function is3aEligible(stock: StockRead): boolean {
   if (stock.exchange !== 'XSWX') return false;
   if (!stock.market_cap_chf) return false;
-  return stock.market_cap_chf >= MARKET_CAP_3A_THRESHOLD;
+  return Number(stock.market_cap_chf) >= MARKET_CAP_3A_THRESHOLD;
 }
 
-function formatMarketCap(value: number | null): string {
+function formatMarketCap(value: string | null): string {
   if (value === null) return '—';
-  if (value >= 1e12) return `${(value / 1e12).toFixed(1)} Bio.`;
-  if (value >= 1e9)  return `${(value / 1e9).toFixed(1)} Mrd.`;
-  if (value >= 1e6)  return `${(value / 1e6).toFixed(0)} Mio.`;
-  return `CHF ${value.toFixed(0)}`;
+  const n = Number(value);
+  if (n >= 1e12) return `${(n / 1e12).toFixed(1)} Bio.`;
+  if (n >= 1e9)  return `${(n / 1e9).toFixed(1)} Mrd.`;
+  if (n >= 1e6)  return `${(n / 1e6).toFixed(0)} Mio.`;
+  return `CHF ${n.toFixed(0)}`;
 }
 
 const EXCHANGE_OPTIONS = [
@@ -49,9 +51,10 @@ function matchesCap(stock: StockRead, cap: CapFilter): boolean {
   if (cap === 'all') return true;
   const v = stock.market_cap_chf;
   if (v === null) return cap === 'small';
-  if (cap === 'large') return v >= 10e9;
-  if (cap === 'mid')   return v >= 2e9 && v < 10e9;
-  return v < 2e9;
+  const n = Number(v);
+  if (cap === 'large') return n >= 10e9;
+  if (cap === 'mid')   return n >= 2e9 && n < 10e9;
+  return n < 2e9;
 }
 
 export function sortStocks(
@@ -65,8 +68,8 @@ export function sortStocks(
     if (key === 'ticker') {
       cmp = a.ticker.localeCompare(b.ticker);
     } else if (key === 'market_cap') {
-      const aVal = a.market_cap_chf ?? 0;
-      const bVal = b.market_cap_chf ?? 0;
+      const aVal = a.market_cap_chf !== null ? Number(a.market_cap_chf) : 0;
+      const bVal = b.market_cap_chf !== null ? Number(b.market_cap_chf) : 0;
       cmp = aVal - bVal;
     } else if (key === 'sector') {
       const aSec = a.sector ?? '';
@@ -129,12 +132,20 @@ function loadStoredStocksFilters() {
 export function StocksListClient() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState('');
-  const [exchange, setExchange] = useState(() => loadStoredStocksFilters()?.exchange ?? '');
-  const [sector, setSector] = useState(() => searchParams.get('sector') ?? loadStoredStocksFilters()?.sector ?? '');
-  const [only3a, setOnly3a] = useState(() => loadStoredStocksFilters()?.only3a ?? false);
+  const [exchange, setExchange] = useState('');
+  const [sector, setSector] = useState(() => searchParams.get('sector') ?? '');
+  const [only3a, setOnly3a] = useState(false);
   const [capFilter, setCapFilter] = useState<CapFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  useEffect(() => {
+    const s = loadStoredStocksFilters();
+    if (!s) return;
+    if (!searchParams.get('sector') && s.sector) setSector(s.sector);
+    if (s.exchange) setExchange(s.exchange);
+    if (typeof s.only3a === 'boolean') setOnly3a(s.only3a);
+  }, [searchParams]);
 
   useEffect(() => {
     localStorage.setItem(LS_STOCKS_KEY, JSON.stringify({ exchange, sector, only3a }));
@@ -313,9 +324,18 @@ export function StocksListClient() {
 
       {!isLoading && (
         <>
-          <p className="text-xs text-muted-foreground">
-            {filteredAndSorted.length} von {data?.items.length ?? 0} Aktien
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{filteredAndSorted.length}</span>{' '}
+              {filteredAndSorted.length === data?.items.length
+                ? `Aktien gefunden`
+                : `von ${data?.items.length ?? 0} Aktien`}
+            </p>
+            <InfoTooltip
+              text="Datenbank aller analysierten Schweizer Aktien (SMI, SMIM, SPI). Klicke auf eine Aktie für die detaillierte Analyse mit KI-Memo, ML-Score und Fundamentaldaten."
+              side="right"
+            />
+          </div>
           <div className="rounded-md border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
@@ -385,8 +405,18 @@ export function StocksListClient() {
                 ))}
                 {filteredAndSorted.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground text-sm">
-                      Keine Aktien gefunden.
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm">
+                      <p className="text-muted-foreground">
+                        Keine Aktien entsprechen den Filterkriterien.
+                      </p>
+                      {hasActiveFilters && (
+                        <button
+                          onClick={resetFilters}
+                          className="mt-2 text-xs text-primary hover:underline"
+                        >
+                          Filter zurücksetzen
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )}

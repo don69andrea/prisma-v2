@@ -25,7 +25,7 @@ class SQLASwissFilingRepository(SwissFilingRepository):
                 SwissFilingChunkORM.url_hash == url_hash,
                 SwissFilingChunkORM.chunk_idx == chunk_idx,
             )
-            row = (await session.execute(stmt)).first()
+            row = (await session.execute(stmt)).scalar_one_or_none()
             return row is not None
 
     async def save_chunks(self, chunks: list[SwissFilingChunk]) -> None:
@@ -90,11 +90,11 @@ class SQLASwissFilingRepository(SwissFilingRepository):
                 doc_type,
                 content,
                 metadata,
-                1 - ((embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048)))
+                1 - ((embedding::halfvec(1024)) <=> ('{query_vector_str}'::vector(1024)::halfvec(1024)))
                             AS similarity
             FROM swiss_rag_chunks
             WHERE 1=1 {ticker_filter} {language_filter}
-            ORDER BY (embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048))
+            ORDER BY (embedding::halfvec(1024)) <=> ('{query_vector_str}'::vector(1024)::halfvec(1024))
             LIMIT :k
         """
         params: dict[str, object] = {"k": k}

@@ -139,7 +139,7 @@ class AlertService:
             new_signal = await self._signal_svc.get_current_signal(alert.ticker)
         except Exception as exc:
             _logger.warning(
-                "Preis-Check für Alert %s (%s) fehlgeschlagen: %s", alert.id, alert.ticker, exc
+                "Signal-Check für Alert %s (%s) fehlgeschlagen: %s", alert.id, alert.ticker, exc
             )
             return False
         if new_signal is None or new_signal == alert.last_signal:

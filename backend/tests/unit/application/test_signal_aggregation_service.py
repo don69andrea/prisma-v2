@@ -183,7 +183,7 @@ async def test_get_signal_not_eligible_not_in_repo() -> None:
 
 @pytest.mark.asyncio
 async def test_get_signal_watch() -> None:
-    """Niedriger Quant + UNDERPERFORM ML + restriktive SNB → WATCH."""
+    """Niedriger Quant + UNDERPERFORM ML + restriktive SNB → SELL."""
     feature_svc = AsyncMock()
     feature_svc.build_features.return_value = _make_features(quant_score=20.0, snb_rate=2.0)
     pred_svc = AsyncMock()
@@ -196,7 +196,7 @@ async def test_get_signal_watch() -> None:
     result = await service.get_signal("NESN")
 
     assert result is not None
-    assert result.signal == "WATCH"
+    assert result.signal == "SELL"
 
 
 @pytest.mark.asyncio
@@ -248,7 +248,7 @@ async def test_get_signal_no_ml_model_fallback_neutral() -> None:
 
     assert result is not None
     assert result.ml_score == 50.0
-    assert result.signal in {"BUY", "HOLD", "WATCH"}
+    assert result.signal in {"BUY", "HOLD", "SELL"}
 
 
 @pytest.mark.asyncio
@@ -279,5 +279,5 @@ def test_decision_signal_for_score() -> None:
     assert DecisionSignal.signal_for_score(65.0) == "BUY"
     assert DecisionSignal.signal_for_score(64.9) == "HOLD"
     assert DecisionSignal.signal_for_score(40.0) == "HOLD"
-    assert DecisionSignal.signal_for_score(39.9) == "WATCH"
-    assert DecisionSignal.signal_for_score(0.0) == "WATCH"
+    assert DecisionSignal.signal_for_score(39.9) == "SELL"
+    assert DecisionSignal.signal_for_score(0.0) == "SELL"

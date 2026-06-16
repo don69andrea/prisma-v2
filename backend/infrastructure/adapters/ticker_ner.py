@@ -1,6 +1,10 @@
 """TickerNer — Dictionary-basierte Ticker-Erkennung in Freitext.
 
 Erkennt Swiss-Stock-Ticker (z.B. NESN, NOVN) via Wort-Grenzen-Regex.
+Zusätzlich werden bekannte Firmennamen (z.B. "Nestlé") auf ihren Ticker
+gemappt, da News-Artikel (NZZ/SRF) i.d.R. den Firmennamen statt des
+Ticker-Symbols verwenden.
+
 Keine ML-Inferenz — deterministisch und CI-freundlich.
 """
 
@@ -8,18 +12,99 @@ from __future__ import annotations
 
 import re
 
+# Firmenname (lowercase, ohne Rechtsform) -> Ticker. Nur Namen, deren
+# Ziel-Ticker in SWISS_TICKERS enthalten ist, wirken sich in extract() aus.
+COMPANY_NAME_TO_TICKER: dict[str, str] = {
+    # SMI-20
+    "abb": "ABBN",
+    "adecco": "ADEN",
+    "alcon": "ALLN",
+    "givaudan": "GIVN",
+    "holcim": "HOLN",
+    "kuehne+nagel": "KNIN",
+    "kühne+nagel": "KNIN",
+    "kuehne nagel": "KNIN",
+    "kühne nagel": "KNIN",
+    "lonza": "LONN",
+    "nestle": "NESN",
+    "nestlé": "NESN",
+    "partners group": "PGHN",
+    "roche": "ROG",
+    "swisscom": "SCMN",
+    "sgs": "SGSN",
+    "sika": "SIKA",
+    "swiss life": "SLHN",
+    "swiss re": "SRENH",
+    "ubs": "UBSG",
+    "swatch": "UHRN",
+    "zurich insurance": "ZURN",
+    "novartis": "NOVN",
+    # SMIM-30
+    "amrize": "AMSN",
+    "julius baer": "BAER",
+    "baloise": "BARN",
+    "bachem": "BCHN",
+    "bkw": "BKWN",
+    "basler kantonalbank": "BSLN",
+    "clariant": "CLTN",
+    "cosmo pharmaceuticals": "COTN",
+    "ems-chemie": "EMSN",
+    "emmi": "EMMN",
+    "flughafen zuerich": "FHZN",
+    "flughafen zürich": "FHZN",
+    "fenaco": "FORN",
+    "geberit": "GEBN",
+    "helvetia": "HELN",
+    "hochdorf": "HOCN",
+    "implenia": "INRN",
+    "interroll": "IREN",
+    "jungfraubahn": "JFIN",
+    "lindt": "LISP",
+    "lindt & spruengli": "LISP",
+    "lindt & sprüngli": "LISP",
+    "mobimo": "MBTN",
+    "mobiliar": "MOBN",
+    "phoenix mecano": "PATN",
+    "psp swiss property": "PSPN",
+    "st. galler kantonalbank": "SGKN",
+    "stadler rail": "SRAIL",
+    "temenos": "TEMN",
+    "vat group": "VACN",
+    "valora": "VATN",
+    "waadtlaender kantonalbank": "WKBN",
+    "vaudoise": "WKBN",
+    "zehnder": "ZEHN",
+}
+
 
 class TickerNer:
     """Extrahiert bekannte Ticker-Symbole aus einem Text.
 
     Wort-Grenzen verhindern, dass «ABB» in «ABBN» oder «ABBC» matched.
+    Erkennt sowohl Ticker-Symbole direkt (NESN) als auch bekannte
+    Firmennamen (Nestlé) und löst sie auf den jeweiligen Ticker auf.
     """
 
-    def __init__(self, known_tickers: frozenset[str]) -> None:
+    def __init__(
+        self,
+        known_tickers: frozenset[str],
+        company_aliases: dict[str, str] | None = None,
+    ) -> None:
         self._tickers = known_tickers
-        # Ein gemeinsames Pattern für alle Ticker — effizienter als N Patterns.
-        if known_tickers:
-            joined = "|".join(re.escape(t) for t in sorted(known_tickers, key=len, reverse=True))
+        aliases = company_aliases if company_aliases is not None else COMPANY_NAME_TO_TICKER
+        # Nur Aliase behalten, deren Ziel-Ticker auch bekannt ist.
+        self._aliases = {
+            name: ticker for name, ticker in aliases.items() if ticker in known_tickers
+        }
+
+        alternatives = [re.escape(t) for t in known_tickers] + [
+            re.escape(name) for name in self._aliases
+        ]
+        if alternatives:
+            # Längere Alternativen zuerst, damit z.B. "kuehne+nagel" vor
+            # kürzeren Teil-Treffern matched.
+            alternatives.sort(key=len, reverse=True)
+            joined = "|".join(alternatives)
             self._pattern: re.Pattern[str] | None = re.compile(
                 rf"\b({joined})\b",
                 re.IGNORECASE,
@@ -35,10 +120,11 @@ class TickerNer:
         seen: set[str] = set()
         result: list[str] = []
         for m in matches:
-            upper = m.upper()
-            if upper not in seen:
-                seen.add(upper)
-                result.append(upper)
+            lower = m.lower()
+            ticker = self._aliases.get(lower, m.upper())
+            if ticker not in seen:
+                seen.add(ticker)
+                result.append(ticker)
         return tuple(result)
 
 

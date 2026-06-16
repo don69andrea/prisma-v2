@@ -28,6 +28,12 @@ async def get_report(ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"))
     svc = ReportService()
     try:
         pdf_bytes = await svc.generate_pdf(ticker.upper())
+    except ImportError as exc:
+        _logger.warning("WeasyPrint nicht verfügbar: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="PDF-Service temporär nicht verfügbar (WeasyPrint-Systemabhängigkeiten fehlen).",
+        ) from exc
     except Exception as exc:
         _logger.exception("PDF-Generierung fehlgeschlagen für %s", ticker)
         raise HTTPException(

@@ -93,8 +93,8 @@ _CAP_CHECK_ATOMIC_SQL = text(
                 WHERE created_at >= date_trunc('month', now() AT TIME ZONE 'UTC')
                   AND created_at <  date_trunc('month', now() AT TIME ZONE 'UTC')
                                      + INTERVAL '1 month'
-            ), 0) + :estimated_usd
-        ) <= :cap_usd * :threshold
+            ), 0) + CAST(:estimated_usd AS numeric)
+        ) <= CAST(:cap_usd AS numeric) * CAST(:threshold AS numeric)
     """
 )
 

@@ -37,10 +37,13 @@ describe('submitAnswer', () => {
       next_turn: 2,
       confidence: 0.5,
       partial_profile: {
-        beruf: 'Entwickler',
-        ziel: 'freedom',
-        risiko: 'moderate',
-        brands: [],
+        session_id: 'abc-123',
+        risk_profile: 'moderate',
+        sector_affinity: [],
+        time_horizon: 'medium',
+        investment_goal: 'freedom',
+        confidence_score: 0.5,
+        onboarding_complete: false,
       },
     };
     mockApiFetch.mockResolvedValueOnce(mockResponse);
@@ -61,10 +64,13 @@ describe('submitAnswer', () => {
       next_turn: null,
       confidence: 0.9,
       partial_profile: {
-        beruf: 'Entwickler',
-        ziel: 'freedom',
-        risiko: 'moderate',
-        brands: ['NESN', 'ROG'],
+        session_id: 'abc-123',
+        risk_profile: 'moderate',
+        sector_affinity: ['Technology'],
+        time_horizon: 'long',
+        investment_goal: 'freedom',
+        confidence_score: 0.9,
+        onboarding_complete: true,
       },
     };
     mockApiFetch.mockResolvedValueOnce(mockResponse);
@@ -83,14 +89,17 @@ describe('completeDiscovery', () => {
   it('gibt profile und recommended_stocks zurück', async () => {
     const mockResponse = {
       profile: {
-        beruf: 'Entwickler',
-        ziel: 'freedom' as const,
-        risiko: 'moderate' as const,
-        brands: ['NESN'],
+        session_id: 'abc-123',
+        risk_profile: 'moderate',
+        sector_affinity: ['Technology'],
+        time_horizon: 'long',
+        investment_goal: 'freedom',
+        confidence_score: 0.95,
+        onboarding_complete: true,
       },
       recommended_stocks: [
-        { ticker: 'NESN', name: 'Nestlé', score: 0.92, reason: 'Stabile Dividenden' },
-        { ticker: 'ROG', name: 'Roche', score: 0.88, reason: 'Defensiver Wert' },
+        { ticker: 'NESN', name: 'Nestlé', sector: 'Consumer', market_cap_chf: null, exchange: 'XSWX' },
+        { ticker: 'ROG', name: 'Roche', sector: 'Healthcare', market_cap_chf: null, exchange: 'XSWX' },
       ],
     };
     mockApiFetch.mockResolvedValueOnce(mockResponse);
@@ -99,7 +108,7 @@ describe('completeDiscovery', () => {
 
     expect(result.recommended_stocks).toHaveLength(2);
     expect(result.recommended_stocks[0].ticker).toBe('NESN');
-    expect(result.profile.ziel).toBe('freedom');
+    expect(result.profile.investment_goal).toBe('freedom');
     expect(mockApiFetch).toHaveBeenCalledWith('/api/v1/discovery/complete', {
       method: 'POST',
       body: JSON.stringify({ session_id: 'abc-123' }),

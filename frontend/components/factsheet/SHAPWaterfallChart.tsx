@@ -58,7 +58,7 @@ export function SHAPWaterfallChart({ shapValues, expectedValue, signal }: Props)
         <h4 className="text-xs font-semibold tracking-widest text-purple-300 uppercase">
           Why {signal}?
         </h4>
-        <span className="text-[10px] text-slate-500">
+        <span className="text-[10px] text-muted-foreground">
           baseline {expectedValue >= 0 ? '+' : ''}{expectedValue.toFixed(3)}
         </span>
       </div>
@@ -71,13 +71,13 @@ export function SHAPWaterfallChart({ shapValues, expectedValue, signal }: Props)
 
           return (
             <div key={entry.feature} className="flex items-center gap-2">
-              <span className="w-36 shrink-0 text-[11px] text-slate-300 truncate text-right">
+              <span className="w-36 shrink-0 text-[11px] text-muted-foreground truncate text-right">
                 {entry.label}
               </span>
               <div className="flex-1 flex items-center">
                 {isPos ? (
                   <>
-                    <div className="w-px h-4 bg-slate-600" />
+                    <div className="w-px h-4 bg-muted-foreground" />
                     <div
                       ref={(el) => { barsRef.current[i] = el; }}
                       data-target-width={`${barPx}px`}
@@ -101,7 +101,7 @@ export function SHAPWaterfallChart({ shapValues, expectedValue, signal }: Props)
                         boxShadow: '0 0 8px #ff446666',
                       }}
                     />
-                    <div className="w-px h-4 bg-slate-600" />
+                    <div className="w-px h-4 bg-muted-foreground" />
                   </div>
                 )}
               </div>
@@ -113,7 +113,7 @@ export function SHAPWaterfallChart({ shapValues, expectedValue, signal }: Props)
         })}
       </div>
 
-      <p className="text-[10px] text-slate-600 pt-1 border-t border-slate-800">
+      <p className="text-[10px] text-muted-foreground pt-1 border-t border-border">
         SHAP — Shapley Additive Explanations
       </p>
     </div>

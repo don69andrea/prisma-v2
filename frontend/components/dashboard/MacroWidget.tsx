@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getMacroContext, type MacroClimate } from '@/lib/api/macro';
 import { Skeleton } from '@/components/ui/skeleton';
+import { InfoPopover } from '@/components/InfoPopover';
 import { cn } from '@/lib/utils';
 
 const CLIMATE_CONFIG: Record<
@@ -40,6 +41,7 @@ export function MacroWidget() {
   }
 
   const cfg = CLIMATE_CONFIG[data.climate] ?? CLIMATE_CONFIG.NEUTRAL;
+  const snbLow = data.leitzins <= 0.5;
 
   return (
     <div className={cn('rounded-lg border p-4 space-y-3', cfg.bg)}>
@@ -55,8 +57,18 @@ export function MacroWidget() {
 
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <p className="text-[11px] text-muted-foreground">SNB-Leitzins</p>
+          <div className="flex items-center gap-1">
+            <p className="text-[11px] text-muted-foreground">SNB-Leitzins</p>
+            <InfoPopover ariaLabel="Info: SNB-Leitzins">
+              Der Leitzins der Schweizerischen Nationalbank. Beeinflusst die Attraktivität von Aktien vs. Obligationen.
+            </InfoPopover>
+          </div>
           <p className="font-semibold">{data.leitzins.toFixed(2)}%</p>
+          <p className={cn('text-[10px] mt-0.5', snbLow ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400')}>
+            {snbLow
+              ? 'Tiefzinsumfeld begünstigt Aktienanlagen'
+              : 'Zinsen gestiegen — Obligationen werden attraktiver'}
+          </p>
         </div>
         <div>
           <p className="text-[11px] text-muted-foreground">CHF / EUR</p>

@@ -144,4 +144,5 @@ class ProfileClassifier:
             score += 0.05
         if profile.income_preference != "balanced":
             score += 0.05
+
         return min(score, 1.0)

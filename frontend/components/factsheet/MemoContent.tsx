@@ -22,7 +22,7 @@ interface Props {
 
 export function MemoContent({ memo }: Props) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="memo-content">
       {/* Hero */}
       <Card>
         <CardContent className="py-4 flex items-start justify-between gap-3">
@@ -114,9 +114,9 @@ export function MemoContent({ memo }: Props) {
       </Card>
 
       {/* Footer */}
-      <div className="text-xs text-muted-foreground flex justify-between pt-1">
+      <div className="text-xs text-muted-foreground flex justify-between pt-1 border-t">
         <span>Modell: {memo.model_version}</span>
-        <span>{new Date(memo.created_at).toLocaleDateString('de-CH')}</span>
+        <span>Generiert am {new Date(memo.created_at).toLocaleDateString('de-CH', { dateStyle: 'medium' })}</span>
       </div>
     </div>
   );

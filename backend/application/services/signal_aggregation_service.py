@@ -1,4 +1,4 @@
-"""Signal Aggregation Service — BUY/HOLD/WATCH aus Quant + ML + Macro."""
+"""Signal Aggregation Service — BUY/HOLD/SELL aus Quant + ML + Macro."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def _snb_macro_score(snb_rate: float) -> float:
 
 
 class SignalAggregationService:
-    """Aggregiert Quant-, ML- und Macro-Signale zu einem BUY/HOLD/WATCH-Signal."""
+    """Aggregiert Quant-, ML- und Macro-Signale zu einem BUY/HOLD/SELL-Signal."""
 
     def __init__(
         self,

@@ -10,6 +10,6 @@ test("Aktien-Liste — Seite laden und Suchfilter benutzen", async ({ page }) =>
   // Suchfilter eingeben
   await page.getByTestId("stocks-search").fill("NESN");
   await expect(
-    page.getByTestId("stock-row-NESN").or(page.getByText("Keine Aktien gefunden."))
+    page.getByTestId("stock-row-NESN").or(page.getByText("Keine Aktien entsprechen den Filterkriterien."))
   ).toBeVisible({ timeout: 10_000 });
 });

@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pandas as pd
 import pytest
 
-from backend.domain.errors import SwissDataUnavailableError
+from backend.domain.errors import SwissDataUnavailableError, YahooFinanceBlockedError
 from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
 from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 
@@ -141,3 +141,72 @@ async def test_get_isin_returns_none_when_absent(mock_yf: MagicMock) -> None:
     adapter = YFinanceSwissAdapter()
     result = await adapter.get_isin("NOVN")
     assert result is None
+
+
+@pytest.mark.asyncio
+@patch("backend.infrastructure.adapters.yfinance_swiss.asyncio.sleep", new_callable=AsyncMock)
+@patch("backend.infrastructure.adapters.yfinance_swiss.yf")
+async def test_get_fundamentals_yahoo_401_raises_blocked_error(
+    mock_yf: MagicMock, mock_sleep: AsyncMock
+) -> None:
+    """Yahoo blockt Render's Cloud-IP-Range mit HTTP 401 'Invalid Crumb'.
+
+    Diese Exception muss in YahooFinanceBlockedError (Subklasse von
+    SwissDataUnavailableError) übersetzt werden, statt roh durchzufallen —
+    sonst landet sie als raw 500 im REST-Layer.
+    """
+    mock_yf.Ticker.side_effect = Exception('401 Client Error: Unauthorized — "Invalid Crumb"')
+
+    adapter = YFinanceSwissAdapter()
+    with pytest.raises(YahooFinanceBlockedError) as exc_info:
+        await adapter.get_fundamentals("NESN")
+
+    assert isinstance(exc_info.value, SwissDataUnavailableError)
+    assert "NESN" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+@patch("backend.infrastructure.adapters.yfinance_swiss.asyncio.sleep", new_callable=AsyncMock)
+@patch("backend.infrastructure.adapters.yfinance_swiss.yf")
+async def test_get_price_history_yahoo_block_raises_blocked_error(
+    mock_yf: MagicMock, mock_sleep: AsyncMock
+) -> None:
+    mock_yf.Ticker.return_value.history.side_effect = Exception("HTTP Error 401: Unauthorized")
+
+    adapter = YFinanceSwissAdapter()
+    with pytest.raises(YahooFinanceBlockedError):
+        await adapter.get_price_history("NESN", days=30)
+
+
+@pytest.mark.asyncio
+@patch("backend.infrastructure.adapters.yfinance_swiss.asyncio.sleep", new_callable=AsyncMock)
+@patch("backend.infrastructure.adapters.yfinance_swiss.yf")
+async def test_get_dividends_yahoo_block_raises_blocked_error(
+    mock_yf: MagicMock, mock_sleep: AsyncMock
+) -> None:
+    """_sync_dividends liest .dividends als Property — PropertyMock simuliert das."""
+    mock_yf.Ticker.return_value.info = {"marketCap": 1_000_000}
+    type(mock_yf.Ticker.return_value).dividends = PropertyMock(
+        side_effect=Exception("Invalid Crumb")
+    )
+
+    adapter = YFinanceSwissAdapter()
+    with pytest.raises(YahooFinanceBlockedError):
+        await adapter.get_dividends("NESN")
+
+
+@pytest.mark.asyncio
+@patch("backend.infrastructure.adapters.yfinance_swiss.asyncio.sleep", new_callable=AsyncMock)
+@patch("backend.infrastructure.adapters.yfinance_swiss.yf")
+async def test_get_fundamentals_generic_error_not_translated(
+    mock_yf: MagicMock, mock_sleep: AsyncMock
+) -> None:
+    """Nicht-Yahoo-Block-Fehler (z.B. Netzwerk-Timeout) bleiben unverändert."""
+    mock_yf.Ticker.side_effect = Exception("network timeout")
+
+    adapter = YFinanceSwissAdapter()
+    with pytest.raises(Exception) as exc_info:
+        await adapter.get_fundamentals("NESN")
+
+    assert not isinstance(exc_info.value, SwissDataUnavailableError)
+    assert "network timeout" in str(exc_info.value)

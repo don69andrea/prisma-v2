@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from backend.domain.errors import SwissDataUnavailableError
+from backend.domain.errors import SwissDataUnavailableError, YahooFinanceBlockedError
 from backend.domain.value_objects.dividend_data import DividendData, DividendEntry
 from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.interfaces.rest.app import create_app
@@ -44,6 +44,14 @@ def _make_adapter_unavailable(ticker: str) -> YFinanceSwissAdapter:
     return adapter
 
 
+def _make_adapter_yahoo_blocked(ticker: str) -> YFinanceSwissAdapter:
+    adapter = AsyncMock(spec=YFinanceSwissAdapter)
+    adapter.get_dividends = AsyncMock(
+        side_effect=YahooFinanceBlockedError(ticker, cause="401 Invalid Crumb")
+    )
+    return adapter
+
+
 @pytest.fixture
 def app_with_nesn() -> Any:
     mock = _make_adapter(_NESN_DATA)
@@ -55,6 +63,14 @@ def app_with_nesn() -> Any:
 @pytest.fixture
 def app_with_unavailable() -> Any:
     mock = _make_adapter_unavailable("UNKN")
+    application = create_app()
+    application.dependency_overrides[get_yfinance_adapter] = lambda: mock
+    return application
+
+
+@pytest.fixture
+def app_with_yahoo_blocked() -> Any:
+    mock = _make_adapter_yahoo_blocked("NESN")
     application = create_app()
     application.dependency_overrides[get_yfinance_adapter] = lambda: mock
     return application
@@ -85,6 +101,18 @@ async def test_dividends_unknown_ticker_returns_404(app_with_unavailable: Any) -
     ) as client:
         resp = await client.get("/api/v1/stocks/UNKN/dividends")
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_dividends_yahoo_blocked_returns_503(app_with_yahoo_blocked: Any) -> None:
+    """Yahoo blockt Render's Cloud-IP-Range (HTTP 401 'Invalid Crumb') — muss als
+    saubere 503 mit klarer Meldung ankommen, nicht als roher 500."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app_with_yahoo_blocked), base_url="http://test"
+    ) as client:
+        resp = await client.get("/api/v1/stocks/NESN/dividends")
+    assert resp.status_code == 503
+    assert "nicht verfügbar" in resp.json()["detail"]
 
 
 @pytest.mark.asyncio

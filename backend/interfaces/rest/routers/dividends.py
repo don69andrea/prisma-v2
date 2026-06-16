@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 
-from backend.domain.errors import SwissDataUnavailableError
+from backend.domain.errors import SwissDataUnavailableError, YahooFinanceBlockedError
 from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.interfaces.rest.dependencies import get_yfinance_adapter
 from backend.interfaces.rest.schemas.dividends import DividendEntry, DividendResponse
 
 router = APIRouter(prefix="/api/v1", tags=["dividends"])
+
+_MARKET_DATA_UNAVAILABLE_DETAIL = (
+    "Marktdaten momentan nicht verfügbar (Yahoo Finance API eingeschränkt)."
+)
 
 
 @router.get(
@@ -28,6 +32,8 @@ async def get_dividends(
 ) -> DividendResponse:
     try:
         data = await adapter.get_dividends(ticker)
+    except YahooFinanceBlockedError as exc:
+        raise HTTPException(status_code=503, detail=_MARKET_DATA_UNAVAILABLE_DETAIL) from exc
     except SwissDataUnavailableError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return DividendResponse(

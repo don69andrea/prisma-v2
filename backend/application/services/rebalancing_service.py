@@ -20,6 +20,19 @@ _DEFAULT_TRANSACTION_COST_RATE = 0.001
 _MIN_DELTA_THRESHOLD = 0.005
 
 
+class UnknownTickersError(ValueError):
+    """Wird ausgelöst, wenn current_weights/target_weights unbekannte Ticker enthalten.
+
+    W-9 / F-PORT-4: Frei erfundene Ticker (z.B. "FAKE0") dürfen nicht klaglos
+    mit HTTP 200 verarbeitet werden — sie müssen gegen das bekannte
+    Aktien-Universum (SwissStockRepository) validiert werden.
+    """
+
+    def __init__(self, tickers: list[str]) -> None:
+        self.tickers = tickers
+        super().__init__(f"Unbekannte Ticker: {', '.join(tickers)}")
+
+
 class RebalancingService:
     """Berechnet Rebalancing-Schritte aus Ist- und Soll-Allokation.
 
@@ -74,6 +87,7 @@ class RebalancingService:
                 _logger.warning("Leerverkauf erkannt: %s mit Gewicht %.3f", ticker, w)
 
         all_tickers = set(current_weights) | set(target_weights)
+        await self._validate_known_tickers(all_tickers)
         eligibility_map = await self._resolve_eligibility(all_tickers, is_3a_account)
 
         steps: list[RebalancingStep] = []
@@ -115,6 +129,27 @@ class RebalancingService:
             is_3a_account=is_3a_account,
             computed_at=datetime.now(tz=UTC),
         )
+
+    async def _validate_known_tickers(self, tickers: set[str]) -> None:
+        """Prüft alle Ticker gegen das bekannte Aktien-Universum.
+
+        Ohne injiziertes Repository kann nicht validiert werden — bestehendes
+        Verhalten bleibt erhalten (kein Crash für ältere Aufrufer).
+        """
+        if self._stock_repo is None:
+            return
+
+        unknown: list[str] = []
+        for ticker in sorted(tickers):
+            try:
+                stock: SwissStock | None = await self._stock_repo.get_by_ticker(ticker)
+            except Exception:
+                stock = None
+            if stock is None:
+                unknown.append(ticker)
+
+        if unknown:
+            raise UnknownTickersError(unknown)
 
     async def _resolve_eligibility(self, tickers: set[str], is_3a_account: bool) -> dict[str, bool]:
         if not is_3a_account:

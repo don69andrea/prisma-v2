@@ -2,9 +2,38 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+from unittest.mock import AsyncMock
+from uuid import uuid4
+
 import pytest
 
-from backend.application.services.rebalancing_service import RebalancingService
+from backend.application.services.rebalancing_service import (
+    RebalancingService,
+    UnknownTickersError,
+)
+from backend.domain.entities.swiss_stock import SwissStock
+
+_NESN = SwissStock(
+    id=uuid4(),
+    ticker="NESN",
+    isin="CH0038863350",
+    name="Nestlé SA",
+    exchange="XSWX",
+    sector="Consumer Staples",
+    market_cap_chf=Decimal("245_000_000_000"),
+)
+
+
+def _stock_repo_with_known_tickers(known: dict[str, SwissStock]) -> AsyncMock:
+    """Baut ein Mock-Repository, das nur die übergebenen Ticker kennt."""
+    repo = AsyncMock()
+
+    async def _get_by_ticker(ticker: str) -> SwissStock | None:
+        return known.get(ticker.upper())
+
+    repo.get_by_ticker = _get_by_ticker
+    return repo
 
 
 @pytest.mark.asyncio
@@ -137,3 +166,51 @@ async def test_plan_metadata() -> None:
     assert plan.is_3a_account is True
     assert plan.plan_id is not None
     assert plan.computed_at is not None
+
+
+@pytest.mark.asyncio
+async def test_unknown_ticker_raises_unknown_tickers_error() -> None:
+    """W-9 / F-PORT-4: Frei erfundene Ticker dürfen nicht klaglos verarbeitet werden.
+
+    Vorher wurde "FAKE0" als BUY/SELL/HOLD-Schritt mit is_3a_eligible=True
+    (Default-Fallback bei is_3a_account=False) durchgereicht, statt gegen
+    das bekannte Stock-Universum geprüft zu werden.
+    """
+    repo = _stock_repo_with_known_tickers({"NESN": _NESN})
+    svc = RebalancingService(stock_repo=repo)
+
+    with pytest.raises(UnknownTickersError) as excinfo:
+        await svc.compute_plan(
+            total_portfolio_value_chf=10_000.0,
+            current_weights={"NESN": 0.50, "FAKE0": 0.50},
+            target_weights={"NESN": 0.50, "FAKE0": 0.50},
+            is_3a_account=False,
+        )
+    assert excinfo.value.tickers == ["FAKE0"]
+
+
+@pytest.mark.asyncio
+async def test_multiple_unknown_tickers_are_all_reported() -> None:
+    repo = _stock_repo_with_known_tickers({"NESN": _NESN})
+    svc = RebalancingService(stock_repo=repo)
+
+    with pytest.raises(UnknownTickersError) as excinfo:
+        await svc.compute_plan(
+            total_portfolio_value_chf=10_000.0,
+            current_weights={"NESN": 0.60, "FAKE0": 0.20, "FAKE1": 0.20},
+            target_weights={"NESN": 0.60, "FAKE0": 0.20, "FAKE1": 0.20},
+        )
+    assert excinfo.value.tickers == ["FAKE0", "FAKE1"]
+
+
+@pytest.mark.asyncio
+async def test_no_stock_repo_skips_ticker_validation() -> None:
+    """Ohne injiziertes Repository (z.B. ältere Aufrufer) kann nicht validiert
+    werden — bestehendes Verhalten bleibt erhalten, kein Crash."""
+    svc = RebalancingService(stock_repo=None)
+    plan = await svc.compute_plan(
+        total_portfolio_value_chf=10_000.0,
+        current_weights={"NESN": 0.50},
+        target_weights={"NESN": 0.50},
+    )
+    assert plan.total_portfolio_value_chf == 10_000.0

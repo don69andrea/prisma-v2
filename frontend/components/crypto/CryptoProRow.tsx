@@ -6,9 +6,10 @@ interface CryptoProRowProps {
   signal: CryptoSignal;
 }
 
-function fmt(n: number | null, decimals = 2): string {
+function fmt(n: number | null, decimals?: number): string {
   if (n == null) return '—';
-  return n.toLocaleString('de-CH', { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
+  const d = decimals ?? (Math.abs(n) < 10 ? 2 : 0);
+  return n.toLocaleString('de-CH', { maximumFractionDigits: d, minimumFractionDigits: d });
 }
 
 function fmtPct(n: number | null): string {
@@ -52,7 +53,7 @@ export function CryptoProRow({ signal }: CryptoProRowProps) {
         </div>
       </td>
       <td className="py-2 px-3 tabular-nums text-right">
-        {signal.price_chf != null ? `CHF ${fmt(signal.price_chf, 0)}` : '—'}
+        {signal.price_chf != null ? `CHF ${fmt(signal.price_chf)}` : '—'}
       </td>
       <td className={`py-2 px-3 tabular-nums text-right ${pctColor(signal.price_change_24h_pct)}`}>
         {fmtPct(signal.price_change_24h_pct)}

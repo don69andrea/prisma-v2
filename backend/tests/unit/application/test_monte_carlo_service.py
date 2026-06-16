@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
@@ -245,3 +247,45 @@ async def test_fetch_ticker_params_falls_back_on_error_by_default() -> None:
     assert isinstance(mu, float)
     assert isinstance(sigma, float)
     assert isinstance(returns, np.ndarray)
+
+
+@pytest.mark.asyncio
+async def test_fetch_return_params_fetches_tickers_in_parallel() -> None:
+    """F-PORT-2 (W-7): Ticker-Fetches müssen parallel statt sequenziell laufen.
+
+    Mit 5 Holdings und je 200ms künstlicher Verzögerung pro Ticker-Fetch
+    dauert eine sequenzielle for-Schleife ~1s (5 * 200ms). Bei paralleler
+    Ausführung via asyncio.gather bleibt die Gesamtzeit nahe an einer
+    Einzelverzögerung (~200ms), da alle Fetches gleichzeitig starten.
+    """
+    delay = 0.2
+    n_holdings = 5
+    holdings = [HoldingWeight(f"T{i}.SW", 1.0 / n_holdings) for i in range(n_holdings)]
+    svc = MonteCarloService()
+
+    async def fake_fetch_ticker_params(ticker: str) -> tuple[float, float, np.ndarray]:
+        await asyncio.sleep(delay)
+        return 0.0005, 0.012, np.zeros(10)
+
+    async def fake_fetch_ml_mu(ticker: str) -> float:
+        return 0.0003
+
+    with (
+        patch(
+            "backend.application.services.monte_carlo_service._fetch_ticker_params",
+            side_effect=fake_fetch_ticker_params,
+        ),
+        patch.object(svc, "_fetch_ml_mu", side_effect=fake_fetch_ml_mu),
+    ):
+        start = time.monotonic()
+        mu_arr, sigma_arr, corr_matrix = await svc._fetch_return_params(holdings)
+        elapsed = time.monotonic() - start
+
+    assert len(mu_arr) == n_holdings
+    assert len(sigma_arr) == n_holdings
+    # Sequenziell wären es n_holdings * delay (~1.0s). Parallel bleibt es nahe
+    # bei einer einzigen Verzögerung. Grosszügige Schwelle für CI-Jitter.
+    assert elapsed < delay * n_holdings * 0.6, (
+        f"Erwartete parallele Ausführung (<{delay * n_holdings * 0.6:.2f}s), "
+        f"aber {elapsed:.2f}s vergangen — Ticker werden vermutlich sequenziell abgerufen."
+    )

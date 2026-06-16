@@ -16,7 +16,7 @@ from typing import Any
 import pandas as pd
 import yfinance as yf
 
-from backend.domain.errors import SwissDataUnavailableError
+from backend.domain.errors import SwissDataUnavailableError, YahooFinanceBlockedError
 from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
 from backend.domain.value_objects.dividend_data import DividendData, DividendEntry
 from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
@@ -25,6 +25,34 @@ _logger = logging.getLogger(__name__)
 
 _RETRIES = 2
 _BASE_DELAY = 1.0
+
+# Substrings, die typisch für eine Yahoo-Finance-Blockade sind (z.B. wenn
+# yfinance von Render's Cloud-IP-Range aufgerufen wird). Yahoo blockt diese
+# Ranges dauerhaft mit HTTP 401 — kein Bug in unserem Code, externe Blockade.
+_YAHOO_BLOCK_SIGNATURES: tuple[str, ...] = (
+    "401",
+    "invalid crumb",
+    "unauthorized",
+)
+
+
+def _is_yahoo_block_error(exc: Exception) -> bool:
+    """True wenn die Exception-Message auf eine Yahoo-Finance-Blockade hindeutet."""
+    message = str(exc).lower()
+    return any(signature in message for signature in _YAHOO_BLOCK_SIGNATURES)
+
+
+def _translate_exhausted_error(exc: Exception, ticker: str) -> Exception:
+    """Übersetzt eine nach Retry-Exhaustion verbleibende Exception.
+
+    Yahoo-Block-typische Fehler (HTTP 401, "Invalid Crumb", "Unauthorized")
+    werden in YahooFinanceBlockedError übersetzt, damit Router einheitlich
+    `except SwissDataUnavailableError` fangen können statt rohe
+    yfinance-Exceptions durchsickern zu lassen.
+    """
+    if _is_yahoo_block_error(exc):
+        return YahooFinanceBlockedError(ticker, cause=str(exc))
+    return exc
 
 
 class YFinanceSwissAdapter(SwissMarketDataProvider):
@@ -82,7 +110,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
         if days <= 0:
             raise ValueError(f"days must be positive, got {days}")
         yf_ticker = self.build_yf_ticker(ticker)
-        return await self._fetch_history(yf_ticker, days)
+        return await self._fetch_history(yf_ticker, days, ticker)
 
     async def get_isin(self, ticker: str) -> str | None:
         """Ruft die ISIN über yfinance ab.
@@ -121,9 +149,9 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
                     )
                     await asyncio.sleep(delay)
 
-        raise last_exc  # type: ignore[misc]
+        raise _translate_exhausted_error(last_exc, ticker)  # type: ignore[arg-type]
 
-    async def _fetch_history(self, yf_ticker: str, days: int) -> pd.DataFrame:
+    async def _fetch_history(self, yf_ticker: str, days: int, ticker: str) -> pd.DataFrame:
         last_exc: Exception | None = None
 
         for attempt in range(_RETRIES + 1):
@@ -144,7 +172,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
                     )
                     await asyncio.sleep(delay)
 
-        raise last_exc  # type: ignore[misc]
+        raise _translate_exhausted_error(last_exc, ticker)  # type: ignore[arg-type]
 
     async def get_dividends(self, ticker: str) -> DividendData:
         """Ruft Dividendendaten via yfinance ab.
@@ -155,7 +183,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
         """
         yf_ticker = self.build_yf_ticker(ticker)
         info = await self._fetch_info(ticker)
-        div_series = await self._fetch_dividends(yf_ticker)
+        div_series = await self._fetch_dividends(yf_ticker, ticker)
 
         ex_ts = info.get("exDividendDate")
         ex_date: str | None = None
@@ -193,7 +221,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
             ),
         )
 
-    async def _fetch_dividends(self, yf_ticker: str) -> pd.Series:
+    async def _fetch_dividends(self, yf_ticker: str, ticker: str) -> pd.Series:
         last_exc: Exception | None = None
 
         for attempt in range(_RETRIES + 1):
@@ -214,7 +242,7 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
                     )
                     await asyncio.sleep(delay)
 
-        raise last_exc  # type: ignore[misc]
+        raise _translate_exhausted_error(last_exc, ticker)  # type: ignore[arg-type]
 
     @staticmethod
     def _sync_info(yf_ticker: str) -> dict[str, Any]:

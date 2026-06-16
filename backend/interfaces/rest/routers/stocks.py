@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.stock_service import StockNotFound, StockService
 from backend.application.services.swiss_market_service import SwissMarketService
+from backend.domain.errors import SwissDataUnavailableError, YahooFinanceBlockedError
 from backend.interfaces.rest.dependencies import (
     get_factsheet_service,
     get_stock_service,
@@ -21,6 +22,10 @@ from backend.interfaces.rest.schemas.stock import (
 )
 
 router = APIRouter(prefix="/api/v1", tags=["stocks"])
+
+_MARKET_DATA_UNAVAILABLE_DETAIL = (
+    "Marktdaten momentan nicht verfügbar (Yahoo Finance API eingeschränkt)."
+)
 
 
 @router.get(
@@ -132,7 +137,9 @@ async def get_langfrist_score(
 ) -> LangfristScoreResponse:
     try:
         score = await service.score_langfrist(ticker)
-    except ValueError as exc:
+    except YahooFinanceBlockedError as exc:
+        raise HTTPException(status_code=503, detail=_MARKET_DATA_UNAVAILABLE_DETAIL) from exc
+    except (ValueError, SwissDataUnavailableError) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return LangfristScoreResponse(
         ticker=score.ticker,

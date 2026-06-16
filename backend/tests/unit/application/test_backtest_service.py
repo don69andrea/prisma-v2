@@ -181,3 +181,32 @@ async def test_no_results_raises(service: BacktestService) -> None:
             top_n=3,
             benchmark_ticker="AAPL",
         )
+
+
+@pytest.mark.asyncio
+async def test_actual_window_reflects_truncation_beyond_504_days(
+    service: BacktestService,
+) -> None:
+    """StubMarketDataProvider liefert immer nur die letzten 504 Handelstage.
+
+    Ein start_date deutlich mehr als 504 Handelstage in der Vergangenheit
+    (hier: 5 Jahre) darf nicht stillschweigend auf ein kuerzeres Fenster
+    gekuerzt werden, ohne dass die Response das tatsaechlich abgedeckte
+    Fenster transparent macht. Bug: F-BTCR-1 / W-11.
+    """
+    far_past_start = date(_today.year - 5, 1, 1)
+
+    result = await service.run_backtest(
+        model_run_id=RUN_ID,
+        start_date=far_past_start,
+        end_date=_BACKTEST_END,
+        top_n=3,
+        benchmark_ticker="AAPL",
+    )
+
+    # Das tatsaechlich abgedeckte Fenster muss explizit in der Entity stehen
+    # und sich von den (zu weit zurueckliegenden) requested Werten unterscheiden.
+    assert result.actual_start_date == result.series.dates[0]
+    assert result.actual_end_date == result.series.dates[-1]
+    assert result.actual_start_date > far_past_start
+    assert result.actual_start_date != result.start_date

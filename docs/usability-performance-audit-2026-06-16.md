@@ -47,7 +47,7 @@ von diesem Setup-Detail real.
 - **Fix:** Demo-Fundamentaldaten für mindestens die SMI-20-Ticker ergänzen, oder UI/Memo-Layer
   deutlich kennzeichnen ("Quality-Daten für CH-Werte nicht verfügbar — Demo-Modus").
 - **Quelle:** `docs/audit-findings/2026-06-16-rankings-deepdive.md` (F-RANK-1)
-- **Status:** ⬜ TODO
+- **Status:** ✅ Erledigt — [PR #201](https://github.com/don69andrea/prisma-v2/pull/201)
 
 ### K-2 — Monte-Carlo liefert falsche Kursdaten für Schweizer Ticker und crasht
 - **Datei:** `backend/application/services/monte_carlo_service.py:150-169` (`_fetch_ticker_params`)
@@ -58,7 +58,7 @@ von diesem Setup-Detail real.
 - **Fix:** `_fetch_ticker_params` muss das Ticker-Suffix-Mapping aus `YFinanceSwissAdapter`
   nutzen; zusätzlich NaN-Validierung mit klarer 422-Meldung statt generischem Exception-Text.
 - **Quelle:** `docs/audit-findings/2026-06-16-portfolio-macro-fonds-steuer.md` (F-PORT-1)
-- **Status:** ⬜ TODO
+- **Status:** ✅ Erledigt — [PR #202](https://github.com/don69andrea/prisma-v2/pull/202)
 
 ### K-3 — Steuer-Einschätzung liefert identischen, fachlich falschen Output für US-Aktien
 - **Datei:** `backend/application/agents/steuer_agent.py` (Fallback-Pfad)
@@ -69,7 +69,7 @@ von diesem Setup-Detail real.
   Länder-Flag) und unterschiedliche Steuerarten-Templates ausgeben. Root Cause klären, warum
   der LLM-Pfad nicht greift.
 - **Quelle:** `docs/audit-findings/2026-06-16-portfolio-macro-fonds-steuer.md` (F-STEUER-1)
-- **Status:** ⬜ TODO
+- **Status:** ✅ Erledigt — [PR #203](https://github.com/don69andrea/prisma-v2/pull/203)
 
 ### K-4 — Universe mit existierendem Namen anlegen liefert rohe HTTP 500
 - **Datei:** `backend/infrastructure/persistence/repositories/universe_repository.py:26-44`,
@@ -81,7 +81,7 @@ von diesem Setup-Detail real.
   `DuplicateUniverseName`-Exception werfen, im Router auf HTTP 409 mit Klartextmeldung mappen
   (Pattern existiert bereits in `news_repository.py`).
 - **Quelle:** `docs/audit-findings/2026-06-16-backtest-crypto-universes.md` (F-BTCR-3)
-- **Status:** ⬜ TODO
+- **Status:** ✅ Erledigt — [PR #204](https://github.com/don69andrea/prisma-v2/pull/204)
 
 ### K-5 — Rate-Limiter blockiert LLM-freie Stocks-Endpoints fälschlich
 - **Datei:** `backend/interfaces/rest/rate_limiter.py:32` (`_LLM_PREFIXES`)
@@ -94,7 +94,7 @@ von diesem Setup-Detail real.
   `/portfolio/monte-carlo`, `/steuer`, `/decisions/explain`, `/news/ingest`). Reine
   GET-Listen/Factsheet-Pfade ausnehmen oder mit separatem, grosszügigerem Limit versehen.
 - **Quelle:** `docs/audit-findings/2026-06-16-performance.md` (F-PERF-1)
-- **Status:** ⬜ TODO
+- **Status:** ✅ Erledigt — [PR #205](https://github.com/don69andrea/prisma-v2/pull/205)
 
 ---
 
@@ -270,6 +270,7 @@ von diesem Setup-Detail real.
 | I-17 | 4 Frontend-Routen mit 60-75% überdurchschnittlichem First-Load-JS (Charts) | F-PERF-2 | ⬜ |
 | I-18 | Kein OpenAPI-Schema in Production erreichbar (vermutlich gewollt) | F-RENDER-3 | ⬜ |
 | I-19 | Prozent- vs. CHF-Formatierung nutzt zwei verschiedene Strategien (Wartungsrisiko) | F-PORT (UX-Abschnitt) | ⬜ |
+| I-20 | `frontend/e2e/06-alerts.spec.ts` transient flaky in CI (Delete→Empty-State-Timing, 1x beobachtet, beim Retry grün) | PR #201 CI-Run | ⬜ |
 
 ---
 

@@ -123,6 +123,32 @@ class YFinanceCryptoAdapter:
             _logger.warning("SMI-Korrelation für %s nicht berechenbar", ticker_yf)
             return 0.0
 
+    async def get_ohlcv(
+        self, ticker_yf: str, period: str = "1y", interval: str = "1d"
+    ) -> pd.DataFrame | None:
+        """Rohe OHLCV-Daten ohne Indikatoren (für Pattern-Detection, uncached).
+
+        `period="1y"` statt der sonst üblichen Tage-Anzahl, damit ein EMA200
+        auf genügend Historie aufbaut (Pattern-Service braucht EMA20/50/200).
+        """
+        try:
+            df = await asyncio.to_thread(
+                yf.download,
+                ticker_yf,
+                period=period,
+                interval=interval,
+                progress=False,
+                auto_adjust=True,
+            )
+        except Exception:
+            _logger.warning("get_ohlcv fehlgeschlagen: %s", ticker_yf)
+            return None
+        if df is None or df.empty:
+            return None
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = [col[0] for col in df.columns]
+        return df
+
     async def _download(self, ticker: str, days: int) -> pd.DataFrame | None:
         try:
             return await asyncio.to_thread(

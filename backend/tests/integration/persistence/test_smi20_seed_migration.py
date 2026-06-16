@@ -1,4 +1,4 @@
-"""Integration-Test fuer die SMI-20-Seed-Migration (0025_seed_smi20_stocks).
+"""Integration-Test fuer die SMI-20-Seed-Migration (0026_seed_smi20_stocks).
 
 Voraussetzung: docker-compose up -d db, alembic upgrade head.
 
@@ -59,12 +59,12 @@ SMI_20_TICKERS = [
     "STMN",
 ]
 
-_MIGRATION_PATH = Path(__file__).parents[3] / "alembic" / "versions" / "0025_seed_smi20_stocks.py"
+_MIGRATION_PATH = Path(__file__).parents[3] / "alembic" / "versions" / "0026_seed_smi20_stocks.py"
 
 
 def _load_migration_module() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
-        "migration_0025_seed_smi20_stocks", _MIGRATION_PATH
+        "migration_0026_seed_smi20_stocks", _MIGRATION_PATH
     )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -128,7 +128,7 @@ async def test_smi20_ticker_is_seeded_with_xswx_exchange(
 
     assert stock is not None, (
         f"Ticker {ticker!r} fehlt in der stocks-Tabelle oder hat exchange=NULL — "
-        "Migration 0025_seed_smi20_stocks wurde nicht angewendet oder ist unvollstaendig."
+        "Migration 0026_seed_smi20_stocks wurde nicht angewendet oder ist unvollstaendig."
     )
     assert isinstance(stock, SwissStock)
     assert stock.ticker == ticker

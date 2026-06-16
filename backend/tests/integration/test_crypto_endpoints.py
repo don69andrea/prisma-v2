@@ -133,6 +133,65 @@ async def test_get_market_returns_200(crypto_client: AsyncClient) -> None:
     assert response.status_code == 200
 
 
+# ─────────────────────────── History-Endpoints (EXT-1) ───────────────────────────
+
+
+@pytest.fixture
+def mock_crypto_signal_repo():
+    from backend.domain.models.crypto_signal_record import CryptoSignalRecord
+
+    repo = AsyncMock()
+    repo.get_history.return_value = [
+        CryptoSignalRecord(
+            ticker="BTC",
+            signal="BUY",
+            score=72.0,
+            rsi_14=42.0,
+            detected_patterns=["GOLDEN_CROSS"],
+            pattern_score=2.5,
+        )
+    ]
+    repo.get_latest_all.return_value = [
+        CryptoSignalRecord(ticker="BTC", signal="BUY", score=72.0),
+        CryptoSignalRecord(ticker="ETH", signal="HOLD", score=55.0),
+    ]
+    return repo
+
+
+@pytest.fixture
+async def crypto_history_client(mock_crypto_signal_repo):
+    from backend.interfaces.rest.app import create_app
+    from backend.interfaces.rest.dependencies import get_crypto_signal_repository
+
+    app = create_app()
+    app.dependency_overrides[get_crypto_signal_repository] = lambda: mock_crypto_signal_repo
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
+async def test_get_history_for_ticker_returns_200(crypto_history_client: AsyncClient) -> None:
+    response = await crypto_history_client.get(
+        "/api/v1/crypto/history/BTC", headers={"X-API-Key": "test"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert isinstance(body, list)
+    assert body[0]["signal"] == "BUY"
+    assert body[0]["detected_patterns"] == ["GOLDEN_CROSS"]
+
+
+async def test_get_latest_history_overview_returns_200(crypto_history_client: AsyncClient) -> None:
+    response = await crypto_history_client.get(
+        "/api/v1/crypto/history", headers={"X-API-Key": "test"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    tickers = {item["ticker"] for item in body}
+    assert tickers == {"BTC", "ETH"}
+
+
 # ── CRYPTO_FEATURE_ENABLED=false ────────────────────────────────────────────
 
 

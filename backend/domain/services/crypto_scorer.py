@@ -29,8 +29,15 @@ class CryptoScorer:
         technicals: pd.DataFrame,
         fear_greed: int,
         correlation_smi_1y: float = 0.0,
+        pattern_modifier: float | None = None,
     ) -> tuple[float, dict[str, float]]:
-        """Berechnet den Gesamtscore und gibt (score, components) zurück."""
+        """Berechnet den Gesamtscore und gibt (score, components) zurück.
+
+        `pattern_modifier` (optional, -7.5..+7.5) kommt aus CryptoPatternService
+        und wird additiv auf die Summe der 5 Kern-Dimensionen angewendet, bevor
+        auf [0, 100] geclampt wird. Bewusst kein 6. hartes Dimension-Cap, damit
+        die bestehenden Signal-Schwellen (75/60/40/25) unverändert gültig bleiben.
+        """
         components: dict[str, float] = {}
 
         # ── 1. MOMENTUM (max 30 Pt) ──────────────────────────────
@@ -93,6 +100,9 @@ class CryptoScorer:
         corr_abs = abs(correlation_smi_1y)
         corr_score = float(max(0.0, 5.0 * (1.0 - corr_abs)))
         components["risiko"] = vol_score + round(corr_score, 1)
+
+        if pattern_modifier is not None:
+            components["pattern"] = round(pattern_modifier, 1)
 
         total = float(sum(components.values()))
         return min(100.0, max(0.0, total)), components

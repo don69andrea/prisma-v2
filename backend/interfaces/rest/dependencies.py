@@ -11,6 +11,8 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.cost_tracker import CostTracker
+from backend.application.services.crypto_agent_service import CryptoAgentService
+from backend.application.services.crypto_pattern_service import CryptoPatternService
 from backend.application.services.crypto_scoring_service import CryptoScoringService
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.narrative_service import NarrativeService
@@ -25,6 +27,7 @@ from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
 from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
 from backend.domain.repositories.cost_log_repository import CostLogRepository
+from backend.domain.repositories.crypto_signal_repository import CryptoSignalRepository
 from backend.domain.repositories.memo_batch_job_repository import MemoBatchJobRepository
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.research_memo_repository import ResearchMemoRepository
@@ -41,6 +44,9 @@ from backend.infrastructure.llm.pricing import PRICING  # Single-Source-of-Truth
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
+)
+from backend.infrastructure.persistence.repositories.crypto_signal_repository import (
+    SQLACryptoSignalRepository,
 )
 from backend.infrastructure.persistence.repositories.memo_batch_job_repository import (
     SQLAMemoBatchJobRepository,
@@ -148,6 +154,12 @@ async def get_universe_repository(
     session: AsyncSession = Depends(get_session),
 ) -> UniverseRepository:
     return SQLAUniverseRepository(session=session)
+
+
+async def get_crypto_signal_repository(
+    session: AsyncSession = Depends(get_session),
+) -> CryptoSignalRepository:
+    return SQLACryptoSignalRepository(session=session)
 
 
 async def get_universe_service(
@@ -592,12 +604,33 @@ async def get_yfinance_crypto_adapter() -> YFinanceCryptoAdapter:
     return _get_yfinance_crypto_singleton()
 
 
+_crypto_pattern_service: CryptoPatternService | None = None
+
+
+def _get_crypto_pattern_singleton() -> CryptoPatternService:
+    global _crypto_pattern_service
+    if _crypto_pattern_service is None:
+        _crypto_pattern_service = CryptoPatternService()
+    return _crypto_pattern_service
+
+
+async def get_crypto_pattern_service() -> CryptoPatternService:
+    return _get_crypto_pattern_singleton()
+
+
+async def get_crypto_agent_service(
+    llm_client: LLMClient = Depends(get_llm_client),
+) -> CryptoAgentService:
+    return CryptoAgentService(llm_client=llm_client)
+
+
 async def get_crypto_scoring_service() -> CryptoScoringService:
     return CryptoScoringService(
         cg_adapter=_get_coingecko_singleton(),
         yf_adapter=_get_yfinance_crypto_singleton(),
         fg_adapter=_get_fear_greed_singleton(),
         scorer=CryptoScorer(),
+        pattern_service=_get_crypto_pattern_singleton(),
     )
 
 

@@ -7,6 +7,7 @@ import { FearGreedGauge } from '@/components/crypto/FearGreedGauge';
 import { CryptoSignalCard } from '@/components/crypto/CryptoSignalCard';
 import { CryptoProRow } from '@/components/crypto/CryptoProRow';
 import { ScoreBreakdown } from '@/components/crypto/ScoreBreakdown';
+import { CryptoAgentPanel } from '@/components/crypto/CryptoAgentPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePrismaMode } from '@/hooks/usePrismaMode';
 
@@ -113,6 +114,7 @@ export function CryptoClient() {
                     <th className="text-right py-2 px-3 font-medium">RSI</th>
                     <th className="text-right py-2 px-3 font-medium">Vola</th>
                     <th className="text-right py-2 px-3 font-medium">SMI-Korr</th>
+                    <th className="text-left py-2 px-3 font-medium">14d Trend</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -132,6 +134,11 @@ export function CryptoClient() {
                 <div key={s.ticker} className="flex flex-col gap-1">
                   <span className="text-xs font-medium">{s.name} ({s.ticker})</span>
                   <ScoreBreakdown signal={s} />
+                  <CryptoAgentPanel
+                    ticker={s.ticker}
+                    detectedPatterns={s.detected_patterns}
+                    cachedAnalysis={s.agent_analysis}
+                  />
                 </div>
               ))}
             </div>

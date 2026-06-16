@@ -28,6 +28,9 @@ class CryptoSignalResponse(BaseModel):
     fear_greed_label: str
     has_six_etp: bool
     timestamp: str
+    detected_patterns: list[str] = []
+    pattern_score: float = 0.0
+    agent_analysis: str | None = None
 
     @classmethod
     def from_domain(cls, signal: CryptoSignal) -> CryptoSignalResponse:

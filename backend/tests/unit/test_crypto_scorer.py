@@ -198,7 +198,44 @@ class TestSignalThresholds:
         asset = _make_asset()
         tech = _make_technicals()
         score, components = self.scorer.score(asset, tech, fear_greed=50, correlation_smi_1y=0.2)
-        assert abs(sum(components.values()) - score) < 1.0
+        expected = max(0.0, min(100.0, sum(components.values())))
+        assert abs(expected - score) < 1.0
+
+    def test_pattern_modifier_none_does_not_add_component(self):
+        asset = _make_asset()
+        tech = _make_technicals()
+        score, components = self.scorer.score(
+            asset, tech, fear_greed=50, correlation_smi_1y=0.2, pattern_modifier=None
+        )
+        assert "pattern" not in components
+
+    def test_pattern_modifier_added_as_component(self):
+        asset = _make_asset()
+        tech = _make_technicals()
+        score_without, _ = self.scorer.score(asset, tech, fear_greed=50, correlation_smi_1y=0.2)
+        score_with, components = self.scorer.score(
+            asset, tech, fear_greed=50, correlation_smi_1y=0.2, pattern_modifier=5.0
+        )
+        assert components["pattern"] == 5.0
+        assert score_with == min(100.0, score_without + 5.0)
+
+    def test_pattern_modifier_negative_reduces_score(self):
+        asset = _make_asset()
+        tech = _make_technicals()
+        score_without, _ = self.scorer.score(asset, tech, fear_greed=50, correlation_smi_1y=0.2)
+        score_with, components = self.scorer.score(
+            asset, tech, fear_greed=50, correlation_smi_1y=0.2, pattern_modifier=-5.0
+        )
+        assert components["pattern"] == -5.0
+        assert score_with == max(0.0, score_without - 5.0)
+
+    def test_pattern_modifier_does_not_break_0_100_bound(self):
+        asset = _make_asset(price_change_7d_pct=100.0)
+        tech = _make_technicals(rsi=10.0)
+        score, _ = self.scorer.score(
+            asset, tech, fear_greed=0, correlation_smi_1y=0.0, pattern_modifier=7.5
+        )
+        assert 0.0 <= score <= 100.0
 
 
 class TestSignalReason:

@@ -1,0 +1,19 @@
+{
+  "id": "msg_crypto_btc_brief",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-4-5-20251001",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 180,
+    "output_tokens": 42,
+    "cache_creation_input_tokens": 120,
+    "cache_read_input_tokens": 0
+  },
+  "content": [
+    {
+      "type": "text",
+      "text": "Bitcoin zeigt mit einem Score von 78.5 ein starkes Kaufsignal, gestützt durch einen Golden Cross und einen RSI von 28. Die aktuelle Marktstimmung (Fear & Greed: 22) deutet auf eine mögliche Übertreibung der Angst hin."
+    }
+  ]
+}

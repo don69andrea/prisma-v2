@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { CryptoProRow } from '../CryptoProRow';
 import type { CryptoSignal } from '@/lib/api/crypto';
@@ -32,17 +33,23 @@ function makeSignal(overrides: Partial<CryptoSignal> = {}): CryptoSignal {
     fear_greed_label: 'Neutral',
     has_six_etp: false,
     timestamp: '2026-06-16T00:00:00Z',
+    detected_patterns: [],
+    pattern_score: 0,
+    agent_analysis: null,
     ...overrides,
   };
 }
 
 function renderRow(signal: CryptoSignal) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <table>
-      <tbody>
-        <CryptoProRow signal={signal} />
-      </tbody>
-    </table>
+    <QueryClientProvider client={client}>
+      <table>
+        <tbody>
+          <CryptoProRow signal={signal} />
+        </tbody>
+      </table>
+    </QueryClientProvider>
   );
 }
 

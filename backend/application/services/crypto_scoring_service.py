@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 
 import pandas as pd
 
+from backend.application.services.crypto_pattern_service import CryptoPatternService
 from backend.domain.entities.crypto_asset import SUPPORTED_CRYPTOS, CryptoAsset
 from backend.domain.services.crypto_scorer import CryptoScorer, generate_signal_reason
 from backend.domain.value_objects.crypto_signal import CryptoSignal
@@ -27,11 +28,13 @@ class CryptoScoringService:
         yf_adapter: YFinanceCryptoAdapter,
         fg_adapter: FearGreedAdapter,
         scorer: CryptoScorer,
+        pattern_service: CryptoPatternService | None = None,
     ) -> None:
         self._cg = cg_adapter
         self._yf = yf_adapter
         self._fg = fg_adapter
         self._scorer = scorer
+        self._pattern_svc = pattern_service or CryptoPatternService()
 
     async def score_all(self) -> list[CryptoSignal]:
         """Berechnet Scores für alle 10 unterstützten Kryptos parallel."""
@@ -45,9 +48,11 @@ class CryptoScoringService:
 
         tech_tasks = [self._yf.get_technicals(c[1]) for c in SUPPORTED_CRYPTOS]
         corr_tasks = [self._yf.get_smi_correlation(c[1]) for c in SUPPORTED_CRYPTOS]
+        pattern_tasks = [self._pattern_svc.detect(c[1]) for c in SUPPORTED_CRYPTOS]
 
         all_tech = await asyncio.gather(*tech_tasks, return_exceptions=True)
         all_corr = await asyncio.gather(*corr_tasks, return_exceptions=True)
+        all_patterns = await asyncio.gather(*pattern_tasks, return_exceptions=True)
 
         results: list[CryptoSignal] = []
         for i, (cg_id, yf_ticker, name, kategorie, has_etp) in enumerate(SUPPORTED_CRYPTOS):
@@ -57,6 +62,11 @@ class CryptoScoringService:
             )
             _raw_corr = all_corr[i]
             corr: float = float(_raw_corr) if not isinstance(_raw_corr, Exception) else 0.0  # type: ignore[arg-type]
+            _raw_pattern = all_patterns[i]
+            if isinstance(_raw_pattern, Exception):
+                patterns, pattern_modifier = [], 0.0
+            else:
+                patterns, pattern_modifier = _raw_pattern  # type: ignore[misc]
             if isinstance(tech, pd.DataFrame) and tech.empty:
                 _logger.warning("Keine Technikaldaten für %s — übersprungen", yf_ticker)
                 continue
@@ -83,6 +93,7 @@ class CryptoScoringService:
                 tech,
                 fg_value,
                 correlation_smi_1y=float(corr),
+                pattern_modifier=pattern_modifier,
             )
             signal = _score_to_signal(score)
 
@@ -131,6 +142,8 @@ class CryptoScoringService:
                     ath_change_pct=asset.ath_change_pct,
                     market_cap_rank=asset.market_cap_rank,
                     timestamp=datetime.now(tz=UTC),
+                    detected_patterns=patterns,
+                    pattern_score=pattern_modifier,
                 )
             )
 

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, useEffect, type ReactNode } from 'react';
 
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { ColdStartBanner } from '@/components/ui/ColdStartBanner';
 
 const LOADING_DURATION_MS = 1200;
 
@@ -39,6 +40,7 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {showLoading && <LoadingScreen />}
+      <ColdStartBanner />
       {children}
     </QueryClientProvider>
   );

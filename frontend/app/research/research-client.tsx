@@ -21,6 +21,15 @@ import { cn } from '@/lib/utils';
 const LS_RESEARCH_KEY = 'prisma_research_last_search';
 const CYAN = '#00d4ff';
 
+// Backend-Validierungsregeln (siehe backend/interfaces/rest/schemas/{rag,swiss_rag}.py):
+// - SwissRagRetrieveRequest.query: min_length=3, max_length=1000
+// - RetrieveRequest.query (SEC): min_length=1, max_length=2000
+// - RetrieveRequest.ticker (SEC): ^[A-Z]{1,5}(\.[A-Z])?$ — Ticker-Symbol, kein Firmenname
+// Wir prüfen vorab gegen das strengere der beiden Query-Limits (3 Zeichen), damit
+// beide Endpoints ohne 422-Fehler durchlaufen.
+const MIN_QUERY_LENGTH = 3;
+const SEC_TICKER_PATTERN = /^[A-Za-z]{1,5}(\.[A-Za-z])?$/;
+
 const EXAMPLE_QUERIES = [
   'Wie sieht Novartis fundamental aus?',
   'Welche SMI-Aktie hat die beste Dividende?',
@@ -227,12 +236,14 @@ function SimpleModeView({
   onSubmit,
   isPending,
   summary,
+  validationError,
 }: {
   query: string;
   setQuery: (q: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   isPending: boolean;
   summary: string | null;
+  validationError: string | null;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -303,6 +314,11 @@ function SimpleModeView({
           )}
         </button>
       </form>
+      {validationError && (
+        <p className="text-xs font-mono -mt-2" style={{ color: '#f87171' }} data-testid="research-validation-error">
+          {validationError}
+        </p>
+      )}
 
       {/* Response */}
       {summary !== null && (
@@ -333,6 +349,7 @@ function ProModeView({
   secResults,
   agentLog,
   summary,
+  validationError,
 }: {
   query: string;
   setQuery: (q: string) => void;
@@ -342,6 +359,7 @@ function ProModeView({
   secResults: SecChunkResult[] | null;
   agentLog: AgentLogEntry[];
   summary: string | null;
+  validationError: string | null;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -470,6 +488,11 @@ function ProModeView({
             )}
           </button>
         </form>
+        {validationError && (
+          <p className="text-xs font-mono -mt-2" style={{ color: '#f87171' }} data-testid="research-validation-error">
+            {validationError}
+          </p>
+        )}
       </div>
 
       {/* ---- Right: panels ---- */}
@@ -596,6 +619,7 @@ export function ResearchClient() {
   const [secResults, setSecResults] = useState<SecChunkResult[] | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [agentActive, setAgentActive] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const agentLog = useAgentLog(agentActive);
 
@@ -649,7 +673,23 @@ export function ResearchClient() {
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!query.trim()) return;
+      const trimmedQuery = query.trim();
+      if (!trimmedQuery) return;
+
+      if (trimmedQuery.length < MIN_QUERY_LENGTH) {
+        setValidationError(`Suchanfrage muss mindestens ${MIN_QUERY_LENGTH} Zeichen haben.`);
+        return;
+      }
+
+      const trimmedTicker = ticker.trim();
+      if (trimmedTicker && !SEC_TICKER_PATTERN.test(trimmedTicker)) {
+        setValidationError(
+          'Bitte Ticker-Symbol verwenden, z.B. NOVN oder BRK.B — kein Firmenname.',
+        );
+        return;
+      }
+
+      setValidationError(null);
       setSummary(null);
       setSwissResults(null);
       setSecResults(null);
@@ -657,7 +697,7 @@ export function ResearchClient() {
       swissMutation.mutate();
       secMutation.mutate();
     },
-    [query, swissMutation, secMutation],
+    [query, ticker, swissMutation, secMutation],
   );
 
   return (
@@ -701,6 +741,7 @@ export function ResearchClient() {
             onSubmit={handleSubmit}
             isPending={isPending}
             summary={summary}
+            validationError={validationError}
           />
         ) : (
           <ProModeView
@@ -712,6 +753,7 @@ export function ResearchClient() {
             secResults={secResults}
             agentLog={agentLog}
             summary={summary}
+            validationError={validationError}
           />
         )}
       </div>

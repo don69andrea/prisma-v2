@@ -39,10 +39,17 @@ Beispiele:
 """
 
 _GOAL_MAP: dict[str, tuple[str, str]] = {
+    # Frontend-Werte (Enum-Value)
+    "housing": ("housing", "short"),
+    "retirement": ("retirement", "long"),
+    "freedom": ("freedom", "medium"),
+    "beat_savings": ("beat_savings", "medium"),
+    # Deutsche Display-Labels (legacy / direkte Übermittlung)
     "Neue Wohnung": ("housing", "short"),
     "Altersvorsorge": ("retirement", "long"),
     "Finanzielle Freiheit": ("freedom", "medium"),
     "Besser als Konto": ("beat_savings", "medium"),
+    "Besser als Sparkonto": ("beat_savings", "medium"),
 }
 
 
@@ -58,15 +65,19 @@ class ProfileClassifier:
 
     async def classify_turn1(self, profession_text: str) -> Turn1Classification:
         """Beruf-Freitext → financial_knowledge + optionaler sector_hint."""
-        response = await self._llm.messages_create(
-            model=_HAIKU_MODEL,
-            max_tokens=200,
-            feature="profile_classification_turn1",
-            system=_TURN1_SYSTEM,
-            messages=[{"role": "user", "content": f"Beruf: {profession_text}"}],
-        )
-        raw = response.content[0].text.strip()
-        return Turn1Classification.model_validate(json.loads(raw))
+        try:
+            response = await self._llm.messages_create(
+                model=_HAIKU_MODEL,
+                max_tokens=200,
+                feature="profile_classification_turn1",
+                system=_TURN1_SYSTEM,
+                messages=[{"role": "user", "content": f"Beruf: {profession_text}"}],
+            )
+            raw = response.content[0].text.strip()
+            return Turn1Classification.model_validate(json.loads(raw))
+        except Exception as exc:
+            _logger.warning("classify_turn1 failed (%s), using default classification", exc)
+            return Turn1Classification(financial_knowledge="medium", sector_hint=None)
 
     @staticmethod
     def classify_turn2(goal_selection: str) -> tuple[str, str]:
@@ -92,6 +103,24 @@ class ProfileClassifier:
         return sectors, list(clicked_tickers)
 
     @staticmethod
+    def classify_turn_amount(amount_selection: str) -> str:
+        """Anlagebetrag-Auswahl → investment_amount."""
+        valid = {"under_10k", "10k_100k", "over_100k"}
+        return amount_selection if amount_selection in valid else "10k_100k"
+
+    @staticmethod
+    def classify_turn_esg(esg_selection: str) -> str:
+        """ESG-Präferenz → esg_preference."""
+        valid = {"yes", "no", "indifferent"}
+        return esg_selection if esg_selection in valid else "indifferent"
+
+    @staticmethod
+    def classify_turn_income(income_selection: str) -> str:
+        """Rendite-Präferenz → income_preference."""
+        valid = {"dividends", "growth", "balanced"}
+        return income_selection if income_selection in valid else "balanced"
+
+    @staticmethod
     def calculate_confidence(profile: InvestorProfile) -> float:
         """Wie vollständig ist das Profil? 0.0–1.0.
 
@@ -106,7 +135,14 @@ class ProfileClassifier:
         if profile.risk_profile != "moderate":
             score += 0.3
         if len(profile.known_tickers) >= 2:
-            score += 0.2
+            score += 0.15
         if len(profile.sector_affinity) >= 1:
             score += 0.1
+        if profile.investment_amount != "10k_100k":
+            score += 0.05
+        if profile.esg_preference != "indifferent":
+            score += 0.05
+        if profile.income_preference != "balanced":
+            score += 0.05
+
         return min(score, 1.0)

@@ -66,7 +66,7 @@ describe('MemoSheet', () => {
       <MemoSheet stockId={STOCK_ID} runId={RUN_ID} ticker="AAPL" open onOpenChange={() => {}} />,
     );
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Memo generieren/ })).toBeDefined(),
+      expect(screen.getByRole('button', { name: /KI-Analyse generieren/ })).toBeDefined(),
     );
   });
 

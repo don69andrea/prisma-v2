@@ -12,11 +12,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy only the dependency manifest first to leverage layer caching
 COPY pyproject.toml ./
 
-# Install runtime dependencies into an isolated prefix so the final stage
-# can copy them without carrying the compiler toolchain.
+# Install only production (runtime) dependencies into an isolated prefix so
+# the final stage can copy them without carrying the compiler toolchain.
+# Dev extras (pytest, ruff, mypy, aiosqlite) are intentionally excluded from
+# the production image to keep it lean and reduce the attack surface.
 RUN pip install --upgrade pip \
-    && pip install --prefix=/install --no-cache-dir ".[dev]" || \
-       pip install --prefix=/install --no-cache-dir .
+    && pip install --prefix=/install --no-cache-dir .
 
 
 # ── Stage 2: runtime ────────────────────────────────────────────────────────
@@ -36,6 +37,7 @@ COPY pyproject.toml pyproject.toml
 # Copy application source
 COPY backend/ backend/
 COPY alembic.ini alembic.ini
+COPY models/ models/
 COPY scripts/backend-start.sh /app/backend-start.sh
 RUN chmod +x /app/backend-start.sh
 

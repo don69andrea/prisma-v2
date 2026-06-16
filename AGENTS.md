@@ -20,7 +20,7 @@ Dependency Rule: innere Schichten dürfen äussere nie importieren.
 
 ## 1 · Goldene Regeln (NIEMALS brechen)
 
-1. **Kein Code ohne Spec.** Jedes Feature startet mit `docs/specs/YYYY-MM-DD-*.md`. Agent wartet auf Freigabe.
+1. **Kein direkter Push auf `main` oder `develop`.** Immer via Feature-Branch + PR — auch für kleine Fixes.
 2. **Kein Merge ohne grüne CI.** Nie `--no-verify` verwenden.
 3. **Kein Freitext von LLMs ins Frontend.** Alle LLM-Outputs sind Pydantic-Schema-validiert.
 4. **Kein direkter Push auf `main` oder `develop`.** Immer PR + Review.
@@ -32,32 +32,15 @@ Dependency Rule: innere Schichten dürfen äussere nie importieren.
 ## 2 · Workflow
 
 ```
-Brainstorming → Spec-First → Plan-as-Contract → Subagent-Driven Execution → Two-Stage Review → Reflexion
+feature/* → develop → main
 ```
 
-### 2.1 Spec-First
-- Spec-Datei: `docs/specs/YYYY-MM-DD-feature-name.md`
-- Mindestinhalt: Ziel, Entitäten/Schema-Änderungen, API-Endpunkte, Test-Cases, Nicht-Ziele
-- **Agent schreibt keinen Implementierungscode, bis der Nutzer die Spec explizit freigibt.**
+1. Branch vom aktuellen `develop` erstellen: `git checkout -b feature/name-aufgabe`
+2. Implementieren, testen (`pytest` / `vitest`)
+3. PR nach `develop` — kurze Beschreibung was geändert wurde
+4. Nach Merge: Branch löschen
 
-### 2.2 Plan-as-Contract
-- Plan-Datei: `docs/superpowers/plans/YYYY-MM-DD-plan-name.md`
-- Plan enthält: Step-by-Step mit Bash-Befehlen, verbatim Test-Code, Commit-Messages
-- Ein Plan ist ein Vertrag. Subagents führen ihn aus — keine Improvisation, keine Abkürzungen.
-- Wenn ein Step fehlschlägt: stoppen, Fehler melden, auf Freigabe warten.
-
-### 2.3 Subagent-Driven Execution
-- Frischer Subagent pro Task → kein Kontext-Spill
-- Orchestrator koordiniert, Implementer-Subagents liefern
-- Jeder Subagent liest zuerst: `AGENTS.md` → `CLAUDE.md` → relevante Spec → Plan-Schritt
-
-### 2.4 Two-Stage Review (nach jeder Implementierung)
-1. **Spec-Compliance-Review:** Wurde genau das gebaut, was die Spec verlangt?
-2. **Code-Quality-Review:** Clean Architecture, DRY, keine Leaks, Test-Coverage ≥ 80%
-
-### 2.5 Reflexion
-- Jeder PR mit substantieller AI-Beteiligung → Eintrag in `docs/AI-USAGE.md`
-- Format: Agent · Scope · Was gut lief · Was schiefging · Konkrete Lektion
+Jeder Agent liest zu Sessionbeginn `CLAUDE.md` (STATUS-Block) und `AGENTS.md`, dann direkt starten.
 
 ---
 
@@ -214,14 +197,6 @@ Swiss Market Stocks: immer aus validierter Whitelist (SIX Exchange API), nie aus
 ❌ `time.sleep()` in Async-Code (→ `asyncio.sleep()`)  
 
 ---
-
-## 9 · Dokumentation-Pflichten
-
-Jede neue Komponente braucht:
-- `docs/specs/` — Spec-Dokument
-- `docs/adr/` — ADR wenn Architektur-Entscheidung involviert
-- Docstring mit Zweck + Beispiel
-- `docs/AI-USAGE.md` — Eintrag nach Abschluss
 
 ---
 

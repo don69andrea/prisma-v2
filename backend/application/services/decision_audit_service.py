@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
+from backend.application.services.stock_service import _normalize_ticker
 from backend.domain.entities.decision_audit_record import DecisionAuditRecord
 from backend.domain.repositories.decision_audit_repository import DecisionAuditRepository
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
@@ -44,7 +45,7 @@ def _signal_for_score(score: float) -> str:
         return "BUY"
     if score >= 40.0:
         return "HOLD"
-    return "WATCH"
+    return "SELL"
 
 
 def _build_explanation(
@@ -68,7 +69,7 @@ def _build_explanation(
 
 
 class DecisionAuditService:
-    """Berechnet ein BUY/HOLD/WATCH-Signal und speichert den Audit-Record.
+    """Berechnet ein BUY/HOLD/SELL-Signal und speichert den Audit-Record.
 
     ml_feature_service / ml_prediction_service sind optional (Any | None).
     Sind sie nicht verfügbar, wird ml_score=50 (NEUTRAL) als Fallback verwendet.
@@ -96,7 +97,7 @@ class DecisionAuditService:
 
     async def compute_and_save(self, ticker: str) -> DecisionAuditRecord | None:
         """Berechnet Signal für ticker, speichert Audit-Record und gibt ihn zurück."""
-        upper = ticker.upper()
+        upper = _normalize_ticker(ticker)
 
         # Quant-Score: via feature_service (ML-Layer) oder direkter SwissQuantScorer
         quant_score, snapshot_date = await self._get_quant_score(upper)
@@ -150,7 +151,7 @@ class DecisionAuditService:
         return record
 
     async def get_audit_trail(self, ticker: str, limit: int = 10) -> list[DecisionAuditRecord]:
-        return await self._audit_repo.list_by_ticker(ticker.upper(), limit=limit)
+        return await self._audit_repo.list_by_ticker(_normalize_ticker(ticker), limit=limit)
 
     async def _get_quant_score(self, ticker: str) -> tuple[float | None, Any]:
         today = datetime.now(tz=UTC).date()

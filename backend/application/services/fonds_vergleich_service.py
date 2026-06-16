@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import logging
 import math
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 
+from backend.application.services.ml_feature_service import _snb_rate_on
 from backend.domain.value_objects.fonds_vergleich import (
     FondsVergleich,
     PortfolioCompareMetrics,
@@ -15,7 +16,9 @@ from backend.domain.value_objects.fonds_vergleich import (
 from backend.infrastructure.seeds.viac_fonds_catalog import VIAC_FONDS_CATALOG
 
 _logger = logging.getLogger(__name__)
-_RISK_FREE_RATE = 0.01  # SNB-nahe Annahme für Sharpe-Berechnung
+# Fallback-Wert wenn SNB-Rate nicht verfügbar.
+# Wird in __init__ durch aktuellen SNB-Leitzins überschrieben.
+_RISK_FREE_RATE_FALLBACK = 0.01
 
 
 class FondsNotFound(Exception):
@@ -29,8 +32,24 @@ class FondsVergleichService:
     ohne MarketData-Anbindung lauffähig bleibt.
     """
 
-    def __init__(self, yfinance_adapter: Any | None = None) -> None:
+    def __init__(
+        self, yfinance_adapter: Any | None = None, risk_free_rate: float | None = None
+    ) -> None:
         self._yf = yfinance_adapter
+        if risk_free_rate is not None:
+            self._risk_free_rate = risk_free_rate
+        else:
+            # Aktuellen SNB-Leitzins als Risk-Free Rate verwenden
+            try:
+                snb_rate = _snb_rate_on(date.today())
+                self._risk_free_rate = snb_rate / 100.0  # Prozent → Dezimal
+            except Exception as exc:
+                _logger.warning(
+                    "SNB-Rate nicht verfügbar (%s) — Fallback auf %.2f%%",
+                    exc,
+                    _RISK_FREE_RATE_FALLBACK * 100,
+                )
+                self._risk_free_rate = _RISK_FREE_RATE_FALLBACK
 
     def list_fonds(self) -> list[dict[str, str | float]]:
         return [
@@ -130,7 +149,9 @@ class FondsVergleichService:
         ann_factor = 252
         ann_return = float(np.mean(portfolio_returns)) * ann_factor
         ann_vol = float(np.std(portfolio_returns, ddof=1)) * math.sqrt(ann_factor)
-        sharpe: float | None = (ann_return - _RISK_FREE_RATE) / ann_vol if ann_vol > 1e-9 else None
+        sharpe: float | None = (
+            (ann_return - self._risk_free_rate) / ann_vol if ann_vol > 1e-9 else None
+        )
         cum = np.cumprod(1 + portfolio_returns)
         running_max = np.maximum.accumulate(cum)
         drawdowns = (cum - running_max) / running_max

@@ -35,6 +35,11 @@ class _NullCostLogRepository(CostLogRepository):
     async def current_month_total_usd(self) -> Decimal:
         return Decimal("0")
 
+    async def check_cap_atomic(
+        self, estimated_usd: Decimal, cap_usd: Decimal, threshold: Decimal
+    ) -> bool:
+        return True  # Im Test-Stub immer innerhalb Budget
+
     async def current_month_breakdown(self, last_n: int) -> CostBreakdown:
         return CostBreakdown(by_model=[], by_feature=[], last_calls=[])
 

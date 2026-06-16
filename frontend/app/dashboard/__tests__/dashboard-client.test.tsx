@@ -8,10 +8,33 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
 }));
+vi.mock('next/link', () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode;
+    href: string;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+vi.mock('@/hooks/usePrismaMode', () => ({
+  usePrismaMode: () => ({ mode: 'simple', isSimple: true, isPro: false, toggle: vi.fn() }),
+}));
+vi.mock('@/components/GuidedTour', () => ({
+  GuidedTourButton: () => null,
+}));
+vi.mock('@/app/start/start-client', () => ({
+  DISCOVER_STORAGE_KEY: 'prisma_discover_cache',
+}));
 
 import { DashboardClient } from '../dashboard-client';
-import * as runsApi from '@/lib/api/runs';
-import * as stocksApi from '@/lib/api/stocks';
+import * as decisionsApi from '@/lib/api/decisions';
 import * as universesApi from '@/lib/api/universes';
 
 function wrap(ui: ReactElement) {
@@ -19,84 +42,49 @@ function wrap(ui: ReactElement) {
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
 }
 
-describe('DashboardClient — StatsCards-Integration', () => {
+const fakeBuySignal = {
+  ticker: 'NVDA',
+  snapshot_date: '2026-06-14T00:00:00Z',
+  signal: 'BUY' as const,
+  confidence: 0.9,
+  weighted_score: 88,
+  quant_score: 90,
+  ml_score: 85,
+  macro_score: 80,
+  is_3a_eligible: false,
+  signal_reason: 'Starke Fundamentaldaten.',
+};
+
+describe('DashboardClient', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('renders StatsCards with derived stats above runs table', async () => {
-    vi.spyOn(runsApi, 'listRuns').mockResolvedValue([
-      {
-        id: '11111111-1111-1111-1111-111111111111',
-        status: 'completed',
-        universe_id: 'uni-1',
-        universe_name: 'Test-Universe',
-        created_at: '2026-05-28T10:00:00Z',
-      },
-    ]);
+  it('renders BUY signal card when universe and decisions available', async () => {
     vi.spyOn(universesApi, 'listUniverses').mockResolvedValue({
-      items: [
-        { id: 'uni-1', name: 'Demo-US-5', region: 'US', tickers: ['AAPL', 'MSFT'] },
-      ],
+      items: [{ id: 'uni-1', name: 'SMI', region: 'CH', tickers: ['NESN'] }],
       total: 1,
     });
-    vi.spyOn(stocksApi, 'listStocks').mockResolvedValue({
-      items: Array.from({ length: 5 }, (_, i) => ({
-        id: `stock-${i}`,
-        ticker: `T${i}`,
-        name: `Test ${i}`,
-        isin: null,
-        sector: null,
-        country: null,
-        currency: 'USD',
-        exchange: null,
-        market_cap_chf: null,
-      })),
-      total: 5,
+    vi.spyOn(decisionsApi, 'listDecisions').mockResolvedValue({
+      items: [fakeBuySignal],
+      total: 1,
     });
-    vi.spyOn(runsApi, 'getRankings').mockResolvedValue([
-      {
-        stock_id: 'stock-1',
-        ticker: 'NVDA',
-        total_rank: 1,
-        weighted_avg: 1.5,
-        is_sweet_spot: true,
-        per_model_ranks: {},
-      } as any,
-    ]);
 
     wrap(<DashboardClient />);
     await waitFor(() => expect(screen.getByText('NVDA')).toBeDefined());
-    // 1 Universum
-    expect(screen.getByText('1')).toBeDefined();
-    // 5 Stocks
-    expect(screen.getByText('5')).toBeDefined();
-    // Top-Pick-Link
     const link = screen.getByRole('link', { name: /NVDA/ });
-    expect(link.getAttribute('href')).toContain('/stock/NVDA');
+    expect(link.getAttribute('href')).toContain('/stocks/NVDA');
   });
 
-  it('renders em-dashes when no completed runs', async () => {
-    vi.spyOn(runsApi, 'listRuns').mockResolvedValue([
-      {
-        id: '11111111-1111-1111-1111-111111111111',
-        status: 'pending',
-        universe_id: 'uni-1',
-        universe_name: 'Test-Universe',
-        created_at: '2026-05-28T10:00:00Z',
-      },
-    ]);
+  it('zeigt Leer-Zustand wenn kein Universum vorhanden', async () => {
     vi.spyOn(universesApi, 'listUniverses').mockResolvedValue({
       items: [],
       total: 0,
     });
-    vi.spyOn(stocksApi, 'listStocks').mockResolvedValue({ items: [], total: 0 });
 
     wrap(<DashboardClient />);
-    // Top-Pick-Karte zeigt "—" (kein completed run vorhanden)
     await waitFor(() => {
-      const dashes = screen.getAllByText('—');
-      expect(dashes.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText(/Noch keine Signale/)).toBeDefined();
     });
   });
 });

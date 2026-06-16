@@ -1,7 +1,7 @@
 """Pydantic-Schemas für Backtest-REST-Endpunkte."""
 
-from datetime import date
-from decimal import Decimal
+from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -15,14 +15,15 @@ class RunBacktestRequest(BaseModel):
     end_date: date
     top_n: int = 3
     benchmark_ticker: str = "^SSMI"
+    mode: Literal["quant_only", "quant_ml", "full"] = "full"
 
 
 class PortfolioMetricsResponse(BaseModel):
-    total_return: Decimal
-    cagr: Decimal
-    annual_vol: Decimal
-    sharpe: Decimal
-    max_drawdown: Decimal
+    total_return: float
+    cagr: float
+    annual_vol: float
+    sharpe: float
+    max_drawdown: float
 
     @classmethod
     def from_entity(cls, m: PortfolioMetrics) -> "PortfolioMetricsResponse":
@@ -31,9 +32,9 @@ class PortfolioMetricsResponse(BaseModel):
 
 class BacktestSeriesResponse(BaseModel):
     dates: list[date]
-    prisma: list[Decimal]
-    universe: list[Decimal]
-    benchmark: list[Decimal]
+    prisma: list[float]
+    universe: list[float]
+    benchmark: list[float]
 
 
 class BacktestResultResponse(BaseModel):
@@ -41,12 +42,15 @@ class BacktestResultResponse(BaseModel):
     model_run_id: UUID
     start_date: date
     end_date: date
+    actual_start_date: date
+    actual_end_date: date
     top_n: int
     benchmark_ticker: str
     prisma_metrics: PortfolioMetricsResponse
     universe_metrics: PortfolioMetricsResponse
     benchmark_metrics: PortfolioMetricsResponse
     series: BacktestSeriesResponse
+    created_at: datetime
 
     @classmethod
     def from_entity(cls, r: BacktestResult) -> "BacktestResultResponse":
@@ -55,6 +59,8 @@ class BacktestResultResponse(BaseModel):
             model_run_id=r.model_run_id,
             start_date=r.start_date,
             end_date=r.end_date,
+            actual_start_date=r.actual_start_date,
+            actual_end_date=r.actual_end_date,
             top_n=r.top_n,
             benchmark_ticker=r.benchmark_ticker,
             prisma_metrics=PortfolioMetricsResponse.from_entity(r.prisma_metrics),
@@ -62,8 +68,9 @@ class BacktestResultResponse(BaseModel):
             benchmark_metrics=PortfolioMetricsResponse.from_entity(r.benchmark_metrics),
             series=BacktestSeriesResponse(
                 dates=r.series.dates,
-                prisma=r.series.prisma,
-                universe=r.series.universe,
-                benchmark=r.series.benchmark,
+                prisma=[float(x) for x in r.series.prisma],
+                universe=[float(x) for x in r.series.universe],
+                benchmark=[float(x) for x in r.series.benchmark],
             ),
+            created_at=r.created_at,
         )

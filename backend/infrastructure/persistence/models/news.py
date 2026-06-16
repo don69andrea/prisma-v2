@@ -54,7 +54,7 @@ class NewsChunkORM(Base):
     )
     chunk_idx: Mapped[int] = mapped_column(Integer(), nullable=False)
     content: Mapped[str] = mapped_column(Text(), nullable=False)
-    embedding: Mapped[list[float]] = mapped_column(Vector(2048), nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(1024), nullable=False)
     chunk_metadata: Mapped[dict[str, Any] | None] = mapped_column(
         "metadata", JSONB(), nullable=True
     )

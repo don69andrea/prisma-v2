@@ -26,7 +26,7 @@ class PortfolioPosition:
 class PortfolioAllocation:
     """Vollständige Portfolio-Allokation für einen Ranking-Run.
 
-    method: "score_weighted" | "risk_parity"
+    method: "score_weighted" | "risk_parity" | "mean_variance"
     positions: nach Gewicht absteigend sortiert
     overall_rationale_de: LLM-generierte Gesamt-Begründung, Pydantic-validiert
     """

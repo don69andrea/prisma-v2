@@ -55,22 +55,27 @@ class ReportService:
     async def _aggregate_data(self, ticker: str) -> ReportData:
         from backend.application.services.factsheet_service import FactsheetService
         from backend.application.services.ml_prediction_service import MLPredictionService
-        from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
-            SQLASwissStockRepository,
+        from backend.infrastructure.persistence.repositories.ranking_run_repository import (
+            SQLARankingRunRepository,
+        )
+        from backend.infrastructure.persistence.repositories.stock_repository import (
+            SQLAStockRepository,
         )
         from backend.infrastructure.persistence.session import get_session_factory
 
         session_factory = get_session_factory()
-        async with session_factory() as _session:
-            swiss_repo = SQLASwissStockRepository(session=_session)
-            factsheet_svc = FactsheetService(swiss_stock_repo=swiss_repo)  # type: ignore[call-arg]
         ml_svc = MLPredictionService()
 
-        factsheet, ml_prediction = await asyncio.gather(
-            factsheet_svc.get_factsheet(ticker),
-            ml_svc.predict(ticker),
-            return_exceptions=True,
-        )
+        async with session_factory() as _session:
+            stock_repo = SQLAStockRepository(session=_session)
+            run_repo = SQLARankingRunRepository(session=_session)
+            factsheet_svc = FactsheetService(stock_repo=stock_repo, run_repo=run_repo)
+
+            factsheet, ml_prediction = await asyncio.gather(
+                factsheet_svc.get_factsheet(ticker),
+                ml_svc.predict(ticker),
+                return_exceptions=True,
+            )
 
         if isinstance(factsheet, Exception) or factsheet is None:
             _logger.warning("Kein Factsheet für %s: %s", ticker, factsheet)
@@ -137,8 +142,12 @@ class ReportService:
         )
 
     def _render_pdf(self, html: str) -> bytes:
-        import weasyprint
-
+        try:
+            import weasyprint
+        except ImportError as exc:
+            raise ImportError(
+                "WeasyPrint nicht installiert. Benötigt: pip install weasyprint + Systemlibs pango/cairo."
+            ) from exc
         return cast(bytes, weasyprint.HTML(string=html).write_pdf())
 
     async def _cache_get(self, ticker: str) -> bytes | None:

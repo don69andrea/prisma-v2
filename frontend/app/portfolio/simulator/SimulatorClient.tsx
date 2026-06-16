@@ -57,15 +57,15 @@ export function SimulatorClient() {
     : [];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6">
+    <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-purple-400" />
-            3a Retirement Simulator
+            3a Retirement Simulator.
           </h1>
-          <p className="text-slate-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             10&apos;000 Monte-Carlo-Simulationen · Geometric Brownian Motion · Swiss 3a
           </p>
         </div>
@@ -73,9 +73,9 @@ export function SimulatorClient() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* LEFT: Input Panel */}
           <div className="lg:col-span-2 space-y-4">
-            <Card className="bg-slate-900/80 border-slate-800 backdrop-blur-sm">
+            <Card className="bg-card border-border backdrop-blur-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-300">Portfolio</CardTitle>
+                <CardTitle className="text-sm font-medium text-foreground">Portfolio</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {holdings.map((h, i) => (
@@ -83,7 +83,7 @@ export function SimulatorClient() {
                     <Input
                       value={h.ticker}
                       onChange={(e) => updateTicker(i, e.target.value)}
-                      className="w-28 font-mono text-sm bg-slate-800 border-slate-700"
+                      className="w-28 font-mono text-sm bg-muted border-border"
                       placeholder="NESN.SW"
                     />
                     <input
@@ -106,11 +106,11 @@ export function SimulatorClient() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900/80 border-slate-800 backdrop-blur-sm">
+            <Card className="bg-card border-border backdrop-blur-sm">
               <CardContent className="pt-4 space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Monatliche Einzahlung</span>
+                    <span className="text-muted-foreground">Monatliche Einzahlung</span>
                     <span className="font-medium text-purple-300">CHF {contribution}</span>
                   </div>
                   <input
@@ -122,11 +122,11 @@ export function SimulatorClient() {
                     onChange={(e) => setContribution(Number(e.target.value))}
                     className="w-full accent-purple-500"
                   />
-                  <div className="text-[10px] text-slate-600">Swiss 3a Max: CHF 7&apos;056 / Jahr</div>
+                  <div className="text-[10px] text-muted-foreground">Swiss 3a Max: CHF 7&apos;056 / Jahr</div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Anlagehorizont</span>
+                    <span className="text-muted-foreground">Anlagehorizont</span>
                     <span className="font-medium text-purple-300">{years} Jahre</span>
                   </div>
                   <input
@@ -138,7 +138,7 @@ export function SimulatorClient() {
                     onChange={(e) => setYears(Number(e.target.value))}
                     className="w-full accent-purple-500"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-600">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
                     <span>1J</span><span>10J</span><span>20J</span><span>30J</span><span>40J</span>
                   </div>
                 </div>
@@ -168,17 +168,17 @@ export function SimulatorClient() {
               <>
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-3">
-                  <Card className="bg-slate-900/60 border-emerald-500/20" style={{ boxShadow: '0 0 20px rgba(16,185,129,0.1)' }}>
+                  <Card className="bg-card border-emerald-500/20" style={{ boxShadow: '0 0 20px rgba(16,185,129,0.1)' }}>
                     <CardContent className="pt-4 space-y-1">
-                      <p className="text-xs text-slate-500">Median-Endvermögen</p>
+                      <p className="text-xs text-muted-foreground">Median-Endvermögen</p>
                       <p className="text-2xl font-bold text-emerald-400 tabular-nums">
                         {formatCHF(result.p50[result.p50.length - 1])}
                       </p>
                     </CardContent>
                   </Card>
-                  <Card className="bg-slate-900/60 border-purple-500/20" style={{ boxShadow: '0 0 20px rgba(168,85,247,0.1)' }}>
+                  <Card className="bg-card border-purple-500/20" style={{ boxShadow: '0 0 20px rgba(168,85,247,0.1)' }}>
                     <CardContent className="pt-4 space-y-1">
-                      <p className="text-xs text-slate-500">P95-Endvermögen</p>
+                      <p className="text-xs text-muted-foreground">P95-Endvermögen</p>
                       <p className="text-2xl font-bold text-purple-400 tabular-nums">
                         {formatCHF(result.p95[result.p95.length - 1])}
                       </p>
@@ -193,13 +193,13 @@ export function SimulatorClient() {
                   <Badge className="bg-purple-950 border-purple-500/40 text-purple-300 text-xs">
                     {Math.round(result.prob_500k * 100)}% Chance CHF 500k+
                   </Badge>
-                  <Badge className="bg-slate-800 border-slate-700 text-slate-400 text-xs">
+                  <Badge className="bg-muted border-border text-muted-foreground text-xs">
                     Einzahlungen total: {formatCHF(result.contribution_total)}
                   </Badge>
                 </div>
 
                 {/* Fan Chart */}
-                <Card className="bg-slate-900/60 border-slate-800">
+                <Card className="bg-card border-border">
                   <CardContent className="pt-4">
                     <MonteCarloFanChart
                       p5={result.p5}
@@ -210,10 +210,25 @@ export function SimulatorClient() {
                     />
                   </CardContent>
                 </Card>
+
+                {/* Text Interpretation */}
+                {result.interpretation && (
+                  <div className="rounded-xl border border-purple-500/20 bg-purple-950/20 p-4 space-y-2">
+                    <h3 className="text-sm font-semibold text-purple-300 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      Was bedeutet das?
+                    </h3>
+                    {result.interpretation.split('. ').filter(Boolean).map((sentence, i) => (
+                      <p key={i} className="text-sm text-muted-foreground leading-relaxed">
+                        {sentence.endsWith('.') ? sentence : sentence + '.'}
+                      </p>
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
-              <Card className="bg-slate-900/40 border-slate-800 border-dashed h-64 flex items-center justify-center">
-                <div className="text-center text-slate-600">
+              <Card className="bg-card border-border border-dashed h-64 flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
                   <TrendingUp className="h-10 w-10 mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Simulation starten →</p>
                 </div>
@@ -222,7 +237,7 @@ export function SimulatorClient() {
           </div>
         </div>
 
-        <p className="text-[10px] text-slate-700 text-center">
+        <p className="text-[10px] text-muted-foreground text-center">
           Simulationsergebnisse basieren auf historischen Daten und ML-Prognosen. Keine Anlageberatung. PRISMA V2.
         </p>
       </div>

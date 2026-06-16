@@ -1,4 +1,4 @@
-"""Signal Aggregation Service — BUY/HOLD/WATCH aus Quant + ML + Macro."""
+"""Signal Aggregation Service — BUY/HOLD/SELL aus Quant + ML + Macro."""
 
 from __future__ import annotations
 
@@ -7,15 +7,15 @@ import logging
 from backend.application.agents.macro_agent import MacroIntelligenceAgent
 from backend.application.services.ml_feature_service import MLFeatureService
 from backend.application.services.ml_prediction_service import MLPredictionService
+from backend.config import get_settings
 from backend.domain.services.eligibility_filter import EligibilityFilter
 from backend.domain.value_objects.decision_signal import DecisionSignal
 
 _logger = logging.getLogger(__name__)
 
-# Gewichtung: Quant 45%, ML 35%, Macro 20%
-_W_QUANT = 0.45
-_W_ML = 0.35
-_W_MACRO = 0.20
+# Max. parallele Signal-Berechnungen — jede lädt yfinance-DataFrame + optionaler LLM-Call.
+# Render Free-Tier: 512 MB RAM. 4 × ~80 MB Peak = ~320 MB → sicherer Puffer.
+_MAX_CONCURRENT_SIGNALS = 4
 
 # ML-Signal → numerischer Score (0–100)
 _ML_SIGNAL_TO_SCORE: dict[str, float] = {
@@ -42,7 +42,7 @@ def _snb_macro_score(snb_rate: float) -> float:
 
 
 class SignalAggregationService:
-    """Aggregiert Quant-, ML- und Macro-Signale zu einem BUY/HOLD/WATCH-Signal."""
+    """Aggregiert Quant-, ML- und Macro-Signale zu einem BUY/HOLD/SELL-Signal."""
 
     def __init__(
         self,
@@ -58,6 +58,10 @@ class SignalAggregationService:
         self._swiss_stock_repo = swiss_stock_repo
         self._macro_agent = macro_agent
         self._eligibility = EligibilityFilter()
+        _s = get_settings()
+        self._w_quant = _s.signal_quant_weight
+        self._w_ml = _s.signal_ml_weight
+        self._w_macro = _s.signal_macro_weight
 
     async def _check_3a_eligible(self, ticker: str) -> bool:
         """Prüft 3a-Eignung via EligibilityFilter; nicht im Repo → nicht eligible."""
@@ -80,16 +84,18 @@ class SignalAggregationService:
 
         quant_score = features.quant_score
 
-        # ML-Score: Versuch ML-Prediction; bei fehlendem Modell → Fallback auf Neutral
-        ml_score = 50.0
+        # ML-Score: Versuch ML-Prediction; bei fehlendem Modell → ML-Gewicht auf andere verteilen
+        ml_score: float | None = None
         try:
             prediction = await self._prediction_service.predict(ticker)
             if prediction is not None:
                 ml_score = _ML_SIGNAL_TO_SCORE.get(prediction.signal, 50.0)
         except FileNotFoundError:
-            _logger.info("Kein ML-Modell vorhanden — Fallback auf NEUTRAL für %s", ticker)
+            _logger.info("Kein ML-Modell vorhanden — ML-Gewicht wird umverteilt für %s", ticker)
         except Exception:
-            _logger.exception("ML-Prediction fehlgeschlagen für %s — Fallback NEUTRAL", ticker)
+            _logger.exception(
+                "ML-Prediction fehlgeschlagen für %s — ML-Gewicht wird umverteilt", ticker
+            )
 
         # Per-Ticker Macro-Score wenn MacroIntelligenceAgent verfügbar, sonst global
         if self._macro_agent is not None:
@@ -101,7 +107,19 @@ class SignalAggregationService:
                 macro_score = _snb_macro_score(features.snb_rate)
         else:
             macro_score = _snb_macro_score(features.snb_rate)
-        weighted_score = _W_QUANT * quant_score + _W_ML * ml_score + _W_MACRO * macro_score
+
+        # Gewichts-Normierung: wenn ML nicht verfügbar, ML-Gewicht auf Quant + Macro verteilen
+        if ml_score is not None:
+            weighted_score = (
+                self._w_quant * quant_score + self._w_ml * ml_score + self._w_macro * macro_score
+            )
+            effective_ml_score = ml_score
+        else:
+            available_weight = self._w_quant + self._w_macro
+            w_quant_norm = self._w_quant / available_weight
+            w_macro_norm = self._w_macro / available_weight
+            weighted_score = w_quant_norm * quant_score + w_macro_norm * macro_score
+            effective_ml_score = 50.0  # Neutral als Report-Wert
         signal = DecisionSignal.signal_for_score(weighted_score)
         confidence = round(weighted_score / 100.0, 4)
         is_eligible = await self._check_3a_eligible(ticker)
@@ -113,19 +131,35 @@ class SignalAggregationService:
             confidence=confidence,
             weighted_score=round(weighted_score, 2),
             quant_score=round(quant_score, 2),
-            ml_score=round(ml_score, 2),
+            ml_score=round(effective_ml_score, 2),
             macro_score=round(macro_score, 2),
             is_3a_eligible=is_eligible,
         )
 
     async def get_signals(self, tickers: list[str]) -> list[DecisionSignal]:
-        """Berechnet Signale für eine Liste von Tickern (fehlgeschlagene werden übersprungen)."""
+        """Berechnet Signale für eine Liste von Tickern (fehlgeschlagene werden übersprungen).
+
+        Maximal _MAX_CONCURRENT Ticker gleichzeitig — verhindert OOM durch parallele
+        yfinance-DataFrames + LLM-Responses im RAM bei grossen Ticker-Listen.
+        """
+        import asyncio
+
+        sem = asyncio.Semaphore(_MAX_CONCURRENT_SIGNALS)
+
+        async def _bounded(ticker: str) -> DecisionSignal | None | BaseException:
+            async with sem:
+                return await self.get_signal(ticker)
+
+        raw = await asyncio.gather(
+            *[_bounded(t) for t in tickers],
+            return_exceptions=True,
+        )
         results: list[DecisionSignal] = []
-        for ticker in tickers:
-            try:
-                signal = await self.get_signal(ticker)
-                if signal is not None:
-                    results.append(signal)
-            except Exception:
-                _logger.exception("Signal-Berechnung fehlgeschlagen für %s", ticker)
+        for ticker, outcome in zip(tickers, raw, strict=True):
+            if isinstance(outcome, BaseException):
+                _logger.exception(
+                    "Signal-Berechnung fehlgeschlagen für %s", ticker, exc_info=outcome
+                )
+            elif outcome is not None:
+                results.append(outcome)
         return results

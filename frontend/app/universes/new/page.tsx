@@ -44,7 +44,7 @@ export default function NewUniversePage() {
   return (
     <div className="space-y-6 max-w-lg">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Neues Universum</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Neues Universum.</h1>
         <p className="text-muted-foreground text-sm">
           Definiere einen Aktien-Pool für Ranking-Runs.
         </p>

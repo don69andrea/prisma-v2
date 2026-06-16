@@ -1,8 +1,8 @@
 # Spec: Universe-REST-Endpoints + Frontend-Seiten
 
 **Status:** Implementiert — 2026-05-13
-**Issue:** [#47 feat(frontend): /universes Page mit Form](https://github.com/SheylaSam/prisma-capstone/issues/47)
-**Haupt-Spec:** `docs/specs/2026-04-21-prisma-capstone-design.md` §11 (Frontend)
+**Issue:** [#47 feat(frontend): /universes Page mit Form](https://github.com/don69andrea/prisma-v2/issues/47)
+**Haupt-Spec:** `docs/specs/2026-04-21-prisma-v2-design.md` §11 (Frontend)
 **Assignee:** Nicolas Lardinois
 
 ---

@@ -37,12 +37,21 @@ class SQLASwissStockRepository(SwissStockRepository):
         limit: int = 100,
         offset: int = 0,
     ) -> list[SwissStock]:
+        import logging
+
+        _log = logging.getLogger(__name__)
         stmt = select(StockORM).where(StockORM.exchange.isnot(None))
         if exchange is not None:
             stmt = stmt.where(StockORM.exchange == exchange)
         stmt = stmt.order_by(StockORM.ticker).limit(limit).offset(offset)
         result = await self._session.execute(stmt)
-        return [self._to_domain(row) for row in result.scalars().all()]
+        stocks: list[SwissStock] = []
+        for row in result.scalars().all():
+            try:
+                stocks.append(self._to_domain(row))
+            except ValueError as exc:
+                _log.warning("Skipping stock %r with invalid ISIN: %s", row.ticker, exc)
+        return stocks
 
     async def upsert_batch(self, stocks: list[SwissStock]) -> int:
         """Idempotentes INSERT … ON CONFLICT (ticker) DO UPDATE."""

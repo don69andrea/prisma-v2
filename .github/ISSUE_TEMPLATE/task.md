@@ -21,7 +21,7 @@ assignees: []
 - [ ] Implementierung gemäss Spec
 - [ ] Unit-/Integration-/E2E-Tests (je nach Ebene)
 - [ ] PR-Review + Merge
-- [ ] AI-USAGE.md-Eintrag (falls Agent-assistiert)
+- [ ] AI-Einsatz dokumentiert (falls Agent-assistiert)
 
 ## Akzeptanzkriterien
 

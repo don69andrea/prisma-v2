@@ -35,7 +35,7 @@ Die Narrative-Engine ist seit der Foundation-Slice (PR #54) bilingual vorbereite
 Diese Slice füllt den EN-Template-Stub und entfernt die Guards.
 
 **Wert für die 40%-AI-Achse**:
-- Spec-First-Disziplin von Anfang an (bilinguale Architektur seit Master-Spec) wird **eingelöst** — nicht nur dokumentiert, sondern produktiv funktional.
+- Disziplin Spec vor Code von Anfang an (bilinguale Architektur seit Master-Spec) wird **eingelöst** — nicht nur dokumentiert, sondern produktiv funktional.
 - Demonstriert das Pattern „Architektur-Vorbereitung bezahlt sich aus": <2h von Stub zu live, weil die Schiene bereits liegt.
 - Liefert ein konkretes Demo-Szenario: dasselbe Stock (NESN), zwei Sprachen, identisches Schema → die LLM-Schicht ist eine austauschbare Komponente, nicht das Produkt.
 

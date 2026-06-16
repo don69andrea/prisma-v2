@@ -3,7 +3,7 @@
 **Status: Final**
 **Datum: 2026-04-28**
 **Autor: Andrea Petretta / Claude Code**
-**Bezieht sich auf**: `docs/specs/2026-04-21-prisma-capstone-design.md` §6, `docs/specs/2026-04-27-quant-models-redesign.md`
+**Bezieht sich auf**: `docs/specs/2026-04-21-prisma-v2-design.md` §6, `docs/specs/2026-04-27-quant-models-redesign.md`
 
 ---
 

@@ -12,12 +12,14 @@ Wird vom `LLMClient`-Wrapper in der Infrastructure-Schicht aufgerufen:
   und delegiert das Persistieren an den Repository-Adapter
 - `summary(last_n)` liefert aggregierte Kosten-Übersicht für den Admin-Endpoint
 
-Concurrency: das App-Cap ist ein **Soft-Limit** — ein kleines Race-Window
-existiert (zwei parallele Calls passen beide `check_cap` und schreiben dann
-beide `record`). Bei Capstone-Volumen (max ~30 Calls/Batch) absorbiert die
-5%-Schwelle das. Der echte **Backstop** ist das Anthropic-Console Spend-Limit.
+Concurrency: check_cap ist doppelt abgesichert:
+1. asyncio.Lock: serialisiert Calls innerhalb desselben Prozesses.
+2. check_cap_atomic(): PostgreSQL Advisory Lock via Repository — verhindert
+   Race Conditions zwischen mehreren Backend-Instanzen (multi-process-safe).
 """
 
+import asyncio
+import logging
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -29,6 +31,8 @@ from backend.domain.repositories.cost_log_repository import (
     CostLogEntry,
     CostLogRepository,
 )
+
+_logger = logging.getLogger(__name__)
 
 
 class CostTracker:
@@ -44,16 +48,46 @@ class CostTracker:
         self._pricing = pricing
         self._cap_usd = cap_usd
         self._threshold = threshold
+        self._cap_lock = asyncio.Lock()
 
     async def check_cap(self, *, estimated_usd: Decimal) -> None:
-        """Wirft BudgetCapExceeded, wenn (current + estimated) > cap * threshold."""
-        current = await self._repository.current_month_total_usd()
-        if (current + estimated_usd) > self._cap_usd * self._threshold:
-            raise BudgetCapExceeded(
-                current_usd=current,
-                attempted_usd=estimated_usd,
-                cap_usd=self._cap_usd,
-            )
+        """Wirft BudgetCapExceeded, wenn (current + estimated) > cap * threshold.
+
+        Doppelt abgesichert:
+        - asyncio.Lock: kein Race innerhalb eines Prozesses
+        - check_cap_atomic(): PostgreSQL Advisory Lock für multi-process Safety
+        """
+        async with self._cap_lock:
+            try:
+                within_budget = await self._repository.check_cap_atomic(
+                    estimated_usd=estimated_usd,
+                    cap_usd=self._cap_usd,
+                    threshold=self._threshold,
+                )
+                if not within_budget:
+                    current = await self._repository.current_month_total_usd()
+                    raise BudgetCapExceeded(
+                        current_usd=current,
+                        attempted_usd=estimated_usd,
+                        cap_usd=self._cap_usd,
+                    )
+            except BudgetCapExceeded:
+                raise
+            except Exception as exc:
+                # Atomarer Check nicht verfügbar (z.B. Test-Stub ohne Advisory Lock)
+                # Fallback auf einfachen In-Process-Check
+                _logger.warning(
+                    "check_cap_atomic fehlgeschlagen (%s) — Fallback auf In-Process-Lock. "
+                    "Multi-process Budget-Safety nicht garantiert.",
+                    exc,
+                )
+                current = await self._repository.current_month_total_usd()
+                if (current + estimated_usd) > self._cap_usd * self._threshold:
+                    raise BudgetCapExceeded(
+                        current_usd=current,
+                        attempted_usd=estimated_usd,
+                        cap_usd=self._cap_usd,
+                    ) from None
 
     async def record(
         self,

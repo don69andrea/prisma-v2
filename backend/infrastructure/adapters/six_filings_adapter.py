@@ -24,38 +24,27 @@ _RETRY_DELAYS = [1.0, 2.0, 4.0]  # Exponential backoff (Sekunden)
 # Statischer Fallback: ausgewählte SMI/SMIM Jahresberichte (öffentlich zugänglich)
 # Format: (ticker, url, filing_date, doc_type, language)
 _STATIC_FILINGS: list[tuple[str, str, date, str, str]] = [
+    # Nestlé — Annual Review 2025 (verifiziert 2026-06-11)
     (
         "NESN",
-        "https://www.nestle.com/sites/default/files/2024-03/2023-annual-report-en.pdf",
-        date(2024, 3, 14),
-        "Annual Report",
+        "https://www.nestle.com/sites/default/files/2026-02/annual-review-2025-en.pdf",
+        date(2026, 2, 13),
+        "Annual Review",
         "en",
     ),
+    # Nestlé — Finanzberichte + Corporate Governance 2025 (verifiziert 2026-06-11)
     (
-        "NOVN",
-        "https://www.novartis.com/sites/novartis_com/files/novartis-annual-report-2023.pdf",
-        date(2024, 1, 31),
-        "Annual Report",
+        "NESN",
+        "https://www.nestle.com/sites/default/files/2026-02/corp-governance-compensation-financial-statements-2025-en.pdf",
+        date(2026, 2, 13),
+        "Financial Statements",
         "en",
     ),
-    (
-        "ROG",
-        "https://assets.roche.com/f/176343/x/9c6abba0b4/2023-annual-report-en.pdf",
-        date(2024, 1, 30),
-        "Annual Report",
-        "en",
-    ),
-    (
-        "ABBN",
-        "https://global.abb/group/en/technology/annual-report",
-        date(2024, 2, 22),
-        "Annual Report",
-        "en",
-    ),
+    # Zurich Insurance — Annual Report 2024 (verifiziert 2026-06-11)
     (
         "ZURN",
-        "https://www.zurich.com/-/media/project/zwp/zurich/docs/en/investor-relations/annual-reports/2023/zurich-annual-report-2023.pdf",
-        date(2024, 2, 15),
+        "https://www.zurich.com/-/media/project/zwp/zurich/docs/en/investor-relations/annual-reports/2024/zurich-annual-report-2024.pdf",
+        date(2025, 3, 1),
         "Annual Report",
         "en",
     ),

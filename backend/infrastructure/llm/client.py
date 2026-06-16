@@ -12,6 +12,7 @@ Token-Counts und Kosten.
 """
 
 import asyncio
+import logging
 from collections.abc import Mapping
 from decimal import Decimal
 from typing import Any
@@ -19,6 +20,8 @@ from typing import Any
 from backend.application.services.cost_tracker import CostTracker
 from backend.domain.errors import UnknownModelError
 from backend.domain.llm_pricing import ModelPricing
+
+_logger = logging.getLogger(__name__)
 
 _ONE_MILLION = Decimal("1_000_000")
 
@@ -76,16 +79,34 @@ class LLMClient:
         if system is not None:
             sdk_kwargs["system"] = system
 
-        response = await self._anthropic.messages.create(**sdk_kwargs)
+        # Retry on HTTP 429 (rate limit) with exponential backoff — no external lib needed.
+        _retry_delays = [1.0, 2.0, 4.0]
+        response = None
+        for attempt, delay in enumerate(_retry_delays):
+            try:
+                response = await self._anthropic.messages.create(**sdk_kwargs)
+                break
+            except Exception as exc:
+                if getattr(exc, "status_code", None) != 429 or attempt == len(_retry_delays) - 1:
+                    raise
+                await asyncio.sleep(delay)
+        assert response is not None  # loop always raises or assigns
 
-        await self._cost_tracker.record(
-            provider="anthropic",
-            model=model,
-            feature=feature,
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
-            request_id=response.id,
-        )
+        try:
+            await self._cost_tracker.record(
+                provider="anthropic",
+                model=model,
+                feature=feature,
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                request_id=response.id,
+            )
+        except Exception:
+            _logger.exception(
+                "CRITICAL: Cost-Tracking fehlgeschlagen für %s — Budget-Cap wird NICHT aktualisiert!",
+                model,
+            )
+            # Nicht re-raise — LLM-Call war erfolgreich
         return response
 
     async def embed(
@@ -122,13 +143,20 @@ class LLMClient:
         # sonst blockiert die Event-Loop bei grossen Batches.
         response = await asyncio.to_thread(self._voyage.embed, texts, model=model)
 
-        await self._cost_tracker.record(
-            provider="voyage",
-            model=model,
-            feature=feature,
-            input_tokens=response.total_tokens,
-            output_tokens=0,
-        )
+        try:
+            await self._cost_tracker.record(
+                provider="voyage",
+                model=model,
+                feature=feature,
+                input_tokens=response.total_tokens,
+                output_tokens=0,
+            )
+        except Exception:
+            _logger.exception(
+                "CRITICAL: Cost-Tracking fehlgeschlagen für %s — Budget-Cap wird NICHT aktualisiert!",
+                model,
+            )
+            # Nicht re-raise — LLM-Call war erfolgreich
         return list(response.embeddings)
 
     def _estimate_messages_cost(

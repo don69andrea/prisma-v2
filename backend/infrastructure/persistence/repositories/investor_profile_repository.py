@@ -38,8 +38,12 @@ class SQLAInvestorProfileRepository(InvestorProfileRepository):
             investment_goal=p.investment_goal,
             time_horizon=p.time_horizon,
             risk_profile=p.risk_profile,
+            sector_hint=p.sector_hint,
             sector_affinity=list(p.sector_affinity),
             known_tickers=list(p.known_tickers),
+            investment_amount=p.investment_amount,
+            esg_preference=p.esg_preference,
+            income_preference=p.income_preference,
             confidence_score=p.confidence_score,
             onboarding_complete=p.onboarding_complete,
             created_at=p.created_at,
@@ -61,8 +65,12 @@ class SQLAInvestorProfileRepository(InvestorProfileRepository):
             investment_goal=r.investment_goal,  # type: ignore[arg-type]
             time_horizon=r.time_horizon,  # type: ignore[arg-type]
             risk_profile=r.risk_profile,  # type: ignore[arg-type]
+            sector_hint=r.sector_hint,
             sector_affinity=list(r.sector_affinity or []),
             known_tickers=list(r.known_tickers or []),
+            investment_amount=r.investment_amount,  # type: ignore[arg-type]
+            esg_preference=r.esg_preference,  # type: ignore[arg-type]
+            income_preference=r.income_preference,  # type: ignore[arg-type]
             confidence_score=r.confidence_score,
             onboarding_complete=r.onboarding_complete,
             created_at=_utc(r.created_at),

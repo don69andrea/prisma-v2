@@ -7,7 +7,7 @@
 
 ## Kontext
 
-PRISMA berechnet Rankings aus 5 Modellen. Das Quality-Classic-Modell benötigt 8 Fundamentalkennzahlen pro Aktie, die aus einer externen Quelle stammen müssen. Für die Capstone-Präsentation gelten drei harte Randbedingungen:
+PRISMA berechnet Rankings aus 5 Modellen. Das Quality-Classic-Modell benötigt 8 Fundamentalkennzahlen pro Aktie, die aus einer externen Quelle stammen müssen. Für die Modulprojekt-Präsentation gelten drei harte Randbedingungen:
 
 1. **Demo-Stabilität**: Ein Netzwerkfehler oder Rate-Limit während der Abschlusspräsentation ist inakzeptabel.
 2. **Reproduzierbarkeit**: Tests und Rankings müssen ohne Netzwerkzugang deterministisch reproduzierbar sein.
@@ -25,7 +25,7 @@ Scope dieses ADR: ausschliesslich die 8 Quality-Classic-Fundamentalkennzahlen. N
 - ➖ **Kein offizielles Rate-Limit-Versprechen** — Blocking-Fehler können jederzeit auftreten
 - ➖ Netzwerkabhängigkeit während der Präsentation; Ausfall = Demo kaputt
 - ➖ Nicht deterministisch — Testisolation erfordert aufwändiges Mocking
-- ➖ Verletzt das Capstone-Prinzip der CLAUDE.md: externe APIs dürfen nicht direkt aus Application-Services aufgerufen werden
+- ➖ Verletzt das Modulprojekt-Prinzip der CLAUDE.md: externe APIs dürfen nicht direkt aus Application-Services aufgerufen werden
 
 ### Option 2: Reines CSV-Snapshot-Modell (kein Adapter im Code)
 

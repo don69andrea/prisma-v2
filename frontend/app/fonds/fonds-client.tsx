@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Download, Plus, Trash2 } from 'lucide-react';
 
@@ -13,6 +13,27 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+
+function InfoBtn({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-muted text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ml-1"
+        aria-label="Mehr Info"
+      >
+        i
+      </button>
+      {show && (
+        <span className="absolute z-50 left-6 -top-1 w-52 text-xs bg-popover border border-border rounded-md px-2 py-1.5 text-popover-foreground shadow-lg">
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
 
 function pctFmt(v: string | null): string {
   if (v === null) return '—';
@@ -31,7 +52,16 @@ function MetricColumn({ label, metrics }: { label: string; metrics: PortfolioMet
       <div className="space-y-2">
         <MetricRow label="Erw. Rendite p.a." value={pctFmt(metrics.expected_return_pa)} positive />
         <MetricRow label="Volatilität p.a." value={pctFmt(metrics.volatility_pa)} />
-        <MetricRow label="Sharpe Ratio" value={ratioFmt(metrics.sharpe_ratio)} positive />
+        <MetricRow
+          label={
+            <span className="flex items-center gap-0.5">
+              Sharpe Ratio
+              <InfoBtn text="Rendite im Verhältnis zum Risiko. Über 1 ist gut — du wirst für das eingegangene Risiko gut entschädigt." />
+            </span>
+          }
+          value={ratioFmt(metrics.sharpe_ratio)}
+          positive
+        />
         <MetricRow label="Max. Drawdown" value={pctFmt(metrics.max_drawdown)} />
       </div>
     </div>
@@ -43,13 +73,13 @@ function MetricRow({
   value,
   positive,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string;
   positive?: boolean;
 }) {
   const isGood = positive
-    ? parseFloat(value) > 0
-    : value !== '—' && parseFloat(value) < 0;
+    ? parseFloat(String(value)) > 0
+    : value !== '—' && parseFloat(String(value)) < 0;
 
   return (
     <div className="flex justify-between items-center text-sm">
@@ -126,16 +156,24 @@ function loadStoredFonds() {
 }
 
 export function FondsClient() {
-  const [selectedFonds, setSelectedFonds] = useState(() => loadStoredFonds()?.selectedFonds ?? '');
-  const [positions, setPositions] = useState<Position[]>(
-    () => loadStoredFonds()?.positions ?? DEFAULT_FONDS_POSITIONS,
-  );
+  const [selectedFonds, setSelectedFonds] = useState('');
+  const [positions, setPositions] = useState<Position[]>(DEFAULT_FONDS_POSITIONS);
   const [error, setError] = useState('');
 
-  const { data: fondsList, isLoading: fondsLoading } = useQuery({
+  useEffect(() => {
+    const s = loadStoredFonds();
+    if (!s) return;
+    if (s.selectedFonds) setSelectedFonds(s.selectedFonds);
+    if (s.positions?.length) setPositions(s.positions);
+  }, []);
+
+  const { data: fondsList, isLoading: fondsLoading, isError: fondsError, refetch } = useQuery({
     queryKey: ['fonds'],
     queryFn: listFonds,
   });
+
+  const totalWeight = positions.reduce((sum, p) => sum + (parseFloat(p.weight) || 0), 0);
+  const weightError = totalWeight > 100 ? `Gesamtgewichtung: ${totalWeight.toFixed(1)}% — maximal 100% erlaubt` : null;
 
   const mutation = useMutation({
     mutationFn: compareFonds,
@@ -176,10 +214,22 @@ export function FondsClient() {
 
   return (
     <div className="space-y-6">
+      {fondsError && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400 flex items-center justify-between">
+          <span>Fondsliste konnte nicht geladen werden</span>
+          <button onClick={() => refetch()} className="text-xs hover:underline">Erneut versuchen</button>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="rounded-lg border bg-card p-4 space-y-4">
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">VIAC-Fonds</label>
-          {fondsLoading ? (
+          <label className="text-xs text-muted-foreground flex items-center">
+            VIAC-Fonds
+            <InfoBtn text="Ein Fonds bündelt viele Aktien in einem einzigen Wertpapier. Ein ETF (Exchange Traded Fund) ist ein börsengehandelter Fonds der einen Index abbildet." />
+          </label>
+          {fondsError ? (
+            <p className="text-xs text-destructive">Fondsliste konnte nicht geladen werden. Bitte Seite neu laden.</p>
+          ) : fondsLoading ? (
             <Skeleton className="h-9 w-64" />
           ) : (
             <select
@@ -235,10 +285,11 @@ export function FondsClient() {
           </Button>
         </div>
 
+        {weightError && <p className="text-xs text-destructive">{weightError}</p>}
         {error && <p className="text-xs text-destructive">{error}</p>}
 
         <div className="flex gap-2">
-          <Button type="submit" size="sm" disabled={mutation.isPending || fondsLoading}>
+          <Button type="submit" size="sm" disabled={mutation.isPending || fondsLoading || !!weightError || totalWeight === 0}>
             {mutation.isPending ? 'Berechne…' : 'Vergleichen'}
           </Button>
           {JSON.stringify(positions) !== JSON.stringify(DEFAULT_FONDS_POSITIONS) && (

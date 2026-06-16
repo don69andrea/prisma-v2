@@ -6,6 +6,7 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from backend.application.services.monte_carlo_service import (
@@ -13,6 +14,7 @@ from backend.application.services.monte_carlo_service import (
     MonteCarloInput,
     MonteCarloResult,
     MonteCarloService,
+    _fetch_ticker_params,
     _run_gbm,
     build_interpretation,
 )
@@ -177,3 +179,69 @@ def test_build_interpretation_zero_initial_value() -> None:
     text = build_interpretation(result, initial_value=0.0, years=10)
     assert isinstance(text, str)
     assert len(text) > 20
+
+
+def _make_price_dataframe(n: int = 30) -> pd.DataFrame:
+    closes = 100.0 + np.cumsum(np.random.default_rng(1).normal(0, 1, n))
+    return pd.DataFrame({"Close": closes})
+
+
+@pytest.mark.asyncio
+async def test_fetch_ticker_params_uses_swiss_suffix_mapping_for_rog() -> None:
+    """F-PORT-1 (K-2): ROG muss als RO.SW an yfinance gesendet werden, nicht als ROG.
+
+    Ohne Suffix-Mapping matched yfinance "ROG" auf Rogers Corporation (US,
+    NYQ) statt Roche Holding AG — komplett falsche Firma, falsche Daten.
+    """
+    captured_symbol: dict[str, str] = {}
+
+    def fake_download(ticker: str, **kwargs: Any) -> pd.DataFrame:
+        captured_symbol["symbol"] = ticker
+        return _make_price_dataframe()
+
+    with patch("yfinance.download", side_effect=fake_download) as mock_download:
+        await _fetch_ticker_params("ROG")
+
+    mock_download.assert_called_once()
+    assert captured_symbol["symbol"] == "RO.SW"
+    assert captured_symbol["symbol"] != "ROG"
+
+
+@pytest.mark.asyncio
+async def test_fetch_ticker_params_uses_swiss_suffix_mapping_for_plain_ticker() -> None:
+    """Normale SIX-Ticker (ohne Override) erhalten das .SW-Suffix, z.B. NESN -> NESN.SW."""
+    captured_symbol: dict[str, str] = {}
+
+    def fake_download(ticker: str, **kwargs: Any) -> pd.DataFrame:
+        captured_symbol["symbol"] = ticker
+        return _make_price_dataframe()
+
+    with patch("yfinance.download", side_effect=fake_download):
+        await _fetch_ticker_params("NESN")
+
+    assert captured_symbol["symbol"] == "NESN.SW"
+
+
+@pytest.mark.asyncio
+async def test_fetch_ticker_params_raises_on_nan_prices() -> None:
+    """Liefert yfinance NaN-verseuchte Kursdaten, muss eine klare ValueError fliegen
+    (statt eines generischen "cannot convert float NaN to integer")."""
+    nan_df = pd.DataFrame({"Close": [100.0, np.nan, 102.0, np.nan, 105.0]})
+
+    with (
+        patch("yfinance.download", return_value=nan_df),
+        pytest.raises(ValueError, match="NaN|nicht-endlich|finite|Inf"),
+    ):
+        await _fetch_ticker_params("ROG", allow_fallback=False)
+
+
+@pytest.mark.asyncio
+async def test_fetch_ticker_params_falls_back_on_error_by_default() -> None:
+    """Standardverhalten (allow_fallback=True, Default für simulate()) bleibt robust:
+    bei yfinance-Fehlern wird auf Default-Werte zurückgefallen statt zu crashen."""
+    with patch("yfinance.download", side_effect=RuntimeError("network down")):
+        mu, sigma, returns = await _fetch_ticker_params("ROG")
+
+    assert isinstance(mu, float)
+    assert isinstance(sigma, float)
+    assert isinstance(returns, np.ndarray)

@@ -221,13 +221,13 @@ async def test_sync_universe_sp500_synced_count_is_positive(http_client: AsyncCl
     assert body["synced_count"] + len(body["failed_tickers"]) == 2  # SP500 hat 2 Tickers
 
 
-async def test_sync_universe_smi_tickers_not_in_stub_land_in_failed(
+async def test_sync_universe_smi_tickers_now_in_stub_land_synced(
     http_client: AsyncClient,
 ) -> None:
-    """SMI-Tickers (NESN/NOVN/ROG) fehlen im StubFundamentalsProvider → alle failed."""
+    """SMI-Tickers (NESN/NOVN/ROG) sind im StubFundamentalsProvider — alle synced."""
     body = (await http_client.post(f"/api/v1/universes/{_SMI_ID}/sync")).json()
-    assert body["synced_count"] == 0
-    assert set(body["failed_tickers"]) == {"NESN", "NOVN", "ROG"}
+    assert body["synced_count"] == 3
+    assert body["failed_tickers"] == []
 
 
 async def test_sync_universe_ticker_count_invariant(http_client: AsyncClient) -> None:

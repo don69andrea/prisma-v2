@@ -36,7 +36,7 @@ class StubMarketDataProvider(MarketDataProvider):
 
         index = pd.bdate_range(end=self._end_date, periods=_TRADING_DAYS, tz="UTC")
 
-        data: dict[str, np.ndarray] = {}  # type: ignore[type-arg]
+        data: dict[str, np.ndarray] = {}
         for ticker in tickers:
             seed = zlib.crc32(ticker.encode("utf-8"))
             rng = np.random.default_rng(seed)

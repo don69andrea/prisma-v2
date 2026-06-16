@@ -251,11 +251,15 @@ async function mockCryptoApi(page: Page) {
 }
 
 async function setSimpleMode(page: Page) {
-  await page.evaluate(() => localStorage.setItem('prisma-mode', 'simple'));
+  // addInitScript statt evaluate: evaluate() vor dem ersten goto() läuft auf
+  // about:blank (null origin), wo Chromium den Zugriff auf localStorage mit
+  // einem SecurityError verweigert. addInitScript wird stattdessen erst bei
+  // der nächsten Navigation im Kontext der echten Origin ausgeführt.
+  await page.addInitScript(() => localStorage.setItem('prisma-mode', 'simple'));
 }
 
 async function setProMode(page: Page) {
-  await page.evaluate(() => localStorage.setItem('prisma-mode', 'pro'));
+  await page.addInitScript(() => localStorage.setItem('prisma-mode', 'pro'));
 }
 
 // ── Seiten-Grundstruktur ──────────────────────────────────────────────────────
@@ -439,7 +443,9 @@ test.describe('Pro Mode — Score-Aufschlüsselung', () => {
     // Nach Öffnen: Komponenten-Labels sichtbar
     await expect(page.getByText('Momentum')).toBeVisible();
     await expect(page.getByText('Trend')).toBeVisible();
-    await expect(page.getByText('Sentiment')).toBeVisible();
+    // exact: true, da "Sentiment" sonst auch im Seiten-Untertitel
+    // ("...technisch-sentimentale Prognose...") als Substring matcht.
+    await expect(page.getByText('Sentiment', { exact: true })).toBeVisible();
   });
 
   test('Accordion zeigt Risiko-Komponente', async ({ page }) => {

@@ -32,7 +32,7 @@ def _make_input(**kwargs: Any) -> MonteCarloInput:
     return MonteCarloInput(**defaults)
 
 
-def _mock_params(n: int = 2) -> tuple[np.ndarray, np.ndarray, np.ndarray]:  # type: ignore[type-arg]
+def _mock_params(n: int = 2) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return (
         np.array([0.0005] * n),
         np.array([0.012] * n),

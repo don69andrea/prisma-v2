@@ -45,7 +45,7 @@ def _build_service(
     mock_rss.fetch_articles.return_value = fetch_results or []
 
     mock_llm = AsyncMock()
-    mock_llm.embed.return_value = [[0.1] * 2048]
+    mock_llm.embed.return_value = [[0.1] * 1024]
 
     svc = NewsIngestionService(
         news_repo=mock_repo,

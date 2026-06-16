@@ -66,7 +66,7 @@ describe('RankingsForm', () => {
   it('disabled Run-Button solange kein Universe gewählt', async () => {
     mockListUniverses.mockResolvedValue(sampleUniverses);
     renderForm();
-    const button = await screen.findByRole('button', { name: /Run starten/i });
+    const button = await screen.findByRole('button', { name: /Analyse starten/i });
     expect(button).toBeDisabled();
   });
 
@@ -75,8 +75,8 @@ describe('RankingsForm', () => {
     mockCreateRun.mockResolvedValue(sampleRun);
     renderForm();
     await screen.findByText('SMI');
-    fireEvent.change(screen.getByLabelText(/Universe/i), { target: { value: 'u-1' } });
-    fireEvent.click(screen.getByRole('button', { name: /Run starten/i }));
+    fireEvent.change(screen.getByLabelText(/Welche Aktien/i), { target: { value: 'u-1' } });
+    fireEvent.click(screen.getByRole('button', { name: /Analyse starten/i }));
     await waitFor(() => expect(mockCreateRun).toHaveBeenCalledWith('u-1'));
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/rankings/run-42'));
   });
@@ -86,8 +86,8 @@ describe('RankingsForm', () => {
     mockCreateRun.mockRejectedValue(new Error('Backend down'));
     renderForm();
     await screen.findByText('SMI');
-    fireEvent.change(screen.getByLabelText(/Universe/i), { target: { value: 'u-1' } });
-    fireEvent.click(screen.getByRole('button', { name: /Run starten/i }));
+    fireEvent.change(screen.getByLabelText(/Welche Aktien/i), { target: { value: 'u-1' } });
+    fireEvent.click(screen.getByRole('button', { name: /Analyse starten/i }));
     await waitFor(() => expect(screen.getByText(/Backend down/)).toBeInTheDocument());
   });
 
@@ -95,7 +95,7 @@ describe('RankingsForm', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('universeId=u-2'));
     mockListUniverses.mockResolvedValue(sampleUniverses);
     renderForm();
-    const select = await screen.findByLabelText(/Universe/i);
+    const select = await screen.findByLabelText(/Welche Aktien/i);
     await waitFor(() => expect(select).toHaveValue('u-2'));
   });
 });

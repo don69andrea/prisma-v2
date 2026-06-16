@@ -125,32 +125,32 @@ export function ChatDrawer() {
         style={{
           background: 'rgba(8,8,20,0.92)',
           backdropFilter: 'blur(20px)',
-          height: '520px',
+          height: '570px',
           boxShadow: '0 0 40px rgba(168,85,247,0.15), 0 25px 50px rgba(0,0,0,0.5)',
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-sm font-semibold text-white">PRISMA Assistant</span>
           </div>
-          <button onClick={reset} className="text-slate-500 hover:text-slate-300 transition-colors">
+          <button onClick={reset} className="text-muted-foreground hover:text-foreground transition-colors">
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1" style={{ height: '380px' }}>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1" style={{ height: '390px' }}>
           {messages.length === 0 && (
             <div className="text-center pt-8 space-y-3">
-              <p className="text-xs text-slate-600">Stell mir eine Frage über PRISMA-Daten</p>
+              <p className="text-xs text-muted-foreground">Stell mir eine Frage über PRISMA-Daten</p>
               <div className="space-y-2">
                 {SUGGESTED.default.map((q) => (
                   <button
                     key={q}
                     onClick={() => sendMessage(q)}
-                    className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-slate-800/60 border border-slate-700/60 text-slate-400 hover:border-purple-500/40 hover:text-slate-300 transition-all"
+                    className="block w-full text-left text-xs px-3 py-2 rounded-lg bg-muted/60 border border-border text-muted-foreground hover:border-purple-500/40 hover:text-foreground transition-all"
                   >
                     {q}
                   </button>
@@ -169,14 +169,41 @@ export function ChatDrawer() {
           ))}
         </div>
 
+        {/* Session cost estimate */}
+        {messages.length > 0 && (
+          <div className="px-3 py-1 text-xs text-muted-foreground text-right border-t border-border">
+            Session: ~CHF {((messages.length / 2) * 0.0015).toFixed(3)}
+          </div>
+        )}
+
+        {/* Tool capabilities hint */}
+        <div className="flex flex-wrap gap-1.5 px-3 py-2 border-t border-border">
+          <span className="text-[10px] font-medium text-muted-foreground self-center">Ich kann:</span>
+          {[
+            "Aktien suchen",
+            "Aktien filtern",
+            "Factsheets laden",
+            "Aktien vergleichen",
+            "Makrokontext abfragen",
+            "Rankings anzeigen",
+          ].map((cap) => (
+            <span
+              key={cap}
+              className="text-[10px] px-2 py-0.5 rounded-full bg-muted/60 border border-border text-muted-foreground"
+            >
+              {cap}
+            </span>
+          ))}
+        </div>
+
         {/* Input */}
-        <div className="px-3 pb-3 border-t border-slate-800 pt-3">
-          <div className="flex items-center gap-2 bg-slate-800/60 rounded-xl px-3 py-2 border border-slate-700/60 focus-within:border-purple-500/40 transition-colors">
+        <div className="px-3 pb-3 pt-2">
+          <div className="flex items-center gap-2 bg-muted/60 rounded-xl px-3 py-2 border border-border focus-within:border-purple-500/40 transition-colors">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
-              placeholder="Frag PRISMA..."
+              placeholder="Frag mich nach Aktien, Vergleichen, Makro oder Rankings..."
               disabled={streaming}
               className="flex-1 bg-transparent text-sm text-white placeholder-slate-600 outline-none"
             />

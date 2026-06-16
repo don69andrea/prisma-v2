@@ -7,7 +7,7 @@ import { SwissBadge } from '@/components/ui/swiss-badge';
 import { ExportReportButton } from './ExportReportButton';
 
 function formatMarketCap(value: string): string {
-  const n = parseFloat(value);
+  const n = Number(value);
   if (n >= 1e12) return `CHF ${(n / 1e12).toFixed(1)} Bio.`;
   if (n >= 1e9) return `CHF ${(n / 1e9).toFixed(1)} Mrd.`;
   if (n >= 1e6) return `CHF ${(n / 1e6).toFixed(0)} Mio.`;

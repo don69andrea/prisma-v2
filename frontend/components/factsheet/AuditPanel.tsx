@@ -8,24 +8,54 @@ import { getAuditTrail, computeAndSaveAudit, type AuditRecord } from '@/lib/api/
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { cn } from '@/lib/utils';
 
-const SIGNAL_VARIANT: Record<string, 'success' | 'warning' | 'outline'> = {
-  BUY:   'success',
-  HOLD:  'warning',
-  WATCH: 'outline',
+const SIGNAL_VARIANT: Record<string, 'success' | 'warning' | 'destructive'> = {
+  BUY:  'success',
+  HOLD: 'warning',
+  SELL: 'destructive',
 };
 
-function ScoreBar({ label, value, max = 100 }: { label: string; value: number; max?: number }) {
+function scoreInterpretation(score: number): { label: string; color: string } {
+  if (score >= 80) return { label: 'Ausgezeichnet', color: 'text-emerald-600 dark:text-emerald-400' };
+  if (score >= 65) return { label: 'Gut', color: 'text-green-600 dark:text-green-400' };
+  if (score >= 50) return { label: 'Durchschnittlich', color: 'text-amber-600 dark:text-amber-400' };
+  if (score >= 35) return { label: 'Schwach', color: 'text-orange-600 dark:text-orange-400' };
+  return { label: 'Sehr schwach', color: 'text-red-600 dark:text-red-400' };
+}
+
+function ScoreBar({
+  label,
+  value,
+  max = 100,
+  tooltip,
+  showInterpretation = false,
+}: {
+  label: string;
+  value: number;
+  max?: number;
+  tooltip?: string;
+  showInterpretation?: boolean;
+}) {
   const pct = Math.min(100, Math.round((value / max) * 100));
   const color =
     pct >= 65 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-slate-400';
+  const interp = showInterpretation ? scoreInterpretation(value) : null;
 
   return (
     <div className="space-y-0.5">
       <div className="flex justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium tabular-nums">{value.toFixed(1)}</span>
+        <span className="inline-flex items-center gap-1 text-muted-foreground">
+          {label}
+          {tooltip && <InfoTooltip text={tooltip} side="top" />}
+        </span>
+        <div className="flex items-center gap-1.5">
+          {interp && (
+            <span className={cn('text-[10px] font-medium', interp.color)}>{interp.label}</span>
+          )}
+          <span className="font-medium tabular-nums">{value.toFixed(1)}</span>
+        </div>
       </div>
       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
         <div className={cn('h-full rounded-full', color)} style={{ width: `${pct}%` }} />
@@ -50,10 +80,30 @@ function AuditCard({ record }: { record: AuditRecord }) {
       </div>
 
       <div className="space-y-2">
-        <ScoreBar label="Gesamt-Score" value={record.weighted_score} />
-        <ScoreBar label="Quant (45%)" value={record.quant_score} />
-        <ScoreBar label="ML (35%)" value={record.ml_score} />
-        <ScoreBar label="Macro (20%)" value={record.macro_score} />
+        <ScoreBar
+          label="Gesamt-Score"
+          value={record.weighted_score}
+          tooltip="Gesamtbewertung von 0–100 aus allen Dimensionen. ≥70 = BUY, 40–69 = HOLD, <40 = SELL."
+          showInterpretation
+        />
+        <ScoreBar
+          label="Quant (45%)"
+          value={record.quant_score}
+          tooltip="Quantitativer Score aus Value (KGV/KBV), Quality (Eigenkapitalrendite, Verschuldung) und Income (Dividendenrendite/-wachstum)."
+          showInterpretation
+        />
+        <ScoreBar
+          label="KI-Score (35%)"
+          value={record.ml_score}
+          tooltip="Prognose des Machine-Learning-Modells (LightGBM) basierend auf 23 historischen Merkmalen. Zeigt die Outperform-Wahrscheinlichkeit."
+          showInterpretation
+        />
+        <ScoreBar
+          label="Makro (20%)"
+          value={record.macro_score}
+          tooltip="Bewertet das makroökonomische Umfeld: SNB-Zinssatz, EUR/CHF-Kurs, globale PMI-Daten. Hoher Wert = günstiges Umfeld."
+          showInterpretation
+        />
       </div>
 
       {record.explanation_de && (
@@ -93,6 +143,10 @@ export function AuditPanel({ ticker }: Props) {
           <CardTitle className="text-base font-medium flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-muted-foreground" />
             Entscheidungs-Audit
+            <InfoTooltip
+              text="Transparente Aufschlüsselung wie das BUY/HOLD/SELL-Signal berechnet wird. Zeigt Quant-Score (45%), KI-Score (35%) und Makro-Score (20%) mit Gewichtung."
+              side="top"
+            />
           </CardTitle>
           <Button
             size="sm"

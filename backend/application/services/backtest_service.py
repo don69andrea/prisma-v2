@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from datetime import UTC, date, datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 import numpy as np
@@ -49,6 +49,7 @@ class BacktestService:
         end_date: date,
         top_n: int,
         benchmark_ticker: str,
+        mode: Literal["quant_only", "quant_ml", "full"] = "full",
     ) -> BacktestResult:
         # 1. Load run
         run = await self._run_repo.get(model_run_id)
@@ -60,18 +61,34 @@ class BacktestService:
         if not raw_results:
             raise NoResultsFound(model_run_id)
 
-        sorted_results = sorted(raw_results, key=lambda r: r["total_rank"])
+        # 3. Determine which ranking score to use based on mode.
+        #    - quant_only: sort by quant_rank only (ignores ML/macro signals)
+        #    - quant_ml:   sort by quant + ML combined rank (ignores macro)
+        #    - full:       sort by total_rank (all signals: quant + ML + macro)
+        sort_key: str
+        if mode == "quant_only":
+            sort_key = "quant_rank"
+        elif mode == "quant_ml":
+            sort_key = "ml_rank"
+        else:
+            sort_key = "total_rank"
+
+        # Fall back to total_rank when the mode-specific key is absent
+        if raw_results and sort_key not in raw_results[0]:
+            sort_key = "total_rank"
+
+        sorted_results = sorted(raw_results, key=lambda r: r.get(sort_key, r["total_rank"]))
         top_n_tickers = [r["ticker"] for r in sorted_results[:top_n]]
 
-        # 3. Get universe for equal-weight comparison portfolio
+        # 4. Get universe for equal-weight comparison portfolio
         universe = await self._universe_repo.get(run.universe_id)
         all_tickers = list(universe.tickers) if universe else top_n_tickers
 
-        # 4. Fetch market data — get_prices returns last 504 days (no date params)
+        # 5. Fetch market data — get_prices returns last 504 days (no date params)
         needed = list({*top_n_tickers, *all_tickers, benchmark_ticker})
         prices_full = await self._market_data.get_prices(needed)
 
-        # 5. Filter by date range
+        # 6. Filter by date range
         start_ts = pd.Timestamp(start_date, tz="UTC")
         end_ts = pd.Timestamp(end_date, tz="UTC")
         prices = prices_full.loc[start_ts:end_ts]
@@ -80,20 +97,29 @@ class BacktestService:
             # Fallback: use the full dataset if date range produces no overlap
             prices = prices_full
 
-        # 6. Simulate 3 portfolios
+        # 7. Simulate 3 portfolios
         prisma_series = self._simulate_portfolio(prices, top_n_tickers)
         universe_series = self._simulate_portfolio(prices, all_tickers)
         benchmark_series = self._simulate_portfolio(prices, [benchmark_ticker])
 
-        # 7. Build dates list (shared index)
+        # 8. Build dates list (shared index)
         dates = [ts.date() for ts in prisma_series.index]
 
-        # 8. Build result
+        # 9. Determine the actually covered window. get_prices() always
+        #    returns the last 504 trading days regardless of start_date,
+        #    so the effective window can be shorter than requested — the
+        #    response must expose this explicitly (Bug: F-BTCR-1 / W-11).
+        actual_start_date = dates[0] if dates else start_date
+        actual_end_date = dates[-1] if dates else end_date
+
+        # 10. Build result
         result = BacktestResult(
             id=uuid4(),
             model_run_id=model_run_id,
             start_date=start_date,
             end_date=end_date,
+            actual_start_date=actual_start_date,
+            actual_end_date=actual_end_date,
             top_n=top_n,
             benchmark_ticker=benchmark_ticker,
             prisma_metrics=self._compute_metrics(prisma_series),

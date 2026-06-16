@@ -1,6 +1,6 @@
 # PRISMA Demo-Skript
 
-> **Zweck:** Strukturierter Walk-Through für die Capstone-Live-Demo (~10-15min).
+> **Zweck:** Strukturierter Walk-Through für die Live-Demo (~10-15min).
 > **Demo-URL:** http://localhost:3000 (lokal) bzw. Live auf Render (siehe README)
 > **Stand:** 2026-06-01 — **alle Features sind in `main` gemerged** (PRs #142–#155). Der frühere Integrations-Branch `demo/all-features` ist obsolet.
 
@@ -8,7 +8,7 @@
 
 ```bash
 # Backend
-cd /Users/sheyla/Projects/prisma-capstone
+cd /path/to/prisma-v2
 DATABASE_URL=postgresql+asyncpg://prisma:prisma@localhost:5432/prisma \
   .venv/bin/uvicorn backend.interfaces.rest.app:create_app --factory --reload --port 8000
 
@@ -117,7 +117,7 @@ cd frontend && npm run dev
 ## 5. Q&A — Likely Questions
 
 ### "Wie ist die Berechnung der Modelle?"
-- Jedes Modell ist eine pure Python-Funktion in `backend/domain/models/`. Spec: `docs/specs/2026-04-21-prisma-capstone-design.md`.
+- Jedes Modell ist eine pure Python-Funktion in `backend/domain/models/`. Spec: `docs/specs/2026-04-21-prisma-v2-design.md`.
 - Quality Classic: P/E, P/B, FCF-Yield, Operating Margin, Div-Yield, D/E, EPS-Growth, Sales-Growth gewichtet.
 - Andere ähnlich — verschiedene Faktor-Gruppen.
 - Per-Modell-Ranks aggregiert via `weighted_avg`, Default Equal-Weights (jedes Modell 20%).
@@ -138,7 +138,7 @@ cd frontend && npm run dev
 - Drei Stellen:
   1. **LLM-Wizard** für Universe-Erstellung (Haiku 4.5 — schnell, billig)
   2. **Research-Memos** pro Top-Pick (Sonnet 4.6 für Synthese-Qualität)
-  3. **Development-Tool** — Capstone wurde mit Claude Code entwickelt (siehe `docs/AI-USAGE.md`)
+  3. **Development-Tool** — Projekt wurde mit Claude Code entwickelt (siehe `docs/AI-USAGE.md`)
 - Klare Trennung: PRISMA als App ist NICHT abhängig von Claude für Kern-Funktion. Quantitative Rankings funktionieren ohne LLM. LLM ist eine Erweiterung, nicht das Fundament.
 
 ### "Was würde ich anders machen wenn ich nochmal anfangen würde?"

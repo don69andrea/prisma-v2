@@ -34,6 +34,12 @@ PRICING: dict[str, ModelPricing] = {
         output_per_mtok=Decimal("5.00"),
         embed_per_mtok=None,
     ),
+    # Vollständiger Model-ID wie von der API erwartet — identische Preise
+    "claude-haiku-4-5-20251001": ModelPricing(
+        input_per_mtok=Decimal("1.00"),
+        output_per_mtok=Decimal("5.00"),
+        embed_per_mtok=None,
+    ),
     "voyage-3-large": ModelPricing(
         input_per_mtok=None,
         output_per_mtok=None,

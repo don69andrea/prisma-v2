@@ -10,6 +10,7 @@ from backend.domain.services.langfrist_score_calculator import LangfristScoreCal
 from backend.domain.services.swiss_quant_scorer import SwissQuantScorer
 from backend.domain.value_objects.eligibility_result import EligibilityResult
 from backend.domain.value_objects.langfrist_score import LangfristScore
+from backend.domain.value_objects.swiss_fundamentals import SwissFundamentals
 from backend.domain.value_objects.swiss_quant_score import SwissQuantScore
 
 
@@ -89,6 +90,12 @@ class SwissMarketService:
         except Exception:
             vol = None
         return self._langfrist.calculate(upper, fundamentals, vol)
+
+    async def get_fundamentals_for_ticker(self, ticker: str) -> SwissFundamentals:
+        """Gibt Fundamentaldaten (P/E, P/B, EPS, Dividendenrendite) für einen Ticker zurück."""
+        if self._market_data is None:
+            raise RuntimeError("SwissMarketService ohne MarketDataProvider konfiguriert")
+        return await self._market_data.get_fundamentals(ticker.upper())
 
     async def check_3a_eligibility(self, ticker: str) -> EligibilityResult:
         """Prüft 3a-Eignung eines Swiss Stocks nach BVV2/FINMA-Regeln."""

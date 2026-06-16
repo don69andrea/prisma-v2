@@ -5,7 +5,7 @@
 **Task-ID:** R2.4-4
 **Autor:** Helin Koyuncu (mit Claude Code Sonnet 4.6)
 **Branch:** `feature/helin-navigation`
-**Bezieht sich auf:** `docs/specs/2026-04-21-prisma-capstone-design.md` §11 (Frontend), `CLAUDE.md` §R2.4-4
+**Bezieht sich auf:** `docs/specs/2026-04-21-prisma-v2-design.md` §11 (Frontend), `CLAUDE.md` §R2.4-4
 
 ---
 
@@ -173,7 +173,7 @@ erzeugt horizontales Scrollen auf kleinen Viewports. Die Gruppenbezeichnungen
 ## Nicht-Ziele
 
 - **Kein Hamburger-Menu / Drawer-Navigation** — zu aufwändig für R2.4-Scope
-- **Kein Icon-Set pro Gruppe** — Text-Labels reichen für Capstone-Demo
+- **Kein Icon-Set pro Gruppe** — Text-Labels reichen für Demo
 - **Keine Änderung der Backend-Routes oder API-Endpunkte**
 - **Keine Änderung der Seiteninhalt-Komponenten** — nur Nav-Struktur
 - **Kein Einführen neuer npm-Packages** — bestehende Tailwind-Klassen reichen

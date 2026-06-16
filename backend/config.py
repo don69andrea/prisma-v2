@@ -44,11 +44,38 @@ class Settings(BaseSettings):
     # Leer = opt-in disabled, kein Auth-Enforcement.
     tool_api_key: str = ""
 
+    # FinancialModelingPrep API-Key (kostenloser Tier, 250 Calls/Tag).
+    # Leer oder bekannte Platzhalter ("your-fmp-key") = FMP-Adapter
+    # deaktiviert; kein Fehler, kein HTTP-Call. Kein Boot-Fehler in
+    # Entwicklung/CI ohne echten Key.
+    fmp_api_key: str = ""
+
+    # SendGrid API-Key für Alert-E-Mails.
+    # Leer oder bekannte Platzhalter = E-Mail-Versand graceful deaktiviert.
+    sendgrid_api_key: str = ""
+
+    # CoinGecko API Key (optional — Free Tier: 30 Req/min, 10.000/Monat)
+    coingecko_api_key: str = ""
+
+    # Krypto-Feature aktivieren (default: true)
+    crypto_feature_enabled: bool = True
+
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 
     max_concurrent_batch_workers: int = 3
     stale_batch_timeout_seconds: int = 600
+
+    # Signal-Aggregation: Gewichtung der drei Signal-Quellen (Summe muss 1.0 ergeben)
+    # Konfigurierbar via ENV: SIGNAL_QUANT_WEIGHT, SIGNAL_ML_WEIGHT, SIGNAL_MACRO_WEIGHT
+    signal_quant_weight: float = 0.45
+    signal_ml_weight: float = 0.35
+    signal_macro_weight: float = 0.20
+
+    @field_validator("signal_macro_weight", mode="after")
+    @classmethod
+    def validate_signal_weights_sum(cls, macro: float) -> float:
+        return macro
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -75,12 +102,25 @@ class Settings(BaseSettings):
         return decimal_value
 
     @model_validator(mode="after")
+    def _validate_signal_weights(self) -> "Settings":
+        total = self.signal_quant_weight + self.signal_ml_weight + self.signal_macro_weight
+        if abs(total - 1.0) > 0.001:
+            raise ValueError(
+                f"SIGNAL_*_WEIGHT Summe muss 1.0 ergeben, erhalten: {total:.4f} "
+                f"(quant={self.signal_quant_weight}, ml={self.signal_ml_weight}, macro={self.signal_macro_weight})"
+            )
+        return self
+
+    @model_validator(mode="after")
     def _api_key_required_in_production(self) -> "Settings":
-        """In Production-Umgebung muss API_KEY explizit gesetzt sein —
-        sonst booten wir nicht. Verhindert, dass ein leerer/Default-Wert
-        unbemerkt in Production landet."""
-        if self.environment == "production" and not self.api_key:
-            raise ValueError("API_KEY muss in der Production-Umgebung gesetzt sein")
+        """In Production-Umgebung müssen API_KEY und ANTHROPIC_API_KEY explizit
+        gesetzt sein — sonst booten wir nicht. Verhindert, dass ein leerer/
+        Default-Wert unbemerkt in Production landet."""
+        if self.environment == "production":
+            if not self.api_key:
+                raise ValueError("API_KEY muss in der Production-Umgebung gesetzt sein")
+            if not self.anthropic_api_key:
+                raise ValueError("ANTHROPIC_API_KEY muss in der Production-Umgebung gesetzt sein")
         return self
 
 

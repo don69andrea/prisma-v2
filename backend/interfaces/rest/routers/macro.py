@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from backend.application.agents.macro_agent import MacroIntelligenceAgent
 from backend.application.services.macro_service import MacroService
 from backend.application.services.retrieval_service import RetrievalService
-from backend.interfaces.rest.dependencies import get_llm_client, get_retrieval_service
+from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
+from backend.interfaces.rest.dependencies import (
+    get_llm_client,
+    get_retrieval_service,
+    get_swiss_stock_repository,
+)
 from backend.interfaces.rest.schemas.macro import MacroContextResponse, MacroScoreResponse
 
 router = APIRouter(prefix="/api/v1/macro", tags=["macro"])
@@ -68,14 +73,28 @@ async def get_macro_context(
     ),
 )
 async def get_macro_score(
-    ticker: str,
+    ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$"),
     service: MacroService = Depends(get_macro_service),
     retrieval: RetrievalService = Depends(get_retrieval_service),
+    stock_repo: SwissStockRepository = Depends(get_swiss_stock_repository),
 ) -> MacroScoreResponse:
     """Berechnet den Makro-Score für einen Ticker (rule-based, immer 200)."""
     agent = MacroIntelligenceAgent(macro_service=service)
+
+    sector: str | None = None
     try:
-        macro_score = await agent.get_macro_score(ticker=ticker)
+        stock = await stock_repo.get_by_ticker(ticker)
+        if stock is not None:
+            sector = stock.sector
+    except Exception:
+        _logger.warning(
+            "Sektor-Lookup für %s fehlgeschlagen — fahre ohne Sektor-Hint fort",
+            ticker,
+            exc_info=True,
+        )
+
+    try:
+        macro_score = await agent.get_macro_score(ticker=ticker, sector=sector)
     except Exception as exc:
         _logger.exception("Fehler beim Berechnen des Makro-Scores für %s", ticker)
         raise HTTPException(

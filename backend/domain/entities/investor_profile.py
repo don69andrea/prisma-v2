@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class InvestorProfile(BaseModel):
@@ -22,6 +22,7 @@ class InvestorProfile(BaseModel):
     # Turn 1 — Beruf & Wissensstand
     profession: str | None = None
     financial_knowledge: Literal["low", "medium", "high"] = "low"
+    sector_hint: str | None = None  # aus Beruf-Klassifikation (Turn 1), z.B. "tech", "pharma"
 
     # Turn 2 — Ziel
     investment_goal: Literal[
@@ -40,12 +41,36 @@ class InvestorProfile(BaseModel):
     sector_affinity: list[str] = Field(default_factory=list)
     known_tickers: list[str] = Field(default_factory=list)
 
+    # Turn 5 — Anlagebetrag (Grössenordnung)
+    investment_amount: Literal["under_10k", "10k_100k", "over_100k"] = "10k_100k"
+
+    # Turn 6 — ESG-Präferenz
+    esg_preference: Literal["yes", "no", "indifferent"] = "indifferent"
+
+    # Turn 7 — Rendite-Präferenz: Dividenden vs. Wachstum
+    income_preference: Literal["dividends", "growth", "balanced"] = "balanced"
+
     # Klassifikations-Zustand
     confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
     onboarding_complete: bool = False
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    @model_validator(mode="after")
+    def _validate_onboarding_consistency(self) -> InvestorProfile:
+        """Wenn Onboarding abgeschlossen ist, muss der Discovery-Flow durchlaufen worden sein.
+
+        Konkret: Turn 1 setzt 'profession', d.h. wenn onboarding_complete=True aber
+        profession=None, wurde der Flow nie gestartet — das ist ein Fehler.
+        'moderate' ist ein valides explizites Risikoprofil und darf hier nicht abgelehnt werden.
+        """
+        if self.onboarding_complete and self.profession is None:
+            raise ValueError(
+                "onboarding_complete=True erfordert einen abgeschlossenen Discovery-Flow "
+                "(profession muss gesetzt sein — Turn 1 wurde nicht beantwortet)."
+            )
+        return self
 
     @property
     def risk_label(self) -> str:

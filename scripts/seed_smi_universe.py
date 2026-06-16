@@ -35,14 +35,14 @@ SMI_20 = [
     # Luhn-Validator: validate_ch_isin() in backend/domain/validators/isin.py
     # Stand Issue #26: 3 Duplikate und 2 Luhn-Fehler identifiziert und behoben.
     ("NESN", "CH0038863350", "Nestlé SA", "Consumer Staples"),  # Luhn OK ✓
-    ("NOVN", "CH0012221716", "Novartis AG", "Healthcare"),  # Luhn OK ✓
+    ("NOVN", "CH0012005267", "Novartis AG", "Healthcare"),  # Luhn OK ✓ verifiziert via SIX/ad-hoc-news
     ("ROG", "CH0012032048", "Roche Holding AG", "Healthcare"),  # Luhn OK ✓
     (
         "ABBN",
         "CH0012221716",
         "ABB Ltd",
         "Industrials",
-    ),  # TODO: Duplikat von NOVN — via SIX verifizieren
+    ),  # Luhn OK ✓ verifiziert via SIX (CH0012221716 = ABB, nicht Novartis)
     ("ZURN", "CH0011075394", "Zurich Insurance Group AG", "Financials"),  # Luhn OK ✓
     ("UBSG", "CH0244767585", "UBS Group AG", "Financials"),  # Luhn OK ✓
     ("UHR", "CH0012255151", "The Swatch Group AG", "Consumer Disc."),  # Luhn OK ✓
@@ -54,11 +54,11 @@ SMI_20 = [
     ("SLHN", "CH0014852781", "Swiss Life Holding AG", "Financials"),  # Luhn OK ✓
     ("SCMN", "CH0008742519", "Swisscom AG", "Communication"),  # Luhn OK ✓
     (
-        "BALN",
-        "CH0012221716",
-        "Baloise Holding AG",
-        "Financials",
-    ),  # TODO: Duplikat + BALN.SW delisted (Fusion Helvetia 2025) — SMI-Zusammensetzung prüfen
+        "SIKA",
+        "CH0418792922",
+        "Sika AG",
+        "Materials",
+    ),  # Luhn OK ✓ BALN (Baloise) ersetzt: delisted nach Fusion mit Helvetia 2025; SIKA seit 2025 im SMI
     ("HOLN", "CH0012214059", "Holcim AG", "Materials"),  # Luhn OK ✓
     ("PGHN", "CH0024608827", "Partners Group Holding AG", "Financials"),  # Luhn OK ✓
     (
@@ -70,10 +70,10 @@ SMI_20 = [
     ("CFR", "CH0210483332", "Compagnie Financière Richemont SA", "Consumer Disc."),  # Luhn OK ✓
     (
         "STMN",
-        "CH0012050267",
+        "CH0012280076",
         "Straumann Holding AG",
         "Healthcare",
-    ),  # TODO: Luhn-Fehler — ISIN via SIX Exchange verifizieren
+    ),  # Luhn OK ✓ verifiziert via SIX/MarketScreener/Eulerpool (CH0012050267 war Luhn-Fehler)
 ]
 
 UNIVERSE_NAME = "SMI-20"

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowUp, ArrowDown, ArrowUpDown, Download } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, Download, Globe } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -209,7 +209,7 @@ export function RankingsTable({ items, runId, swissTickers }: RankingsTableProps
               size="sm"
               onClick={() => setExchangeFilter('xswx')}
             >
-              🇨🇭 XSWX
+              <Globe className="h-3 w-3 shrink-0" /> XSWX
             </Button>
           </div>
         )}
@@ -235,6 +235,11 @@ export function RankingsTable({ items, runId, swissTickers }: RankingsTableProps
                 activeSortKey={sortKey}
                 sortDir={sortDir}
                 onSort={handleSort}
+                infoIcon={
+                  <InfoPopover ariaLabel="Was ist der Composite Score?">
+                    <p>Der Gesamtscore (gewichteter Durchschnittsrang) der alle Analyse-Dimensionen kombiniert. Niedrigerer Wert = besseres Ranking.</p>
+                  </InfoPopover>
+                }
               >
                 Avg
               </SortableHead>
@@ -278,17 +283,17 @@ export function RankingsTable({ items, runId, swissTickers }: RankingsTableProps
                     className="flex items-center gap-1.5"
                   >
                     {item.total_rank === 1 && (
-                      <span className="text-[10px] font-bold text-amber-500" data-testid="rank-medal-1">🥇</span>
+                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500/20 text-[9px] font-black text-amber-400 border border-amber-500/40" data-testid="rank-medal-1">1</span>
                     )}
                     {item.total_rank === 2 && (
-                      <span className="text-[10px] font-bold text-slate-400" data-testid="rank-medal-2">🥈</span>
+                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-muted text-[9px] font-black text-muted-foreground border border-border" data-testid="rank-medal-2">2</span>
                     )}
                     {item.total_rank === 3 && (
-                      <span className="text-[10px] font-bold text-orange-400" data-testid="rank-medal-3">🥉</span>
+                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-orange-500/20 text-[9px] font-black text-orange-400 border border-orange-500/40" data-testid="rank-medal-3">3</span>
                     )}
                     <span className={
                       item.total_rank === 1 ? 'text-amber-600 font-bold dark:text-amber-400' :
-                      item.total_rank === 2 ? 'text-slate-500 font-semibold dark:text-slate-300' :
+                      item.total_rank === 2 ? 'text-muted-foreground font-semibold' :
                       item.total_rank === 3 ? 'text-orange-500 font-semibold dark:text-orange-400' : ''
                     }>
                       {formatNumber(item.total_rank)}

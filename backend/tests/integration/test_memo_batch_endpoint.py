@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
 
 import pytest
-import pytest_asyncio
 from fastapi.testclient import TestClient
 
 from backend.application.services.narrative_service import NarrativeService
@@ -40,8 +39,8 @@ def _make_pending_job(
     )
 
 
-@pytest_asyncio.fixture
-async def app_with_mock_service() -> Any:
+@pytest.fixture
+def app_with_mock_service() -> Any:
     app = create_app()
     mock_service = AsyncMock(spec=NarrativeService)
     app.dependency_overrides[get_narrative_service] = lambda: mock_service

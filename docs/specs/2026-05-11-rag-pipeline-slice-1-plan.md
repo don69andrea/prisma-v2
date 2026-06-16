@@ -1,6 +1,6 @@
 # RAG-Pipeline Slice 1 — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development (empfohlen) oder superpowers:executing-plans. Checkbox-Syntax `- [ ]` fuer Tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: parallele Agent-Ausführung (empfohlen) oder Plan-Ausführung. Checkbox-Syntax `- [ ]` fuer Tracking.
 
 **Goal:** pgvector-Persistence-Schicht — Migration + Domain-Entities + Repository-Port + SQLA-Adapter + Tests. Kein Ingestion, kein Retrieval, kein Voyage-Call.
 
@@ -1106,7 +1106,7 @@ Edit `docs/AI-USAGE.md` — neuen Eintrag mit:
 
 - Datum 2026-05-11
 - Slice-Spec + Plan-Doc-Pfade
-- Patterns: P1 (Q-by-Q-Brainstorming fuer Slice-Groessen-Decision), P2 (Reality-Check: docker-compose schon mit pgvector, Render-pgvector-Support verifiziert, ORM-Pattern in Codebase verifiziert), P4 (Plan-as-Contract: verbatim Code je Task), P6 (Strict-Scope: kein Ingestion/Retrieval in Slice 1)
+- Patterns: P1 (Q-by-Q-Brainstorming fuer Slice-Groessen-Decision), P2 (Reality-Check: docker-compose schon mit pgvector, Render-pgvector-Support verifiziert, ORM-Pattern in Codebase verifiziert), P4 (verbindliche Planstruktur: verbatim Code je Task), P6 (Strict-Scope: kein Ingestion/Retrieval in Slice 1)
 - A1 Plan-Code-Drift vermieden: docker-compose-Anpassung im Spec war falsch eingeplant, Plan-Phase hat verifiziert dass `pgvector/pgvector:pg16`-Image schon im Compose ist
 - Test-Coverage: Unit (Entities) + Integration (Repository)
 - Inference-Tokens fuer Plan-Phase notieren
@@ -1153,7 +1153,7 @@ Nach Plan-Schreiben mit frischen Augen:
 
 **Plan saved to:** `docs/specs/2026-05-11-rag-pipeline-slice-1-plan.md`
 
-Empfohlene Execution: superpowers:subagent-driven-development. Tasks sind weitgehend sequenziell (Task 2/3 koennten parallel, aber der Gewinn ist klein).
+Empfohlene Ausführung: parallele Agent-Ausführung (je Task ein frischer Agent). Tasks sind weitgehend sequenziell (Task 2/3 koennten parallel, aber der Gewinn ist klein).
 
 Sequenz: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9.
 

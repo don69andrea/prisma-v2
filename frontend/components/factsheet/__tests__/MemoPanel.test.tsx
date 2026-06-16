@@ -48,7 +48,7 @@ describe('MemoPanel', () => {
     vi.spyOn(memosApi, 'getMemo').mockResolvedValue(null);
     wrap(<MemoPanel stockId={STOCK_ID} runId={RUN_ID} />);
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Memo generieren/ })).toBeDefined(),
+      expect(screen.getByRole('button', { name: /KI-Analyse generieren/ })).toBeDefined(),
     );
   });
 

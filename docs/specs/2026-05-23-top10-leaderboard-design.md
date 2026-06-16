@@ -199,7 +199,7 @@ Bestehenden Rankings-Detail-E2E-Test erweitern:
 ## Referenzen
 
 - Memory: `project-frontend-improvement-backlog` (Items 3 + 4)
-- Memory: `project-capstone-deadline`
+- Memory: `project-deadline`
 - Existierende Recharts-Nutzung: `frontend/components/factsheet/PriceChart.tsx`
 - Konsistenter Grid-Layout: `frontend/components/factsheet/ModelRankCards.tsx`
 - Sort-Logik-Vorbild: `frontend/app/rankings/[runId]/rankings-table.tsx::getSortValue`

@@ -9,7 +9,7 @@ from uuid import UUID
 
 @dataclass(frozen=True)
 class DecisionAuditRecord:
-    """Audit-Eintrag für eine BUY/HOLD/WATCH-Entscheidung.
+    """Audit-Eintrag für eine BUY/HOLD/SELL-Entscheidung.
 
     Enthält alle Komponenten-Scores und eine menschenlesbare Begründung.
     """

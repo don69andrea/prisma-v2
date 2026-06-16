@@ -48,4 +48,4 @@ class TestEmbeddingChunk:
             _new_chunk(content="")
 
     def test_embedding_dim_constant(self) -> None:
-        assert EMBEDDING_DIM == 2048
+        assert EMBEDDING_DIM == 1024

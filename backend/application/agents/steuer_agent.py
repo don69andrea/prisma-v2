@@ -15,6 +15,7 @@ from pydantic import ValidationError
 
 from backend.application.services.retrieval_service import RetrievalService
 from backend.domain.schemas.steuer_schema import PFLICHT_DISCLAIMER, SteuerEinschätzung
+from backend.infrastructure.adapters.ticker_ner import SWISS_TICKERS
 from backend.infrastructure.llm.client import LLMClient
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 
@@ -23,6 +24,7 @@ _logger = logging.getLogger(__name__)
 _MODEL = "claude-sonnet-4-6"
 _MAX_TOKENS = 1024
 _RAG_K = 5  # max RAG-Chunks für Steuer-Kontext
+_VERRECHNUNGSSTEUER_RATE = 0.35  # Verrechnungssteuer Schweiz: 35% (Art. 4 VStG)
 
 AnlegerprofitTyp = Literal["privatperson", "vorsorge_3a", "vorsorge_2a", "institution"]
 
@@ -112,21 +114,61 @@ class SteuerAgent:
         halteperiode_jahre: int,
         now: datetime,
     ) -> SteuerEinschätzung:
+        # Ticker-spezifische Kontextualisierung des Fallback-Textes
+        profil_label = {
+            "privatperson": "Privatperson",
+            "vorsorge_3a": "Säule-3a-Investor",
+            "vorsorge_2a": "Säule-2a-Investor (Pensionskasse)",
+            "institution": "Institutioneller Anleger",
+        }.get(anlegerprofil, anlegerprofil)
+
+        halte_hinweis = (
+            f"Bei {halteperiode_jahre} Jahren Haltedauer gilt in der Schweiz: "
+            "Kapitalgewinne sind für Privatpersonen steuerfrei (keine Kapitalertragssteuer)."
+            if anlegerprofil == "privatperson"
+            else f"Bei {halteperiode_jahre} Jahren Haltedauer — steuerliche Behandlung abhängig vom Rechtsträger."
+        )
+
+        is_swiss_stock = ticker in SWISS_TICKERS
+        if is_swiss_stock:
+            steuerarten = [
+                f"Verrechnungssteuer ({int(_VERRECHNUNGSSTEUER_RATE * 100)}%)",
+                "Vermögenssteuer",
+            ]
+            pflichten = [
+                f"Dividenden von {ticker} als Einkommen deklarieren (Formular DA-1 für Rückerstattung).",
+                "VST-Rückerstattung via Formular 103 (bei Schweizer Aktien) beantragen.",
+                f"Kurswert {ticker} per 31.12. in der Vermögenserklärung angeben.",
+            ]
+            quellen = ["ESTV — Verrechnungssteuer", "DBG Art. 20", f"Ticker: {ticker}"]
+        else:
+            # Nicht-Schweizer Aktien (z.B. US-Titel) unterliegen NICHT der CH-
+            # Verrechnungssteuer, sondern der ausländischen Quellensteuer am
+            # Sitzstaat der Gesellschaft. Rückerstattung läuft über DA-1-Anhang
+            # bzw. US-Formular W-8BEN, nicht via Formular 103.
+            steuerarten = [
+                "Ausländische Quellensteuer (z.B. US-Quellensteuer 15-30%)",
+                "Vermögenssteuer",
+            ]
+            pflichten = [
+                f"Dividenden von {ticker} als Einkommen deklarieren (DA-1-Anhang für pauschale Steueranrechnung).",
+                "Reduktion der US-Quellensteuer via Formular W-8BEN beim Broker beantragen (Doppelbesteuerungsabkommen).",
+                f"Kurswert {ticker} per 31.12. in der Vermögenserklärung angeben.",
+            ]
+            quellen = ["ESTV — DA-1-Anhang", "DBG Art. 20", f"Ticker: {ticker}"]
+
         return SteuerEinschätzung(
             ticker=ticker,
             anlegerprofil=anlegerprofil,
             halteperiode_jahre=halteperiode_jahre,
-            steuerarten=["Verrechnungssteuer (35%)", "Vermögenssteuer"],
-            pflichten=[
-                "Dividenden als Einkommen deklarieren",
-                "VST-Rückerstattung via Formular 103 beantragen",
-                "Kurswert per 31.12. in Vermögenserklärung angeben",
-            ],
+            steuerarten=steuerarten,
+            pflichten=pflichten,
             hinweise=[
-                "Steuerliche Behandlung kann sich je nach Kanton unterscheiden.",
-                "Diese Einschätzung wurde durch einen Fallback generiert — Daten unvollständig.",
+                f"Profil: {profil_label}. {halte_hinweis}",
+                "Steuerliche Behandlung variiert je nach Wohnsitzkanton — lokales Steueramt konsultieren.",
+                "Diese Einschätzung wurde durch einen Fallback generiert — KI-Analyse nicht verfügbar.",
             ],
-            quellen=["ESTV — Verrechnungssteuer", "DBG Art. 20"],
+            quellen=quellen,
             disclaimer=PFLICHT_DISCLAIMER,
             generated_at=now,
             model_version="fallback",

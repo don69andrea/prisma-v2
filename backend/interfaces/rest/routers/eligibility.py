@@ -4,7 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from backend.application.services.swiss_market_service import SwissMarketService
 from backend.interfaces.rest.dependencies import get_swiss_market_service
-from backend.interfaces.rest.schemas.eligibility import EligibilityResponse
+from backend.interfaces.rest.schemas.eligibility import (
+    _ELIGIBLE_REASON,
+    _REASON_LABELS,
+    EligibilityResponse,
+)
 
 router = APIRouter(prefix="/api/v1", tags=["3a-eligibility"])
 
@@ -27,8 +31,13 @@ async def get_3a_eligibility(
         result = await service.check_3a_eligibility(ticker)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    reason_parts = [_REASON_LABELS[r] for r in result.reasons if r in _REASON_LABELS]
+    reason_text = "; ".join(reason_parts) if reason_parts else _ELIGIBLE_REASON
+
     return EligibilityResponse(
         ticker=result.ticker,
         eligible=result.eligible,
         reasons=list(result.reasons),
+        reason=reason_text,
     )

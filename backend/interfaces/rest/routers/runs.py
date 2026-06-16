@@ -1,5 +1,6 @@
 """FastAPI-Router für /api/v1/runs."""
 
+import asyncio
 import csv
 import io
 from uuid import UUID
@@ -41,9 +42,8 @@ async def list_runs(
     universe_repo: UniverseRepository = Depends(get_universe_repository),
 ) -> list[RunResponse]:
     runs = await service.list_runs(limit=limit, offset=offset)
-    return [
-        RunResponse.from_domain(r, await _universe_name(universe_repo, r.universe_id)) for r in runs
-    ]
+    names = await asyncio.gather(*[_universe_name(universe_repo, r.universe_id) for r in runs])
+    return [RunResponse.from_domain(r, name) for r, name in zip(runs, names, strict=True)]
 
 
 @router.post("", status_code=201, response_model=RunResponse)
@@ -113,13 +113,24 @@ async def export_rankings_csv(
     items = [RankingItem.model_validate(r) for r in results]
     all_models = sorted({m for item in items for m in item.per_model_ranks})
 
+    stocks = await asyncio.gather(
+        *[stock_service.get_by_ticker(item.ticker) for item in items],
+        return_exceptions=True,
+    )
+    from backend.domain.entities.stock import Stock
+
+    stock_map: dict[str, Stock] = {}
+    for item, s in zip(items, stocks, strict=True):
+        if not isinstance(s, BaseException) and s is not None:
+            stock_map[item.ticker] = s
+
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(
         ["rank", "ticker", "name", "sector", "weighted_avg", "is_sweet_spot", *all_models]
     )
     for item in items:
-        stock = await stock_service.get_by_ticker(item.ticker)
+        stock = stock_map.get(item.ticker)
         writer.writerow(
             [
                 item.total_rank if item.total_rank is not None else "",

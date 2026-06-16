@@ -1,6 +1,6 @@
 import { apiFetch } from './client';
 
-export type SignalType = 'BUY' | 'HOLD' | 'WATCH';
+export type SignalType = 'BUY' | 'HOLD' | 'SELL';
 
 export interface AuditRecord {
   id: string;

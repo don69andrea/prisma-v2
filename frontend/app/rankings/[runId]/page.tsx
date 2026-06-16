@@ -3,7 +3,8 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { XCircle, ArrowLeft, Loader2, Download, FlaskConical } from 'lucide-react';
+import { XCircle, ArrowLeft, Download, FlaskConical } from 'lucide-react';
+import { RunProgressBar } from '@/components/ui/PrismaBar';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { ApiError } from '@/lib/api/client';
 
 import { RankingsTable } from './rankings-table';
 import { PortfolioAllocationPanel } from '@/components/rankings/PortfolioAllocationPanel';
+import { AllocationComparisonPanel } from '@/components/rankings/AllocationComparisonPanel';
 import { TopTenLeaderboard } from '@/components/rankings/TopTenLeaderboard';
 
 
@@ -80,7 +82,7 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
             <ArrowLeft className="mr-1 h-4 w-4" />
             Zurück zu Rankings
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Ranking-Ergebnis.</h1>
         </div>
         {isCompleted && rankingsQuery.data && (
           <div className="flex items-center gap-2">
@@ -147,10 +149,14 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
       )}
 
       {(runQuery.data?.status === 'pending' || runQuery.data?.status === 'running') && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-          <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-          <span>Run läuft noch. Seite aktualisiert sich alle 5s.</span>
-        </div>
+        <RunProgressBar
+          estimatedMs={45_000}
+          label={
+            runQuery.data.status === 'pending'
+              ? 'Run wartet in der Warteschlange — aktualisiert alle 5s'
+              : 'Ranking wird berechnet — aktualisiert alle 5s'
+          }
+        />
       )}
 
       {runQuery.data?.status === 'failed' && (
@@ -169,6 +175,7 @@ export default function RankingDetailPage({ params }: { params: { runId: string 
           <TopTenLeaderboard items={rankingsQuery.data} runId={params.runId} />
           <RankingsTable items={rankingsQuery.data} runId={params.runId} swissTickers={swissTickers} />
           <PortfolioAllocationPanel runId={params.runId} />
+          <AllocationComparisonPanel runId={params.runId} />
         </>
       )}
 

@@ -10,6 +10,7 @@ from backend.application.services.universe_suggestion_service import (
     InvalidLLMOutput,
     UniverseSuggestionService,
 )
+from backend.domain.repositories.universe_repository import DuplicateUniverseNameError
 from backend.interfaces.rest.dependencies import (
     get_universe_service,
     get_universe_suggestion_service,
@@ -70,11 +71,17 @@ async def create_universe(
     request: UniverseCreateRequest,
     service: UniverseService = Depends(get_universe_service),
 ) -> UniverseRead:
-    universe = await service.create_universe(
-        name=request.name,
-        region=request.region,
-        tickers=request.tickers,
-    )
+    try:
+        universe = await service.create_universe(
+            name=request.name,
+            region=request.region,
+            tickers=request.tickers,
+        )
+    except DuplicateUniverseNameError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Ein Universe mit diesem Namen existiert bereits.",
+        ) from exc
     return UniverseRead(
         id=universe.id, name=universe.name, region=universe.region, tickers=list(universe.tickers)
     )

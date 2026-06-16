@@ -22,6 +22,8 @@ export interface MonteCarloResponse {
   prob_500k: number;
   contribution_total: number;
   months: number;
+  correlation_degraded: boolean;
+  interpretation?: string;
 }
 
 export async function runMonteCarlo(req: MonteCarloRequest): Promise<MonteCarloResponse> {

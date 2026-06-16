@@ -3,7 +3,7 @@
 **Status: Final**
 **Datum: 2026-05-09**
 **Autor: Fabia Holzer / Claude Code**
-**Bezieht sich auf**: `docs/specs/2026-04-21-prisma-capstone-design.md` §6, `docs/specs/2026-04-28-quant-mvp-models.md`
+**Bezieht sich auf**: `docs/specs/2026-04-21-prisma-v2-design.md` §6, `docs/specs/2026-04-28-quant-mvp-models.md`
 
 ---
 

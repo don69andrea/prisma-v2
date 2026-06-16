@@ -37,7 +37,7 @@ class ResearchMemo(BaseModel):
 
     id: UUID
     stock_id: UUID
-    model_run_id: UUID
+    model_run_id: UUID | None = None
     language: Literal["de", "en"] = "de"
     created_at: datetime
 

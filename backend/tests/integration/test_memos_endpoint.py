@@ -47,7 +47,7 @@ async def app_with_mock_service() -> Any:
     app.dependency_overrides.clear()
 
 
-def test_post_generate_returns_200_with_memo(
+def test_post_generate_returns_201_with_memo(
     app_with_mock_service: tuple[Any, AsyncMock],
 ) -> None:
     app, mock_service = app_with_mock_service
@@ -63,7 +63,7 @@ def test_post_generate_returns_200_with_memo(
             },
         )
 
-    assert resp.status_code == 200
+    assert resp.status_code == 201
     body = resp.json()
     assert body["one_liner"] == "One-Liner."
     assert body["is_error"] is False
@@ -181,7 +181,7 @@ def test_post_generate_sets_is_error_when_fallback_memo(
             json={"stock_id": str(memo.stock_id), "model_run_id": str(memo.model_run_id)},
         )
 
-    assert resp.status_code == 200
+    assert resp.status_code == 201
     body = resp.json()
     assert body["is_error"] is True
 

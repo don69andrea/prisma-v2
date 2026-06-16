@@ -24,6 +24,7 @@ _SNB_RATE_HISTORY: list[tuple[date, float]] = [
     (date(2024, 9, 26), 1.00),
     (date(2024, 12, 12), 0.50),
     (date(2025, 3, 20), 0.25),
+    (date(2025, 6, 19), 0.0),
 ]
 
 

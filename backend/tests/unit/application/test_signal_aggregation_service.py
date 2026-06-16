@@ -33,10 +33,23 @@ def _make_features(
         score_wachstum=60.0,
         score_substanz=65.0,
         return_12m=0.10,
+        return_6m=0.05,
+        return_3m=0.02,
         vol_30d=0.15,
+        vol_90d=0.18,
         rsi_14=55.0,
+        price_to_52w_high=0.90,
+        vol_trend=1.0,
+        macd_hist=0.001,
+        bb_position=0.5,
+        return_1m=0.01,
+        drawdown_12m=-0.15,
         snb_rate=snb_rate,
         chf_eur=0.93,
+        pe_ratio=20.0,
+        pb_ratio=2.5,
+        dividend_yield=0.02,
+        revenue_growth=0.05,
         forward_return_12m=None,
         target_class=None,
     )
@@ -170,7 +183,7 @@ async def test_get_signal_not_eligible_not_in_repo() -> None:
 
 @pytest.mark.asyncio
 async def test_get_signal_watch() -> None:
-    """Niedriger Quant + UNDERPERFORM ML + restriktive SNB → WATCH."""
+    """Niedriger Quant + UNDERPERFORM ML + restriktive SNB → SELL."""
     feature_svc = AsyncMock()
     feature_svc.build_features.return_value = _make_features(quant_score=20.0, snb_rate=2.0)
     pred_svc = AsyncMock()
@@ -183,7 +196,7 @@ async def test_get_signal_watch() -> None:
     result = await service.get_signal("NESN")
 
     assert result is not None
-    assert result.signal == "WATCH"
+    assert result.signal == "SELL"
 
 
 @pytest.mark.asyncio
@@ -235,7 +248,7 @@ async def test_get_signal_no_ml_model_fallback_neutral() -> None:
 
     assert result is not None
     assert result.ml_score == 50.0
-    assert result.signal in {"BUY", "HOLD", "WATCH"}
+    assert result.signal in {"BUY", "HOLD", "SELL"}
 
 
 @pytest.mark.asyncio
@@ -266,5 +279,5 @@ def test_decision_signal_for_score() -> None:
     assert DecisionSignal.signal_for_score(65.0) == "BUY"
     assert DecisionSignal.signal_for_score(64.9) == "HOLD"
     assert DecisionSignal.signal_for_score(40.0) == "HOLD"
-    assert DecisionSignal.signal_for_score(39.9) == "WATCH"
-    assert DecisionSignal.signal_for_score(0.0) == "WATCH"
+    assert DecisionSignal.signal_for_score(39.9) == "SELL"
+    assert DecisionSignal.signal_for_score(0.0) == "SELL"

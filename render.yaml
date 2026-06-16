@@ -53,7 +53,7 @@ services:
         sync: false
       # App-Version — wird von /health zurückgegeben
       - key: APP_VERSION
-        value: "2.0.0"
+        value: "2.1.0"
 
   - type: web
     name: prisma-v2-frontend

@@ -1,4 +1,4 @@
-const API_BASE = process.env.E2E_API_BASE_URL ?? 'http://localhost:8000';
+const API_BASE = process.env.PLAYWRIGHT_API_URL ?? 'http://localhost:8000';
 
 export interface Universe {
   id: string;

@@ -27,6 +27,8 @@ const makeStock = (
   sector,
   country,
   currency: 'USD',
+  exchange: null,
+  market_cap_chf: null,
 });
 
 const sampleStocks: StockRead[] = [

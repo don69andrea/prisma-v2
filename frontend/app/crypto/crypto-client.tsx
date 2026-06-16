@@ -80,7 +80,7 @@ export function CryptoClient() {
           {signalsLoading ? (
             <Skeleton className="h-64" />
           ) : signalsError ? (
-            <p className="text-sm text-red-400">Signale konnten nicht geladen werden.</p>
+            <p className="text-sm text-red-400" data-testid="signals-error">Signale konnten nicht geladen werden.</p>
           ) : (
             <div className="rounded-lg border border-border/50 overflow-x-auto">
               <table className="w-full text-xs">

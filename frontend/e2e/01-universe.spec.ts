@@ -3,8 +3,12 @@ import { test, expect } from "@playwright/test";
 test("Universum mit 5 Ticker-Symbolen erstellen", async ({ page }) => {
   await page.goto("/universes/new");
 
+  // Eindeutiger Name pro Lauf: ix_universes_name ist UNIQUE, ein fixer Name
+  // kollidiert bei lokalen Wiederholungsläufen mit der vorherigen Zeile.
+  const universeName = `E2E Test Universum ${Date.now()}`;
+
   // Fill universe name
-  await page.getByLabel("Name").fill("E2E Test Universum");
+  await page.getByLabel("Name").fill(universeName);
 
   // Fill region
   await page.getByLabel("Region").fill("US");

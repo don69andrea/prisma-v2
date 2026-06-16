@@ -23,7 +23,7 @@ Die Provider-Wahl beeinflusst: API-Kosten, Feature-Verfügbarkeit (Prompt Cachin
 - ➕ **MCP nativ**: keine Adapter, keine Proxy-Lösung
 - ➕ **Prompt Caching**: ~90% Kostenersparnis auf System-Prompts, Default-Feature
 - ➕ **Structured Output**: Sonnet liefert Pydantic-Schema-konforme JSON-Outputs zuverlässig
-- ➕ **Halbe Capstone-Team nutzt Claude Code bereits** (Claude-Geläufigkeit)
+- ➕ **Team nutzt Claude Code bereits** (Claude-Geläufigkeit)
 - ➖ Vendor Lock-in
 - ➖ Nur US-Inference (keine EU-Datenresidenz)
 
@@ -52,7 +52,7 @@ Die Provider-Wahl beeinflusst: API-Kosten, Feature-Verfügbarkeit (Prompt Cachin
 - ➕ Potenziell Academic Credits über Microsoft
 - ➖ Zusätzliche Azure-Komplexität (Deployments pro Modell, Subscription, RBAC)
 - ➖ Kein MCP, keine direkten Anthropic-Features
-- ➖ Out-of-scope für ein BSc-Capstone mit 4 Wochen Zeit
+- ➖ Out-of-scope für dieses Projekt
 
 ## Entscheidung
 
@@ -66,7 +66,7 @@ Die Provider-Wahl beeinflusst: API-Kosten, Feature-Verfügbarkeit (Prompt Cachin
 
 ### Positiv
 
-- **Curriculum-Passung**: der Capstone spiegelt den Modul-Lehrstoff direkt wieder (wichtig für 40%-Achse)
+- **Curriculum-Passung**: das Projekt spiegelt den Modul-Lehrstoff direkt wieder (wichtig für die Bewertung)
 - **MCP-Server** (Layer 3) wird trivial — keine Provider-Abstraktion nötig
 - **Prompt-Caching** default aktiv — reduziert Kosten merklich (~60% bei Batch-Memos)
 - **Single Provider** = ein API-Key, ein Billing-Dashboard, ein Rate-Limit-System

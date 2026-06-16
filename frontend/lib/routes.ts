@@ -1,6 +1,7 @@
 export const ROUTES = {
   start: '/start',
   dashboard: '/',
+  discover: '/discover',
   universes: '/universes',
   rankings: '/rankings',
   backtest: '/backtest',
@@ -11,6 +12,7 @@ export const ROUTES = {
   fonds: '/fonds',
   stocks: '/stocks',
   news: '/news',
+  watchlist: '/watchlist',
   steuer: '/steuer',
   research: '/research',
   factsheet: (runId: string, ticker: string) =>

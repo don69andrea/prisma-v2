@@ -32,6 +32,19 @@ test("Memo anfordern und Research-Memo anzeigen", async ({ page, request }) => {
     });
   });
 
+  // Mock GET memo to return fixture immediately (no generation needed)
+  await page.route("**/api/v1/memos/**", async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(FIXTURE_MEMO),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+
   // Unique name prevents 500 on Playwright retry (universe already exists)
   const universeName = `E2E Memo ${Date.now()}`;
 

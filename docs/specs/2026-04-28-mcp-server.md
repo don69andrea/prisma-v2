@@ -2,7 +2,7 @@
 
 **Status**: Draft v1.0 — 2026-04-21 (für Phase 2, Wo 3)
 **Rolle**: B — AI Engineer (Sheyla)
-**Parent-Spec**: `docs/specs/2026-04-21-prisma-capstone-design.md` §8.3
+**Parent-Spec**: `docs/specs/2026-04-21-prisma-v2-design.md` §8.3
 **Verwandte Spec**: `docs/specs/2026-04-28-narrative-engine.md`
 
 ---
@@ -304,7 +304,7 @@ Ein statisch konfigurierter API-Key, als `PRISMA_API_KEY` Env-Var beim MCP-Serve
 ### 6.3 Key-Verteilung im Team
 
 - **Für Development**: Key in 1Password-Vault des Teams
-- **Für Production**: Gleicher Key (1 Team = 1 Key, das reicht für Capstone-Demo)
+- **Für Production**: Gleicher Key (1 Team = 1 Key, das reicht für Demo)
 - **Präsi-Key**: Optional zusätzlicher Key, der nach Präsi rotiert wird (falls Screenshots in GitHub landen)
 
 ---
@@ -324,11 +324,11 @@ Das Team-Dokument `docs/mcp-setup.md` enthält folgendes Snippet für den Claude
         "-m",
         "backend.interfaces.mcp.server"
       ],
-      "cwd": "/Users/YOU/Projects/prisma-capstone",
+      "cwd": "/Users/YOU/Projects/prisma-v2",
       "env": {
         "PRISMA_API_URL": "https://prisma-backend-xyz.onrender.com",
         "PRISMA_API_KEY": "pk_live_...",
-        "PYTHONPATH": "/Users/YOU/Projects/prisma-capstone"
+        "PYTHONPATH": "/Users/YOU/Projects/prisma-v2"
       }
     }
   }
@@ -419,7 +419,7 @@ Logs landen in `stderr` (STDIO-Transport schreibt App-Output nach `stdout`, Logs
 
 Der MCP-Server ist **kein deployed Service** — er ist Client-Code, der beim User läuft. Dass wir ihn im selben Git-Repo entwickeln ist ein Bequemlichkeits-Entscheid (Type-Sharing mit dem Backend).
 
-Für ein Release: Python-Package via `pipx install git+https://github.com/SheylaSam/prisma-capstone` (Stretch-Goal — im MVP reicht lokaler Editable-Install).
+Für ein Release: Python-Package via `pipx install git+https://github.com/don69andrea/prisma-v2` (Stretch-Goal — im MVP reicht lokaler Editable-Install).
 
 ---
 
@@ -438,7 +438,7 @@ Für ein Release: Python-Package via `pipx install git+https://github.com/Sheyla
 |---|---|---|---|
 | 1 | Transport: STDIO-only oder auch HTTP/SSE anbieten? | STDIO-only für MVP, HTTP/SSE als Stretch | TBD |
 | 2 | 4 Tools reichen — oder noch mehr (z.B. `list_universes`, `get_backtest_status`)? | Start mit 4, bei Demo-Feedback ergänzen | TBD |
-| 3 | API-Key: Team-shared oder per User? | Team-shared für Capstone-Demo — per User nur bei Production-Scale nötig | TBD |
+| 3 | API-Key: Team-shared oder per User? | Team-shared für Demo — per User nur bei Production-Scale nötig | TBD |
 | 4 | Rate-Limit-Strategie: Token-Bucket, Fixed-Window, oder nichts im MVP? | Fixed-Window 60/min, einfach zu implementieren | TBD |
 | 5 | MCP-Server als separates Python-Package (`pip install prisma-mcp`) oder Teil des Monorepos? | Teil des Monorepos — kein Extra-Artefakt, kein extra CI | **Entschieden** |
 

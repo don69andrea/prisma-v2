@@ -7,6 +7,11 @@ Spec: docs/specs/2026-05-04-narrative-engine-single-memo.md §6
 Route-Reihenfolge: statische Pfade (/generate, /batch, /jobs/{job_id})
 MUESSEN vor dem parametrischen Catch-All (/{stock_id}/{run_id}) registriert
 werden, da FastAPI Routen in Deklarationsreihenfolge matched.
+
+Hinweis (2026-06-16): /batch und /jobs/{job_id} sind vollstaendig
+implementiert/getestet, haben aber keine Frontend-Anbindung. Details und
+Begruendung siehe Docstrings der jeweiligen Endpoints unten sowie
+Usability-Audit F-RANK-3 / W-5 (docs/usability-performance-audit-2026-06-16.md).
 """
 
 from datetime import datetime
@@ -36,14 +41,14 @@ router = APIRouter(prefix="/memos", tags=["memos"])
 
 class GenerateMemoRequest(BaseModel):
     stock_id: UUID
-    model_run_id: UUID
+    model_run_id: UUID | None = None
     language: Literal["de", "en"] = "de"
 
 
 class MemoResponse(BaseModel):
     id: UUID
     stock_id: UUID
-    model_run_id: UUID
+    model_run_id: UUID | None
     language: Literal["de", "en"]
     one_liner: str
     ranking_interpretation: str
@@ -83,7 +88,7 @@ class MemoResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-@router.post("/generate", response_model=MemoResponse)
+@router.post("/generate", response_model=MemoResponse, status_code=201)
 async def generate_memo(
     request: GenerateMemoRequest,
     service: NarrativeService = Depends(get_narrative_service),
@@ -109,6 +114,7 @@ async def generate_memo(
     "/batch",
     response_model=BatchJobAcceptedResponse,
     status_code=202,
+    summary="Startet Batch-Memo-Generierung fuer Top-N Stocks (derzeit ohne UI)",
 )
 async def post_batch(
     body: BatchRequest,
@@ -118,6 +124,21 @@ async def post_batch(
 
     Gibt 202 Accepted zurueck — der eigentliche Batch laeuft im Hintergrund.
     Status-Polling via GET /memos/jobs/{job_id}.
+
+    Funktionsstatus (Stand 2026-06-16): Endpoint ist vollstaendig implementiert
+    und getestet (siehe backend/tests/integration/test_memo_batch_endpoint.py,
+    test_memo_batch_full_flow.py, backend/tests/unit/application/
+    test_narrative_service_batch.py). Es handelt sich NICHT um ein halbfertiges
+    Feature.
+
+    ABER: Es gibt aktuell keine Frontend-Anbindung — `grep -r "memos/batch"
+    frontend/` liefert keine Treffer. Nutzer koennen Memos im UI nur einzeln
+    (POST /generate) anstossen, nicht im Batch. Siehe Usability-Audit
+    F-RANK-3 / W-5 (docs/usability-performance-audit-2026-06-16.md): Klaerung
+    noetig, ob ein UI-Trigger + Polling-Anzeige ergaenzt wird, oder ob der
+    Endpoint mangels Anwendungsfall als deprecated markiert werden soll. Diese
+    Produktentscheidung ist bewusst noch offen — vor einer Aenderung mit dem
+    Team abstimmen.
     """
     try:
         job = await service.start_batch(
@@ -152,12 +173,21 @@ async def post_batch(
 @router.get(
     "/jobs/{job_id}",
     response_model=BatchJobResponse,
+    summary="Liefert Batch-Job-Status fuer Polling (derzeit ohne UI-Konsument)",
 )
 async def get_job(
     job_id: UUID,
     service: NarrativeService = Depends(get_narrative_service),
 ) -> BatchJobResponse:
-    """Liefert aktuellen Job-Status inkl. Progress und Memo-Zusammenfassung."""
+    """Liefert aktuellen Job-Status inkl. Progress und Memo-Zusammenfassung.
+
+    Funktionsstatus (Stand 2026-06-16): wie POST /batch vollstaendig
+    implementiert und getestet (siehe backend/tests/integration/
+    test_memo_batch_endpoint.py), aber ohne Frontend-Konsument — kein
+    UI-Code pollt diesen Endpoint. Siehe Usability-Audit F-RANK-3 / W-5
+    (docs/usability-performance-audit-2026-06-16.md) fuer den Kontext zur
+    noch offenen Entscheidung "UI ergaenzen vs. deprecaten".
+    """
     job = await service.get_batch_job(job_id)
     if job is None:
         raise HTTPException(

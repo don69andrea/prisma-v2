@@ -6,7 +6,11 @@ test.describe('PRISMA E2E', () => {
   test('1. Startseite lädt und zeigt Navigation', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveTitle(/PRISMA|Dashboard/);
-    await expect(page.getByRole('link', { name: /Universen/i })).toBeVisible();
+    // Navigation includes both existing and new links
+    await expect(page.getByRole('link', { name: /Rankings/i })).toBeVisible();
+    // /discover ("Mein Universum") and /start ("Start") were added to nav
+    await expect(page.getByRole('link', { name: /Mein Universum/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Start', exact: true })).toBeVisible();
   });
 
   test('2. Universe-Flow: neues Universum anlegen', async ({ page }) => {
@@ -28,19 +32,25 @@ test.describe('PRISMA E2E', () => {
   });
 
   test('4. Dashboard: Seite lädt und Tabelle/Empty-State rendert', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('prisma-mode', 'pro');
+    });
     await page.goto('/dashboard');
     await expect(page).toHaveTitle(/Dashboard/);
-    const table = page.getByRole('table');
-    const emptyState = page.getByText(/Noch keine Runs/i);
-    await expect(table.or(emptyState)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Dashboard.' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Top Signale heute\./i)).toBeVisible({ timeout: 10_000 });
   });
 
   test('4. Rankings: Sortierung + CSV-Export', async ({ page }) => {
     const universe = await createTestUniverse(`sort-${Date.now()}`);
 
+    await page.addInitScript(() => {
+      localStorage.setItem('prisma-mode', 'pro');
+    });
+
     await page.goto('/rankings');
-    await page.getByLabel('Universe').selectOption(universe.id);
-    await page.getByRole('button', { name: /Run starten/i }).click();
+    await page.locator('#universe').selectOption(universe.id);
+    await page.getByRole('button', { name: /Analyse starten/i }).click();
 
     await expect(page).toHaveURL(/\/rankings\/[0-9a-f-]+$/, { timeout: 90_000 });
 
@@ -48,17 +58,18 @@ test.describe('PRISMA E2E', () => {
     const rows = page.locator('tbody tr');
     await expect(rows.first()).toBeVisible({ timeout: 60_000 });
 
-    // Avg header starts without active sort
-    const avgHeader = page.getByRole('columnheader', { name: /Avg/ });
-    await expect(avgHeader).toHaveAttribute('aria-sort', 'none');
+    // # (rank) header starts in ascending sort (default sort key)
+    // Use # header (no InfoPopover) to avoid click interception issues
+    const rankHeader = page.getByRole('columnheader', { name: '#', exact: true });
+    await expect(rankHeader).toHaveAttribute('aria-sort', 'ascending');
 
-    // First click → ascending
-    await avgHeader.click();
-    await expect(avgHeader).toHaveAttribute('aria-sort', 'ascending');
+    // First click → descending
+    await rankHeader.click();
+    await expect(rankHeader).toHaveAttribute('aria-sort', 'descending');
 
-    // Second click → descending
-    await avgHeader.click();
-    await expect(avgHeader).toHaveAttribute('aria-sort', 'descending');
+    // Second click → ascending again
+    await rankHeader.click();
+    await expect(rankHeader).toHaveAttribute('aria-sort', 'ascending');
 
     // CSV export triggers download
     const [download] = await Promise.all([
@@ -71,11 +82,15 @@ test.describe('PRISMA E2E', () => {
   test('3. Ranking-Flow: Run starten und Ergebnis-Tabelle sehen', async ({ page }) => {
     const universe = await createTestUniverse(`run-${Date.now()}`);
 
-    await page.goto('/rankings');
-    await expect(page.getByRole('heading', { name: /Ranking starten/i })).toBeVisible();
+    await page.addInitScript(() => {
+      localStorage.setItem('prisma-mode', 'pro');
+    });
 
-    await page.getByLabel('Universe').selectOption(universe.id);
-    await page.getByRole('button', { name: /Run starten/i }).click();
+    await page.goto('/rankings');
+    await expect(page.getByRole('heading', { name: /Rankings/i })).toBeVisible();
+
+    await page.locator('#universe').selectOption(universe.id);
+    await page.getByRole('button', { name: /Analyse starten/i }).click();
 
     await expect(page).toHaveURL(/\/rankings\/[0-9a-f-]+$/, { timeout: 90_000 });
     await expect(page.getByRole('heading', { name: /Ranking-Ergebnis/i })).toBeVisible();

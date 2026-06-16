@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import date
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Path, status
 from fastapi.responses import Response
 
 from backend.application.services.report_service import ReportService
@@ -24,10 +24,16 @@ _logger = logging.getLogger(__name__)
     ),
     response_class=Response,
 )
-async def get_report(ticker: str) -> Response:
+async def get_report(ticker: str = Path(..., pattern=r"^[A-Za-z0-9.\-]{1,12}$")) -> Response:
     svc = ReportService()
     try:
         pdf_bytes = await svc.generate_pdf(ticker.upper())
+    except ImportError as exc:
+        _logger.warning("WeasyPrint nicht verfügbar: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="PDF-Service temporär nicht verfügbar (WeasyPrint-Systemabhängigkeiten fehlen).",
+        ) from exc
     except Exception as exc:
         _logger.exception("PDF-Generierung fehlgeschlagen für %s", ticker)
         raise HTTPException(

@@ -6,6 +6,8 @@ export interface FundamentalsData {
   pb_ratio: number | null;
   eps_chf: number | null;
   dividend_yield_pct: number | null;
+  fcf_yield: number | null;
+  operating_margin: number | null;
   disclaimer: string;
 }
 

@@ -21,7 +21,7 @@ const CONTEXT_PROMPTS: Record<string, string> = {
   confidence:
     'Was bedeutet der Konfidenz-Wert bei PRISMA-Signalen? Erkläre in max. 3 Sätzen auf Deutsch.',
   signal:
-    'Was bedeutet BUY/HOLD/WATCH bei PRISMA? Erkläre in max. 3 Sätzen auf Deutsch.',
+    'Was bedeutet BUY/HOLD/SELL bei PRISMA? Erkläre in max. 3 Sätzen auf Deutsch.',
 };
 
 interface ExplainButtonProps {

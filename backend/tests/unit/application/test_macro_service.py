@@ -52,6 +52,14 @@ async def test_get_context_uses_fallback_narrative_without_llm() -> None:
             "backend.application.services.macro_service._fetch_chf_eur",
             return_value=0.932,
         ),
+        patch(
+            "backend.application.services.macro_service._fetch_swiss_inflation",
+            new=AsyncMock(return_value=0.3),
+        ),
+        patch(
+            "backend.application.services.macro_service._fetch_swiss_pmi",
+            new=AsyncMock(return_value=45.5),
+        ),
     ):
         service = MacroService(llm_client=None)
         ctx = await service.get_context()
@@ -61,8 +69,8 @@ async def test_get_context_uses_fallback_narrative_without_llm() -> None:
     assert "0.25" in ctx.narrative_de
     assert "0.25" in ctx.narrative_en
     assert ctx.climate in {"EXPANSIV", "NEUTRAL", "RESTRIKTIV"}
-    assert ctx.inflation_ch is None
-    assert ctx.pmi_ch is None
+    assert ctx.inflation_ch == 0.3
+    assert ctx.pmi_ch == 45.5
 
 
 @pytest.mark.asyncio

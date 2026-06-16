@@ -20,10 +20,14 @@ class InvestorProfileORM(Base):
     investment_goal: Mapped[str] = mapped_column(String(20), nullable=False, default="beat_savings")
     time_horizon: Mapped[str] = mapped_column(String(10), nullable=False, default="medium")
     risk_profile: Mapped[str] = mapped_column(String(20), nullable=False, default="moderate")
+    sector_hint: Mapped[str | None] = mapped_column(String(30), nullable=True)
     sector_affinity: Mapped[list[str]] = mapped_column(
         ARRAY(String()), nullable=False, default=list
     )
     known_tickers: Mapped[list[str]] = mapped_column(ARRAY(String()), nullable=False, default=list)
+    investment_amount: Mapped[str] = mapped_column(String(20), nullable=False, default="10k_100k")
+    esg_preference: Mapped[str] = mapped_column(String(15), nullable=False, default="indifferent")
+    income_preference: Mapped[str] = mapped_column(String(15), nullable=False, default="balanced")
     confidence_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     onboarding_complete: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(

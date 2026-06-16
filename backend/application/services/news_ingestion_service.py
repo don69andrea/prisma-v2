@@ -96,6 +96,15 @@ class NewsIngestionService:
                         model="voyage-3-large",
                         feature="news_rag_ingestion",
                     )
+                    if len(embeddings) != len(chunks):
+                        _logger.error(
+                            "Embedding count mismatch for %s: expected %d, got %d — skipping chunks",
+                            raw.url,
+                            len(chunks),
+                            len(embeddings),
+                        )
+                        stats["errors"] += 1
+                        continue
                     enriched = [
                         NewsChunk(
                             id=c.id,
@@ -106,7 +115,6 @@ class NewsIngestionService:
                             metadata=c.metadata,
                         )
                         for i, c in enumerate(chunks)
-                        if i < len(embeddings)
                     ]
                     await self._repo.save_chunks(enriched)
 
@@ -134,7 +142,7 @@ def _chunk_text(article: NewsArticle) -> list[NewsChunk]:
                     news_document_id=article.id,
                     chunk_idx=idx,
                     content=content,
-                    embedding=[0.0] * 2048,  # placeholder — replaced after embed()
+                    embedding=[0.0] * 1024,  # placeholder — replaced after embed()
                     metadata={"source": article.source, "tickers": list(article.tickers)},
                 )
             )

@@ -28,8 +28,17 @@ _FEATURE_LABELS: dict[str, str] = {
     "score_wachstum": "Score Wachstum",
     "score_substanz": "Score Substanz",
     "return_12m": "12M Return",
+    "return_6m": "6M Return",
+    "return_3m": "3M Return",
     "vol_30d": "30-Tage Volatilität",
+    "vol_90d": "90-Tage Volatilität",
     "rsi_14": "RSI (14)",
+    "price_to_52w_high": "Preis / 52W-Hoch",
+    "vol_trend": "Volumen-Trend",
+    "macd_hist": "MACD Histogramm",
+    "bb_position": "Bollinger Band Position",
+    "return_1m": "1M Return",
+    "drawdown_12m": "Max Drawdown 12M",
     "snb_rate": "SNB Leitzins",
     "chf_eur": "CHF/EUR Kurs",
 }
@@ -58,6 +67,18 @@ def _load_model() -> tuple[Any, str]:
         with _LATEST_META.open() as f:
             meta = json.load(f)
         _model_type_cache = meta.get("model_type", "unknown")
+
+        # ML-3: Feature-Name-Validierung — verhindert Silent-Mismatch nach Feature-Änderungen
+        from backend.domain.value_objects.ml_feature_vector import MLFeatureVector
+
+        stored_features = meta.get("feature_names", [])
+        current_features = list(MLFeatureVector.FEATURE_NAMES)
+        if stored_features and stored_features != current_features:
+            raise ValueError(
+                f"Feature-Mismatch beim Modell-Laden: "
+                f"Modell trainiert mit {len(stored_features)} Features, "
+                f"Code hat {len(current_features)}. Modell muss neu trainiert werden."
+            )
 
     _logger.info("Return-Predictor geladen: %s (%s)", _LATEST_MODEL.name, _model_type_cache)
     return _model_cache, _model_type_cache

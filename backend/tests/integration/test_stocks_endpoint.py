@@ -113,3 +113,31 @@ async def test_get_stock_by_ticker_nesn(http_client: AsyncClient) -> None:
     body = response.json()
     assert body["ticker"] == "NESN"
     assert body["currency"] == "CHF"
+
+
+# ---------------------------------------------------------------------------
+# F-PERF-1 / K-5: /api/v1/stocks darf NICHT vom LLM-Rate-Limiter erfasst werden.
+#
+# _LLM_PREFIXES matchte bisher per startswith() auch reine GET-Lese-Endpoints
+# unter /api/v1/stocks (keiner davon macht einen LLM- oder Embedding-Call),
+# was bei nur 5 gleichzeitigen Usern bereits ab dem 11. Request/IP/60s zu
+# >60% 429-Fehlerrate führte — weit unterhalb echter Serverlast.
+# ---------------------------------------------------------------------------
+
+
+async def test_stocks_list_not_rate_limited_after_eleven_requests(
+    http_client: AsyncClient,
+) -> None:
+    """GET /api/v1/stocks macht keinen LLM-Call und darf nie 429 liefern."""
+    statuses = [(await http_client.get("/api/v1/stocks")).status_code for _ in range(11)]
+    assert all(status == 200 for status in statuses), statuses
+
+
+async def test_stocks_factsheet_not_rate_limited_after_eleven_requests(
+    http_client: AsyncClient,
+) -> None:
+    """GET /api/v1/stocks/{ticker}/factsheet macht keinen LLM-Call, darf nie 429 liefern."""
+    statuses = [
+        (await http_client.get("/api/v1/stocks/AAPL/factsheet")).status_code for _ in range(11)
+    ]
+    assert 429 not in statuses, statuses

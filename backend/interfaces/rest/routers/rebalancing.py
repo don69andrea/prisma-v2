@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 
-from backend.application.services.rebalancing_service import RebalancingService
+from backend.application.services.rebalancing_service import (
+    RebalancingService,
+    UnknownTickersError,
+)
+from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
+from backend.interfaces.rest.dependencies import get_swiss_stock_repository
 from backend.interfaces.rest.schemas.rebalancing import (
     RebalancingPlanResponse,
     RebalancingRequest,
@@ -17,24 +22,40 @@ router = APIRouter(prefix="/api/v1/portfolio", tags=["rebalancing"])
 @router.post(
     "/rebalance",
     response_model=RebalancingPlanResponse,
-    summary="Rebalancing-Plan berechnen",
+    summary="Eigenes Portfolio rebalancieren (Gewichte-basiert)",
     description=(
-        "Berechnet Kauf-/Verkauf-Schritte um ein Portfolio von der Ist- zur Soll-Allokation "
-        "zu bringen. Inklusive Transaktionskostenschätzung. "
+        "Berechnet Kauf-/Verkauf-Schritte um ein selbst eingegebenes, bestehendes "
+        "Portfolio von der Ist- zur Soll-Allokation zu bringen. Ist- und "
+        "Soll-Gewichte werden je Ticker direkt im Request angegeben "
+        "(`current_weights`, `target_weights`) — kein Bezug zu einem Ranking-Run "
+        "nötig. Inklusive Transaktionskostenschätzung. "
         "Mit is_3a_account=true werden nur BVV2/FINMA-geeignete Titel empfohlen. "
-        "Keine Anlageberatung."
+        "Keine Anlageberatung.\n\n"
+        "Hinweis: Dies ist der Endpoint für die Verwaltung des eigenen Portfolios. "
+        "Für eine KI-Empfehlung basierend auf einem abgeschlossenen Ranking-Run "
+        "siehe stattdessen `POST /api/v1/portfolio/allocate`."
     ),
 )
 async def compute_rebalancing_plan(
     body: RebalancingRequest,
+    swiss_repo: SwissStockRepository = Depends(get_swiss_stock_repository),
 ) -> RebalancingPlanResponse:
-    service = RebalancingService(transaction_cost_rate=body.transaction_cost_rate)
-    plan = await service.compute_plan(
-        total_portfolio_value_chf=body.total_portfolio_value_chf,
-        current_weights=body.current_weights,
-        target_weights=body.target_weights,
-        is_3a_account=body.is_3a_account,
+    service = RebalancingService(
+        transaction_cost_rate=body.transaction_cost_rate,
+        stock_repo=swiss_repo,
     )
+    try:
+        plan = await service.compute_plan(
+            total_portfolio_value_chf=body.total_portfolio_value_chf,
+            current_weights=body.current_weights,
+            target_weights=body.target_weights,
+            is_3a_account=body.is_3a_account,
+        )
+    except UnknownTickersError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unbekannte Ticker (nicht im Aktien-Universum): {', '.join(exc.tickers)}",
+        ) from exc
     return RebalancingPlanResponse(
         plan_id=plan.plan_id,
         steps=[

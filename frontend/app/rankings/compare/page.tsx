@@ -29,7 +29,7 @@ export default function ComparePage() {
           <ArrowLeft className="mr-1 h-4 w-4" />
           Zurück
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">Run-Vergleich</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Run-Vergleich.</h1>
       </div>
 
       <Suspense fallback={<PageSkeleton />}>

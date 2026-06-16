@@ -25,8 +25,8 @@ docker --version    # beliebig
 ## 1. Repo klonen
 
 ```bash
-git clone https://github.com/SheylaSam/prisma-capstone.git
-cd prisma-capstone
+git clone https://github.com/don69andrea/prisma-v2.git
+cd prisma-v2
 ```
 
 ## 2. Python-Umgebung einrichten

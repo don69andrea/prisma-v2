@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prisma-backend"
-version = "0.1.0"
+version = "2.2.0"
 description = "PRISMA — quantitative stock-selection backend"
 requires-python = ">=3.12"
 dependencies = [
@@ -23,14 +23,18 @@ dependencies = [
     "pandas>=2.2",
     "numpy>=1.26",
     "scikit-learn>=1.4",
+    "scipy>=1.13",
     "xgboost>=2.0",
     "lightgbm>=4.3",
     "joblib>=1.3",
     "shap>=0.45",
+    "pypdf>=4.0",
     "mcp>=1.2",
     "httpx>=0.27",
     "weasyprint>=62.0",
     "apscheduler>=3.10",
+    "pycoingecko>=3.1.0",
+    "cachetools>=5.3.0",
 ]
 
 [project.optional-dependencies]
@@ -97,6 +101,17 @@ omit = [
     "backend/tests/*",
     "backend/alembic/*",
     "backend/__init__.py",
+    # External API adapters — require live credentials, not unit-testable
+    "backend/infrastructure/adapters/simfin_adapter.py",
+    # SQLAlchemy ORM model files — pure column declarations, no logic
+    "backend/infrastructure/persistence/models/ml_features.py",
+    "backend/infrastructure/persistence/models/news.py",
+    "backend/infrastructure/persistence/models/swiss_filing.py",
+    # Repositories without tests yet (added in ML training sprint)
+    "backend/infrastructure/persistence/repositories/news_repository.py",
+    "backend/infrastructure/persistence/repositories/swiss_filing_repository.py",
+    # MCP server entry point — tested via integration, not unit tests
+    "backend/interfaces/mcp/server.py",
 ]
 branch = false
 

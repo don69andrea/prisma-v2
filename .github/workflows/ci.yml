@@ -140,7 +140,15 @@ jobs:
         run: npm run lint
 
       - name: Unit Tests
-        run: npm test
+        run: npm test -- --coverage
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          path: frontend/coverage/
+          retention-days: 14
 
       - name: Build
         env:
@@ -167,7 +175,7 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql://prisma:prisma@localhost:5432/prisma_test
-      E2E_API_BASE_URL: http://localhost:8000
+      PLAYWRIGHT_API_URL: http://localhost:8000
       NEXT_PUBLIC_API_URL: http://localhost:8000
       PLAYWRIGHT_NO_WEBSERVER: "1"
     steps:

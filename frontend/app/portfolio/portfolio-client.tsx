@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
-import { TrendingUp, TrendingDown, Minus, Plus, Trash2, Download } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Plus, Trash2, Download, PieChart, AlertTriangle } from 'lucide-react';
 
 import {
   computeRebalancingPlan,
@@ -36,6 +36,27 @@ function chfFormat(v: number): string {
 
 function pctFormat(v: number): string {
   return (v * 100).toFixed(1) + '%';
+}
+
+function InfoBtn({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold bg-muted text-muted-foreground hover:bg-accent hover:text-foreground transition-colors ml-1"
+        aria-label="Mehr Info"
+      >
+        i
+      </button>
+      {show && (
+        <span className="absolute z-50 left-6 -top-1 w-52 text-xs bg-popover border border-border rounded-md px-2 py-1.5 text-popover-foreground shadow-lg">
+          {text}
+        </span>
+      )}
+    </span>
+  );
 }
 
 function exportRebalancingCsv(plan: RebalancingPlan) {
@@ -150,7 +171,7 @@ function PlanResult({ plan }: { plan: RebalancingPlan }) {
           className="flex items-center gap-2 rounded-md border border-amber-400/50 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:bg-amber-950/20 dark:text-amber-300"
           data-testid="portfolio-cost-warning"
         >
-          <span className="shrink-0">⚠️</span>
+          <AlertTriangle className="h-4 w-4 shrink-0" />
           Achtung: Transaktionskosten überschreiten 1% des Portfoliowerts (
           {(plan.total_transaction_cost_chf / plan.total_portfolio_value_chf * 100).toFixed(2)}%)
         </div>
@@ -161,7 +182,10 @@ function PlanResult({ plan }: { plan: RebalancingPlan }) {
           <thead>
             <tr className="border-b bg-muted/50 text-xs text-muted-foreground">
               <th className="py-2 px-3 text-left">Ticker</th>
-              <th className="py-2 px-3 text-left">Aktion</th>
+              <th className="py-2 px-3 text-left">
+                Aktion
+                <InfoBtn text="Rebalancing: Anpassung des Portfolios auf die Zielgewichtungen. BUY = kaufen, SELL = verkaufen, HOLD = behalten." />
+              </th>
               <th className="py-2 px-3 text-right">Ist</th>
               <th className="py-2 px-3 text-right">Soll</th>
               <th className="py-2 px-3 text-right">Delta</th>
@@ -201,10 +225,30 @@ function loadStoredPortfolio() {
 }
 
 export function PortfolioClient() {
-  const [totalValue, setTotalValue] = useState(() => loadStoredPortfolio()?.totalValue ?? '100000');
-  const [is3a, setIs3a] = useState(() => loadStoredPortfolio()?.is3a ?? false);
-  const [positions, setPositions] = useState<PositionRow[]>(() => loadStoredPortfolio()?.positions ?? DEFAULT_POSITIONS);
+  const [totalValue, setTotalValue] = useState('100000');
+  const [is3a, setIs3a] = useState(false);
+  const [positions, setPositions] = useState<PositionRow[]>(DEFAULT_POSITIONS);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const s = loadStoredPortfolio();
+    if (!s) return;
+    if (s.totalValue) setTotalValue(s.totalValue);
+    if (typeof s.is3a === 'boolean') setIs3a(s.is3a);
+    if (s.positions?.length) setPositions(s.positions);
+  }, []);
+
+  const totalCurrentWeight = positions.reduce((sum, p) => sum + (parseFloat(p.current) || 0), 0);
+  const totalTargetWeight = positions.reduce((sum, p) => sum + (parseFloat(p.target) || 0), 0);
+  const weightError = totalCurrentWeight > 100
+    ? `Ist-Gewichte: ${totalCurrentWeight.toFixed(1)}% — maximal 100% erlaubt`
+    : totalTargetWeight > 100
+    ? `Soll-Gewichte: ${totalTargetWeight.toFixed(1)}% — maximal 100% erlaubt`
+    : null;
+
+  // Weight status indicators
+  const currentWeightStatus = totalCurrentWeight === 100 ? 'ok' : totalCurrentWeight > 100 ? 'over' : 'under';
+  const targetWeightStatus = totalTargetWeight === 100 ? 'ok' : totalTargetWeight > 100 ? 'over' : 'under';
 
   const mutation = useMutation({
     mutationFn: computeRebalancingPlan,
@@ -275,71 +319,124 @@ export function PortfolioClient() {
           </label>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs text-muted-foreground border-b">
-                <th className="py-1 pr-3 text-left">Ticker</th>
-                <th className="py-1 pr-3 text-right">Ist-Gewicht (%)</th>
-                <th className="py-1 pr-3 text-right">Soll-Gewicht (%)</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {positions.map((pos, i) => (
-                <tr key={i} className="border-b last:border-0">
-                  <td className="py-1.5 pr-3">
-                    <input
-                      className="w-20 rounded border bg-background px-2 py-1 text-sm uppercase focus:outline-none focus:ring-1 focus:ring-primary"
-                      value={pos.ticker}
-                      placeholder="NESN"
-                      onChange={(e) => updatePosition(i, 'ticker', e.target.value)}
-                    />
-                  </td>
-                  <td className="py-1.5 pr-3">
-                    <input
-                      className="w-20 rounded border bg-background px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={pos.current}
-                      onChange={(e) => updatePosition(i, 'current', e.target.value)}
-                    />
-                  </td>
-                  <td className="py-1.5 pr-3">
-                    <input
-                      className="w-20 rounded border bg-background px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={pos.target}
-                      onChange={(e) => updatePosition(i, 'target', e.target.value)}
-                    />
-                  </td>
-                  <td className="py-1.5">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => removePosition(i)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {positions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <PieChart className="h-10 w-10 text-muted-foreground/40" />
+            <p className="text-sm font-medium">Dein Portfolio ist leer</p>
+            <p className="text-xs text-muted-foreground max-w-xs">Füge Aktien und ihre Gewichtung hinzu um dein Portfolio zu analysieren</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-muted-foreground border-b">
+                    <th className="py-1 pr-3 text-left">Ticker</th>
+                    <th className="py-1 pr-3 text-right">
+                      Ist-Gewicht (%)
+                      <InfoBtn text="Wie viel Prozent deines Gesamtkapitals aktuell in dieser Aktie investiert ist. Alle Positionen zusammen müssen 100% ergeben." />
+                    </th>
+                    <th className="py-1 pr-3 text-right">
+                      Soll-Gewicht (%)
+                      <InfoBtn text="Wie viel Prozent deines Gesamtkapitals du zukünftig in dieser Aktie haben möchtest. Alle Soll-Gewichte müssen zusammen 100% ergeben." />
+                    </th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {positions.map((pos, i) => (
+                    <tr key={i} className="border-b last:border-0">
+                      <td className="py-1.5 pr-3">
+                        <input
+                          className="w-20 rounded border bg-background px-2 py-1 text-sm uppercase focus:outline-none focus:ring-1 focus:ring-primary"
+                          value={pos.ticker}
+                          placeholder="NESN"
+                          onChange={(e) => updatePosition(i, 'ticker', e.target.value)}
+                        />
+                      </td>
+                      <td className="py-1.5 pr-3">
+                        <input
+                          className="w-20 rounded border bg-background px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={pos.current}
+                          onChange={(e) => updatePosition(i, 'current', e.target.value)}
+                        />
+                      </td>
+                      <td className="py-1.5 pr-3">
+                        <input
+                          className="w-20 rounded border bg-background px-2 py-1 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={pos.target}
+                          onChange={(e) => updatePosition(i, 'target', e.target.value)}
+                        />
+                      </td>
+                      <td className="py-1.5">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => removePosition(i)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Weight status indicators */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className={cn(
+                'flex-1 rounded-md border px-3 py-2 text-xs font-medium',
+                currentWeightStatus === 'ok'
+                  ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                  : currentWeightStatus === 'over'
+                  ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                  : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
+              )}>
+                {currentWeightStatus === 'ok'
+                  ? `Ist-Gewichtung: 100% ✓`
+                  : currentWeightStatus === 'over'
+                  ? `Ist-Gewichtung: ${totalCurrentWeight.toFixed(1)}% — maximal 100% erlaubt`
+                  : `Ist-Gewichtung: ${totalCurrentWeight.toFixed(1)}% — noch ${(100 - totalCurrentWeight).toFixed(1)}% offen`}
+              </div>
+              <div className={cn(
+                'flex-1 rounded-md border px-3 py-2 text-xs font-medium',
+                targetWeightStatus === 'ok'
+                  ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                  : targetWeightStatus === 'over'
+                  ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                  : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
+              )}>
+                {targetWeightStatus === 'ok'
+                  ? `Soll-Gewichtung: 100% ✓`
+                  : targetWeightStatus === 'over'
+                  ? `Soll-Gewichtung: ${totalTargetWeight.toFixed(1)}% — maximal 100% erlaubt`
+                  : `Soll-Gewichtung: ${totalTargetWeight.toFixed(1)}% — noch ${(100 - totalTargetWeight).toFixed(1)}% offen`}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="flex gap-2 flex-wrap">
           <Button type="button" size="sm" variant="outline" onClick={addPosition}>
             <Plus className="h-3.5 w-3.5 mr-1" /> Position
           </Button>
-          <Button type="submit" size="sm" disabled={mutation.isPending} data-testid="plan-submit-btn">
+          <Button
+            type="submit"
+            size="sm"
+            disabled={mutation.isPending || !!weightError || totalCurrentWeight === 0 || totalTargetWeight === 0}
+            data-testid="plan-submit-btn"
+          >
             {mutation.isPending ? 'Berechne…' : 'Plan berechnen'}
           </Button>
           {JSON.stringify(positions) !== JSON.stringify(DEFAULT_POSITIONS) && (
@@ -356,6 +453,7 @@ export function PortfolioClient() {
           )}
         </div>
 
+        {weightError && <p className="text-xs text-destructive">{weightError}</p>}
         {error && <p className="text-xs text-destructive" data-testid="portfolio-error">{error}</p>}
       </form>
 

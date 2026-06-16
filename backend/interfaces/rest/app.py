@@ -5,16 +5,23 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
 from backend.domain.errors import BudgetCapExceeded
-from backend.interfaces.rest.exception_handlers import handle_budget_cap_exceeded
+from backend.interfaces.rest.dependencies import require_admin_api_key
+from backend.interfaces.rest.exception_handlers import (
+    handle_budget_cap_exceeded,
+    handle_unhandled_exception,
+)
+from backend.interfaces.rest.rate_limiter import LLMRateLimiterMiddleware
 from backend.interfaces.rest.routers import (
     admin,
     alerts,
     backtests,
+    chat,
+    crypto,
     decision_audit,
     decisions,
     discovery,
@@ -30,6 +37,7 @@ from backend.interfaces.rest.routers import (
     portfolio,
     rag,
     rebalancing,
+    reports,
     runs,
     steuer,
     stocks,
@@ -43,11 +51,16 @@ _logger = logging.getLogger(__name__)
 async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from backend.infrastructure.workers.alert_worker import create_alert_scheduler
 
-    scheduler = create_alert_scheduler()
-    scheduler.start()
-    _logger.info("APScheduler started — daily alert check at 08:00 Europe/Zurich")
+    try:
+        scheduler = create_alert_scheduler()
+        scheduler.start()
+        _logger.info("APScheduler started — daily alert check at 08:00 Europe/Zurich")
+    except Exception:
+        _logger.exception("Alert-Scheduler konnte nicht gestartet werden — Alerts deaktiviert")
+        scheduler = None
     yield
-    scheduler.shutdown(wait=False)
+    if scheduler is not None:
+        scheduler.shutdown(wait=False)
     # On shutdown: mark any jobs that are still "running" or "pending" as failed
     # so the next restart can safely ignore them instead of treating them as active.
     try:
@@ -85,6 +98,7 @@ def create_app() -> FastAPI:
     """
     settings = get_settings()
 
+    is_production = settings.environment == "production"
     app = FastAPI(
         lifespan=_lifespan,
         title="PRISMA API",
@@ -94,15 +108,19 @@ def create_app() -> FastAPI:
             "keine Anlageberatung."
         ),
         version="0.1.0",
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url=None if is_production else "/docs",
+        redoc_url=None if is_production else "/redoc",
+        openapi_url=None if is_production else "/openapi.json",
     )
 
+    # K-13: In Starlette the last-added middleware becomes the outermost layer.
+    # LLMRateLimiterMiddleware must be added first (innermost) so that CORSMiddleware
+    # (outermost) can attach CORS headers to 429 responses from the rate limiter.
+    app.add_middleware(LLMRateLimiterMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
@@ -112,28 +130,38 @@ def create_app() -> FastAPI:
     # Signatur nicht akzeptiert. Laufzeit funktioniert korrekt; das ist ein
     # bekanntes Sticky-Problem im Starlette/FastAPI-Type-Stub.
     app.add_exception_handler(BudgetCapExceeded, handle_budget_cap_exceeded)  # type: ignore[arg-type]
+    app.add_exception_handler(Exception, handle_unhandled_exception)
 
-    app.include_router(health.router)
-    app.include_router(discovery.router)
-    app.include_router(stocks.router)
-    app.include_router(eligibility.router)
-    app.include_router(dividends.router)
-    app.include_router(fundamentals.router)
-    app.include_router(universes.router)
-    app.include_router(admin.router)
-    app.include_router(runs.router)
-    app.include_router(memos.router, prefix="/api/v1")
-    app.include_router(backtests.router)
-    app.include_router(rag.router)
-    app.include_router(steuer.router)
-    app.include_router(news.router)
-    app.include_router(ml.router)
-    app.include_router(decisions.router)
-    app.include_router(decision_audit.router)
-    app.include_router(macro.router)
-    app.include_router(portfolio.router)
-    app.include_router(fonds_vergleich.router)
-    app.include_router(rebalancing.router)
-    app.include_router(alerts.router)
+    _auth = [Depends(require_admin_api_key)]
+
+    # Public — kein API-Key erforderlich
+    app.include_router(health.router)  # Render health checks
+    app.include_router(discovery.router)  # Onboarding-Flow (Demo, öffentlich)
+
+    # Geschützt — X-API-Key Header erforderlich
+    app.include_router(chat.router, dependencies=_auth)
+    app.include_router(reports.router, dependencies=_auth)
+    app.include_router(stocks.router, dependencies=_auth)
+    app.include_router(eligibility.router, dependencies=_auth)
+    app.include_router(dividends.router, dependencies=_auth)
+    app.include_router(fundamentals.router, dependencies=_auth)
+    app.include_router(universes.router, dependencies=_auth)
+    app.include_router(admin.router, dependencies=_auth)
+    app.include_router(runs.router, dependencies=_auth)
+    app.include_router(memos.router, dependencies=_auth, prefix="/api/v1")
+    app.include_router(backtests.router, dependencies=_auth)
+    app.include_router(backtests.signal_router, dependencies=_auth)
+    app.include_router(rag.router, dependencies=_auth)
+    app.include_router(steuer.router, dependencies=_auth)
+    app.include_router(news.router, dependencies=_auth)
+    app.include_router(ml.router, dependencies=_auth)
+    app.include_router(decisions.router, dependencies=_auth)
+    app.include_router(decision_audit.router, dependencies=_auth)
+    app.include_router(macro.router, dependencies=_auth)
+    app.include_router(portfolio.router, dependencies=_auth)
+    app.include_router(fonds_vergleich.router, dependencies=_auth)
+    app.include_router(rebalancing.router, dependencies=_auth)
+    app.include_router(alerts.router, dependencies=_auth)
+    app.include_router(crypto.router, dependencies=_auth)
 
     return app

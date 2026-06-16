@@ -7,7 +7,11 @@ from decimal import Decimal
 
 import pytest
 
-from backend.domain.errors import BudgetCapExceeded
+from backend.domain.errors import (
+    BudgetCapExceeded,
+    SwissDataUnavailableError,
+    YahooFinanceBlockedError,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -52,3 +56,27 @@ class TestBudgetCapExceeded:
         assert "0.50" in message
         assert "8.00" in message
         assert "USD" in message
+
+
+class TestYahooFinanceBlockedError:
+    def test_is_a_swiss_data_unavailable_error(self) -> None:
+        """Subklassen-Beziehung erlaubt `except SwissDataUnavailableError`,
+        um beide Fälle (unbekannter Ticker / Yahoo-Blockade) einheitlich
+        abzufangen, während Router bei Bedarf differenzieren können."""
+        exc = YahooFinanceBlockedError("NESN")
+        assert isinstance(exc, SwissDataUnavailableError)
+        assert isinstance(exc, Exception)
+
+    def test_attributes_are_preserved(self) -> None:
+        exc = YahooFinanceBlockedError("NESN")
+        assert exc.ticker == "NESN"
+
+    def test_message_mentions_ticker_and_blockage(self) -> None:
+        exc = YahooFinanceBlockedError("NESN")
+        message = str(exc)
+        assert "NESN" in message
+        assert "Yahoo Finance" in message
+
+    def test_cause_is_included_in_message_when_given(self) -> None:
+        exc = YahooFinanceBlockedError("NESN", cause="401 Unauthorized")
+        assert "401 Unauthorized" in str(exc)

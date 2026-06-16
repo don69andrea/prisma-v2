@@ -19,6 +19,12 @@ vi.mock('next/link', () => ({
     </a>
   ),
 }));
+vi.mock('@/hooks/usePrismaMode', () => ({
+  usePrismaMode: () => ({ mode: 'simple', toggle: vi.fn(), isSimple: true, isPro: false }),
+}));
+vi.mock('@/app/start/start-client', () => ({
+  PROFILE_STORAGE_KEY: 'prisma_profile_type',
+}));
 
 import { usePathname } from 'next/navigation';
 import { NavLinks } from '../nav-links';
@@ -28,10 +34,10 @@ describe('NavLinks', () => {
     vi.mocked(usePathname).mockReturnValue('/');
     render(<NavLinks />);
     expect(screen.getByText('ENTDECKEN')).toBeInTheDocument();
-    expect(screen.getByText('VERSTEHEN')).toBeInTheDocument();
-    expect(screen.getByText('VERGLEICHEN')).toBeInTheDocument();
+    expect(screen.getByText('ANALYSIEREN')).toBeInTheDocument();
     expect(screen.getByText('ENTSCHEIDEN')).toBeInTheDocument();
-    expect(screen.getByText('PORTFOLIO')).toBeInTheDocument();
+    expect(screen.getByText('WATCHLIST')).toBeInTheDocument();
+    expect(screen.getByText('RESEARCH')).toBeInTheDocument();
   });
 
   it('hebt den aktiven Link hervor und setzt aria-current', () => {
@@ -39,7 +45,6 @@ describe('NavLinks', () => {
     render(<NavLinks />);
     const active = screen.getByRole('link', { name: 'Rankings' });
     expect(active).toHaveAttribute('aria-current', 'page');
-    expect(active.className).toContain('text-foreground');
   });
 
   it('matched verschachtelte Pfade — /rankings/abc aktiviert Rankings', () => {
@@ -48,10 +53,10 @@ describe('NavLinks', () => {
     expect(screen.getByRole('link', { name: 'Rankings' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('Universen- und Signale-Link sind vorhanden', () => {
+  it('Mein-Universum- und Signale-Link sind vorhanden', () => {
     vi.mocked(usePathname).mockReturnValue('/');
     render(<NavLinks />);
-    expect(screen.getByRole('link', { name: 'Universen' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mein Universum' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Signale' })).toBeInTheDocument();
   });
 

@@ -59,3 +59,15 @@ class CostLogRepository(ABC):
     async def current_month_breakdown(self, last_n: int) -> CostBreakdown:
         """Aggregat: by_model, by_feature, letzte N Calls — für Admin-Endpoint."""
         ...
+
+    @abstractmethod
+    async def check_cap_atomic(
+        self, estimated_usd: Decimal, cap_usd: Decimal, threshold: Decimal
+    ) -> bool:
+        """Atomarer Cap-Check via PostgreSQL Advisory Lock — multi-process-sicher.
+
+        Gibt True zurück wenn (current_month_total + estimated_usd) <= cap_usd * threshold.
+        Verwendet pg_try_advisory_xact_lock um Race Conditions zwischen Prozessen zu verhindern.
+        Muss innerhalb einer Transaktion aufgerufen werden.
+        """
+        ...

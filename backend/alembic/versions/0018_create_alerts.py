@@ -10,6 +10,7 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision: str = "0018"
 down_revision: str | None = "0017"
@@ -20,7 +21,7 @@ depends_on: Sequence[str] | None = None
 def upgrade() -> None:
     op.create_table(
         "alerts",
-        sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("ticker", sa.String(20), nullable=False),
         sa.Column("trigger_type", sa.String(20), nullable=False),
         sa.Column("threshold", sa.Float(), nullable=False),

@@ -13,7 +13,7 @@ class Alert:
     """Repräsentiert einen konfigurierten Alert für einen Ticker.
 
     trigger_type:
-      SIGNAL_CHANGE — feuert wenn BUY/HOLD/WATCH-Signal sich ändert
+      SIGNAL_CHANGE — feuert wenn BUY/HOLD/SELL-Signal sich ändert
       PRICE_CHANGE  — feuert wenn Kurs um mehr als `threshold`% ändert (seit Erstellung)
 
     channel:

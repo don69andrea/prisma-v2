@@ -599,3 +599,21 @@ async def get_crypto_scoring_service() -> CryptoScoringService:
         fg_adapter=_get_fear_greed_singleton(),
         scorer=CryptoScorer(),
     )
+
+
+# ---------------------------------------------------------------------------
+# Chat DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_chat_service(
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
+) -> Any:
+    """Erstellt den ChatService mit CostTracker (W-16/F-COMM-3).
+
+    Ohne Injection würden Claude-Calls aus dem Chat-Endpoint nie im
+    Admin-Cost-Dashboard (GET /api/v1/admin/costs) auftauchen.
+    """
+    from backend.application.services.chat_service import ChatService
+
+    return ChatService(cost_tracker=cost_tracker)

@@ -10,6 +10,7 @@ import logging
 from collections import defaultdict, deque
 from time import monotonic
 
+from fastapi import HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -61,6 +62,10 @@ class LLMRateLimiterMiddleware(BaseHTTPMiddleware):
         if not any(path.startswith(prefix) for prefix in _LLM_PREFIXES):
             try:
                 return await call_next(request)
+            except HTTPException as exc:
+                return JSONResponse(
+                    {"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers
+                )
             except Exception:
                 _logger.exception("Unhandled exception for %s", path)
                 return JSONResponse({"detail": "Interner Serverfehler."}, status_code=500)
@@ -85,6 +90,10 @@ class LLMRateLimiterMiddleware(BaseHTTPMiddleware):
 
         try:
             return await call_next(request)
+        except HTTPException as exc:
+            return JSONResponse(
+                {"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers
+            )
         except Exception:
             _logger.exception("Unhandled exception for %s", path)
             return JSONResponse({"detail": "Interner Serverfehler."}, status_code=500)

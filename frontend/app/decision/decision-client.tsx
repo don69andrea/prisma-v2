@@ -240,6 +240,18 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
           )}
         </div>
       </div>
+
+      <button
+        onClick={() => setAuditOpen((o) => !o)}
+        className="flex items-center gap-1 text-[11px] text-[#8b949e] hover:text-[#58a6ff] transition-colors w-full"
+        data-testid="audit-trail-toggle"
+        aria-expanded={auditOpen}
+      >
+        {auditOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        Audit-Trail {auditOpen ? 'schliessen' : 'anzeigen'}
+      </button>
+
+      {auditOpen && <AuditTrail item={item} />}
     </div>
   );
 }

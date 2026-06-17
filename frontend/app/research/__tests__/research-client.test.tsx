@@ -23,6 +23,11 @@ vi.mock('@/lib/api/macro', () => ({
   getMacroContext: vi.fn().mockRejectedValue(new Error('network error')),
 }));
 
+// Force Pro Mode so the right panel (MacroPanel, AgentPanel, MetricsPanel) renders
+vi.mock('@/hooks/usePrismaMode', () => ({
+  usePrismaMode: () => ({ mode: 'pro', toggle: vi.fn() }),
+}));
+
 import { ResearchClient } from '../research-client';
 
 beforeAll(() => {

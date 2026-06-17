@@ -47,6 +47,19 @@ class LLMClient:
         self._cost_tracker = cost_tracker
         self._pricing = pricing
 
+    @property
+    def raw_client(self) -> Any:
+        """Direkter Zugriff auf den Anthropic-SDK-Client für Streaming-Calls.
+
+        Streaming läuft nicht über messages_create (kein Streaming-Support dort).
+        ChatService und CryptoAgentService nutzen diese Property damit sie den
+        prozess-weiten Connection-Pool und die konfigurierten timeout/max_retries
+        erhalten statt eine eigene AsyncAnthropic()-Instanz zu bauen.
+        Budget-Cap-Check + Cost-Tracking: muss der Aufrufer selbst via
+        self._llm._cost_tracker.record() durchführen.
+        """
+        return self._anthropic
+
     async def messages_create(
         self,
         *,

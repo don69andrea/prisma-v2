@@ -4,15 +4,13 @@
 Budget-Cap-Check + Cost-Audit-Log, projektweite Pflicht für Application-Layer
 LLM-Calls (siehe AGENTS.md/CLAUDE.md).
 
-`stream_analysis()` (on-demand SSE) bypassed LLMClient bewusst: der Wrapper
-unterstützt kein Streaming. Das ist kein neuer Präzedenzfall — ChatService.stream()
-(`chat_service.py`) macht es exakt genauso (direkter `anthropic.AsyncAnthropic()`).
+`stream_analysis()` (on-demand SSE) nutzt seit FIX-01 `self._llm.raw_client` —
+kein direktes `anthropic.AsyncAnthropic()` mehr in der Application-Layer.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -76,14 +74,10 @@ class CryptoAgentService:
         self, ticker: str, signal_data: dict[str, Any], patterns: list[str]
     ) -> AsyncIterator[str]:
         """Streamt die Analyse als rohe Text-Tokens (für SSE-Endpoint, on-demand)."""
-        api_key = os.getenv("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            yield "Agent nicht verfügbar (API Key fehlt)."
-            return
+        # FIX-01: raw_client nutzt den prozess-weiten Connection-Pool (Singleton) aus get_anthropic_client().
+        # Kein eigenes anthropic.AsyncAnthropic() mehr — alle Streaming-Calls laufen über LLMClient.raw_client.
         try:
-            import anthropic
-
-            client = anthropic.AsyncAnthropic()
+            client = self._llm.raw_client
             prompt = _build_prompt(ticker, signal_data, patterns)
             async with client.messages.stream(
                 model=_MODEL,

@@ -651,13 +651,14 @@ async def require_crypto_enabled(settings: Settings = Depends(get_settings)) -> 
 
 
 async def get_chat_service(
-    cost_tracker: CostTracker = Depends(get_cost_tracker),
+    llm_client: LLMClient = Depends(get_llm_client),
 ) -> Any:
-    """Erstellt den ChatService mit CostTracker (W-16/F-COMM-3).
+    """Erstellt den ChatService mit injiziertem LLMClient (FIX-01).
 
-    Ohne Injection würden Claude-Calls aus dem Chat-Endpoint nie im
-    Admin-Cost-Dashboard (GET /api/v1/admin/costs) auftauchen.
+    LLMClient enthält den prozess-weiten Connection-Pool, timeout=30s,
+    max_retries=3 und den CostTracker für Audit-Logging.
+    ChatService greift via llm_client.raw_client auf den Anthropic-SDK zu.
     """
     from backend.application.services.chat_service import ChatService
 
-    return ChatService(cost_tracker=cost_tracker)
+    return ChatService(llm_client=llm_client)

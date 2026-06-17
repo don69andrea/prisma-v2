@@ -48,7 +48,7 @@ def _signal_reason(signal: str, weighted_score: float, quant_score: float) -> st
     )
 
 
-_MAX_LIVE_TICKERS = 12
+_MAX_LIVE_TICKERS = 25
 
 
 def get_signal_aggregation_service(

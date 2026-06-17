@@ -118,7 +118,7 @@ class MonteCarloService:
         if abs(total_weight - 1.0) > 0.01:
             raise ValueError(f"Gewichte müssen 1.0 ergeben, ist: {total_weight:.3f}")
         mu_arr, sigma_arr, corr_matrix = await self._fetch_return_params(inp.holdings)
-        return _run_gbm(inp, mu_arr, sigma_arr, corr_matrix)
+        return run_gbm(inp, mu_arr, sigma_arr, corr_matrix)
 
     async def _fetch_return_params(
         self, holdings: list[HoldingWeight]
@@ -227,7 +227,7 @@ async def _fetch_ticker_params(
         raise
 
 
-def _run_gbm(
+def run_gbm(
     inp: MonteCarloInput,
     mu_arr: np.ndarray,
     sigma_arr: np.ndarray,

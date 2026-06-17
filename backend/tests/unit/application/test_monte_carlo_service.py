@@ -17,8 +17,8 @@ from backend.application.services.monte_carlo_service import (
     MonteCarloResult,
     MonteCarloService,
     _fetch_ticker_params,
-    _run_gbm,
     build_interpretation,
+    run_gbm,
 )
 
 pytestmark = pytest.mark.unit
@@ -103,7 +103,7 @@ def test_run_gbm_single_asset() -> None:
     mu = np.array([0.0003])
     sigma = np.array([0.01])
     corr = np.array([[1.0]])
-    result = _run_gbm(inp, mu, sigma, corr)
+    result = run_gbm(inp, mu, sigma, corr)
     assert len(result.p50) == 12
     assert all(v > 0 for v in result.p50)
 

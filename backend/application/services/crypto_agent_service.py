@@ -21,24 +21,34 @@ _logger = logging.getLogger(__name__)
 _MODEL = "claude-haiku-4-5-20251001"
 
 _SYSTEM_PROMPT = """Du bist ein präziser Krypto-Analyst bei einer Schweizer Finanzplattform (PRISMA).
-Deine Aufgabe: Schreibe eine kurze, faktenbasierte Einschätzung auf Deutsch (max. 2 Sätze).
-- Beziehe dich auf konkrete Zahlen (Score, RSI, erkannte Patterns)
+Deine Aufgabe: Erkläre in 2 Sätzen auf Deutsch, WARUM dieser Titel seinen aktuellen Score hat.
+- Nenne die 1-2 stärksten treibenden Faktoren aus den Score-Komponenten
+- Erkläre den Zusammenhang — nicht nur die Zahlen wiederholen
 - Kein Hype, keine Empfehlungen ("kaufen"/"verkaufen")
 - Sachlich, klar, unter 60 Wörtern
 - Schreibe im Präsens"""
 
 
-def _build_prompt(ticker: str, data: dict[str, Any], patterns: list[str]) -> str:
+def _build_prompt(
+    ticker: str, data: dict[str, Any], patterns: list[str]
+) -> str:
     pattern_str = ", ".join(patterns[:5]) if patterns else "Keine"
     score = data.get("score") or 0.0
+    components: dict[str, float] = data.get("score_components") or {}
+    components_str = (
+        ", ".join(f"{k} {v:.0f}" for k, v in components.items())
+        if components
+        else "nicht verfügbar"
+    )
     return (
-        f"Analysiere {ticker}:\n"
+        f"Erkläre warum {ticker} diesen Score hat:\n"
         f"- Signal: {data.get('signal', '?')} (Score: {score:.1f}/100)\n"
+        f"- Score-Komponenten: {components_str}\n"
         f"- RSI: {data.get('rsi_14', '?')}\n"
-        f"- MACD: {data.get('macd_signal', '?')}\n"
+        f"- MACD-Richtung: {data.get('macd_signal', '?')}\n"
         f"- Fear & Greed Index: {data.get('fear_greed_value', '?')}\n"
         f"- Erkannte Patterns: {pattern_str}\n"
-        f"Schreibe 2 Sätze auf Deutsch."
+        f"Schreibe 2 Sätze auf Deutsch, die den Grund für den Score erklären."
     )
 
 
@@ -51,6 +61,7 @@ class CryptoAgentService:
         data = {
             "signal": getattr(signal_data, "signal", None),
             "score": getattr(signal_data, "score", None),
+            "score_components": getattr(signal_data, "score_components", None),
             "rsi_14": getattr(signal_data, "rsi_14", None),
             "macd_signal": getattr(signal_data, "macd_signal", None),
             "fear_greed_value": getattr(signal_data, "fear_greed_value", None),

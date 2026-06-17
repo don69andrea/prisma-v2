@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, X, Bell, BellOff, Search, BookMarked, Loader2 } from 'lucide-react';
+import { Plus, X, Bell, BellOff, Search, BookMarked } from 'lucide-react';
 import { usePrismaMode } from '@/hooks/usePrismaMode';
 import { liveDecisions, type DecisionSignal } from '@/lib/api/decisions';
 import { listAlerts, type Alert } from '@/lib/api/alerts';
+import { PrismaBar } from '@/components/ui/PrismaBar';
 
 const WATCHLIST_KEY = 'prisma_watchlist';
 
@@ -497,9 +498,9 @@ export function WatchlistClient() {
         <>
           {/* Signals loading indicator */}
           {loadingSignals && (
-            <div className="flex items-center gap-2 text-xs text-[#8b949e]">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Signale werden geladen...
+            <div className="space-y-1">
+              <PrismaBar />
+              <p className="text-xs text-muted-foreground">Signale werden geladen…</p>
             </div>
           )}
 

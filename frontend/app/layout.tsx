@@ -44,25 +44,18 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <span className="text-lg font-black uppercase tracking-widest">PRISMA</span>
               </Link>
               <NavLinks />
-              <div className="ml-auto flex items-center gap-2 pl-4">
+              <div className="ml-auto flex items-center gap-2 pl-4 border-l border-border/40">
                 <ModeToggle />
                 <ApiStatusBadge />
                 <ThemeToggle />
               </div>
             </div>
-            {/* PRISMA-Spektrum: zerlegt weisses Licht in 5 quantitative Dimensionen */}
-            <div className="relative" aria-hidden="true">
-              {/* Glow-Bloom darunter */}
-              <div
-                className="absolute inset-x-0 top-0 h-[8px] blur-[6px] opacity-60"
-                style={{ background: SPECTRUM_GRADIENT }}
-              />
-              {/* Hauptbalken */}
-              <div
-                className="relative h-[4px] w-full overflow-hidden spectrum-shimmer"
-                style={{ background: SPECTRUM_GRADIENT }}
-              />
-            </div>
+            {/* PRISMA-Spektrum: 5 quantitative Dimensionen */}
+            <div
+              className="h-[2px] w-full opacity-30"
+              style={{ background: SPECTRUM_GRADIENT }}
+              aria-hidden="true"
+            />
           </header>
           <NavigationProgressBar />
           <main className="container py-8">{children}</main>

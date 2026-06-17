@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/portfolio';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { PrismaBar } from '@/components/ui/PrismaBar';
 import { cn } from '@/lib/utils';
 
 const ACTION_CONFIG: Record<
@@ -453,6 +454,12 @@ export function PortfolioClient() {
           )}
         </div>
 
+        {mutation.isPending && (
+          <div className="space-y-1 pt-2">
+            <PrismaBar />
+            <p className="text-xs text-muted-foreground">Portfolio wird berechnet…</p>
+          </div>
+        )}
         {weightError && <p className="text-xs text-destructive">{weightError}</p>}
         {error && <p className="text-xs text-destructive" data-testid="portfolio-error">{error}</p>}
       </form>

@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/fonds';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PrismaBar } from '@/components/ui/PrismaBar';
 import { cn } from '@/lib/utils';
 
 function InfoBtn({ text }: { text: string }) {
@@ -230,7 +231,10 @@ export function FondsClient() {
           {fondsError ? (
             <p className="text-xs text-destructive">Fondsliste konnte nicht geladen werden. Bitte Seite neu laden.</p>
           ) : fondsLoading ? (
-            <Skeleton className="h-9 w-64" />
+            <div className="space-y-2 w-64">
+              <PrismaBar />
+              <Skeleton className="h-9 w-64" />
+            </div>
           ) : (
             <select
               className="w-64 rounded border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"

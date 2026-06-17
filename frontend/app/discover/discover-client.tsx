@@ -245,8 +245,7 @@ export function DiscoverClient() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-36 rounded-xl animate-pulse"
-              style={{ background: '#161b22', border: '1px solid #21262d' }}
+              className="h-36 rounded-xl animate-pulse bg-muted border border-border"
             />
           ))}
         </div>

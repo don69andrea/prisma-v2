@@ -1,4 +1,4 @@
-/* Loading Screen — 6.5s animation cycle, plays once on app load */
+/* Loading Screen — 4s animation cycle, plays once on app load */
 
 /* ── Background elements ── */
 .dotGrid {
@@ -7,7 +7,7 @@
   background-image: radial-gradient(circle, #c8c8dc 1px, transparent 1px);
   background-size: 28px 28px;
   pointer-events: none;
-  animation: gridFade 6.5s ease-in-out forwards;
+  animation: gridFade 4s ease-in-out forwards;
 }
 
 .colorWash {
@@ -27,7 +27,7 @@
   pointer-events: none;
   animation:
     washSpin 10s linear infinite,
-    washFade 6.5s ease-in-out forwards;
+    washFade 4s ease-in-out forwards;
 }
 
 .vignette {
@@ -52,6 +52,11 @@
   justify-content: center;
 }
 
+.overlayFadeOut {
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
 /* ── Scene ── */
 .scene {
   position: relative;
@@ -59,7 +64,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  animation: sceneFade 6.5s ease-in-out forwards;
+  animation: sceneFade 4s ease-in-out forwards;
 }
 
 /* ── Laser beam ── */
@@ -86,7 +91,7 @@
   box-shadow:
     0 0 8px rgba(180, 190, 255, 0.8),
     0 0 20px rgba(180, 190, 255, 0.35);
-  animation: laserDrop 6.5s ease-in forwards;
+  animation: laserDrop 4s ease-in forwards;
 }
 
 /* ── Diamond ── */
@@ -97,22 +102,22 @@
 }
 
 .diamondG {
-  animation: diamondCharge 6.5s ease-in-out forwards;
+  animation: diamondCharge 4s ease-in-out forwards;
 }
 
 /* Crown facets */
-.fTable { animation: facetT   6.5s ease-in-out forwards; }
-.fCL    { animation: facetCL  6.5s ease-in-out forwards; }
-.fCR    { animation: facetCR  6.5s ease-in-out forwards; }
-.fCCL   { animation: facetCCL 6.5s ease-in-out forwards; }
-.fCCR   { animation: facetCCR 6.5s ease-in-out forwards; }
+.fTable { animation: facetT   4s ease-in-out forwards; }
+.fCL    { animation: facetCL  4s ease-in-out forwards; }
+.fCR    { animation: facetCR  4s ease-in-out forwards; }
+.fCCL   { animation: facetCCL 4s ease-in-out forwards; }
+.fCCR   { animation: facetCCR 4s ease-in-out forwards; }
 
 /* Pavilion facets */
-.fP1 { animation: pavFacet1 6.5s ease-in-out forwards; }
-.fP2 { animation: pavFacet2 6.5s ease-in-out forwards; }
-.fP3 { animation: pavFacet3 6.5s ease-in-out forwards; }
-.fP4 { animation: pavFacet4 6.5s ease-in-out forwards; }
-.fP5 { animation: pavFacet5 6.5s ease-in-out forwards; }
+.fP1 { animation: pavFacet1 4s ease-in-out forwards; }
+.fP2 { animation: pavFacet2 4s ease-in-out forwards; }
+.fP3 { animation: pavFacet3 4s ease-in-out forwards; }
+.fP4 { animation: pavFacet4 4s ease-in-out forwards; }
+.fP5 { animation: pavFacet5 4s ease-in-out forwards; }
 
 /* Internal laser rays */
 .intRay {
@@ -120,11 +125,11 @@
   stroke-dashoffset: 100;
   opacity: 0;
 }
-.ir1 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.00s; stroke: rgba(139, 92, 246, 0.6); }
-.ir2 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.06s; stroke: rgba(59, 130, 246, 0.55); }
-.ir3 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.12s; stroke: rgba(16, 185, 129, 0.55); }
-.ir4 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.18s; stroke: rgba(245, 158, 11, 0.55); }
-.ir5 { animation: intRay 6.5s ease-out forwards; animation-delay: 0.24s; stroke: rgba(239, 68, 68, 0.6); }
+.ir1 { animation: intRay 4s ease-out forwards; animation-delay: 0.00s; stroke: rgba(139, 92, 246, 0.6); }
+.ir2 { animation: intRay 4s ease-out forwards; animation-delay: 0.06s; stroke: rgba(59, 130, 246, 0.55); }
+.ir3 { animation: intRay 4s ease-out forwards; animation-delay: 0.12s; stroke: rgba(16, 185, 129, 0.55); }
+.ir4 { animation: intRay 4s ease-out forwards; animation-delay: 0.18s; stroke: rgba(245, 158, 11, 0.55); }
+.ir5 { animation: intRay 4s ease-out forwards; animation-delay: 0.24s; stroke: rgba(239, 68, 68, 0.6); }
 
 /* ── Exit beams (anchored at culet) ── */
 .beamsWrap {
@@ -142,7 +147,7 @@
   border-radius: 3px;
   transform-origin: 0 0;
   opacity: 0;
-  animation: exitBeam 6.5s ease-out forwards;
+  animation: exitBeam 4s ease-out forwards;
 }
 
 .exitGlow {
@@ -185,7 +190,7 @@
   text-indent: 0.55em;
   text-transform: uppercase;
   color: #0c0c1e;
-  animation: nameReveal 6.5s ease-out forwards;
+  animation: nameReveal 4s ease-out forwards;
 }
 
 .spectrumLine {
@@ -196,7 +201,7 @@
   box-shadow:
     0 0 14px rgba(139, 92, 246, 0.45),
     0 0 28px rgba(239, 68, 68, 0.2);
-  animation: specLine 6.5s ease-out forwards;
+  animation: specLine 4s ease-out forwards;
 }
 
 .taglineWrap {
@@ -204,7 +209,7 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  animation: tagReveal 6.5s ease-out forwards;
+  animation: tagReveal 4s ease-out forwards;
 }
 
 .taglineMain {
@@ -250,7 +255,7 @@
 
 /* ════════════════════════════════════
    KEYFRAMES
-   Timeline (6.5s):
+   Timeline (4s):
      0.00–0.80s  diamond fades in
      0.80–1.50s  laser descends
      1.50–2.00s  laser hits → facets light up

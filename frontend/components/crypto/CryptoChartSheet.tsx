@@ -66,12 +66,16 @@ export function CryptoChartSheet({ ticker, signal }: CryptoChartSheetProps) {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="chart" forceMount hidden={undefined}>
+            <TabsContent value="chart" forceMount className="data-[state=inactive]:hidden">
               <CryptoHistoryChart ticker={ticker} />
             </TabsContent>
 
-            <TabsContent value="analysis" forceMount hidden={undefined}>
-              <CryptoAgentPanel ticker={ticker} />
+            <TabsContent value="analysis" forceMount className="data-[state=inactive]:hidden">
+              <CryptoAgentPanel
+                ticker={ticker}
+                detectedPatterns={signal.detected_patterns}
+                cachedAnalysis={signal.agent_analysis}
+              />
             </TabsContent>
           </Tabs>
         </SheetContent>

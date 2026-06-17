@@ -27,6 +27,9 @@ export interface CryptoSignal {
   fear_greed_label: string;
   has_six_etp: boolean;
   timestamp: string;
+  detected_patterns: string[];
+  pattern_score: number;
+  agent_analysis: string | null;
 }
 
 export interface FearGreedData {

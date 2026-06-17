@@ -82,3 +82,18 @@ export function fearGreedColor(value: number): string {
   if (value <= 75) return '#f85149';
   return '#da3633';
 }
+
+export interface CryptoHistoryPoint {
+  date: string;
+  signal: string;
+  score: number;
+  price_chf: number | null;
+  fear_greed_value: number;
+  rsi_14: number;
+  detected_patterns: string[];
+  pattern_score: number;
+}
+
+export async function getCryptoHistory(ticker: string, days: number): Promise<CryptoHistoryPoint[]> {
+  return apiFetch<CryptoHistoryPoint[]>(`/api/v1/crypto/history/${ticker}?days=${days}`);
+}

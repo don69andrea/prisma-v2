@@ -25,6 +25,7 @@ services:
         - uv.lock
         - Dockerfile.backend
         - scripts/backend-start.sh
+        - scripts/update_smi_market_caps.py
         - render.yaml
     envVars:
       - key: DATABASE_URL

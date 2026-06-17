@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -11,12 +11,6 @@ from fastapi.testclient import TestClient
 from backend.domain.entities.user import User, UserRole
 
 pytestmark = pytest.mark.unit
-
-
-def _make_app() -> None:
-    from backend.interfaces.rest.app import create_app
-
-    create_app()
 
 
 def _make_user(role: UserRole = UserRole.viewer) -> User:
@@ -29,18 +23,26 @@ def _make_user(role: UserRole = UserRole.viewer) -> User:
 
 
 def test_login_returns_token():
-    _make_app()
+    from fastapi import FastAPI
+
+    from backend.application.services.auth_service import AuthService
+    from backend.interfaces.rest.dependencies import get_auth_service
+    from backend.interfaces.rest.routers.auth import router as auth_router
+
     token = "fake.jwt.token"
+    mock_service = AsyncMock(spec=AuthService)
+    mock_service.login.return_value = token
 
-    async def _mock_login(email: str, password: str) -> str:
-        return token
+    app = FastAPI()
+    app.include_router(auth_router)
+    app.dependency_overrides[get_auth_service] = lambda: mock_service
 
-    with patch(
-        "backend.interfaces.rest.routers.auth.get_auth_service",
-        return_value=AsyncMock(login=_mock_login),
-    ):
-        # Use dependency override instead
-        pass  # tested via integration; unit test covers service layer
+    client = TestClient(app)
+    resp = client.post("/api/v1/auth/login", json={"email": "a@b.com", "password": "secret"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["access_token"] == token
+    assert data["token_type"] == "bearer"
 
 
 def test_login_endpoint_400_on_wrong_password():

@@ -1,13 +1,17 @@
 """Health-Check-Endpunkt — wird von Load-Balancern und Docker HEALTHCHECK genutzt."""
 
+from __future__ import annotations
+
 import logging
 import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.infrastructure.persistence.session import get_session_factory
+from backend.interfaces.rest.dependencies import get_session
 
 router = APIRouter(tags=["health"])
 
@@ -32,3 +36,27 @@ async def health_ready() -> JSONResponse:
     except Exception as exc:
         _logger.warning("Readiness-Check fehlgeschlagen: %s", exc)
         raise HTTPException(status_code=503, detail=f"Database nicht erreichbar: {exc}") from exc
+
+
+@router.get("/health/pipeline")
+async def pipeline_health(
+    session: AsyncSession = Depends(get_session),
+) -> list[dict]:
+    """Letzter Run-Status pro Cron-Job."""
+    from backend.infrastructure.persistence.repositories.cron_run_repository import (
+        SQLACronRunRepository,
+    )
+
+    repo = SQLACronRunRepository(session)
+    records = await repo.get_latest_per_job()
+    return [
+        {
+            "job": r.job_name,
+            "status": r.status,
+            "last_run": r.started_at.isoformat() if r.started_at else None,
+            "finished_at": r.finished_at.isoformat() if r.finished_at else None,
+            "records_saved": r.records_saved,
+            "error": r.error_msg,
+        }
+        for r in records
+    ]

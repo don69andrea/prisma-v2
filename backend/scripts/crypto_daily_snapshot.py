@@ -25,6 +25,9 @@ from backend.infrastructure.llm.pricing import PRICING
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
 )
+from backend.infrastructure.persistence.repositories.cron_run_repository import (
+    SQLACronRunRepository,
+)
 from backend.infrastructure.persistence.repositories.crypto_signal_repository import (
     SQLACryptoSignalRepository,
 )
@@ -55,6 +58,12 @@ async def main() -> None:
 
     log.info("=== Krypto Daily Snapshot gestartet ===")
 
+    session_factory = get_session_factory()
+    run_id: str | None = None
+    async with session_factory() as log_session:
+        log_repo = SQLACronRunRepository(log_session)
+        run_id = await log_repo.start_run("crypto_daily")
+
     scoring_svc = CryptoScoringService(
         cg_adapter=CoinGeckoAdapter(api_key=settings.coingecko_api_key),
         yf_adapter=YFinanceCryptoAdapter(),
@@ -69,11 +78,14 @@ async def main() -> None:
         results = await scoring_svc.score_all()
     except Exception:
         log.exception("score_all() fehlgeschlagen")
+        if run_id is not None:
+            async with session_factory() as log_session:
+                log_repo = SQLACronRunRepository(log_session)
+                await log_repo.finish_run(run_id, "error", error_msg="score_all() fehlgeschlagen")
         return
 
     yf_ticker_by_symbol = {c[1].split("-")[0]: c[1] for c in SUPPORTED_CRYPTOS}
 
-    session_factory = get_session_factory()
     saved = 0
     async with session_factory() as session:
         repo = SQLACryptoSignalRepository(session)
@@ -106,6 +118,10 @@ async def main() -> None:
         await session.commit()
 
     log.info("=== Snapshot fertig: %d/%d gespeichert ===", saved, len(results))
+
+    async with session_factory() as log_session:
+        log_repo = SQLACronRunRepository(log_session)
+        await log_repo.finish_run(run_id, "ok", records_saved=saved)
 
 
 if __name__ == "__main__":

@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/start', '/_next', '/api', '/favicon.ico'];
+const PUBLIC_PATHS = ['/login', '/_next', '/api', '/favicon.ico'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip public paths and static files
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  // Check onboarding cookie — redirect all protected paths (including '/') to /start
-  const onboardingComplete = request.cookies.get('prisma_onboarding')?.value;
-  if (!onboardingComplete) {
-    return NextResponse.redirect(new URL('/start', request.url));
+  const token = request.cookies.get('prisma_token')?.value;
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   return NextResponse.next();

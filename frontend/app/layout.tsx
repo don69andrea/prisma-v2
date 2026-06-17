@@ -10,7 +10,6 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { PrismaLogo } from '@/components/ui/PrismaLogo';
 import { NavigationProgressBar } from '@/components/ui/PrismaBar';
 import { ChatDrawer } from '@/components/chat/ChatDrawer';
-import { MissingApiKeyBanner } from '@/components/ui/MissingApiKeyBanner';
 import '@/app/globals.css';
 
 export const metadata: Metadata = {
@@ -33,7 +32,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="de" className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
-          <MissingApiKeyBanner />
           <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 border-b border-border/40">
             <div className="container flex flex-col gap-2 py-2 sm:h-14 sm:flex-row sm:items-center sm:gap-0 sm:py-0">
               <Link

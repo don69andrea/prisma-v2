@@ -134,6 +134,7 @@ async def analyze_ticker_stream(
         signal_data = {
             "signal": signal.signal,
             "score": signal.score,
+            "score_components": signal.score_components,
             "rsi_14": signal.rsi_14,
             "macd_signal": signal.macd_signal,
             "fear_greed_value": signal.fear_greed_value,

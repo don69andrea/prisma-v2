@@ -13,8 +13,12 @@ from backend.application.services.macro_service import MacroService
 from backend.application.services.signal_aggregation_service import SignalAggregationService
 from backend.application.services.universe_service import UniverseNotFound, UniverseService
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
+from backend.infrastructure.persistence.repositories.stock_signal_repository import (
+    SQLAStockSignalRepository,
+)
 from backend.interfaces.rest.dependencies import (
     get_llm_client,
+    get_session,
     get_swiss_stock_repository,
     get_universe_service,
 )
@@ -241,6 +245,7 @@ async def list_decisions(
     eligible_only: bool = Query(default=False, description="Nur 3a-eligible Titel zurückgeben"),
     universe_service: UniverseService = Depends(get_universe_service),
     aggregation_service: SignalAggregationService = Depends(get_signal_aggregation_service),
+    session: Any = Depends(get_session),
 ) -> DecisionListResponse:
     try:
         universe = await universe_service.get_universe(universe_id)
@@ -250,6 +255,15 @@ async def list_decisions(
             detail=str(exc),
         ) from exc
 
+    # Tagesschnitt vorhanden → direkt aus DB (kein yFinance-Call)
+    stock_signal_repo = SQLAStockSignalRepository(session)
+    snapshots = await stock_signal_repo.get_today_all()
+    if len(snapshots) >= 10:
+        _logger.info("list_decisions: Tagesschnitt mit %d Einträgen gefunden", len(snapshots))
+        return _build_response(snapshots, signal, eligible_only)
+
+    # Kein Snapshot → live berechnen (Fallback)
+    _logger.info("list_decisions: Kein Tagesschnitt — live Berechnung via yFinance")
     tickers = list(universe.tickers)
     signals = await aggregation_service.get_signals(tickers)
 

@@ -62,7 +62,7 @@ def upgrade() -> None:
             sa.Column(
                 "user_id",
                 postgresql.UUID(as_uuid=True),
-                nullable=False,
+                nullable=True,
             ),
         )
         op.create_foreign_key(

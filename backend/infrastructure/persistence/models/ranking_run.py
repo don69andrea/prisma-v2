@@ -24,4 +24,4 @@ class RankingRunORM(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     # Berechnungsergebnisse als JSONB-Array, nullable bis run completed
     results: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True, default=None)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)

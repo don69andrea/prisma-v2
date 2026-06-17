@@ -1,10 +1,12 @@
 """Unit tests for auth router."""
+
 from __future__ import annotations
+
+from unittest.mock import AsyncMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch
-from uuid import uuid4
 
 from backend.domain.entities.user import User, UserRole
 
@@ -13,6 +15,7 @@ pytestmark = pytest.mark.unit
 
 def _make_app():
     from backend.interfaces.rest.app import create_app
+
     return create_app()
 
 
@@ -26,7 +29,7 @@ def _make_user(role: UserRole = UserRole.viewer) -> User:
 
 
 def test_login_returns_token():
-    app = _make_app()
+    _make_app()
     token = "fake.jwt.token"
 
     async def _mock_login(email: str, password: str) -> str:
@@ -42,9 +45,10 @@ def test_login_returns_token():
 
 def test_login_endpoint_400_on_wrong_password():
     from fastapi import FastAPI
-    from backend.interfaces.rest.routers.auth import router as auth_router
+
     from backend.application.services.auth_service import AuthService
     from backend.interfaces.rest.dependencies import get_auth_service
+    from backend.interfaces.rest.routers.auth import router as auth_router
 
     app = FastAPI()
     app.include_router(auth_router)
@@ -60,8 +64,9 @@ def test_login_endpoint_400_on_wrong_password():
 
 def test_me_endpoint_returns_user():
     from fastapi import FastAPI
-    from backend.interfaces.rest.routers.auth import router as auth_router
+
     from backend.interfaces.rest.dependencies import require_current_user
+    from backend.interfaces.rest.routers.auth import router as auth_router
 
     user = _make_user()
     app = FastAPI()
@@ -78,6 +83,7 @@ def test_me_endpoint_returns_user():
 
 def test_me_endpoint_401_without_token():
     from fastapi import FastAPI
+
     from backend.interfaces.rest.routers.auth import router as auth_router
 
     app = FastAPI()

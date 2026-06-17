@@ -61,7 +61,10 @@ async def test_get_fundamentals_provider_production_logs_warning(
     import logging
 
     settings = Settings(
-        environment="production", api_key="test-key", anthropic_api_key="sk-ant-test"
+        environment="production",
+        api_key="test-key",
+        anthropic_api_key="sk-ant-test",
+        jwt_secret="test-jwt-secret",
     )
     with caplog.at_level(logging.WARNING, logger="backend.interfaces.rest.dependencies"):
         await get_fundamentals_provider(settings=settings)
@@ -76,7 +79,10 @@ async def test_get_market_data_provider_production_logs_warning(
     import logging
 
     settings = Settings(
-        environment="production", api_key="test-key", anthropic_api_key="sk-ant-test"
+        environment="production",
+        api_key="test-key",
+        anthropic_api_key="sk-ant-test",
+        jwt_secret="test-jwt-secret",
     )
     with caplog.at_level(logging.WARNING, logger="backend.interfaces.rest.dependencies"):
         await get_market_data_provider(settings=settings)

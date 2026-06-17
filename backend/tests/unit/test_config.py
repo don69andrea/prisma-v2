@@ -34,6 +34,7 @@ class TestApiKeyProductionValidator:
             environment="production",
             api_key="secret",
             anthropic_api_key="sk-ant-test",
+            jwt_secret="test-jwt-secret",
             _env_file=None,
         )
         assert settings.api_key == "secret"

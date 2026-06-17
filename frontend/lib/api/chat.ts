@@ -19,11 +19,11 @@ export function streamChat(
   onError: (msg: string) => void,
 ): () => void {
   const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
-  const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 
   const ctrl = new AbortController();
 
-  const authHeaders: Record<string, string> = API_KEY ? { 'X-API-Key': API_KEY } : {};
+  const token = typeof window !== 'undefined' ? localStorage.getItem('prisma_token') : null;
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
   fetch(`${API_BASE}/api/v1/chat`, {
     method: 'POST',

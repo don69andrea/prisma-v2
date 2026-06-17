@@ -29,6 +29,7 @@ class TestLLMCallLogTable:
             "output_tokens",
             "cost_usd",
             "request_id",
+            "user_id",
         }
         assert columns == expected
 

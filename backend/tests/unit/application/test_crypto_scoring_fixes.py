@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pandas as pd
 import pytest
@@ -14,7 +14,7 @@ pytestmark = pytest.mark.unit
 
 
 def _make_minimal_df() -> pd.DataFrame:
-    """Minimaler DataFrame mit allen von score_all benötigten Spalten."""
+    """Minimaler DataFrame mit allen von CryptoScorer benötigten Spalten."""
     n = 60
     base = 50_000.0
     prices = [base + i * 10 for i in range(n)]
@@ -29,6 +29,8 @@ def _make_minimal_df() -> pd.DataFrame:
             "MACD_12_26_9": [100.0] * n,
             "MACDs_12_26_9": [80.0] * n,
             "MACDh_12_26_9": [20.0] * n,
+            "EMA_20": [p * 0.998 for p in prices],
+            "EMA_50": [p * 0.995 for p in prices],
         }
     )
 

@@ -149,7 +149,7 @@ def test_render_yaml_pgvector_comment_is_not_misleading() -> None:
     from pathlib import Path
 
     render_yaml = (
-        Path(__file__).resolve().parents[4] / "render.yaml"
+        Path(__file__).resolve().parents[3] / "render.yaml"
     ).read_text()
 
     misleading = "pgvector extension must be enabled after first deploy"
@@ -170,7 +170,7 @@ def test_dockerfile_backend_copies_update_smi_script() -> None:
     from pathlib import Path
 
     dockerfile = (
-        Path(__file__).resolve().parents[4] / "Dockerfile.backend"
+        Path(__file__).resolve().parents[3] / "Dockerfile.backend"
     ).read_text()
 
     assert "update_smi_market_caps" in dockerfile, (

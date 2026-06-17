@@ -23,9 +23,8 @@ _logger = logging.getLogger(__name__)
         "Nutzt Claude mit PRISMA-Tools (search_stocks, filter_stocks, get_factsheet, "
         "get_macro_context, compare_stocks, get_ranking)."
     ),
-    # FIX-3: require_admin_api_key NICHT hier — ist bereits via
-    # app.include_router(router, dependencies=[Depends(require_admin_api_key)]) aktiv.
-    # Doppelaufruf führt zu 2 API-Key-Checks und verursacht Konflikte.
+    # FIX-3: Auth läuft bereits via app.include_router(router, dependencies=_auth).
+    # Kein zweiter Auth-Check im Endpoint-Decorator — würde doppelt prüfen.
 )
 async def chat(
     req: ChatRequest,

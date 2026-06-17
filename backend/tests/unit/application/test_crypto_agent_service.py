@@ -1,9 +1,8 @@
 """Unit-Tests für CryptoAgentService — LLM-Kurzanalyse für Krypto-Signale.
 
 analyze_brief() läuft über LLMClient (Cap-Check + Cost-Tracking, Fixture-Mode
-— nie gegen die Live-API in CI, siehe CLAUDE.md). stream_analysis() bypassed
-LLMClient bewusst (kein Streaming-Support dort) — exakt das gleiche, bereits
-etablierte Muster wie ChatService.stream() in chat_service.py.
+— nie gegen die Live-API in CI, siehe CLAUDE.md). stream_analysis() nutzt seit
+FIX-01 self._llm.raw_client statt eigenem AsyncAnthropic().
 """
 
 from __future__ import annotations
@@ -74,10 +73,15 @@ class TestAnalyzeBrief:
 
 
 class TestStreamAnalysis:
-    async def test_no_api_key_yields_single_message(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        svc = CryptoAgentService(llm_client=MagicMock())
+    async def test_stream_analysis_on_error_yields_error_message(self) -> None:
+        """FIX-01: stream_analysis nutzt raw_client — bei Fehler wird Error-Message geliefert.
+        Früher: Eigener api_key-Guard → 'API Key fehlt'.
+        Jetzt: Exception vom SDK → 'Analyse aktuell nicht verfügbar.'"""
+        mock_llm = MagicMock()
+        mock_llm.raw_client.messages.stream.side_effect = Exception("auth error")
 
+        svc = CryptoAgentService(llm_client=mock_llm)
         chunks = [chunk async for chunk in svc.stream_analysis("BTC-CHF", {}, [])]
+
         assert len(chunks) == 1
-        assert "API Key" in chunks[0]
+        assert "nicht verfügbar" in chunks[0]

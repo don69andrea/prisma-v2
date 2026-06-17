@@ -6,21 +6,30 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-const mockRetrieveSwissFilings = vi.fn();
-const mockRetrieveSecFilings = vi.fn();
+// Mock streamChat to avoid real network calls
+const mockStreamChat = vi.fn();
+vi.mock('@/lib/api/chat', () => ({
+  streamChat: (...args: unknown[]) => mockStreamChat(...args),
+}));
+
+// Mock RAG (used in the collapsible RAG section)
 vi.mock('@/lib/api/rag', async () => {
   const actual = await vi.importActual<typeof import('@/lib/api/rag')>('@/lib/api/rag');
-  return {
-    ...actual,
-    retrieveSwissFilings: (...args: unknown[]) => mockRetrieveSwissFilings(...args),
-    retrieveSecFilings: (...args: unknown[]) => mockRetrieveSecFilings(...args),
-  };
+  return { ...actual, retrieveSwissFilings: vi.fn().mockResolvedValue({ results: [], total: 0 }) };
 });
+
+// Mock macro API — no data → shows demo badge
+vi.mock('@/lib/api/macro', () => ({
+  getMacroContext: vi.fn().mockRejectedValue(new Error('network error')),
+}));
+
+// Force Pro Mode so the right panel (MacroPanel, AgentPanel, MetricsPanel) renders
+vi.mock('@/hooks/usePrismaMode', () => ({
+  usePrismaMode: () => ({ mode: 'pro', toggle: vi.fn() }),
+}));
 
 import { ResearchClient } from '../research-client';
 
-// jsdom does not implement scrollIntoView; the agent-log panel calls it on
-// every log update to auto-scroll, which is irrelevant to this test's scope.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
@@ -34,107 +43,86 @@ function renderWithClient() {
   );
 }
 
-function switchToProMode() {
-  const toggle = screen.getByRole('button', { name: /simple mode|pro mode/i });
-  if (toggle.textContent?.includes('Simple Mode')) {
-    fireEvent.click(toggle);
-  }
-}
-
 beforeEach(() => {
-  localStorage.clear();
-  mockRetrieveSwissFilings.mockReset();
-  mockRetrieveSecFilings.mockReset();
-  mockRetrieveSwissFilings.mockResolvedValue({ results: [], total: 0 });
-  mockRetrieveSecFilings.mockResolvedValue({ results: [], total: 0 });
+  mockStreamChat.mockReset();
+  // Default: streamChat returns a no-op abort function
+  mockStreamChat.mockReturnValue(() => {});
 });
 
-describe('ResearchClient — Query-Validierung', () => {
-  it('zeigt Fehlermeldung und löst keine Mutation aus, wenn die Suchanfrage zu kurz ist', async () => {
+describe('ResearchClient — Chat-Input', () => {
+  it('rendert Input und Senden-Button', () => {
+    renderWithClient();
+    expect(screen.getByTestId('research-query-input')).toBeInTheDocument();
+    expect(screen.getByTestId('research-search-btn')).toBeInTheDocument();
+  });
+
+  it('sendet keine Anfrage bei leerem Input', () => {
+    renderWithClient();
+    fireEvent.click(screen.getByTestId('research-search-btn'));
+    expect(mockStreamChat).not.toHaveBeenCalled();
+  });
+
+  it('ruft streamChat auf wenn eine Frage gesendet wird', async () => {
     renderWithClient();
 
-    const input = screen.getByTestId('research-query-input');
-    const btn = screen.getByTestId('research-search-btn');
-
-    fireEvent.change(input, { target: { value: 'ab' } });
-    fireEvent.click(btn);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('research-validation-error')).toHaveTextContent(
-        /mindestens 3 zeichen/i,
-      );
+    fireEvent.change(screen.getByTestId('research-query-input'), {
+      target: { value: 'Soll ich Novartis kaufen?' },
     });
-    expect(mockRetrieveSwissFilings).not.toHaveBeenCalled();
-    expect(mockRetrieveSecFilings).not.toHaveBeenCalled();
-  });
-
-  it('löst die Mutation aus, wenn die Suchanfrage mindestens 3 Zeichen hat', async () => {
-    renderWithClient();
-
-    const input = screen.getByTestId('research-query-input');
-    const btn = screen.getByTestId('research-search-btn');
-
-    fireEvent.change(input, { target: { value: 'Novartis Dividende' } });
-    fireEvent.click(btn);
-
-    await waitFor(() => {
-      expect(mockRetrieveSwissFilings).toHaveBeenCalled();
-      expect(mockRetrieveSecFilings).toHaveBeenCalled();
-    });
-    expect(screen.queryByTestId('research-validation-error')).not.toBeInTheDocument();
-  });
-
-  it('zeigt keine Fehlermeldung initial an', () => {
-    renderWithClient();
-    expect(screen.queryByTestId('research-validation-error')).not.toBeInTheDocument();
-  });
-});
-
-describe('ResearchClient — Pro Mode Mock-Daten-Kennzeichnung', () => {
-  it('zeigt ein Demo-Label bei den Quellen, wenn keine echten Quellen vorliegen', () => {
-    renderWithClient();
-    switchToProMode();
-
-    // Ohne ausgeführte Suche sind allSources leer -> MOCK_SOURCES + Demo-Badge sichtbar
-    expect(screen.getByTestId('research-sources-demo-badge')).toBeInTheDocument();
-    expect(screen.getByText('Novartis GB 2025')).toBeInTheDocument();
-  });
-
-  it('zeigt ein Demo-Label beim Makro-Kontext-Panel', () => {
-    renderWithClient();
-    switchToProMode();
-
-    expect(screen.getByTestId('research-macro-demo-badge')).toBeInTheDocument();
-  });
-
-  it('blendet das Quellen-Demo-Label aus, sobald echte RAG-Ergebnisse vorliegen', async () => {
-    mockRetrieveSwissFilings.mockResolvedValue({
-      results: [
-        {
-          chunk_id: 'c1',
-          chunk_idx: 0,
-          url: 'https://example.com/report.pdf',
-          ticker: 'NOVN',
-          source: 'SIX',
-          language: 'de',
-          filing_date: '2025-03-01',
-          doc_type: 'Geschäftsbericht',
-          content: 'Inhalt...',
-          similarity: 0.91,
-        },
-      ],
-      total: 1,
-    });
-    mockRetrieveSecFilings.mockResolvedValue({ results: [], total: 0 });
-
-    renderWithClient();
-    switchToProMode();
-
-    const input = screen.getByTestId('research-query-input');
-    fireEvent.change(input, { target: { value: 'Novartis fundamental?' } });
     fireEvent.click(screen.getByTestId('research-search-btn'));
 
-    expect(await screen.findByText(/NOVN/)).toBeInTheDocument();
-    expect(screen.queryByTestId('research-sources-demo-badge')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockStreamChat).toHaveBeenCalledOnce();
+      expect(mockStreamChat).toHaveBeenCalledWith(
+        'Soll ich Novartis kaufen?',
+        [],
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+      );
+    });
+  });
+
+  it('zeigt die Nutzerfrage in der Konversation an', async () => {
+    renderWithClient();
+
+    fireEvent.change(screen.getByTestId('research-query-input'), {
+      target: { value: 'Wie ist der SNB-Leitzins?' },
+    });
+    fireEvent.click(screen.getByTestId('research-search-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Wie ist der SNB-Leitzins?')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('ResearchClient — Makro-Kontext Demo-Badge', () => {
+  it('zeigt Beispieldaten-Badge wenn Macro-API nicht erreichbar ist', async () => {
+    renderWithClient();
+    await waitFor(() => {
+      expect(screen.getByTestId('research-macro-demo-badge')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('ResearchClient — Beispielqueries', () => {
+  it('zeigt Beispielfragen als Schnellstart-Buttons', () => {
+    renderWithClient();
+    expect(screen.getByText('Soll ich Novartis kaufen?')).toBeInTheDocument();
+    expect(screen.getByText('Wie vermeide ich Klumpenrisiko?')).toBeInTheDocument();
+  });
+
+  it('sendet Beispielfrage direkt bei Klick', async () => {
+    renderWithClient();
+    fireEvent.click(screen.getByText('Soll ich Novartis kaufen?'));
+    await waitFor(() => {
+      expect(mockStreamChat).toHaveBeenCalledWith(
+        'Soll ich Novartis kaufen?',
+        [],
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+      );
+    });
   });
 });

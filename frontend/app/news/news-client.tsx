@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PrismaBar } from '@/components/ui/PrismaBar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // ---------------------------------------------------------------------------
 // Constants & helpers
@@ -256,9 +258,14 @@ function SimpleNewsView({ dailyNews }: { dailyNews: NewsChunkResult[] | null }) 
   return (
     <div className="space-y-4">
       {dailyNews === null ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-          <Newspaper className="h-10 w-10 text-muted-foreground/40 animate-pulse" />
-          <p className="text-sm text-muted-foreground">News werden geladen…</p>
+        <div className="space-y-3">
+          <PrismaBar />
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-lg border border-border p-4 space-y-2 animate-pulse">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          ))}
         </div>
       ) : dailyNews.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
@@ -428,6 +435,17 @@ function ProNewsView({
           <p className="text-xs text-muted-foreground" data-testid="news-results-count">
             {feedLabel} · {feedItems.length} Artikel
           </p>
+          {dailyNews === null && !displayResults && (
+            <div className="space-y-3">
+              <PrismaBar />
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="rounded-lg border border-border p-4 space-y-2 animate-pulse">
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+              ))}
+            </div>
+          )}
           {feedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
               <Newspaper className="h-10 w-10 text-muted-foreground/40" />

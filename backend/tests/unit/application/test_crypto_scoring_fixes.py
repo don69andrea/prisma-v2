@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any, cast
 from unittest.mock import AsyncMock, patch
 
 import pandas as pd
@@ -115,14 +116,15 @@ async def test_score_one_makes_fewer_api_calls_than_score_all() -> None:
     """BUG-04 Beweis: score_one() soll NUR die Daten für EINEN Ticker abrufen.
     score_all() lädt 10 Kryptos → 10x yfinance. score_one() darf max. 2x rufen."""
     svc = _make_service()
+    yf_mock = cast(Any, svc._yf)
 
-    svc._yf.get_technicals.reset_mock()
+    yf_mock.get_technicals.reset_mock()
     await svc.score_one("BTC")
-    one_ticker_calls = svc._yf.get_technicals.call_count
+    one_ticker_calls = yf_mock.get_technicals.call_count
 
-    svc._yf.get_technicals.reset_mock()
+    yf_mock.get_technicals.reset_mock()
     await svc.score_all()
-    all_ticker_calls = svc._yf.get_technicals.call_count
+    all_ticker_calls = yf_mock.get_technicals.call_count
 
     assert one_ticker_calls < all_ticker_calls, (
         f"score_one() macht {one_ticker_calls} yfinance-Calls, "

@@ -199,17 +199,17 @@ class CryptoScoringService:
             _logger.warning("Keine Technikaldaten für %s — score_one() gibt None zurück", yf_ticker)
             return None
 
-        fg_value = fear_greed["value"] if not isinstance(fear_greed, Exception) else 50  # type: ignore[index]
-        fg_label = fear_greed["label"] if not isinstance(fear_greed, Exception) else "Neutral"  # type: ignore[index]
+        fg_value = fear_greed["value"] if not isinstance(fear_greed, Exception) else 50
+        fg_label = fear_greed["label"] if not isinstance(fear_greed, Exception) else "Neutral"
 
-        market_list = market_data_list if not isinstance(market_data_list, Exception) else []  # type: ignore[assignment]
-        mkt = market_list[0] if market_list else {}  # type: ignore[index]
+        market_list = market_data_list if not isinstance(market_data_list, Exception) else []
+        mkt = market_list[0] if market_list else {}
 
-        corr_val = float(corr) if not isinstance(corr, Exception) else 0.0  # type: ignore[arg-type]
+        corr_val = float(corr) if not isinstance(corr, Exception) else 0.0
         if isinstance(pattern_result, Exception):
             patterns, pattern_modifier = [], 0.0
         else:
-            patterns, pattern_modifier = pattern_result  # type: ignore[misc]
+            patterns, pattern_modifier = pattern_result
 
         asset = CryptoAsset(
             ticker_cg=cg_id,
@@ -227,21 +227,22 @@ class CryptoScoringService:
             market_cap_rank=mkt.get("market_cap_rank"),
         )
 
+        assert isinstance(tech, pd.DataFrame)
         score, components = self._scorer.score(
             asset,
-            tech,  # type: ignore[arg-type]
+            tech,
             fg_value,
             correlation_smi_1y=corr_val,
             pattern_modifier=pattern_modifier,
         )
         signal = _score_to_signal(score)
 
-        rsi = float(tech["RSI_14"].iloc[-1]) if "RSI_14" in tech.columns else 50.0  # type: ignore[union-attr]
-        macd_val = float(tech["MACD_12_26_9"].iloc[-1]) if "MACD_12_26_9" in tech.columns else 0.0  # type: ignore[union-attr]
+        rsi = float(tech["RSI_14"].iloc[-1]) if "RSI_14" in tech.columns else 50.0
+        macd_val = float(tech["MACD_12_26_9"].iloc[-1]) if "MACD_12_26_9" in tech.columns else 0.0
         macd_sig_val = (
             float(tech["MACDs_12_26_9"].iloc[-1]) if "MACDs_12_26_9" in tech.columns else 0.0
-        )  # type: ignore[union-attr]
-        returns = tech["Close"].pct_change().dropna()  # type: ignore[union-attr]
+        )
+        returns = tech["Close"].pct_change().dropna()
         vol_30d = (
             float(returns.rolling(30).std().iloc[-1] * (365**0.5) * 100)
             if len(returns) >= 30

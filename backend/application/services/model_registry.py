@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 _logger = logging.getLogger(__name__)
 _REGISTRY_FILE = "registry.json"
@@ -27,7 +27,7 @@ class ModelRegistry:
         if not self._registry_path.exists():
             return {"active": None, "versions": []}
         with self._registry_path.open() as f:
-            return json.load(f)
+            return cast(dict[str, Any], json.load(f))
 
     def get_active_model_path(self) -> Path | None:
         """Gibt den Pfad zum aktiven Modell zurück, oder None wenn kein Registry-File."""
@@ -35,7 +35,7 @@ class ModelRegistry:
         active = data.get("active")
         if not active:
             return None
-        path = self._dir / active
+        path = self._dir / str(active)
         if not path.exists():
             _logger.warning("Registry zeigt auf nicht-existentes Modell: %s", path)
             return None
@@ -43,7 +43,7 @@ class ModelRegistry:
 
     def list_versions(self) -> list[dict[str, Any]]:
         """Gibt alle registrierten Modell-Versionen zurück."""
-        return self._load().get("versions", [])
+        return cast(list[dict[str, Any]], self._load().get("versions", []))
 
     def register(self, filename: str, meta: dict[str, Any], set_active: bool = True) -> None:
         """Registriert eine neue Modell-Version und setzt sie optional als aktiv."""

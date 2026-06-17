@@ -13,7 +13,7 @@ _logger = logging.getLogger(__name__)
 _CACHE_TTL_SECONDS = 600
 
 
-def _validate_market_entry(entry: dict) -> bool:
+def _validate_market_entry(entry: dict[str, Any]) -> bool:
     """Gibt False zurück wenn ein Marktdaten-Eintrag offensichtlich korrupt ist."""
     price = entry.get("current_price")
     return price is not None and price > 0

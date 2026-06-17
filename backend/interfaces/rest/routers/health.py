@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -42,7 +43,7 @@ async def health_ready() -> JSONResponse:
 
 
 @router.get("/health/model-info", summary="Aktive ML-Modell-Version und verfügbare Versionen")
-async def model_info() -> dict:
+async def model_info() -> dict[str, Any]:
     """Aktive ML-Modell-Version und alle registrierten Versionen."""
     from backend.application.services.model_registry import ModelRegistry
 
@@ -57,7 +58,7 @@ async def model_info() -> dict:
 @router.get("/health/pipeline")
 async def pipeline_health(
     session: AsyncSession = Depends(get_session),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Letzter Run-Status pro Cron-Job."""
     repo = SQLACronRunRepository(session)
     records = await repo.get_latest_per_job()

@@ -114,7 +114,7 @@ export function CryptoClient() {
                     <th className="text-right py-2 px-3 font-medium">RSI</th>
                     <th className="text-right py-2 px-3 font-medium">Vola</th>
                     <th className="text-right py-2 px-3 font-medium">SMI-Korr</th>
-                    <th className="text-left py-2 px-3 font-medium">14d Trend</th>
+                    <th className="text-left py-2 px-3 font-medium">Chart</th>
                   </tr>
                 </thead>
                 <tbody>

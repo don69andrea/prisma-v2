@@ -100,3 +100,4 @@ export function fearGreedColor(value: number): string {
   if (value <= 75) return '#f85149';
   return '#da3633';
 }
+

@@ -1,8 +1,7 @@
 'use client';
 
 import { type CryptoSignal, signalColor, signalLabel } from '@/lib/api/crypto';
-import { useCryptoHistory } from '@/hooks/useCryptoHistory';
-import { SignalSparkline } from '@/components/crypto/SignalSparkline';
+import { CryptoChartSheet } from './CryptoChartSheet';
 
 interface CryptoProRowProps {
   signal: CryptoSignal;
@@ -28,7 +27,6 @@ function pctColor(n: number | null): string {
 export function CryptoProRow({ signal }: CryptoProRowProps) {
   const color = signalColor(signal.signal);
   const label = signalLabel(signal.signal);
-  const { data: history } = useCryptoHistory(signal.ticker, 14);
 
   return (
     <tr className="border-b border-border/30 hover:bg-muted/20 transition-colors text-sm">
@@ -74,7 +72,7 @@ export function CryptoProRow({ signal }: CryptoProRowProps) {
         {signal.correlation_smi_1y.toFixed(2)}
       </td>
       <td className="py-2 px-3">
-        <SignalSparkline data={history} />
+        <CryptoChartSheet ticker={signal.ticker} signal={signal} />
       </td>
     </tr>
   );

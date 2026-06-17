@@ -78,7 +78,8 @@ async def _search_stocks(inputs: dict[str, Any], session: AsyncSession) -> str:
     # damit Freitexteingaben wie "novartis kaufen" trotzdem NOVN finden.
     words = [w for w in query.split() if len(w) >= 3]
     results = [
-        s for s in all_stocks
+        s
+        for s in all_stocks
         if query in s.ticker.lower()
         or query in (s.name or "").lower()
         or s.ticker.lower() in query

@@ -36,6 +36,9 @@ function makeSignal(overrides: Partial<CryptoSignal> = {}): CryptoSignal {
     fear_greed_label: 'Gier',
     has_six_etp: true,
     timestamp: '2026-06-17T10:00:00Z',
+    detected_patterns: ['GOLDEN_CROSS'],
+    pattern_score: 20,
+    agent_analysis: 'Test-Analyse.',
     ...overrides,
   };
 }

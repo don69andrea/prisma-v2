@@ -13,6 +13,12 @@ _logger = logging.getLogger(__name__)
 _CACHE_TTL_SECONDS = 600
 
 
+def _validate_market_entry(entry: dict) -> bool:
+    """Gibt False zurück wenn ein Marktdaten-Eintrag offensichtlich korrupt ist."""
+    price = entry.get("current_price")
+    return price is not None and price > 0
+
+
 class CoinGeckoAdapter:
     """Wrapper um die CoinGecko API mit 10-Minuten-Cache.
 
@@ -37,7 +43,7 @@ class CoinGeckoAdapter:
             return self._market_cache
 
         try:
-            result: list[dict[str, Any]] = await asyncio.to_thread(
+            raw: list[dict[str, Any]] = await asyncio.to_thread(
                 self._cg.get_coins_markets,
                 vs_currency=vs_currency,
                 ids=",".join(coin_ids),
@@ -47,6 +53,10 @@ class CoinGeckoAdapter:
                 sparkline=False,
                 price_change_percentage="24h,7d",
             )
+            result = [e for e in raw if _validate_market_entry(e)]
+            invalid = len(raw) - len(result)
+            if invalid:
+                _logger.warning("CoinGecko: %d ungültige Einträge gefiltert", invalid)
             self._market_cache = result
             self._market_cached_at = now
             return result

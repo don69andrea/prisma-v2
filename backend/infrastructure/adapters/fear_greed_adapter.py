@@ -14,6 +14,13 @@ _URL = "https://api.alternative.me/fng/?limit=1&format=json"
 _CACHE_TTL_SECONDS = 3600
 
 
+def _validate_fear_greed(value: int) -> int | None:
+    """Gibt None zurück wenn der Fear&Greed-Wert ausserhalb 0–100 liegt."""
+    if not (0 <= value <= 100):
+        return None
+    return value
+
+
 class FearGreedAdapter:
     """Ruft den Crypto Fear & Greed Index von alternative.me ab.
 
@@ -36,8 +43,16 @@ class FearGreedAdapter:
                 resp = await client.get(_URL)
                 resp.raise_for_status()
                 data = resp.json()["data"][0]
+                value = int(data["value"])
+                validated_value = _validate_fear_greed(value)
+                if validated_value is None:
+                    _logger.warning(
+                        "FearGreedAdapter: Ungültiger Fear&Greed-Wert %d — Fallback auf 50",
+                        value,
+                    )
+                    validated_value = 50
                 result: dict[str, Any] = {
-                    "value": int(data["value"]),
+                    "value": validated_value,
                     "label": data["value_classification"],
                     "timestamp": data["timestamp"],
                 }

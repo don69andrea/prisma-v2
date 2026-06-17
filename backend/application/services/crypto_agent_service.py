@@ -29,9 +29,7 @@ Deine Aufgabe: Erkläre in 2 Sätzen auf Deutsch, WARUM dieser Titel seinen aktu
 - Schreibe im Präsens"""
 
 
-def _build_prompt(
-    ticker: str, data: dict[str, Any], patterns: list[str]
-) -> str:
+def _build_prompt(ticker: str, data: dict[str, Any], patterns: list[str]) -> str:
     pattern_str = ", ".join(patterns[:5]) if patterns else "Keine"
     score = data.get("score") or 0.0
     components: dict[str, float] = data.get("score_components") or {}

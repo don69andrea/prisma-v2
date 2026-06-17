@@ -18,10 +18,10 @@ pytestmark = pytest.mark.unit
 def test_llm_client_exposes_raw_client_property() -> None:
     """LLMClient muss eine `raw_client`-Property haben die den Anthropic-SDK-Client
     zurückgibt — ChatService und CryptoAgentService nutzen diese für Streaming."""
+    from backend.application.services.cost_tracker import CostTracker
     from backend.infrastructure.llm.client import LLMClient
     from backend.infrastructure.llm.pricing import PRICING
     from backend.tests.fixtures.llm.fixture_llm_client import _NullCostLogRepository
-    from backend.application.services.cost_tracker import CostTracker
 
     mock_anthropic = MagicMock()
     tracker = CostTracker(
@@ -108,12 +108,13 @@ def test_chat_router_has_no_duplicate_auth_decorator() -> None:
 
 def test_decisions_max_live_tickers_matches_docstring() -> None:
     """FIX-9: _MAX_LIVE_TICKERS in decisions.py muss mit dem Docstring übereinstimmen."""
+    from pathlib import Path
+
     from backend.interfaces.rest.routers.decisions import _MAX_LIVE_TICKERS
 
     # Docstring sagt "Max. 25 Ticker" aber Konstante war 12
     # Nach Fix: Konstante = 25 (oder Docstring angepasst auf 12)
     # Wir prüfen Konsistenz, nicht den spezifischen Wert
-    from pathlib import Path
 
     source = (
         Path(__file__).resolve().parents[2]

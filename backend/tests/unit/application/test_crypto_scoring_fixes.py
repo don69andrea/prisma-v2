@@ -82,7 +82,7 @@ async def test_score_one_does_not_call_score_all() -> None:
     svc = _make_service()
 
     with patch.object(svc, "score_all", wraps=svc.score_all) as mock_score_all:
-        result = await svc.score_one("BTC")
+        await svc.score_one("BTC")
 
     mock_score_all.assert_not_called()
 

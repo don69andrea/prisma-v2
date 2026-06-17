@@ -31,6 +31,8 @@ def _make_minimal_df() -> pd.DataFrame:
             "MACDh_12_26_9": [20.0] * n,
             "EMA_20": [p * 0.998 for p in prices],
             "EMA_50": [p * 0.995 for p in prices],
+            "BBU_20_2.0": [p * 1.02 for p in prices],
+            "BBL_20_2.0": [p * 0.98 for p in prices],
         }
     )
 

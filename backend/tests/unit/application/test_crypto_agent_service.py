@@ -12,8 +12,6 @@ from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
 
-import pytest
-
 from backend.application.services.crypto_agent_service import CryptoAgentService
 from backend.tests.fixtures.llm.fixture_llm_client import FixtureLLMClient
 

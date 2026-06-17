@@ -4,7 +4,8 @@ databases:
     user: prisma_v2
     plan: free
     postgresMajorVersion: "16"
-    # pgvector extension must be enabled after first deploy: CREATE EXTENSION vector;
+    # pgvector wird automatisch via Alembic-Migration 0008 aktiviert (CREATE EXTENSION IF NOT EXISTS vector).
+    # Kein manueller Schritt nötig — Migration läuft beim ersten Deploy über backend-start.sh.
 
 services:
   - type: web

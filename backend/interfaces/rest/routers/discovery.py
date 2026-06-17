@@ -23,7 +23,7 @@ from backend.infrastructure.persistence.repositories.investor_profile_repository
 from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
     SQLASwissStockRepository,
 )
-from backend.interfaces.rest.dependencies import get_llm_client, get_session
+from backend.interfaces.rest.dependencies import get_llm_client, get_session, get_yfinance_adapter
 from backend.interfaces.rest.schemas.investor_profile import (
     AnswerRequest,
     AnswerResponse,
@@ -45,10 +45,14 @@ _logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _get_discovery_service(session: AsyncSession = Depends(get_session)) -> DiscoveryService:
+def _get_discovery_service(
+    session: AsyncSession = Depends(get_session),
+    yf_adapter: YFinanceSwissAdapter = Depends(get_yfinance_adapter),
+) -> DiscoveryService:
+    # FIX-07: Singleton-Adapter via DI statt neuem YFinanceSwissAdapter() pro Request.
     return DiscoveryService(
         swiss_stock_repo=SQLASwissStockRepository(session=session),
-        market_data=YFinanceSwissAdapter(),
+        market_data=yf_adapter,
         db_session=session,
     )
 

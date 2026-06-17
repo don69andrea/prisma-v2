@@ -251,22 +251,18 @@ class ChatMessage:
 class ChatService:
     """Orchestriert Claude mit PRISMA-Tools für Konversations-Interface."""
 
-    def __init__(self, cost_tracker: Any | None = None) -> None:
-        # W-16/F-COMM-3: CostTracker ist optional injizierbar, damit
-        # bestehende Aufrufstellen/Tests ohne DI weiterhin `ChatService()`
-        # instanziieren können. Ohne Tracker wird (wie bisher) nicht
-        # getrackt — der Router (chat.py) injiziert ihn im Produktivbetrieb.
-        self._cost_tracker = cost_tracker
+    def __init__(self, llm_client: Any | None = None) -> None:
+        # FIX-01: llm_client injiziert (LLMClient-Instanz aus DI-Chain).
+        # Ohne llm_client kann stream() nicht aufgerufen werden — liefert Error-SSE.
+        # ChatService() ohne Argumente bleibt für Tests gültig (kein stream()-Aufruf).
+        self._llm = llm_client
+        self._cost_tracker = getattr(llm_client, "_cost_tracker", None)
 
     def _get_tool_definitions(self) -> list[dict[str, Any]]:
         return _TOOL_DEFINITIONS
 
     async def _record_cost(self, final_message: Any) -> None:
-        """Schreibt einen CostTracker-Audit-Eintrag für einen Claude-Call.
-
-        Best-effort: ein Tracking-Fehler darf den Chat-Response nicht
-        zerstören (analog zu LLMClient.messages_create).
-        """
+        """Best-effort Cost-Tracking via injiziertem LLMClient._cost_tracker."""
         if self._cost_tracker is None:
             return
         try:
@@ -288,9 +284,16 @@ class ChatService:
 
     async def stream(self, messages: list[ChatMessage]) -> AsyncIterator[str]:
         """Streamt SSE-Events: token | tool_call | tool_result | done."""
-        import anthropic
+        # FIX-01: raw_client nutzt den prozess-weiten Connection-Pool (Singleton),
+        # timeout=30s und max_retries=3 aus get_anthropic_client() — kein eigenes
+        # AsyncAnthropic() mehr, das bei jedem Request einen frischen Pool baut.
+        if self._llm is None:
+            _logger.error("ChatService.stream() ohne llm_client aufgerufen — DI-Fehler")
+            yield _sse("error", {"message": "Chat-Service nicht korrekt initialisiert."})
+            yield _sse("done", {})
+            return
 
-        client = anthropic.AsyncAnthropic()
+        client = self._llm.raw_client
         api_messages = [{"role": m.role, "content": m.content} for m in messages]
 
         try:
@@ -347,6 +350,8 @@ class ChatService:
                     {"role": "assistant", "content": final.content},
                     {"role": "user", "content": tool_results},
                 ]
+                # FIX-02: tools= muss auch im Continuation-Call mitgegeben werden,
+                # damit Claude in der zweiten Runde weitere Tool-Calls machen kann.
                 async with client.messages.stream(
                     model=_MODEL,
                     max_tokens=1024,
@@ -357,6 +362,7 @@ class ChatService:
                             "cache_control": {"type": "ephemeral"},
                         }
                     ],
+                    tools=cast(Any, _TOOL_DEFINITIONS),
                     messages=cast(Any, continuation_messages),
                 ) as stream2:
                     async for event in stream2:

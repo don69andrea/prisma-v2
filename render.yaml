@@ -127,3 +127,19 @@ services:
         fromDatabase:
           name: prisma-v2-db
           property: connectionString
+
+  - type: cron
+    name: prisma-stock-daily
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    branch: main
+    plan: free
+    schedule: "0 7 * * *"
+    dockerCommand: python -m backend.scripts.stock_daily_snapshot
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prisma-v2-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false

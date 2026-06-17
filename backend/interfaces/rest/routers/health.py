@@ -41,6 +41,19 @@ async def health_ready() -> JSONResponse:
         raise HTTPException(status_code=503, detail=f"Database nicht erreichbar: {exc}") from exc
 
 
+@router.get("/health/model-info", summary="Aktive ML-Modell-Version und verfügbare Versionen")
+async def model_info() -> dict:
+    """Aktive ML-Modell-Version und alle registrierten Versionen."""
+    from backend.application.services.model_registry import ModelRegistry
+
+    registry = ModelRegistry()
+    active_path = registry.get_active_model_path()
+    return {
+        "active": active_path.name if active_path else "return_predictor_latest.joblib (legacy)",
+        "versions": registry.list_versions(),
+    }
+
+
 @router.get("/health/pipeline")
 async def pipeline_health(
     session: AsyncSession = Depends(get_session),

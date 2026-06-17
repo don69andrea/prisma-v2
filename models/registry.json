@@ -1,0 +1,31 @@
+{
+  "active": "return_predictor_latest.joblib",
+  "versions": [
+    {
+      "file": "return_predictor_xgboost_20260611_165331.joblib",
+      "trained_at": "2026-06-11",
+      "model_type": "xgboost",
+      "feature_count": 23
+    },
+    {
+      "file": "return_predictor_lightgbm_20260612_175826.joblib",
+      "trained_at": "2026-06-12",
+      "model_type": "lightgbm",
+      "feature_count": 23
+    },
+    {
+      "file": "return_predictor_lightgbm_20260613_094704.joblib",
+      "trained_at": "2026-06-13",
+      "model_type": "lightgbm",
+      "feature_count": 23
+    },
+    {
+      "file": "return_predictor_lightgbm_20260614_160815.joblib",
+      "trained_at": "2026-06-14",
+      "model_type": "lightgbm",
+      "feature_count": 23,
+      "val_accuracy": 0.4223,
+      "val_top_quartile_recall": 0.4938
+    }
+  ]
+}

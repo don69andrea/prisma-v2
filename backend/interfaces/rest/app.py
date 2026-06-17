@@ -43,7 +43,7 @@ from backend.interfaces.rest.routers import (
     steuer,
     stocks,
     universes,
-    # users,  # added in Task 7
+    users,
 )
 
 _logger = logging.getLogger(__name__)
@@ -151,7 +151,7 @@ def create_app() -> FastAPI:
     app.include_router(fundamentals.router, dependencies=_auth)
     app.include_router(universes.router, dependencies=_auth)
     app.include_router(admin.router, dependencies=_admin_auth)
-    # app.include_router(users.router, dependencies=_admin_auth)  # added in Task 7
+    app.include_router(users.router, dependencies=_admin_auth)
     app.include_router(runs.router, dependencies=_auth)
     app.include_router(memos.router, dependencies=_auth, prefix="/api/v1")
     app.include_router(backtests.router, dependencies=_auth)

@@ -2,9 +2,9 @@
 
 import s from './LoadingScreen.module.css';
 
-export function LoadingScreen() {
+export function LoadingScreen({ fadeOut = false }: { fadeOut?: boolean }) {
   return (
-    <div className={s.overlay} aria-hidden="true">
+    <div className={`${s.overlay}${fadeOut ? ` ${s.overlayFadeOut}` : ''}`} aria-hidden="true">
       <div className={s.dotGrid} />
       <div className={s.colorWash} />
       <div className={s.vignette} />

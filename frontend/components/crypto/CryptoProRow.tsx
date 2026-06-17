@@ -1,6 +1,7 @@
 'use client';
 
 import { type CryptoSignal, signalColor, signalLabel } from '@/lib/api/crypto';
+import { CryptoChartSheet } from './CryptoChartSheet';
 
 interface CryptoProRowProps {
   signal: CryptoSignal;
@@ -69,6 +70,9 @@ export function CryptoProRow({ signal }: CryptoProRowProps) {
       </td>
       <td className="py-2 px-3 tabular-nums text-right text-muted-foreground">
         {signal.correlation_smi_1y.toFixed(2)}
+      </td>
+      <td className="py-2 px-3">
+        <CryptoChartSheet ticker={signal.ticker} signal={signal} />
       </td>
     </tr>
   );

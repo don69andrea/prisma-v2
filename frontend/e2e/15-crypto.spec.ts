@@ -533,15 +533,15 @@ test.describe('Mode-Toggle Simple ↔ Pro', () => {
 // ── Navigation ────────────────────────────────────────────────────────────────
 
 test.describe('Navigation', () => {
-  test('Nav-Link "Krypto." ist von der Startseite sichtbar', async ({ page }) => {
+  test('Nav-Link "Krypto" ist von der Startseite sichtbar', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Krypto.' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Krypto' })).toBeVisible();
   });
 
-  test('Nav-Link "Krypto." führt zu /crypto', async ({ page }) => {
+  test('Nav-Link "Krypto" führt zu /crypto', async ({ page }) => {
     await mockCryptoApi(page);
     await page.goto('/');
-    await page.getByRole('link', { name: 'Krypto.' }).click();
+    await page.getByRole('link', { name: 'Krypto' }).click();
     await expect(page).toHaveURL('/crypto');
     await expect(page.getByRole('heading', { name: 'Krypto.' })).toBeVisible();
   });
@@ -632,9 +632,9 @@ test.describe('Go-Live Readiness', () => {
     expect(elapsed).toBeLessThan(5000);
   });
 
-  test('Krypto.-Link ist klar im Navigationsbereich auffindbar', async ({ page }) => {
+  test('Krypto-Link ist klar im Navigationsbereich auffindbar', async ({ page }) => {
     await page.goto('/');
-    const link = page.getByRole('link', { name: 'Krypto.' });
+    const link = page.getByRole('link', { name: 'Krypto' });
     await expect(link).toBeVisible();
     await expect(link).toBeEnabled();
   });

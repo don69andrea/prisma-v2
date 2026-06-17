@@ -128,6 +128,7 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
   const [data, setData] = useState<ExplainResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   useEffect(() => {
     explainDecision({
@@ -240,6 +241,26 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
           )}
         </div>
       </div>
+
+      <button
+        onClick={() => setAuditOpen((o) => !o)}
+        className="flex items-center gap-1 text-[11px] text-[#8b949e] hover:text-[#58a6ff] transition-colors w-full"
+        data-testid="audit-trail-toggle"
+        aria-expanded={auditOpen}
+      >
+        {auditOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        Audit-Trail {auditOpen ? 'schliessen' : 'anzeigen'}
+      </button>
+
+      {auditOpen && (
+        <AuditTrail
+          quantScore={item.quant_score}
+          mlScore={item.ml_score}
+          macroScore={item.macro_score}
+          signal={item.signal}
+          snapshotDate={item.snapshot_date}
+        />
+      )}
     </div>
   );
 }

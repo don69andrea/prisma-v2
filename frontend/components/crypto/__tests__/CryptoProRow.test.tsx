@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { CryptoProRow } from '../CryptoProRow';
 import type { CryptoSignal } from '@/lib/api/crypto';
@@ -40,12 +41,15 @@ function makeSignal(overrides: Partial<CryptoSignal> = {}): CryptoSignal {
 }
 
 function renderRow(signal: CryptoSignal) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <table>
-      <tbody>
-        <CryptoProRow signal={signal} />
-      </tbody>
-    </table>
+    <QueryClientProvider client={client}>
+      <table>
+        <tbody>
+          <CryptoProRow signal={signal} />
+        </tbody>
+      </table>
+    </QueryClientProvider>
   );
 }
 

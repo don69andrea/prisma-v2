@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.discovery_service import DiscoveryService
@@ -22,7 +23,7 @@ from backend.infrastructure.persistence.repositories.investor_profile_repository
 from backend.infrastructure.persistence.repositories.swiss_stock_repository import (
     SQLASwissStockRepository,
 )
-from backend.interfaces.rest.dependencies import get_llm_client, get_session
+from backend.interfaces.rest.dependencies import get_llm_client, get_session, get_yfinance_adapter
 from backend.interfaces.rest.schemas.investor_profile import (
     AnswerRequest,
     AnswerResponse,
@@ -44,10 +45,14 @@ _logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _get_discovery_service(session: AsyncSession = Depends(get_session)) -> DiscoveryService:
+def _get_discovery_service(
+    session: AsyncSession = Depends(get_session),
+    yf_adapter: YFinanceSwissAdapter = Depends(get_yfinance_adapter),
+) -> DiscoveryService:
+    # FIX-07: Singleton-Adapter via DI statt neuem YFinanceSwissAdapter() pro Request.
     return DiscoveryService(
         swiss_stock_repo=SQLASwissStockRepository(session=session),
-        market_data=YFinanceSwissAdapter(),
+        market_data=yf_adapter,
         db_session=session,
     )
 
@@ -265,11 +270,29 @@ async def complete_discovery(
 ) -> CompleteResponse:
     """Markiert das Profil als abgeschlossen und gibt die personalisierte Titelliste zurück."""
     repo = SQLAInvestorProfileRepository(session=session)
-    profile = await repo.get_by_session_id(body.session_id)
+    try:
+        profile = await repo.get_by_session_id(body.session_id)
+    except ValidationError as exc:
+        # Eine bereits als onboarding_complete=True persistierte Session ohne
+        # beantworteten Turn 1 (profession=None) lässt sich beim DB-Reload nicht
+        # mehr als InvestorProfile rekonstruieren — der model_validator schlägt
+        # an (siehe InvestorProfile._validate_onboarding_consistency). Das ist
+        # ein Client-Fehler (unvollständiger Discovery-Flow), keine 500.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Profil unvollständig — Turn 1 (Beruf) wurde nicht beantwortet.",
+        ) from exc
+
     if profile is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Keine Session für session_id={body.session_id!r} gefunden.",
+        )
+
+    if profile.profession is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Profil unvollständig — Turn 1 (Beruf) wurde nicht beantwortet.",
         )
 
     completed = profile.model_copy(

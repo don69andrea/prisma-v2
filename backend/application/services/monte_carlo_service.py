@@ -118,23 +118,30 @@ class MonteCarloService:
         if abs(total_weight - 1.0) > 0.01:
             raise ValueError(f"Gewichte müssen 1.0 ergeben, ist: {total_weight:.3f}")
         mu_arr, sigma_arr, corr_matrix = await self._fetch_return_params(inp.holdings)
-        return _run_gbm(inp, mu_arr, sigma_arr, corr_matrix)
+        return run_gbm(inp, mu_arr, sigma_arr, corr_matrix)
 
     async def _fetch_return_params(
         self, holdings: list[HoldingWeight]
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         n = len(holdings)
-        mu_list: list[float] = []
-        sigma_list: list[float] = []
-        returns_matrix: list[np.ndarray] = []
 
-        for h in holdings:
+        async def _fetch_one(h: HoldingWeight) -> tuple[float, float, np.ndarray]:
             hist_mu, hist_sigma, hist_returns = await _fetch_ticker_params(h.ticker)
             ml_mu = await self._fetch_ml_mu(h.ticker)
             blended_mu = 0.5 * hist_mu + 0.5 * ml_mu
-            mu_list.append(blended_mu)
-            sigma_list.append(hist_sigma)
-            returns_matrix.append(hist_returns)
+            return blended_mu, hist_sigma, hist_returns
+
+        # F-PORT-2 (W-7): Holdings parallel statt sequenziell abrufen. Jeder
+        # Ticker-Fetch macht einen synchronen yfinance-Roundtrip via
+        # asyncio.to_thread; nacheinander skalierte die Antwortzeit linear
+        # mit der Anzahl Holdings (5 Holdings ~13s). _fetch_ticker_params
+        # degradiert bei Fehlern intern auf Default-Werte (allow_fallback=True),
+        # wirft also nicht — ein einzelner fehlerhafter Ticker bricht den
+        # gesamten Batch daher nicht ab.
+        results = await asyncio.gather(*(_fetch_one(h) for h in holdings))
+        mu_list = [r[0] for r in results]
+        sigma_list = [r[1] for r in results]
+        returns_matrix = [r[2] for r in results]
 
         if n > 1:
             min_len = min(len(r) for r in returns_matrix)
@@ -220,7 +227,7 @@ async def _fetch_ticker_params(
         raise
 
 
-def _run_gbm(
+def run_gbm(
     inp: MonteCarloInput,
     mu_arr: np.ndarray,
     sigma_arr: np.ndarray,

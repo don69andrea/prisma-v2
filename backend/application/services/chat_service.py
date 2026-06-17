@@ -46,6 +46,7 @@ def _register(name: str) -> Callable[[ToolHandler], ToolHandler]:
 # ---------------------------------------------------------------------------
 
 from backend.application.services.macro_service import MacroService  # noqa: E402
+from backend.application.services.stock_service import _normalize_ticker  # noqa: E402
 from backend.application.services.swiss_market_service import SwissMarketService  # noqa: E402
 from backend.infrastructure.persistence.repositories.swiss_stock_repository import (  # noqa: E402
     SQLASwissStockRepository,
@@ -96,7 +97,11 @@ async def _filter_stocks(inputs: dict[str, Any], session: AsyncSession) -> str:
 @_register("get_factsheet")
 async def _get_factsheet(inputs: dict[str, Any], session: AsyncSession) -> str:
     svc = _make_market_svc(session)
-    data = await svc.get_swiss_stock(inputs["ticker"])
+    # W-15/F-COMM-2: Claude ruft das Tool tool-schema-konform mit Exchange-
+    # Suffix auf (z.B. "NESN.SW") — Suffix vor dem Repository-Lookup
+    # entfernen, analog zu stock_service._normalize_ticker / dem
+    # REST-Factsheet-Endpoint (FactsheetService.get_factsheet).
+    data = await svc.get_swiss_stock(_normalize_ticker(inputs["ticker"]))
     if data is None:
         return f"Keine Daten für {inputs['ticker']} gefunden."
     return json.dumps(
@@ -246,14 +251,49 @@ class ChatMessage:
 class ChatService:
     """Orchestriert Claude mit PRISMA-Tools für Konversations-Interface."""
 
+    def __init__(self, llm_client: Any | None = None) -> None:
+        # FIX-01: llm_client injiziert (LLMClient-Instanz aus DI-Chain).
+        # Ohne llm_client kann stream() nicht aufgerufen werden — liefert Error-SSE.
+        # ChatService() ohne Argumente bleibt für Tests gültig (kein stream()-Aufruf).
+        self._llm = llm_client
+        self._cost_tracker = getattr(llm_client, "_cost_tracker", None)
+
     def _get_tool_definitions(self) -> list[dict[str, Any]]:
         return _TOOL_DEFINITIONS
 
+    async def _record_cost(self, final_message: Any) -> None:
+        """Best-effort Cost-Tracking via injiziertem LLMClient._cost_tracker."""
+        if self._cost_tracker is None:
+            return
+        try:
+            usage = final_message.usage
+            await self._cost_tracker.record(
+                provider="anthropic",
+                model=_MODEL,
+                feature="chat",
+                input_tokens=usage.input_tokens,
+                output_tokens=usage.output_tokens,
+                request_id=getattr(final_message, "id", None),
+            )
+        except Exception:
+            _logger.exception(
+                "CRITICAL: Cost-Tracking fehlgeschlagen für ChatService/%s — "
+                "Budget-Cap wird NICHT aktualisiert!",
+                _MODEL,
+            )
+
     async def stream(self, messages: list[ChatMessage]) -> AsyncIterator[str]:
         """Streamt SSE-Events: token | tool_call | tool_result | done."""
-        import anthropic
+        # FIX-01: raw_client nutzt den prozess-weiten Connection-Pool (Singleton),
+        # timeout=30s und max_retries=3 aus get_anthropic_client() — kein eigenes
+        # AsyncAnthropic() mehr, das bei jedem Request einen frischen Pool baut.
+        if self._llm is None:
+            _logger.error("ChatService.stream() ohne llm_client aufgerufen — DI-Fehler")
+            yield _sse("error", {"message": "Chat-Service nicht korrekt initialisiert."})
+            yield _sse("done", {})
+            return
 
-        client = anthropic.AsyncAnthropic()
+        client = self._llm.raw_client
         api_messages = [{"role": m.role, "content": m.content} for m in messages]
 
         try:
@@ -285,6 +325,8 @@ class ChatService:
 
                 final = await stream.get_final_message()
 
+            await self._record_cost(final)
+
             if final.stop_reason == "tool_use":
                 tool_results = []
                 for block in final.content:
@@ -308,6 +350,8 @@ class ChatService:
                     {"role": "assistant", "content": final.content},
                     {"role": "user", "content": tool_results},
                 ]
+                # FIX-02: tools= muss auch im Continuation-Call mitgegeben werden,
+                # damit Claude in der zweiten Runde weitere Tool-Calls machen kann.
                 async with client.messages.stream(
                     model=_MODEL,
                     max_tokens=1024,
@@ -318,6 +362,7 @@ class ChatService:
                             "cache_control": {"type": "ephemeral"},
                         }
                     ],
+                    tools=cast(Any, _TOOL_DEFINITIONS),
                     messages=cast(Any, continuation_messages),
                 ) as stream2:
                     async for event in stream2:
@@ -327,6 +372,10 @@ class ChatService:
                             and hasattr(event.delta, "text")
                         ):
                             yield _sse("token", {"content": event.delta.text})
+
+                    final2 = await stream2.get_final_message()
+
+                await self._record_cost(final2)
 
         except Exception:
             _logger.exception("ChatService stream error")

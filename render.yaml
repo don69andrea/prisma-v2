@@ -4,7 +4,8 @@ databases:
     user: prisma_v2
     plan: free
     postgresMajorVersion: "16"
-    # pgvector extension must be enabled after first deploy: CREATE EXTENSION vector;
+    # pgvector wird automatisch via Alembic-Migration 0008 aktiviert (CREATE EXTENSION IF NOT EXISTS vector).
+    # Kein manueller Schritt nötig — Migration läuft beim ersten Deploy über backend-start.sh.
 
 services:
   - type: web
@@ -93,4 +94,22 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: VOYAGE_API_KEY
+        sync: false
+
+  - type: cron
+    name: prisma-crypto-daily
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    branch: main
+    plan: free
+    schedule: "30 6 * * *"
+    dockerCommand: python -m backend.scripts.crypto_daily_snapshot
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prisma-v2-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: COINGECKO_API_KEY
         sync: false

@@ -11,6 +11,8 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.cost_tracker import CostTracker
+from backend.application.services.crypto_agent_service import CryptoAgentService
+from backend.application.services.crypto_pattern_service import CryptoPatternService
 from backend.application.services.crypto_scoring_service import CryptoScoringService
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.narrative_service import NarrativeService
@@ -25,6 +27,7 @@ from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
 from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
 from backend.domain.repositories.cost_log_repository import CostLogRepository
+from backend.domain.repositories.crypto_signal_repository import CryptoSignalRepository
 from backend.domain.repositories.memo_batch_job_repository import MemoBatchJobRepository
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.research_memo_repository import ResearchMemoRepository
@@ -41,6 +44,9 @@ from backend.infrastructure.llm.pricing import PRICING  # Single-Source-of-Truth
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
+)
+from backend.infrastructure.persistence.repositories.crypto_signal_repository import (
+    SQLACryptoSignalRepository,
 )
 from backend.infrastructure.persistence.repositories.memo_batch_job_repository import (
     SQLAMemoBatchJobRepository,
@@ -148,6 +154,12 @@ async def get_universe_repository(
     session: AsyncSession = Depends(get_session),
 ) -> UniverseRepository:
     return SQLAUniverseRepository(session=session)
+
+
+async def get_crypto_signal_repository(
+    session: AsyncSession = Depends(get_session),
+) -> CryptoSignalRepository:
+    return SQLACryptoSignalRepository(session=session)
 
 
 async def get_universe_service(
@@ -592,10 +604,61 @@ async def get_yfinance_crypto_adapter() -> YFinanceCryptoAdapter:
     return _get_yfinance_crypto_singleton()
 
 
+_crypto_pattern_service: CryptoPatternService | None = None
+
+
+def _get_crypto_pattern_singleton() -> CryptoPatternService:
+    global _crypto_pattern_service
+    if _crypto_pattern_service is None:
+        _crypto_pattern_service = CryptoPatternService()
+    return _crypto_pattern_service
+
+
+async def get_crypto_pattern_service() -> CryptoPatternService:
+    return _get_crypto_pattern_singleton()
+
+
+async def get_crypto_agent_service(
+    llm_client: LLMClient = Depends(get_llm_client),
+) -> CryptoAgentService:
+    return CryptoAgentService(llm_client=llm_client)
+
+
 async def get_crypto_scoring_service() -> CryptoScoringService:
     return CryptoScoringService(
         cg_adapter=_get_coingecko_singleton(),
         yf_adapter=_get_yfinance_crypto_singleton(),
         fg_adapter=_get_fear_greed_singleton(),
         scorer=CryptoScorer(),
+        pattern_service=_get_crypto_pattern_singleton(),
     )
+
+
+async def require_crypto_enabled(settings: Settings = Depends(get_settings)) -> None:
+    """Gattet das Crypto-Modul über CRYPTO_FEATURE_ENABLED (W-12 / F-BTCR-2).
+
+    Liefert 404 statt z.B. 503, damit das Modul bei deaktiviertem Flag so
+    aussieht, als gäbe es die Routen gar nicht — kein Hinweis auf ein
+    existierendes, aber gesperrtes Feature.
+    """
+    if not settings.crypto_feature_enabled:
+        raise HTTPException(status_code=404, detail="Crypto-Feature ist deaktiviert.")
+
+
+# ---------------------------------------------------------------------------
+# Chat DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_chat_service(
+    llm_client: LLMClient = Depends(get_llm_client),
+) -> Any:
+    """Erstellt den ChatService mit injiziertem LLMClient (FIX-01).
+
+    LLMClient enthält den prozess-weiten Connection-Pool, timeout=30s,
+    max_retries=3 und den CostTracker für Audit-Logging.
+    ChatService greift via llm_client.raw_client auf den Anthropic-SDK zu.
+    """
+    from backend.application.services.chat_service import ChatService
+
+    return ChatService(llm_client=llm_client)

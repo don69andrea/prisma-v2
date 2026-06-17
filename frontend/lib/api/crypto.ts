@@ -38,6 +38,17 @@ export interface FearGreedData {
   timestamp: string;
 }
 
+export interface CryptoHistoryPoint {
+  date: string | null;
+  signal: string;
+  score: number;
+  price_chf: number | null;
+  fear_greed_value: number | null;
+  rsi_14: number | null;
+  detected_patterns: string[];
+  pattern_score: number | null;
+}
+
 export async function getCryptoSignals(): Promise<CryptoSignal[]> {
   return apiFetch<CryptoSignal[]>('/api/v1/crypto/signals');
 }
@@ -48,6 +59,10 @@ export async function getCryptoSignal(ticker: string): Promise<CryptoSignal> {
 
 export async function getFearGreed(): Promise<FearGreedData> {
   return apiFetch<FearGreedData>('/api/v1/crypto/fear-greed');
+}
+
+export async function getCryptoHistory(ticker: string, days = 14): Promise<CryptoHistoryPoint[]> {
+  return apiFetch<CryptoHistoryPoint[]>(`/api/v1/crypto/history/${ticker}?days=${days}`);
 }
 
 export function signalColor(signal: CryptoSignal['signal']): string {

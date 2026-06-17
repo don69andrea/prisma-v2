@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal
 
@@ -31,3 +31,5 @@ class CryptoSignal:
     ath_change_pct: float | None
     market_cap_rank: int | None
     timestamp: datetime
+    detected_patterns: list[str] = field(default_factory=list)
+    pattern_score: float = 0.0

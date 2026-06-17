@@ -7,6 +7,7 @@ um Korrektheit der nativen pandas/numpy-Implementierungen zu verifizieren.
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 
 def _series(*prices: float) -> pd.Series:
@@ -366,3 +367,59 @@ class TestAddIndicators:
         df = _make_df(300, slope=-0.002)
         result = _add_indicators(df)
         assert result["EMA_20"].iloc[-1] < result["EMA_50"].iloc[-1]
+
+
+# ─────────────────────────── get_ohlcv ───────────────────────────
+
+
+class TestGetOhlcv:
+    async def test_returns_dataframe_on_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from backend.infrastructure.adapters import yfinance_crypto as mod
+
+        df = _make_df(300)
+
+        async def _fake_to_thread(func, *args, **kwargs):
+            return df
+
+        monkeypatch.setattr(mod.asyncio, "to_thread", _fake_to_thread)  # type: ignore[attr-defined]
+        adapter = mod.YFinanceCryptoAdapter()
+        result = await adapter.get_ohlcv("BTC-CHF")
+        assert result is not None
+        assert "Close" in result.columns
+
+    async def test_returns_none_on_empty_download(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from backend.infrastructure.adapters import yfinance_crypto as mod
+
+        async def _fake_to_thread(func, *args, **kwargs):
+            return pd.DataFrame()
+
+        monkeypatch.setattr(mod.asyncio, "to_thread", _fake_to_thread)  # type: ignore[attr-defined]
+        adapter = mod.YFinanceCryptoAdapter()
+        result = await adapter.get_ohlcv("BTC-CHF")
+        assert result is None
+
+    async def test_returns_none_on_exception(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from backend.infrastructure.adapters import yfinance_crypto as mod
+
+        async def _fake_to_thread(func, *args, **kwargs):
+            raise RuntimeError("yfinance down")
+
+        monkeypatch.setattr(mod.asyncio, "to_thread", _fake_to_thread)  # type: ignore[attr-defined]
+        adapter = mod.YFinanceCryptoAdapter()
+        result = await adapter.get_ohlcv("BTC-CHF")
+        assert result is None
+
+    async def test_flattens_multiindex_columns(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from backend.infrastructure.adapters import yfinance_crypto as mod
+
+        df = _make_df(60)
+        df.columns = pd.MultiIndex.from_product([df.columns, ["BTC-CHF"]])
+
+        async def _fake_to_thread(func, *args, **kwargs):
+            return df
+
+        monkeypatch.setattr(mod.asyncio, "to_thread", _fake_to_thread)  # type: ignore[attr-defined]
+        adapter = mod.YFinanceCryptoAdapter()
+        result = await adapter.get_ohlcv("BTC-CHF")
+        assert result is not None
+        assert "Close" in result.columns

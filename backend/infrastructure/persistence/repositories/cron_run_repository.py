@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import Integer, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain.models.cron_run_record import CronRunRecord
@@ -48,12 +48,21 @@ class SQLACronRunRepository(Port):
         await self._session.commit()
 
     async def get_latest_per_job(self) -> list[CronRunRecord]:
-        result = await self._session.execute(
-            select(CronRunLogORM).order_by(CronRunLogORM.job_name, CronRunLogORM.started_at.desc())
+        # Use ROW_NUMBER() window function so only one row per job_name is
+        # fetched from the DB rather than the full table history.
+        row_num = (
+            func.row_number()
+            .over(
+                partition_by=CronRunLogORM.job_name,
+                order_by=CronRunLogORM.started_at.desc(),
+            )
+            .cast(Integer)
+            .label("rn")
         )
-        latest: dict[str, CronRunLogORM] = {}
-        for row in result.scalars().all():
-            latest.setdefault(row.job_name, row)
+        subq = select(CronRunLogORM, row_num).subquery()
+        result = await self._session.execute(
+            select(CronRunLogORM).from_statement(select(subq).where(subq.c.rn == 1))
+        )
         return [
             CronRunRecord(
                 id=r.id,
@@ -64,5 +73,5 @@ class SQLACronRunRepository(Port):
                 records_saved=r.records_saved,
                 error_msg=r.error_msg,
             )
-            for r in latest.values()
+            for r in result.scalars().all()
         ]

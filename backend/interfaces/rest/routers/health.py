@@ -10,6 +10,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.infrastructure.persistence.repositories.cron_run_repository import (
+    SQLACronRunRepository,
+)
 from backend.infrastructure.persistence.session import get_session_factory
 from backend.interfaces.rest.dependencies import get_session
 
@@ -43,10 +46,6 @@ async def pipeline_health(
     session: AsyncSession = Depends(get_session),
 ) -> list[dict]:
     """Letzter Run-Status pro Cron-Job."""
-    from backend.infrastructure.persistence.repositories.cron_run_repository import (
-        SQLACronRunRepository,
-    )
-
     repo = SQLACronRunRepository(session)
     records = await repo.get_latest_per_job()
     return [

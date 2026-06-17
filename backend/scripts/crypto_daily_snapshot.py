@@ -119,9 +119,10 @@ async def main() -> None:
 
     log.info("=== Snapshot fertig: %d/%d gespeichert ===", saved, len(results))
 
-    async with session_factory() as log_session:
-        log_repo = SQLACronRunRepository(log_session)
-        await log_repo.finish_run(run_id, "ok", records_saved=saved)
+    if run_id is not None:
+        async with session_factory() as log_session:
+            log_repo = SQLACronRunRepository(log_session)
+            await log_repo.finish_run(run_id, "ok", records_saved=saved)
 
 
 if __name__ == "__main__":

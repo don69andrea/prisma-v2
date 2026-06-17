@@ -25,7 +25,6 @@ services:
         - uv.lock
         - Dockerfile.backend
         - scripts/backend-start.sh
-        - scripts/update_smi_market_caps.py
         - render.yaml
     envVars:
       - key: DATABASE_URL
@@ -113,4 +112,34 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: COINGECKO_API_KEY
+        sync: false
+
+  - type: cron
+    name: prisma-smi-market-caps
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    branch: main
+    plan: free
+    schedule: "0 5 * * *"
+    dockerCommand: python scripts/update_smi_market_caps.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prisma-v2-db
+          property: connectionString
+
+  - type: cron
+    name: prisma-stock-daily
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    branch: main
+    plan: free
+    schedule: "0 7 * * *"
+    dockerCommand: python -m backend.scripts.stock_daily_snapshot
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: prisma-v2-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
         sync: false

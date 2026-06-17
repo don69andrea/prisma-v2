@@ -65,10 +65,14 @@ async def test_main_saves_one_record_per_signal() -> None:
     async def _fake_save(record: Any) -> None:
         saved_records.append(record)
 
+    mock_cron_repo = AsyncMock()
+    mock_cron_repo.start_run.return_value = "mock-run-id"
+
     with (
         patch(f"{_MODULE}.get_anthropic_client", return_value=AsyncMock()),
         patch(f"{_MODULE}.SQLACostLogRepository", return_value=AsyncMock()),
         patch("backend.application.services.cost_tracker.CostTracker") as MockCostTracker,
+        patch(f"{_MODULE}.SQLACronRunRepository", return_value=mock_cron_repo),
         patch.object(
             CryptoScoringService,
             "score_all",
@@ -106,10 +110,14 @@ async def test_main_continues_after_one_ticker_fails() -> None:
         if call_count["n"] == 1:
             raise RuntimeError("DB hiccup")
 
+    mock_cron_repo = AsyncMock()
+    mock_cron_repo.start_run.return_value = "mock-run-id"
+
     with (
         patch(f"{_MODULE}.get_anthropic_client", return_value=AsyncMock()),
         patch(f"{_MODULE}.SQLACostLogRepository", return_value=AsyncMock()),
         patch("backend.application.services.cost_tracker.CostTracker") as MockCostTracker,
+        patch(f"{_MODULE}.SQLACronRunRepository", return_value=mock_cron_repo),
         patch.object(
             CryptoScoringService,
             "score_all",

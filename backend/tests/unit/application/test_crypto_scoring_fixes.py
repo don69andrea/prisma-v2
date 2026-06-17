@@ -165,6 +165,10 @@ async def test_concurrent_score_all_calls_only_fetch_once() -> None:
 @pytest.mark.asyncio
 async def test_score_all_cache_expires() -> None:
     """PERF-03: Nach Ablauf des Cache-TTL soll ein neuer API-Call gemacht werden."""
+    from datetime import UTC, datetime, timedelta
+
+    import backend.application.services.crypto_scoring_service as svc_module
+
     svc = _make_service()
     original = svc._cg.get_market_data
     call_count = 0
@@ -178,9 +182,35 @@ async def test_score_all_cache_expires() -> None:
 
     await svc.score_all()
     assert call_count == 1
+    assert svc._cache_time is not None
 
-    # Cache leeren (simuliert Ablauf)
-    cast(Any, svc)._cache_result = None
+    # Cache-Zeit künstlich in die Vergangenheit setzen (TTL + 1s)
+    svc._cache_time = datetime.now(UTC) - timedelta(seconds=svc_module._CACHE_TTL_SECONDS + 1)
 
     await svc.score_all()
     assert call_count == 2, "Nach Cache-Ablauf muss ein neuer API-Call gemacht werden."
+
+
+@pytest.mark.asyncio
+async def test_score_all_cache_returns_within_ttl() -> None:
+    """Cache soll innerhalb der TTL zurückgegeben werden — nicht neu berechnet."""
+    svc = _make_service()
+    original = svc._cg.get_market_data
+    call_count = 0
+
+    async def _counted(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        return await original(*args, **kwargs)
+
+    cast(Any, svc._cg).get_market_data = _counted
+
+    # Erster Call — befüllt Cache
+    result1 = await svc.score_all()
+    assert call_count == 1
+    assert svc._cache_time is not None
+
+    # Zweiter Call — Cache ist noch gültig
+    result2 = await svc.score_all()
+    assert call_count == 1, "Cache hätte genutzt werden sollen — kein neuer API-Call erwartet"
+    assert result1 is result2, "Gecachtes Ergebnis sollte zurückgegeben werden"

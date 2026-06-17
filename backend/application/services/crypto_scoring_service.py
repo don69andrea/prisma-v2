@@ -17,6 +17,7 @@ from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter
 from backend.infrastructure.adapters.yfinance_crypto import YFinanceCryptoAdapter
 
 _logger = logging.getLogger(__name__)
+_CACHE_TTL_SECONDS = 600  # 10 Minuten — danach wird live neu berechnet
 
 
 class CryptoScoringService:
@@ -40,6 +41,7 @@ class CryptoScoringService:
         # nur ein CoinGecko-Roundtrip pro Request-Burst stattfindet.
         self._cache_lock = asyncio.Lock()
         self._cache_result: list[CryptoSignal] | None = None
+        self._cache_time: datetime | None = None
 
     async def score_all(self) -> list[CryptoSignal]:
         """Berechnet Scores für alle 10 unterstützten Kryptos parallel.
@@ -48,10 +50,17 @@ class CryptoScoringService:
         gleichzeitige score_all()-Aufrufe lösen nur einen CoinGecko-Batch aus.
         """
         async with self._cache_lock:
-            if self._cache_result is not None:
-                return self._cache_result
+            now = datetime.now(UTC)
+            cache_valid = (
+                self._cache_result is not None
+                and self._cache_time is not None
+                and (now - self._cache_time).total_seconds() < _CACHE_TTL_SECONDS
+            )
+            if cache_valid:
+                return self._cache_result  # type: ignore[return-value]
             result = await self._score_all_uncached()
             self._cache_result = result
+            self._cache_time = now
             return result
 
     async def _score_all_uncached(self) -> list[CryptoSignal]:

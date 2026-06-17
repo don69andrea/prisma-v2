@@ -54,7 +54,9 @@ def _make_service(tech_df: pd.DataFrame | None = None) -> CryptoScoringService:
         ]
     )
     yf = AsyncMock()
-    yf.get_technicals = AsyncMock(return_value=tech_df if tech_df is not None else _make_minimal_df())
+    yf.get_technicals = AsyncMock(
+        return_value=tech_df if tech_df is not None else _make_minimal_df()
+    )
     yf.get_smi_correlation = AsyncMock(return_value=0.25)
 
     fg = AsyncMock()

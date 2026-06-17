@@ -62,11 +62,7 @@ def test_portfolio_router_does_not_import_private_run_gbm() -> None:
     from pathlib import Path
 
     router_source = (
-        Path(__file__).resolve().parents[2]
-        / "interfaces"
-        / "rest"
-        / "routers"
-        / "portfolio.py"
+        Path(__file__).resolve().parents[2] / "interfaces" / "rest" / "routers" / "portfolio.py"
     ).read_text()
 
     assert "_run_gbm" not in router_source, (
@@ -86,11 +82,7 @@ def test_chat_router_has_no_duplicate_auth_decorator() -> None:
     from pathlib import Path
 
     chat_source = (
-        Path(__file__).resolve().parents[2]
-        / "interfaces"
-        / "rest"
-        / "routers"
-        / "chat.py"
+        Path(__file__).resolve().parents[2] / "interfaces" / "rest" / "routers" / "chat.py"
     ).read_text()
 
     # Der Decorator @router.post darf require_admin_api_key nicht als dependency haben
@@ -117,11 +109,7 @@ def test_decisions_max_live_tickers_matches_docstring() -> None:
     # Wir prüfen Konsistenz, nicht den spezifischen Wert
 
     source = (
-        Path(__file__).resolve().parents[2]
-        / "interfaces"
-        / "rest"
-        / "routers"
-        / "decisions.py"
+        Path(__file__).resolve().parents[2] / "interfaces" / "rest" / "routers" / "decisions.py"
     ).read_text()
 
     docstring_says_25 = "Max. 25 Ticker" in source or "Max 25 Ticker" in source
@@ -148,9 +136,7 @@ def test_render_yaml_pgvector_comment_is_not_misleading() -> None:
     Migration 0008 macht das via CREATE EXTENSION IF NOT EXISTS vector automatisch."""
     from pathlib import Path
 
-    render_yaml = (
-        Path(__file__).resolve().parents[3] / "render.yaml"
-    ).read_text()
+    render_yaml = (Path(__file__).resolve().parents[3] / "render.yaml").read_text()
 
     misleading = "pgvector extension must be enabled after first deploy"
     assert misleading not in render_yaml, (
@@ -169,9 +155,7 @@ def test_dockerfile_backend_copies_update_smi_script() -> None:
     backend-start.sh ruft es auf, sonst schlägt jeder Deploy fehl."""
     from pathlib import Path
 
-    dockerfile = (
-        Path(__file__).resolve().parents[3] / "Dockerfile.backend"
-    ).read_text()
+    dockerfile = (Path(__file__).resolve().parents[3] / "Dockerfile.backend").read_text()
 
     assert "update_smi_market_caps" in dockerfile, (
         "FIX-4: Dockerfile.backend kopiert update_smi_market_caps.py nicht. "

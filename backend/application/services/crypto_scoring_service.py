@@ -238,7 +238,9 @@ class CryptoScoringService:
 
         rsi = float(tech["RSI_14"].iloc[-1]) if "RSI_14" in tech.columns else 50.0  # type: ignore[union-attr]
         macd_val = float(tech["MACD_12_26_9"].iloc[-1]) if "MACD_12_26_9" in tech.columns else 0.0  # type: ignore[union-attr]
-        macd_sig_val = float(tech["MACDs_12_26_9"].iloc[-1]) if "MACDs_12_26_9" in tech.columns else 0.0  # type: ignore[union-attr]
+        macd_sig_val = (
+            float(tech["MACDs_12_26_9"].iloc[-1]) if "MACDs_12_26_9" in tech.columns else 0.0
+        )  # type: ignore[union-attr]
         returns = tech["Close"].pct_change().dropna()  # type: ignore[union-attr]
         vol_30d = (
             float(returns.rolling(30).std().iloc[-1] * (365**0.5) * 100)

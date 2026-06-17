@@ -75,9 +75,7 @@ class SQLAUserRepository(UserRepository):
             RankingRunORM,
             ResearchMemoORM,
         ):
-            await self._session.execute(
-                delete(orm_cls).where(orm_cls.user_id == user_id)  # type: ignore[attr-defined]
-            )
+            await self._session.execute(delete(orm_cls).where(orm_cls.user_id == user_id))
 
     def _to_domain(self, row: UserORM) -> User:
         return User(

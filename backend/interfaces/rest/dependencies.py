@@ -702,7 +702,7 @@ async def require_current_user(
         raise HTTPException(status_code=401, detail="Authorization header missing or malformed")
     token = authorization.removeprefix("Bearer ")
     try:
-        return await service.verify_token(token)
+        return await service.verify_token(token)  # type: ignore[no-any-return]
     except ValueError as exc:
         raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
 

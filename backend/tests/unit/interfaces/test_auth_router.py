@@ -13,10 +13,10 @@ from backend.domain.entities.user import User, UserRole
 pytestmark = pytest.mark.unit
 
 
-def _make_app():
+def _make_app() -> None:
     from backend.interfaces.rest.app import create_app
 
-    return create_app()
+    create_app()
 
 
 def _make_user(role: UserRole = UserRole.viewer) -> User:

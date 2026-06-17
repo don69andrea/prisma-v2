@@ -76,10 +76,13 @@ async def patch_user(
     _admin: User = Depends(require_admin_role),
     service: AuthService = Depends(get_auth_service),
 ) -> None:
-    if body.password is not None:
-        await service.set_password(user_id, body.password)
-    if body.is_active is not None:
-        await service.set_active(user_id, body.is_active)
+    try:
+        if body.password is not None:
+            await service.set_password(user_id, body.password)
+        if body.is_active is not None:
+            await service.set_active(user_id, body.is_active)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.delete("/{user_id}/data", status_code=204)

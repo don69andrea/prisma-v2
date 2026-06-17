@@ -5,13 +5,19 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+import bcrypt as _bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from backend.domain.entities.user import User, UserRole
 from backend.domain.repositories.user_repository import UserRepository
 
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _hash_password(password: str) -> str:
+    return _bcrypt.hashpw(password.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
+
+
+def _verify_password(plain: str, hashed: str) -> bool:
+    return _bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
 class AuthService:
@@ -36,7 +42,7 @@ class AuthService:
             raise ValueError(f"User with email {email} already exists")
         user = User(
             email=email,
-            hashed_password=_pwd_context.hash(password),
+            hashed_password=_hash_password(password),
             role=role,
         )
         await self._repo.save(user)
@@ -46,7 +52,7 @@ class AuthService:
         user = await self._repo.get_by_email(email)
         if not user or not user.is_active:
             raise ValueError("Invalid credentials")
-        if not _pwd_context.verify(password, user.hashed_password):
+        if not _verify_password(password, user.hashed_password):
             raise ValueError("Invalid credentials")
         return self._create_token(user)
 
@@ -65,7 +71,7 @@ class AuthService:
         user = await self._repo.get_by_id(user_id)
         if not user:
             raise ValueError("User not found")
-        updated = user.model_copy(update={"hashed_password": _pwd_context.hash(new_password)})
+        updated = user.model_copy(update={"hashed_password": _hash_password(new_password)})
         await self._repo.save(updated)
 
     async def set_active(self, user_id: UUID, is_active: bool) -> None:
@@ -84,4 +90,4 @@ class AuthService:
     def _create_token(self, user: User) -> str:
         expire = datetime.now(UTC) + timedelta(hours=self._jwt_expire_hours)
         payload = {"sub": str(user.id), "role": user.role.value, "exp": expire}
-        return jwt.encode(payload, self._jwt_secret, algorithm="HS256")
+        return str(jwt.encode(payload, self._jwt_secret, algorithm="HS256"))

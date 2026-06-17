@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
+import bcrypt
 import pytest
 
 from backend.application.services.auth_service import AuthService
@@ -18,17 +19,17 @@ def _make_service(repo: AsyncMock) -> AuthService:
     return AuthService(repo=repo, jwt_secret=_SECRET, jwt_expire_hours=8)
 
 
-def _make_user(**kwargs) -> User:
-    from passlib.context import CryptContext
-
-    ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    defaults = {
-        "email": "user@example.com",
-        "hashed_password": ctx.hash("secret"),
-        "role": UserRole.viewer,
-        "is_active": True,
-    }
-    return User(**(defaults | kwargs))
+def _make_user(
+    email: str = "user@example.com",
+    role: UserRole = UserRole.viewer,
+    is_active: bool = True,
+) -> User:
+    return User(
+        email=email,
+        hashed_password=bcrypt.hashpw(b"secret", bcrypt.gensalt()).decode("utf-8"),
+        role=role,
+        is_active=is_active,
+    )
 
 
 @pytest.mark.asyncio

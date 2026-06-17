@@ -21,12 +21,14 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 
 function setTokenCookie(token: string): void {
   const maxAge = 8 * 3600;
-  document.cookie = `prisma_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict`;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `prisma_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict${secure}`;
   localStorage.setItem('prisma_token', token);
 }
 
 function clearTokenCookie(): void {
-  document.cookie = 'prisma_token=; path=/; max-age=0; SameSite=Strict';
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `prisma_token=; path=/; max-age=0; SameSite=Strict${secure}`;
   localStorage.removeItem('prisma_token');
 }
 

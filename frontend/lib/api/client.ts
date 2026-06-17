@@ -1,10 +1,9 @@
 import { trackRequestStart } from './cold-start-store';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
-
-if (!API_KEY && process.env.NODE_ENV === 'development') {
-  console.warn('[prisma] NEXT_PUBLIC_API_KEY is not set — authenticated endpoints will return 401.');
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('prisma_token');
 }
 
 export class ApiError extends Error {
@@ -20,7 +19,8 @@ export class ApiError extends Error {
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
 
-  const authHeaders: Record<string, string> = API_KEY ? { 'X-API-Key': API_KEY } : {};
+  const token = getToken();
+  const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
   // Render-Free-Tier-Backends können nach Inaktivität (Cold Start) bis zu
   // ~52s zum Aufwachen brauchen. Ohne Hinweis wirkt das wie ein Hänger.
@@ -49,6 +49,11 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         }
       } catch {
         // ignore JSON parse failures — use default message
+      }
+      if (response.status === 401 && typeof window !== 'undefined') {
+        localStorage.removeItem('prisma_token');
+        document.cookie = 'prisma_token=; path=/; max-age=0; SameSite=Strict';
+        window.location.href = '/login';
       }
       throw new ApiError(response.status, message);
     }

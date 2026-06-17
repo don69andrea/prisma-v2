@@ -24,6 +24,8 @@ from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 logging.basicConfig(level=logging.INFO)
 _logger = logging.getLogger(__name__)
 
+_FETCH_TIMEOUT = 8  # Sekunden pro Ticker — verhindert Hänger auf Render free tier
+
 SMI_TICKERS = [
     "NESN",
     "NOVN",
@@ -48,34 +50,45 @@ SMI_TICKERS = [
 ]
 
 
+async def _fetch_one(adapter: YFinanceSwissAdapter, ticker: str) -> tuple[str, float | None]:
+    try:
+        fundamentals = await asyncio.wait_for(
+            adapter.get_fundamentals(ticker),
+            timeout=_FETCH_TIMEOUT,
+        )
+        value = float(fundamentals.market_cap_chf) if fundamentals.market_cap_chf is not None else None
+        return ticker, value
+    except TimeoutError:
+        _logger.warning("⚠ %s — yfinance timeout nach %ds, übersprungen", ticker, _FETCH_TIMEOUT)
+        return ticker, None
+    except SwissDataUnavailableError:
+        _logger.warning("⚠ %s — kein yfinance-Datensatz, übersprungen", ticker)
+        return ticker, None
+    except Exception as exc:
+        _logger.error("✗ %s — Fehler: %s", ticker, exc)
+        return ticker, None
+
+
 async def update(session: AsyncSession) -> None:
     adapter = YFinanceSwissAdapter()
+
+    results = await asyncio.gather(*[_fetch_one(adapter, t) for t in SMI_TICKERS])
+
     success = 0
     skipped = 0
-
-    for ticker in SMI_TICKERS:
-        try:
-            fundamentals = await adapter.get_fundamentals(ticker)
+    for ticker, market_cap_chf in results:
+        if market_cap_chf is not None:
             await session.execute(
                 text("""
                     UPDATE stocks
                     SET market_cap_chf = :market_cap_chf
                     WHERE ticker = :ticker
                 """),
-                {
-                    "market_cap_chf": float(fundamentals.market_cap_chf)
-                    if fundamentals.market_cap_chf is not None
-                    else None,
-                    "ticker": ticker,
-                },
+                {"market_cap_chf": market_cap_chf, "ticker": ticker},
             )
             _logger.info("✓ %s — market_cap_chf aktualisiert", ticker)
             success += 1
-        except SwissDataUnavailableError:
-            _logger.warning("⚠ %s — kein yfinance-Datensatz, übersprungen", ticker)
-            skipped += 1
-        except Exception as exc:
-            _logger.error("✗ %s — Fehler: %s", ticker, exc)
+        else:
             skipped += 1
 
     await session.commit()

@@ -28,5 +28,6 @@ class AlertORM(Base):
     )
     last_signal: Mapped[str | None] = mapped_column(String(10), nullable=True)
     baseline_price: Mapped[float | None] = mapped_column(Float, nullable=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
 
     __table_args__ = (Index("ix_alerts_ticker_active", "ticker", "is_active"),)

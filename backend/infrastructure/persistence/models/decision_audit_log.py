@@ -24,3 +24,4 @@ class DecisionAuditLogORM(Base):
     snapshot_date: Mapped[date] = mapped_column(sa.Date, nullable=False)
     computed_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
     explanation_de: Mapped[str] = mapped_column(sa.Text, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)

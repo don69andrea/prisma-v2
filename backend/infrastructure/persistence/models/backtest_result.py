@@ -26,3 +26,4 @@ class BacktestResultORM(Base):
     benchmark_metrics: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     series: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(sa.DateTime(timezone=True), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)

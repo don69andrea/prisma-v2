@@ -30,14 +30,14 @@ import { usePathname } from 'next/navigation';
 import { NavLinks } from '../nav-links';
 
 describe('NavLinks', () => {
-  it('zeigt alle 5 Gruppenbezeichnungen', () => {
+  it('zeigt alle primären Navigationslinks', () => {
     vi.mocked(usePathname).mockReturnValue('/');
     render(<NavLinks />);
-    expect(screen.getByText('ENTDECKEN')).toBeInTheDocument();
-    expect(screen.getByText('ANALYSIEREN')).toBeInTheDocument();
-    expect(screen.getByText('ENTSCHEIDEN')).toBeInTheDocument();
-    expect(screen.getByText('WATCHLIST')).toBeInTheDocument();
-    expect(screen.getByText('RESEARCH')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Profil' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Universum' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Rankings' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Signale' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Watchlist' })).toBeInTheDocument();
   });
 
   it('hebt den aktiven Link hervor und setzt aria-current', () => {
@@ -53,10 +53,10 @@ describe('NavLinks', () => {
     expect(screen.getByRole('link', { name: 'Rankings' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('Mein-Universum- und Signale-Link sind vorhanden', () => {
+  it('Universum- und Signale-Link sind vorhanden', () => {
     vi.mocked(usePathname).mockReturnValue('/');
     render(<NavLinks />);
-    expect(screen.getByRole('link', { name: 'Mein Universum' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Universum' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Signale' })).toBeInTheDocument();
   });
 
@@ -64,5 +64,12 @@ describe('NavLinks', () => {
     vi.mocked(usePathname).mockReturnValue('/rankings');
     render(<NavLinks />);
     expect(screen.getByRole('link', { name: 'Aktien' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('Profil-Link ersetzt den alten Start-Link', () => {
+    vi.mocked(usePathname).mockReturnValue('/');
+    render(<NavLinks />);
+    expect(screen.getByRole('link', { name: 'Profil' })).toHaveAttribute('href', '/start');
+    expect(screen.queryByRole('link', { name: 'Start' })).not.toBeInTheDocument();
   });
 });

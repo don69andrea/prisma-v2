@@ -150,7 +150,7 @@ async def test_concurrent_score_all_calls_only_fetch_once() -> None:
         call_count += 1
         return await original_get_market(*args, **kwargs)
 
-    svc._cg.get_market_data = _tracked_market
+    cast(Any, svc._cg).get_market_data = _tracked_market
 
     # 3 gleichzeitige Requests
     results = await asyncio.gather(svc.score_all(), svc.score_all(), svc.score_all())
@@ -174,13 +174,13 @@ async def test_score_all_cache_expires() -> None:
         call_count += 1
         return await original(*args, **kwargs)
 
-    svc._cg.get_market_data = _counted
+    cast(Any, svc._cg).get_market_data = _counted
 
     await svc.score_all()
     assert call_count == 1
 
     # Cache leeren (simuliert Ablauf)
-    svc._cache_result = None  # type: ignore[attr-defined]
+    cast(Any, svc)._cache_result = None
 
     await svc.score_all()
     assert call_count == 2, "Nach Cache-Ablauf muss ein neuer API-Call gemacht werden."

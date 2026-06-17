@@ -12,6 +12,9 @@ import logging
 
 from backend.application.services.signal_aggregation_service import SignalAggregationService
 from backend.domain.models.stock_signal_record import StockSignalRecord
+from backend.infrastructure.persistence.repositories.cron_run_repository import (
+    SQLACronRunRepository,
+)
 from backend.infrastructure.persistence.repositories.stock_signal_repository import (
     SQLAStockSignalRepository,
 )
@@ -48,13 +51,22 @@ async def main() -> None:
     log.info("=== Stock Daily Snapshot gestartet ===")
     scoring_svc = SignalAggregationService()
 
+    session_factory = get_session_factory()
+    run_id: str | None = None
+    async with session_factory() as log_session:
+        log_repo = SQLACronRunRepository(log_session)
+        run_id = await log_repo.start_run("stock_daily")
+
     try:
         signals = await scoring_svc.get_signals(_SMI20)
     except Exception:
         log.exception("get_signals() fehlgeschlagen")
+        if run_id is not None:
+            async with session_factory() as log_session:
+                log_repo = SQLACronRunRepository(log_session)
+                await log_repo.finish_run(run_id, "error", error_msg="get_signals() fehlgeschlagen")
         return
 
-    session_factory = get_session_factory()
     saved = 0
     async with session_factory() as session:
         repo = SQLAStockSignalRepository(session)
@@ -80,6 +92,11 @@ async def main() -> None:
         await session.commit()
 
     log.info("=== Snapshot fertig: %d/%d gespeichert ===", saved, len(signals))
+
+    if run_id is not None:
+        async with session_factory() as log_session:
+            log_repo = SQLACronRunRepository(log_session)
+            await log_repo.finish_run(run_id, "ok", records_saved=saved)
 
 
 if __name__ == "__main__":

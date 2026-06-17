@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import date  # noqa: F401
 
 from backend.domain.models.stock_signal_record import StockSignalRecord
 

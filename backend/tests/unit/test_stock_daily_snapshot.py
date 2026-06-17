@@ -28,6 +28,8 @@ async def test_snapshot_saves_one_record_per_signal():
     with (
         patch("backend.scripts.stock_daily_snapshot.SignalAggregationService") as MockSvc,
         patch("backend.scripts.stock_daily_snapshot.get_session_factory") as MockFactory,
+        patch("backend.scripts.stock_daily_snapshot.SQLAStockSignalRepository") as MockRepo,
+        patch("backend.scripts.stock_daily_snapshot.SQLACronRunRepository") as MockCronRepo,
     ):
         mock_svc = AsyncMock()
         mock_svc.get_signals = AsyncMock(return_value=[mock_signal])
@@ -39,16 +41,22 @@ async def test_snapshot_saves_one_record_per_signal():
         mock_session.commit = AsyncMock()
         MockFactory.return_value = MagicMock(return_value=mock_session)
 
-        with patch("backend.scripts.stock_daily_snapshot.SQLAStockSignalRepository") as MockRepo:
-            mock_repo = AsyncMock()
-            mock_repo.save = AsyncMock()
-            MockRepo.return_value = mock_repo
+        mock_repo = AsyncMock()
+        mock_repo.save = AsyncMock()
+        MockRepo.return_value = mock_repo
 
-            from backend.scripts.stock_daily_snapshot import main
+        mock_cron_repo = AsyncMock()
+        mock_cron_repo.start_run = AsyncMock(return_value="run-123")
+        mock_cron_repo.finish_run = AsyncMock()
+        MockCronRepo.return_value = mock_cron_repo
 
-            await main()
+        from backend.scripts.stock_daily_snapshot import main
+
+        await main()
 
         mock_repo.save.assert_awaited_once()
+        mock_cron_repo.start_run.assert_awaited_once()
+        mock_cron_repo.finish_run.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -65,6 +73,7 @@ async def test_snapshot_continues_after_one_ticker_fails():
         patch("backend.scripts.stock_daily_snapshot.SignalAggregationService") as MockSvc,
         patch("backend.scripts.stock_daily_snapshot.get_session_factory") as MockFactory,
         patch("backend.scripts.stock_daily_snapshot.SQLAStockSignalRepository") as MockRepo,
+        patch("backend.scripts.stock_daily_snapshot.SQLACronRunRepository") as MockCronRepo,
     ):
         mock_svc = AsyncMock()
         mock_svc.get_signals = AsyncMock(return_value=mock_signals)
@@ -80,11 +89,17 @@ async def test_snapshot_continues_after_one_ticker_fails():
         mock_repo.save = AsyncMock(side_effect=[Exception("DB-Fehler"), None])
         MockRepo.return_value = mock_repo
 
+        mock_cron_repo = AsyncMock()
+        mock_cron_repo.start_run = AsyncMock(return_value="run-456")
+        mock_cron_repo.finish_run = AsyncMock()
+        MockCronRepo.return_value = mock_cron_repo
+
         from backend.scripts.stock_daily_snapshot import main
 
         await main()
 
         assert mock_repo.save.await_count == 2
+        mock_cron_repo.finish_run.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -92,13 +107,28 @@ async def test_snapshot_aborts_gracefully_when_get_signals_fails():
     """Wenn get_signals() wirft, soll main() ohne Exception beenden."""
     with (
         patch("backend.scripts.stock_daily_snapshot.SignalAggregationService") as MockSvc,
-        patch("backend.scripts.stock_daily_snapshot.get_session_factory"),
+        patch("backend.scripts.stock_daily_snapshot.get_session_factory") as MockFactory,
+        patch("backend.scripts.stock_daily_snapshot.SQLACronRunRepository") as MockCronRepo,
     ):
         mock_svc = AsyncMock()
         mock_svc.get_signals = AsyncMock(side_effect=RuntimeError("yFinance down"))
         MockSvc.return_value = mock_svc
 
+        mock_session = AsyncMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=None)
+        mock_session.commit = AsyncMock()
+        MockFactory.return_value = MagicMock(return_value=mock_session)
+
+        mock_cron_repo = AsyncMock()
+        mock_cron_repo.start_run = AsyncMock(return_value="run-789")
+        mock_cron_repo.finish_run = AsyncMock()
+        MockCronRepo.return_value = mock_cron_repo
+
         from backend.scripts.stock_daily_snapshot import main
 
         # Should not raise
         await main()
+
+        # Should call finish_run with error status
+        mock_cron_repo.finish_run.assert_awaited_once()

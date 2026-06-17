@@ -255,6 +255,17 @@ async def list_decisions(
             detail=str(exc),
         ) from exc
 
+    # Validate signal filter early (before snapshot/live branch)
+    if signal is not None:
+        signal_upper = signal.upper()
+        if signal_upper not in {"BUY", "HOLD", "SELL"}:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="signal muss BUY, HOLD oder SELL sein.",
+            )
+    else:
+        signal_upper = None
+
     # Tagesschnitt vorhanden → direkt aus DB (kein yFinance-Call)
     stock_signal_repo = SQLAStockSignalRepository(session)
     snapshots = await stock_signal_repo.get_today_all()
@@ -267,13 +278,7 @@ async def list_decisions(
     tickers = list(universe.tickers)
     signals = await aggregation_service.get_signals(tickers)
 
-    if signal is not None:
-        signal_upper = signal.upper()
-        if signal_upper not in {"BUY", "HOLD", "SELL"}:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="signal muss BUY, HOLD oder SELL sein.",
-            )
+    if signal_upper is not None:
         signals = [s for s in signals if s.signal == signal_upper]
 
     if eligible_only:

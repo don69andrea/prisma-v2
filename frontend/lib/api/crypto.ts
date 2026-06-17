@@ -84,14 +84,14 @@ export function fearGreedColor(value: number): string {
 }
 
 export interface CryptoHistoryPoint {
-  date: string;
+  date: string | null;
   signal: string;
   score: number;
   price_chf: number | null;
-  fear_greed_value: number;
-  rsi_14: number;
+  fear_greed_value: number | null;
+  rsi_14: number | null;
   detected_patterns: string[];
-  pattern_score: number;
+  pattern_score: number | null;
 }
 
 export async function getCryptoHistory(ticker: string, days: number): Promise<CryptoHistoryPoint[]> {

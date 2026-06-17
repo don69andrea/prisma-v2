@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Terminal, Send, ChevronRight, ExternalLink, Download, Check } from 'lucide-react';
 import { usePrismaMode } from '@/hooks/usePrismaMode';
+import { getMacroContext } from '@/lib/api/macro';
 import {
   retrieveSecFilings,
   retrieveSwissFilings,
@@ -362,6 +363,55 @@ function SimpleModeView({
 }
 
 // ---------------------------------------------------------------------------
+// MacroPanel — live macro data with MOCK_MACRO fallback
+// ---------------------------------------------------------------------------
+
+function MacroPanel() {
+  const { data, isError } = useQuery({
+    queryKey: ['macro-context'],
+    queryFn: getMacroContext,
+    staleTime: 30 * 60 * 1000,
+    retry: 1,
+  });
+
+  const rate = data ? `${data.leitzins.toFixed(2)}%` : MOCK_MACRO.rate;
+  const fx = data ? data.chf_eur.toFixed(3) : MOCK_MACRO.fx;
+  const sentiment = data ? data.narrative_de : MOCK_MACRO.sentiment;
+  const isLive = !!data && !isError;
+
+  return (
+    <div
+      className="rounded-md border p-4 space-y-2"
+      style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] tracking-widest uppercase text-muted-foreground">Makro-Kontext</p>
+        {!isLive && (
+          <Badge
+            variant="warning"
+            className="text-[9px] py-0 px-1.5 normal-case font-mono"
+            data-testid="research-macro-demo-badge"
+          >
+            Beispieldaten
+          </Badge>
+        )}
+      </div>
+      <div className="flex items-center justify-between text-muted-foreground">
+        <span>SNB</span>
+        <span style={{ color: CYAN }}>{rate}</span>
+      </div>
+      <div className="flex items-center justify-between text-muted-foreground">
+        <span>CHF/EUR</span>
+        <span style={{ color: CYAN }}>{fx}</span>
+      </div>
+      <p className="text-muted-foreground pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+        &ldquo;{sentiment}&rdquo;
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // ProModeView
 // ---------------------------------------------------------------------------
 
@@ -610,32 +660,7 @@ function ProModeView({
         </div>
 
         {/* Macro context */}
-        <div
-          className="rounded-md border p-4 space-y-2"
-          style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] tracking-widest uppercase text-muted-foreground">Makro-Kontext</p>
-            <Badge
-              variant="warning"
-              className="text-[9px] py-0 px-1.5 normal-case font-mono"
-              data-testid="research-macro-demo-badge"
-            >
-              Beispieldaten
-            </Badge>
-          </div>
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span>SNB</span>
-            <span style={{ color: CYAN }}>{MOCK_MACRO.rate}</span>
-          </div>
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span>CHF/EUR</span>
-            <span style={{ color: CYAN }}>{MOCK_MACRO.fx}</span>
-          </div>
-          <p className="text-muted-foreground pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-            &ldquo;{MOCK_MACRO.sentiment}&rdquo;
-          </p>
-        </div>
+        <MacroPanel />
       </div>
     </div>
   );

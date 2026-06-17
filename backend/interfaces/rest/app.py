@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config import get_settings
 from backend.domain.errors import BudgetCapExceeded
-from backend.interfaces.rest.dependencies import require_admin_api_key
+from backend.interfaces.rest.dependencies import require_admin_role, require_current_user
 from backend.interfaces.rest.exception_handlers import (
     handle_budget_cap_exceeded,
     handle_unhandled_exception,
@@ -19,6 +19,7 @@ from backend.interfaces.rest.rate_limiter import LLMRateLimiterMiddleware
 from backend.interfaces.rest.routers import (
     admin,
     alerts,
+    auth,
     backtests,
     chat,
     crypto,
@@ -42,6 +43,7 @@ from backend.interfaces.rest.routers import (
     steuer,
     stocks,
     universes,
+    # users,  # added in Task 7
 )
 
 _logger = logging.getLogger(__name__)
@@ -132,10 +134,12 @@ def create_app() -> FastAPI:
     app.add_exception_handler(BudgetCapExceeded, handle_budget_cap_exceeded)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, handle_unhandled_exception)
 
-    _auth = [Depends(require_admin_api_key)]
+    _auth = [Depends(require_current_user)]
+    _admin_auth = [Depends(require_admin_role)]
 
     # Public — kein API-Key erforderlich
     app.include_router(health.router)  # Render health checks
+    app.include_router(auth.router)  # public — no auth required
     app.include_router(discovery.router)  # Onboarding-Flow (Demo, öffentlich)
 
     # Geschützt — X-API-Key Header erforderlich
@@ -146,7 +150,8 @@ def create_app() -> FastAPI:
     app.include_router(dividends.router, dependencies=_auth)
     app.include_router(fundamentals.router, dependencies=_auth)
     app.include_router(universes.router, dependencies=_auth)
-    app.include_router(admin.router, dependencies=_auth)
+    app.include_router(admin.router, dependencies=_admin_auth)
+    # app.include_router(users.router, dependencies=_admin_auth)  # added in Task 7
     app.include_router(runs.router, dependencies=_auth)
     app.include_router(memos.router, dependencies=_auth, prefix="/api/v1")
     app.include_router(backtests.router, dependencies=_auth)

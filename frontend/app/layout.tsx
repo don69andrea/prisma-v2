@@ -50,7 +50,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             </div>
             {/* PRISMA-Spektrum: 5 quantitative Dimensionen */}
             <div
-              className="h-[2px] w-full opacity-30"
+              className="h-[3px] w-full opacity-60"
               style={{ background: SPECTRUM_GRADIENT }}
               aria-hidden="true"
             />

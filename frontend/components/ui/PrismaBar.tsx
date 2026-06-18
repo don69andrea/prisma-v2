@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 const SPECTRUM = 'linear-gradient(to right, #8b5cf6, #3b82f6, #10b981, #f59e0b, #ef4444)';
-const GLOW = '0 0 6px rgba(88, 166, 255, 0.25)';
+const GLOW = '0 0 8px rgba(139, 92, 246, 0.35)';
 
 /** Indeterminate inline progress bar with PRISMA spectrum gradient.
  *  Drop in anywhere a section is loading — needs no props. */
@@ -141,10 +141,10 @@ export function NavigationProgressBar() {
         top: 0,
         left: 0,
         zIndex: 9999,
-        height: '2px',
+        height: '3px',
         width: `${pct}%`,
         background: SPECTRUM,
-        boxShadow: '0 0 6px rgba(88, 166, 255, 0.25)',
+        boxShadow: '0 0 8px rgba(139, 92, 246, 0.35)',
         borderRadius: '0 9999px 9999px 0',
         transition: 'width 200ms ease-out, opacity 380ms ease',
         pointerEvents: 'none',

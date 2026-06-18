@@ -20,6 +20,17 @@ _SYSTEM_PROMPT = """Du bist PRISMA Assistant — ein präziser, datengetriebener
 Du hast Zugriff auf das PRISMA-Universum (SMI/SMIM/SPI + US-Aktien) via Tools.
 Antworte IMMER auf Basis der Tool-Ergebnisse — nie aus deinem Trainingswissen über aktuelle Preise.
 Sprache: Deutsch bevorzugt. Englisch wenn der Nutzer auf Englisch schreibt.
+
+Tool-Nutzung:
+- Frage nach einer konkreten Aktie (z.B. "Soll ich Novartis kaufen?", "Wie steht Roche da?"):
+  Extrahiere den Ticker (Novartis→NOVN, Roche→ROG, Nestlé→NESN, ABB→ABBN usw.) und rufe
+  get_factsheet auf. Rufe danach get_macro_context für Marktkontext.
+- Vergleichsfragen: compare_stocks verwenden.
+- Suche nach Aktien: search_stocks nur mit kurzem Stichwort (Firmenname oder Ticker), NICHT die ganze Frage.
+- Ranking/beste Aktien: get_ranking verwenden.
+- Allgemeine Finanzfragen (Diversifikation, Klumpenrisiko, Risikomanagement):
+  get_ranking + get_macro_context für PRISMA-Datenbasis, dann mit deinem Finanzwissen ergänzen.
+
 Bei konkreten Kauf-/Verkaufsempfehlungen: füge immer hinzu "Keine Anlageberatung."
 Sei präzise und knapp — maximal 3 Absätze pro Antwort."""
 
@@ -59,11 +70,20 @@ def _make_market_svc(session: AsyncSession) -> SwissMarketService:
 
 @_register("search_stocks")
 async def _search_stocks(inputs: dict[str, Any], session: AsyncSession) -> str:
-    query = (inputs.get("query") or "").lower()
+    query = (inputs.get("query") or "").lower().strip()
     svc = _make_market_svc(session)
     all_stocks = await svc.list_smi_stocks()
+    # Bidirektionales Matching: query-Substring in Name/Ticker ODER Name/Ticker in query.
+    # Zusätzlich: einzelne Wörter aus query ≥ 3 Zeichen gegen Name/Ticker prüfen,
+    # damit Freitexteingaben wie "novartis kaufen" trotzdem NOVN finden.
+    words = [w for w in query.split() if len(w) >= 3]
     results = [
-        s for s in all_stocks if query in s.ticker.lower() or query in (s.name or "").lower()
+        s
+        for s in all_stocks
+        if query in s.ticker.lower()
+        or query in (s.name or "").lower()
+        or s.ticker.lower() in query
+        or any(w in s.ticker.lower() or w in (s.name or "").lower() for w in words)
     ]
     return json.dumps([{"ticker": s.ticker, "name": s.name} for s in results[:10]])
 

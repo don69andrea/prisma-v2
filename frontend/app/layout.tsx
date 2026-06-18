@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { PrismaLogo } from '@/components/ui/PrismaLogo';
 import { NavigationProgressBar } from '@/components/ui/PrismaBar';
 import { ChatDrawer } from '@/components/chat/ChatDrawer';
+import { AccountMenu } from '@/components/ui/AccountMenu';
 import '@/app/globals.css';
 
 export const metadata: Metadata = {
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
               <div className="ml-auto flex items-center gap-2 pl-4 border-l border-border/40">
                 <ModeToggle />
                 <ApiStatusBadge />
+                <AccountMenu />
                 <ThemeToggle />
               </div>
             </div>

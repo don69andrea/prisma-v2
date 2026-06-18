@@ -10,6 +10,7 @@ import { InfoPopover } from '@/components/InfoPopover';
 import { listUniverses } from '@/lib/api/universes';
 import { listDecisions, liveDecisions, explainDecision, type DecisionSignal, type SignalType, type ExplainResponse } from '@/lib/api/decisions';
 import { getMLPrediction } from '@/lib/api/ml';
+import { getMacroContext, type MacroContextResponse } from '@/lib/api/macro';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SignalBadge } from '@/components/ui/SignalBadge';
@@ -34,9 +35,9 @@ const FILTER_CHIP_CONFIG: Record<
   'BUY' | 'HOLD' | 'SELL',
   { label: string; dot: string }
 > = {
-  BUY:  { label: 'BUY',  dot: 'bg-[#7ee787]' },
-  HOLD: { label: 'HOLD', dot: 'bg-[#ffa657]' },
-  SELL: { label: 'SELL', dot: 'bg-[#f85149]'  },
+  BUY:  { label: 'BUY',  dot: 'bg-[var(--prisma-green)]' },
+  HOLD: { label: 'HOLD', dot: 'bg-[var(--prisma-orange)]' },
+  SELL: { label: 'SELL', dot: 'bg-[var(--prisma-red)]'  },
 };
 
 // ---------------------------------------------------------------------------
@@ -46,14 +47,14 @@ const FILTER_CHIP_CONFIG: Record<
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
   const color =
-    pct >= 65 ? 'bg-[#7ee787]' : pct >= 40 ? 'bg-[#ffa657]' : 'bg-[#8b949e]';
+    pct >= 65 ? 'bg-[var(--prisma-green)]' : pct >= 40 ? 'bg-[var(--prisma-orange)]' : 'bg-[var(--prisma-muted)]';
 
   return (
     <div className="w-full" title={`${pct}%`}>
-      <div className="h-1.5 w-full rounded-full bg-[#21262d] overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-[var(--prisma-border)] overflow-hidden">
         <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${pct}%` }} />
       </div>
-      <p className="text-[10px] text-[#8b949e] mt-0.5 text-right">{pct}%</p>
+      <p className="text-[10px] text-[var(--prisma-muted)] mt-0.5 text-right">{pct}%</p>
     </div>
   );
 }
@@ -100,23 +101,23 @@ function ExplainMetricRow({
 }) {
   const pct = Math.round(score);
   return (
-    <div className="space-y-1.5 pb-3 border-b border-[#21262d] last:border-0 last:pb-0">
+    <div className="space-y-1.5 pb-3 border-b border-[var(--prisma-border)] last:border-0 last:pb-0">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold" style={{ color: def.color }}>{def.label}</span>
-          <span className="text-[10px] text-[#8b949e]">{def.weight}</span>
+          <span className="text-[10px] text-[var(--prisma-muted)]">{def.weight}</span>
         </div>
-        <span className="text-xs font-bold text-[#e6edf3] tabular-nums">{pct}/100</span>
+        <span className="text-xs font-bold text-[var(--prisma-text)] tabular-nums">{pct}/100</span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-[#21262d] overflow-hidden">
+      <div className="h-1.5 w-full rounded-full bg-[var(--prisma-border)] overflow-hidden">
         <div
           className="h-full rounded-full"
           style={{ width: `${pct}%`, background: def.color, opacity: 0.8 }}
         />
       </div>
-      <p className="text-[10px] text-[#8b949e] leading-relaxed">{def.definition}</p>
+      <p className="text-[10px] text-[var(--prisma-muted)] leading-relaxed">{def.definition}</p>
       {explanation && (
-        <p className="text-[11px] text-[#e6edf3] leading-relaxed bg-[#0d1117]/60 rounded-md px-2.5 py-2">
+        <p className="text-[11px] text-[var(--prisma-text)] leading-relaxed bg-[var(--prisma-bg)]/60 rounded-md px-2.5 py-2">
           {explanation}
         </p>
       )}
@@ -155,12 +156,12 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
     >
       <div
         className="w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl overflow-hidden"
-        style={{ background: '#161b22', border: '1px solid #21262d', maxHeight: '88vh' }}
+        style={{ background: 'var(--prisma-surface)', border: '1px solid var(--prisma-border)', maxHeight: '88vh' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           className="flex items-center justify-between px-5 py-4"
-          style={{ borderBottom: '1px solid #21262d' }}
+          style={{ borderBottom: '1px solid var(--prisma-border)' }}
         >
           <div>
             <div className="flex items-center gap-2">
@@ -168,9 +169,9 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
                 <path d="M12 2a7 7 0 0 1 7 7c0 3-1.7 5.4-4 6.7V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.3C6.7 14.4 5 12 5 9a7 7 0 0 1 7-7Z"/>
                 <path d="M9 21h6M10 17v1M14 17v1"/>
               </svg>
-              <span className="text-sm font-bold text-[#e6edf3]">{item.ticker} · PRISMA erklärt</span>
+              <span className="text-sm font-bold text-[var(--prisma-text)]">{item.ticker} · PRISMA erklärt</span>
             </div>
-            <p className="text-[11px] text-[#8b949e] mt-0.5 ml-5">
+            <p className="text-[11px] text-[var(--prisma-muted)] mt-0.5 ml-5">
               Warum{' '}
               <span className="font-semibold" style={{ color: signalColor }}>{item.signal}</span>
               {' '}mit {Math.round(item.confidence * 100)}% Konfidenz?
@@ -178,7 +179,7 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
           </div>
           <button
             onClick={onClose}
-            className="text-[#8b949e] hover:text-[#e6edf3] transition-colors rounded-md p-1"
+            className="text-[var(--prisma-muted)] hover:text-[var(--prisma-text)] transition-colors rounded-md p-1"
             aria-label="Schliessen"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -196,7 +197,7 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
                 <path d="M12 2a7 7 0 0 1 7 7c0 3-1.7 5.4-4 6.7V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.3C6.7 14.4 5 12 5 9a7 7 0 0 1 7-7Z"/>
                 <path d="M9 21h6"/>
               </svg>
-              <p className="text-sm text-[#8b949e]">
+              <p className="text-sm text-[var(--prisma-muted)]">
                 PRISMA analysiert{' '}
                 <span style={{ animation: 'explainDot 1.4s 0s infinite' }}>.</span>
                 <span style={{ animation: 'explainDot 1.4s 0.2s infinite' }}>.</span>
@@ -206,7 +207,7 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
           )}
 
           {error && (
-            <p className="text-sm text-[#f85149] text-center py-6">
+            <p className="text-sm text-[var(--prisma-red)] text-center py-6">
               Erklärung temporär nicht verfügbar.
             </p>
           )}
@@ -220,7 +221,7 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
                 <p className="text-[11px] font-semibold uppercase tracking-widest mb-1" style={{ color: signalColor }}>
                   Gesamtsignal
                 </p>
-                <p className="text-sm text-[#e6edf3] leading-relaxed">{data.overall}</p>
+                <p className="text-sm text-[var(--prisma-text)] leading-relaxed">{data.overall}</p>
               </div>
 
               <div className="space-y-3">
@@ -234,7 +235,7 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
                 ))}
               </div>
 
-              <p className="text-[10px] text-[#8b949e] leading-relaxed border-t border-[#21262d] pt-3">
+              <p className="text-[10px] text-[var(--prisma-muted)] leading-relaxed border-t border-[var(--prisma-border)] pt-3">
                 {data.risk_note} · PRISMA Modell v1 · {new Date(item.snapshot_date).toLocaleDateString('de-CH')}
               </p>
             </>
@@ -244,7 +245,7 @@ function ExplainModal({ item, onClose }: { item: DecisionSignal; onClose: () => 
 
       <button
         onClick={() => setAuditOpen((o) => !o)}
-        className="flex items-center gap-1 text-[11px] text-[#8b949e] hover:text-[#58a6ff] transition-colors w-full"
+        className="flex items-center gap-1 text-[11px] text-[var(--prisma-muted)] hover:text-[var(--prisma-blue)] transition-colors w-full"
         data-testid="audit-trail-toggle"
         aria-expanded={auditOpen}
       >
@@ -290,11 +291,11 @@ function SignalCard({ item }: { item: DecisionSignal }) {
           <div>
             <Link
               href={`/stocks/${item.ticker}`}
-              className="font-semibold text-base leading-none text-[#e6edf3] hover:text-[#58a6ff] transition-colors"
+              className="font-semibold text-base leading-none text-[var(--prisma-text)] hover:text-[var(--prisma-blue)] transition-colors"
             >
               {item.ticker}
             </Link>
-            <p className="text-xs text-[#8b949e] mt-0.5">
+            <p className="text-xs text-[var(--prisma-muted)] mt-0.5">
               {new Date(item.snapshot_date).toLocaleDateString('de-CH', { dateStyle: 'short' })}
             </p>
           </div>
@@ -305,7 +306,7 @@ function SignalCard({ item }: { item: DecisionSignal }) {
               animated={item.signal === 'BUY'}
             />
             {item.is_3a_eligible && (
-              <span className="text-[10px] text-[#8b949e] border border-[#21262d] rounded px-1.5 py-0.5">
+              <span className="text-[10px] text-[var(--prisma-muted)] border border-[var(--prisma-border)] rounded px-1.5 py-0.5">
                 3a
               </span>
             )}
@@ -318,7 +319,7 @@ function SignalCard({ item }: { item: DecisionSignal }) {
 
         <div>
           <div className="flex items-center gap-1 mb-0.5">
-            <span className="text-[10px] text-[#8b949e] font-medium uppercase tracking-wide">Konfidenz</span>
+            <span className="text-[10px] text-[var(--prisma-muted)] font-medium uppercase tracking-wide">Konfidenz</span>
             <InfoPopover ariaLabel="Was bedeutet Konfidenz?">
               <p>Konfidenz gibt an wie sicher das Modell bei dieser Empfehlung ist. &gt;80% = sehr sicher, 60–80% = sicher, &lt;60% = unsicher.</p>
             </InfoPopover>
@@ -328,7 +329,7 @@ function SignalCard({ item }: { item: DecisionSignal }) {
 
         <div>
           <div className="flex items-center gap-1 mb-0.5">
-            <span className="text-[10px] text-[#8b949e] font-medium uppercase tracking-wide">PRISMA Score</span>
+            <span className="text-[10px] text-[var(--prisma-muted)] font-medium uppercase tracking-wide">PRISMA Score</span>
             <InfoPopover ariaLabel="Was ist der PRISMA Score?">
               <p>Der PRISMA-Score kombiniert technische Analyse (45%), KI-Prognose (35%) und Makroökonomie (20%) auf einer Skala von 0–100.</p>
             </InfoPopover>
@@ -353,7 +354,7 @@ function SignalCard({ item }: { item: DecisionSignal }) {
         {shapValues.length > 0 && (
           <div>
             <div className="flex items-center gap-1 mb-0.5">
-              <span className="text-[10px] text-[#8b949e] font-medium uppercase tracking-wide">SHAP</span>
+              <span className="text-[10px] text-[var(--prisma-muted)] font-medium uppercase tracking-wide">SHAP</span>
               <InfoPopover ariaLabel="Was ist SHAP?">
                 <p>SHAP erklärt welche Faktoren den Score am stärksten beeinflusst haben. Positive Werte = positiver Einfluss auf das Signal.</p>
               </InfoPopover>
@@ -365,7 +366,7 @@ function SignalCard({ item }: { item: DecisionSignal }) {
         <div className="flex items-center justify-between gap-2 pt-0.5">
           <button
             onClick={() => setAuditOpen((o) => !o)}
-            className="flex items-center gap-1 text-[11px] text-[#8b949e] hover:text-[#58a6ff] transition-colors"
+            className="flex items-center gap-1 text-[11px] text-[var(--prisma-muted)] hover:text-[var(--prisma-blue)] transition-colors"
             data-testid="audit-trail-toggle"
             aria-expanded={auditOpen}
           >
@@ -375,7 +376,7 @@ function SignalCard({ item }: { item: DecisionSignal }) {
 
           <button
             onClick={() => setExplainOpen(true)}
-            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors hover:bg-[#58a6ff]/10"
+            className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors hover:bg-[var(--prisma-blue)]/10"
             style={{ borderColor: 'rgba(88,166,255,0.3)', color: '#58a6ff' }}
             title="Wieso diese Entscheidung?"
           >
@@ -394,7 +395,7 @@ function SignalCard({ item }: { item: DecisionSignal }) {
             macroScore={item.macro_score}
             signal={item.signal}
             snapshotDate={item.snapshot_date}
-            className="mt-1 pt-2 border-t border-[#21262d]"
+            className="mt-1 pt-2 border-t border-[var(--prisma-border)]"
           />
         )}
       </div>
@@ -448,21 +449,21 @@ function AllSignalsTable({ signals }: { signals: DecisionSignal[] }) {
     <div className="mt-2">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 text-sm text-[#8b949e] hover:text-[#e6edf3] transition-colors"
+        className="flex items-center gap-1.5 text-sm text-[var(--prisma-muted)] hover:text-[var(--prisma-text)] transition-colors"
       >
         {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         {open ? 'Signale ausblenden' : `Alle ${signals.length} Signale anzeigen`}
       </button>
 
       {open && (
-        <div className="mt-3 overflow-x-auto rounded-xl border border-[#21262d]">
+        <div className="mt-3 overflow-x-auto rounded-xl border border-[var(--prisma-border)]">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#21262d] bg-[#161b22]">
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Name</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Signal</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Score</th>
-                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Begründung</th>
+              <tr className="border-b border-[var(--prisma-border)] bg-[var(--prisma-surface)]">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--prisma-muted)]">Name</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--prisma-muted)]">Signal</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--prisma-muted)]">Score</th>
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--prisma-muted)]">Begründung</th>
               </tr>
             </thead>
             <tbody>
@@ -470,9 +471,9 @@ function AllSignalsTable({ signals }: { signals: DecisionSignal[] }) {
                 const sig = item.signal as 'BUY' | 'HOLD' | 'SELL';
                 const styles = SIGNAL_STYLES[sig] ?? SIGNAL_STYLES['HOLD'];
                 return (
-                  <tr key={item.ticker} className="border-b border-[#21262d] last:border-0 hover:bg-[#161b22]/50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-[#e6edf3]">
-                      <Link href={`/stocks/${item.ticker}`} className="hover:text-[#58a6ff] transition-colors">
+                  <tr key={item.ticker} className="border-b border-[var(--prisma-border)] last:border-0 hover:bg-[var(--prisma-surface)]/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-[var(--prisma-text)]">
+                      <Link href={`/stocks/${item.ticker}`} className="hover:text-[var(--prisma-blue)] transition-colors">
                         {item.ticker}
                       </Link>
                     </td>
@@ -481,7 +482,7 @@ function AllSignalsTable({ signals }: { signals: DecisionSignal[] }) {
                         {sig}
                       </span>
                     </td>
-                    <td className="px-4 py-3 tabular-nums text-[#e6edf3]">{Math.round(item.weighted_score)}</td>
+                    <td className="px-4 py-3 tabular-nums text-[var(--prisma-text)]">{Math.round(item.weighted_score)}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs">{item.signal_reason ?? '—'}</td>
                   </tr>
                 );
@@ -500,16 +501,15 @@ function AllSignalsTable({ signals }: { signals: DecisionSignal[] }) {
 
 function ProTable({ signals }: { signals: DecisionSignal[] }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#21262d]">
+    <div className="overflow-x-auto rounded-xl border border-[var(--prisma-border)]">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[#21262d] bg-[#161b22]">
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Ticker</th>
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Name</th>
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Signal</th>
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Score</th>
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">SHAP-Top</th>
-            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[#8b949e]">Begründung</th>
+          <tr className="border-b border-[var(--prisma-border)] bg-[var(--prisma-surface)]">
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--prisma-muted)]">Ticker</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--prisma-muted)]">Signal</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--prisma-muted)]">Score</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--prisma-muted)]">Faktor</th>
+            <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-[var(--prisma-muted)]">Begründung</th>
           </tr>
         </thead>
         <tbody>
@@ -517,23 +517,19 @@ function ProTable({ signals }: { signals: DecisionSignal[] }) {
             const sig = item.signal as 'BUY' | 'HOLD' | 'SELL';
             const styles = SIGNAL_STYLES[sig] ?? SIGNAL_STYLES['HOLD'];
             return (
-              <tr key={item.ticker} className="border-b border-[#21262d] last:border-0 hover:bg-[#161b22]/50 transition-colors">
-                <td className="px-4 py-3 font-semibold text-[#e6edf3]">
-                  <Link href={`/stocks/${item.ticker}`} className="hover:text-[#58a6ff] transition-colors">
+              <tr key={item.ticker} className="border-b border-[var(--prisma-border)] last:border-0 hover:bg-[var(--prisma-surface)]/50 transition-colors">
+                <td className="px-4 py-3 font-semibold text-[var(--prisma-text)]">
+                  <Link href={`/stocks/${item.ticker}`} className="hover:text-[var(--prisma-blue)] transition-colors">
                     {item.ticker}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-[#8b949e] text-xs">{item.ticker}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-block text-xs font-bold uppercase px-2 py-0.5 rounded-md ${styles.bg} ${styles.text}`}>
                     {sig}
                   </span>
                 </td>
-                <td className="px-4 py-3 tabular-nums text-[#e6edf3]">{Math.round(item.weighted_score)}</td>
-                <td className="px-4 py-3 text-xs text-[#8b949e]">
-                  {/* top SHAP feature placeholder — actual SHAP per-row would need per-item ML query */}
-                  quant_score
-                </td>
+                <td className="px-4 py-3 tabular-nums text-[var(--prisma-text)]">{Math.round(item.weighted_score)}</td>
+                <td className="px-4 py-3 text-xs text-[var(--prisma-muted)]">—</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs">{item.signal_reason ?? '—'}</td>
               </tr>
             );
@@ -557,18 +553,18 @@ function ProSignalBreakdownPanel({ counts }: { counts: { BUY: number; HOLD: numb
   ];
 
   return (
-    <div className="rounded-xl border border-[#21262d] bg-[#161b22] p-5 space-y-4">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-[#8b949e]">Signal-Breakdown</h3>
+    <div className="rounded-xl border border-[var(--prisma-border)] bg-[var(--prisma-surface)] p-5 space-y-4">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--prisma-muted)]">Signal-Breakdown</h3>
       <div className="space-y-3">
         {bars.map(({ sig, label, color }) => {
           const pct = Math.round((counts[sig] / total) * 100);
           return (
             <div key={sig} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-[#e6edf3]">{label}</span>
-                <span className="tabular-nums text-[#8b949e]">{counts[sig]} ({pct}%)</span>
+                <span className="font-medium text-[var(--prisma-text)]">{label}</span>
+                <span className="tabular-nums text-[var(--prisma-muted)]">{counts[sig]} ({pct}%)</span>
               </div>
-              <div className="h-2 w-full rounded-full bg-[#21262d] overflow-hidden">
+              <div className="h-2 w-full rounded-full bg-[var(--prisma-border)] overflow-hidden">
                 <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
@@ -584,30 +580,58 @@ function ProSignalBreakdownPanel({ counts }: { counts: { BUY: number; HOLD: numb
 // ---------------------------------------------------------------------------
 
 function ProMakroPanel() {
+  const { data, isLoading } = useQuery<MacroContextResponse>({
+    queryKey: ['macro-context'],
+    queryFn: getMacroContext,
+    staleTime: 30 * 60 * 1000,
+    retry: 1,
+  });
+
+  const climateColor: Record<string, string> = {
+    EXPANSIV:   'text-emerald-400',
+    NEUTRAL:    'text-amber-400',
+    RESTRIKTIV: 'text-red-400',
+  };
+
   return (
-    <div className="rounded-xl border border-[#21262d] bg-[#161b22] p-5 space-y-3">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-[#8b949e]">Makro-Kontext</h3>
-      <ul className="space-y-2 text-sm text-[#e6edf3]">
-        <li className="flex items-start gap-2">
-          <span className="text-[#8b949e] min-w-[110px] text-xs">SNB Leitzins</span>
-          <span className="font-medium">1.00%</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="text-[#8b949e] min-w-[110px] text-xs">CHF/EUR</span>
-          <span className="font-medium">0.938</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="text-[#8b949e] min-w-[110px] text-xs">Inflation CH</span>
-          <span className="font-medium">1.1% (Mai 2025)</span>
-        </li>
-        <li className="flex items-start gap-2">
-          <span className="text-[#8b949e] min-w-[110px] text-xs">Makro-Score</span>
-          <span className="font-medium text-emerald-400">Positiv</span>
-        </li>
-      </ul>
-      <p className="text-[10px] text-[#8b949e] leading-relaxed pt-1">
-        Niedriger SNB-Leitzins und stabile Inflation begünstigen Schweizer Aktien gegenüber Anleihen. CHF-Stärke belastet exportorientierte Titel.
-      </p>
+    <div className="rounded-xl border border-[var(--prisma-border)] bg-[var(--prisma-surface)] p-5 space-y-3">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--prisma-muted)]">Makro-Kontext</h3>
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1,2,3,4].map(i => <div key={i} className="h-4 rounded bg-[var(--prisma-border)] animate-pulse" />)}
+        </div>
+      ) : data ? (
+        <>
+          <ul className="space-y-2 text-sm text-[var(--prisma-text)]">
+            <li className="flex items-start gap-2">
+              <span className="text-[var(--prisma-muted)] min-w-[110px] text-xs">SNB Leitzins</span>
+              <span className="font-medium">{data.leitzins.toFixed(2)}%</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[var(--prisma-muted)] min-w-[110px] text-xs">CHF/EUR</span>
+              <span className="font-medium">{data.chf_eur.toFixed(3)}</span>
+            </li>
+            {data.inflation_ch != null && (
+              <li className="flex items-start gap-2">
+                <span className="text-[var(--prisma-muted)] min-w-[110px] text-xs">Inflation CH</span>
+                <span className="font-medium">{data.inflation_ch.toFixed(1)}%</span>
+              </li>
+            )}
+            <li className="flex items-start gap-2">
+              <span className="text-[var(--prisma-muted)] min-w-[110px] text-xs">Klima</span>
+              <span className={`font-medium ${climateColor[data.climate] ?? ''}`}>{data.climate}</span>
+            </li>
+          </ul>
+          <p className="text-[10px] text-[var(--prisma-muted)] leading-relaxed pt-1">
+            {data.narrative_de}
+          </p>
+          <p className="text-[10px] text-[var(--prisma-muted)]">
+            Stand: {new Date(data.snapshot_date).toLocaleDateString('de-CH')}
+          </p>
+        </>
+      ) : (
+        <p className="text-xs text-[var(--prisma-muted)]">Makro-Daten nicht verfügbar.</p>
+      )}
     </div>
   );
 }
@@ -819,27 +843,27 @@ export function DecisionClient() {
   const emptyStateJsx = (
     <>
       {!isLiveMode && !selectedUniverse && !uLoading && universes.length === 0 && (
-        <div className="rounded-xl border border-[#21262d] p-8 text-center space-y-3">
-          <p className="text-sm font-medium text-[#e6edf3]">Kein Universum vorhanden</p>
-          <p className="text-xs text-[#8b949e]">
+        <div className="rounded-xl border border-[var(--prisma-border)] p-8 text-center space-y-3">
+          <p className="text-sm font-medium text-[var(--prisma-text)]">Kein Universum vorhanden</p>
+          <p className="text-xs text-[var(--prisma-muted)]">
             Erstelle zuerst ein Universum unter{' '}
-            <a href="/universes" className="text-[#58a6ff] hover:underline">Universen</a>.
+            <a href="/universes" className="text-[var(--prisma-blue)] hover:underline">Universen</a>.
           </p>
         </div>
       )}
       {!isLiveMode && !selectedUniverse && !uLoading && universes.length > 0 && (
-        <p className="text-sm text-[#8b949e] py-8 text-center">Bitte ein Universum wählen.</p>
+        <p className="text-sm text-[var(--prisma-muted)] py-8 text-center">Bitte ein Universum wählen.</p>
       )}
       {isReady && isLoading && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 w-full rounded-lg bg-[#161b22]" />
+            <Skeleton key={i} className="h-40 w-full rounded-lg bg-[var(--prisma-surface)]" />
           ))}
         </div>
       )}
       {isReady && isError && (
         <div className="space-y-3">
-          <div className="rounded-md border border-[#f85149]/50 bg-[#f85149]/10 p-4 text-sm text-[#f85149]">
+          <div className="rounded-md border border-[var(--prisma-red)]/50 bg-[var(--prisma-red)]/10 p-4 text-sm text-[var(--prisma-red)]">
             Signale konnten nicht geladen werden.
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -869,7 +893,7 @@ export function DecisionClient() {
   const modeToggleJsx = (
     <button
       onClick={toggle}
-      className="inline-flex items-center gap-1.5 rounded-md border border-[#21262d] px-3 py-1.5 text-xs font-medium text-[#8b949e] hover:bg-[#21262d] hover:text-[#e6edf3] transition-colors"
+      className="inline-flex items-center gap-1.5 rounded-md border border-[var(--prisma-border)] px-3 py-1.5 text-xs font-medium text-[var(--prisma-muted)] hover:bg-[var(--prisma-border)] hover:text-[var(--prisma-text)] transition-colors"
     >
       {isSimple ? 'Pro-Modus' : 'Einfacher Modus'}
     </button>
@@ -885,16 +909,16 @@ export function DecisionClient() {
         {/* Header row */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[#e6edf3] tracking-tight">Signale heute.</h1>
+            <h1 className="text-2xl font-bold text-[var(--prisma-text)] tracking-tight">Signale heute.</h1>
             {lastUpdated && (
-              <p className="text-sm text-[#8b949e] mt-1">Letzte Aktualisierung: {lastUpdated}</p>
+              <p className="text-sm text-[var(--prisma-muted)] mt-1">Letzte Aktualisierung: {lastUpdated}</p>
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {/* Simple universe selector */}
             {!isLiveMode && universes.length > 0 && (
               <select
-                className="h-8 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
+                className="h-8 rounded-md border border-[var(--prisma-border)] bg-[var(--prisma-surface)] text-[var(--prisma-text)] px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--prisma-blue)]"
                 value={selectedUniverse}
                 onChange={(e) => setSelectedUniverse(e.target.value)}
                 disabled={uLoading}
@@ -911,10 +935,10 @@ export function DecisionClient() {
 
         {/* Live-mode banner */}
         {isLiveMode && (
-          <div className="flex items-center gap-2 text-xs text-[#8b949e]">
+          <div className="flex items-center gap-2 text-xs text-[var(--prisma-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#58a6ff]" />
             {liveTickers!.length} Titel live: {liveTickers!.join(', ')}
-            <Link href="/discover" className="ml-auto text-[#58a6ff] hover:underline">Zurück →</Link>
+            <Link href="/discover" className="ml-auto text-[var(--prisma-blue)] hover:underline">Zurück →</Link>
           </div>
         )}
 
@@ -945,7 +969,7 @@ export function DecisionClient() {
     <div className="space-y-4">
       {/* Header row */}
       <div className="flex items-start justify-between gap-4">
-        <h1 className="text-2xl font-bold text-[#e6edf3] tracking-tight">Decision Intelligence.</h1>
+        <h1 className="text-2xl font-bold text-[var(--prisma-text)] tracking-tight">Decision Intelligence.</h1>
         {modeToggleJsx}
       </div>
 
@@ -1000,11 +1024,11 @@ export function DecisionClient() {
                 />
                 {isLoading ? 'LADEN' : 'LIVE'}
               </span>
-              <span className="text-[11px] text-[#8b949e]">
+              <span className="text-[11px] text-[var(--prisma-muted)]">
                 {liveTickers!.length} Titel · {liveTickers!.join(', ')}
               </span>
             </div>
-            <Link href="/discover" className="text-xs text-[#58a6ff] hover:underline whitespace-nowrap">
+            <Link href="/discover" className="text-xs text-[var(--prisma-blue)] hover:underline whitespace-nowrap">
               Zurück →
             </Link>
           </div>
@@ -1015,9 +1039,9 @@ export function DecisionClient() {
       <div className="flex flex-wrap items-end gap-3">
         {!isLiveMode && (
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-[#8b949e] font-medium">Universum</label>
+            <label className="text-xs text-[var(--prisma-muted)] font-medium">Universum</label>
             <select
-              className="h-9 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#58a6ff] min-w-[180px]"
+              className="h-9 rounded-md border border-[var(--prisma-border)] bg-[var(--prisma-surface)] text-[var(--prisma-text)] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--prisma-blue)] min-w-[180px]"
               value={selectedUniverse}
               onChange={(e) => setSelectedUniverse(e.target.value)}
               disabled={uLoading}
@@ -1031,9 +1055,9 @@ export function DecisionClient() {
         )}
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-[#8b949e] font-medium">Signal</label>
+          <label className="text-xs text-[var(--prisma-muted)] font-medium">Signal</label>
           <select
-            className="h-9 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
+            className="h-9 rounded-md border border-[var(--prisma-border)] bg-[var(--prisma-surface)] text-[var(--prisma-text)] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--prisma-blue)]"
             value={signalFilter}
             onChange={(e) => setSignalFilter(e.target.value as SignalType | '')}
           >
@@ -1044,21 +1068,6 @@ export function DecisionClient() {
           </select>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-[#8b949e] font-medium">Sektor</label>
-          <select
-            className="h-9 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
-            defaultValue=""
-          >
-            <option value="">Alle Sektoren</option>
-            <option value="financials">Financials</option>
-            <option value="healthcare">Healthcare</option>
-            <option value="industrials">Industrials</option>
-            <option value="consumer">Consumer</option>
-            <option value="technology">Technology</option>
-            <option value="energy">Energy</option>
-          </select>
-        </div>
 
         <div className="flex items-center gap-2 self-end h-9">
           <input
@@ -1066,15 +1075,15 @@ export function DecisionClient() {
             id="eligible-only"
             checked={eligibleOnly}
             onChange={(e) => setEligibleOnly(e.target.checked)}
-            className="h-4 w-4 rounded border border-[#21262d] accent-[#58a6ff]"
+            className="h-4 w-4 rounded border border-[var(--prisma-border)] accent-[#58a6ff]"
           />
-          <label htmlFor="eligible-only" className="text-sm text-[#e6edf3] select-none cursor-pointer">
+          <label htmlFor="eligible-only" className="text-sm text-[var(--prisma-text)] select-none cursor-pointer">
             Nur 3a-eligible
           </label>
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-[#8b949e] font-medium">Min. Konfidenz (%)</label>
+          <label className="text-xs text-[var(--prisma-muted)] font-medium">Min. Konfidenz (%)</label>
           <input
             type="number"
             min={0}
@@ -1082,15 +1091,15 @@ export function DecisionClient() {
             step={5}
             value={minConfidence}
             onChange={(e) => setMinConfidence(Number(e.target.value))}
-            className="h-9 w-24 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
+            className="h-9 w-24 rounded-md border border-[var(--prisma-border)] bg-[var(--prisma-surface)] text-[var(--prisma-text)] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--prisma-blue)]"
             data-testid="decision-min-confidence-input"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-[#8b949e] font-medium">Sortierung</label>
+          <label className="text-xs text-[var(--prisma-muted)] font-medium">Sortierung</label>
           <select
-            className="h-9 rounded-md border border-[#21262d] bg-[#161b22] text-[#e6edf3] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#58a6ff]"
+            className="h-9 rounded-md border border-[var(--prisma-border)] bg-[var(--prisma-surface)] text-[var(--prisma-text)] px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--prisma-blue)]"
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as typeof sortKey)}
             data-testid="decision-sort-select"
@@ -1106,7 +1115,7 @@ export function DecisionClient() {
         {hasActiveFilters && (
           <button
             onClick={resetFilters}
-            className="inline-flex items-center gap-1.5 rounded-md border border-[#f85149]/40 px-3 py-2 text-sm text-[#f85149] hover:bg-[#f85149]/10 transition-colors self-end"
+            className="inline-flex items-center gap-1.5 rounded-md border border-[#f85149]/40 px-3 py-2 text-sm text-[var(--prisma-red)] hover:bg-[var(--prisma-red)]/10 transition-colors self-end"
             data-testid="decision-reset-filters-btn"
           >
             Filter zurücksetzen
@@ -1131,8 +1140,8 @@ export function DecisionClient() {
                   onClick={() => setSignalFilter(active ? '' : sig)}
                   className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                     active
-                      ? 'border-[#58a6ff] bg-[#58a6ff]/10 text-[#58a6ff]'
-                      : 'border-[#21262d] bg-[#161b22] text-[#8b949e] hover:border-[#58a6ff]/40'
+                      ? 'border-[#58a6ff] bg-[#58a6ff]/10 text-[var(--prisma-blue)]'
+                      : 'border-[var(--prisma-border)] bg-[var(--prisma-surface)] text-[var(--prisma-muted)] hover:border-[#58a6ff]/40'
                   }`}
                   data-testid={`signal-chip-${sig}`}
                 >
@@ -1153,7 +1162,7 @@ export function DecisionClient() {
 
       {/* Additional filter-empty state */}
       {isReady && !isLoading && !isError && sortedSignals.length === 0 && allSignals.length > 0 && (
-        <p className="text-sm text-[#8b949e] py-8 text-center">
+        <p className="text-sm text-[var(--prisma-muted)] py-8 text-center">
           Keine Signale gefunden (Filter zu eng).
         </p>
       )}
@@ -1162,14 +1171,14 @@ export function DecisionClient() {
       {sortedSignals.length > 0 && (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-xs text-[#8b949e]" data-testid="decision-signals-count">
+            <p className="text-xs text-[var(--prisma-muted)]" data-testid="decision-signals-count">
               {sortedSignals.length !== signals.length
                 ? `${sortedSignals.length} von ${signals.length} Signalen`
                 : `${sortedSignals.length} Signal${sortedSignals.length !== 1 ? 'e' : ''} gefunden`}
             </p>
             <button
               onClick={() => exportDecisionCsv(sortedSignals)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[#21262d] px-2.5 py-1 text-xs font-medium text-[#8b949e] hover:bg-[#21262d] hover:text-[#e6edf3] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--prisma-border)] px-2.5 py-1 text-xs font-medium text-[var(--prisma-muted)] hover:bg-[var(--prisma-border)] hover:text-[var(--prisma-text)] transition-colors"
               data-testid="decision-csv-export-btn"
             >
               <Download className="h-3 w-3" />
@@ -1187,7 +1196,7 @@ export function DecisionClient() {
 
           {/* Audit Trail section */}
           <div className="space-y-2">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-[#8b949e]">Audit Trail</h2>
+            <h2 className="text-xs font-bold uppercase tracking-widest text-[var(--prisma-muted)]">Audit Trail</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {sortedSignals.map((item) => (
                 <SignalCard key={item.ticker} item={item} />

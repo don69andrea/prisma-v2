@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # CoinGecko API Key (optional — Free Tier: 30 Req/min, 10.000/Monat)
     coingecko_api_key: str = ""
 
+    # Glassnode API Key (optional — Free Tier: kostenlos, https://glassnode.com)
+    glassnode_api_key: str = ""
+
     # Krypto-Feature aktivieren (default: true)
     crypto_feature_enabled: bool = True
 

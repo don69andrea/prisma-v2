@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from backend.application.services.crypto_agent_service import CryptoAgentService
 from backend.application.services.crypto_pattern_service import CryptoPatternService
 from backend.application.services.crypto_scoring_service import CryptoScoringService
 from backend.domain.repositories.crypto_signal_repository import CryptoSignalRepository
+from backend.domain.schemas.multiagent_schemas import CointelligenceReport
 from backend.infrastructure.adapters.coingecko_adapter import CoinGeckoAdapter
 from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter
 from backend.interfaces.rest.dependencies import (
     get_coingecko_adapter,
+    get_cointelligence_agent,
     get_crypto_agent_service,
     get_crypto_pattern_service,
     get_crypto_scoring_service,
@@ -28,6 +31,10 @@ from backend.interfaces.rest.schemas.crypto import CryptoSignalResponse
 router = APIRouter(
     prefix="/api/v1/crypto", tags=["crypto"], dependencies=[Depends(require_crypto_enabled)]
 )
+
+
+class _CointelligenceRequest(BaseModel):
+    coin: Literal["BTC", "ETH"]
 
 
 @router.get("/signals", response_model=list[CryptoSignalResponse])
@@ -162,3 +169,13 @@ async def analyze_ticker_stream(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.post("/intelligence", response_model=CointelligenceReport)
+async def cointelligence_analysis(
+    body: _CointelligenceRequest,
+    agent: Any = Depends(get_cointelligence_agent),
+) -> CointelligenceReport:
+    """On-Chain Intelligence Report für BTC oder ETH."""
+    result: CointelligenceReport = await agent.analyze(body.coin)
+    return result

@@ -27,14 +27,14 @@ interface NavCluster {
 // Links visible in the nav bar (primary)
 const CLUSTERS_SIMPLE: NavCluster[] = [
   { groupLabel: 'Entdecken',   color: '#8b5cf6', links: [{ href: '/start',    label: 'Profil' }, { href: '/discover', label: 'Universum' }] },
-  { groupLabel: 'Analysieren', color: '#3b82f6', links: [{ href: '/rankings', label: 'Rankings' }, { href: '/stocks', label: 'Aktien' }, { href: '/crypto', label: 'Krypto' }] },
+  { groupLabel: 'Analysieren', color: '#3b82f6', links: [{ href: '/rankings', label: 'Rankings' }, { href: '/stocks', label: 'Aktien' }, { href: '/analyze', label: 'Analyse' }, { href: '/crypto', label: 'Krypto' }] },
   { groupLabel: 'Entscheiden', color: '#f59e0b', links: [{ href: '/decision', label: 'Signale' }, { href: '/alerts', label: 'Alerts' }, { href: '/news', label: 'News' }] },
   { groupLabel: 'Beobachten',  color: '#10b981', links: [{ href: '/watchlist', label: 'Watchlist' }, { href: '/research', label: 'Research' }] },
 ];
 
 const CLUSTERS_PRO_PRIMARY: NavCluster[] = [
   { groupLabel: 'Entdecken',   color: '#8b5cf6', links: [{ href: '/start',    label: 'Profil' }, { href: '/discover', label: 'Universum' }] },
-  { groupLabel: 'Analysieren', color: '#3b82f6', links: [{ href: '/rankings', label: 'Rankings' }, { href: '/stocks', label: 'Aktien' }, { href: '/research', label: 'Research' }, { href: '/crypto', label: 'Krypto' }] },
+  { groupLabel: 'Analysieren', color: '#3b82f6', links: [{ href: '/rankings', label: 'Rankings' }, { href: '/stocks', label: 'Aktien' }, { href: '/analyze', label: 'Analyse' }, { href: '/research', label: 'Research' }, { href: '/crypto', label: 'Krypto' }] },
   { groupLabel: 'Entscheiden', color: '#f59e0b', links: [{ href: '/decision', label: 'Signale' }, { href: '/alerts', label: 'Alerts' }, { href: '/news', label: 'News' }] },
   { groupLabel: 'Beobachten',  color: '#10b981', links: [{ href: '/watchlist', label: 'Watchlist' }] },
 ];

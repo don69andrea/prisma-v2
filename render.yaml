@@ -95,6 +95,13 @@ services:
     plan: free
     schedule: "0 6 * * *"
     dockerCommand: python -m backend.application.services.news_ingestion_service
+    buildFilter:
+      paths:
+        - backend/**
+        - alembic.ini
+        - pyproject.toml
+        - uv.lock
+        - Dockerfile.backend
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -113,6 +120,13 @@ services:
     plan: free
     schedule: "30 6 * * *"
     dockerCommand: python -m backend.scripts.crypto_daily_snapshot
+    buildFilter:
+      paths:
+        - backend/**
+        - alembic.ini
+        - pyproject.toml
+        - uv.lock
+        - Dockerfile.backend
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -131,6 +145,13 @@ services:
     plan: free
     schedule: "0 5 * * *"
     dockerCommand: python scripts/update_smi_market_caps.py
+    buildFilter:
+      paths:
+        - backend/**
+        - alembic.ini
+        - pyproject.toml
+        - uv.lock
+        - Dockerfile.backend
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -145,6 +166,13 @@ services:
     plan: free
     schedule: "0 7 * * *"
     dockerCommand: python -m backend.scripts.stock_daily_snapshot
+    buildFilter:
+      paths:
+        - backend/**
+        - alembic.ini
+        - pyproject.toml
+        - uv.lock
+        - Dockerfile.backend
     envVars:
       - key: DATABASE_URL
         fromDatabase:

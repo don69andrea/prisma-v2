@@ -713,3 +713,24 @@ async def require_admin_role(
     if current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Admin role required")
     return current_user
+
+
+# ---------------------------------------------------------------------------
+# CointelligenceAgent DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_cointelligence_agent(
+    llm_client: LLMClient = Depends(get_llm_client),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    from backend.application.agents.cointelligence_agent import CointelligenceAgent  # noqa: PLC0415
+    from backend.application.services.macro_service import MacroService  # noqa: PLC0415
+
+    return CointelligenceAgent(
+        coingecko=_get_coingecko_singleton(),
+        fear_greed=_get_fear_greed_singleton(),
+        macro_service=MacroService(llm_client=llm_client),
+        llm_client=llm_client,
+        glassnode_api_key=getattr(settings, "glassnode_api_key", ""),
+    )

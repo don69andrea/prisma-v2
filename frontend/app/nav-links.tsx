@@ -24,15 +24,8 @@ interface NavCluster {
   links: NavLink[];
 }
 
-// Links visible in the nav bar (primary)
-const CLUSTERS_SIMPLE: NavCluster[] = [
-  { groupLabel: 'Entdecken',   color: '#8b5cf6', links: [{ href: '/start',    label: 'Profil' }, { href: '/discover', label: 'Universum' }] },
-  { groupLabel: 'Analysieren', color: '#3b82f6', links: [{ href: '/rankings', label: 'Rankings' }, { href: '/stocks', label: 'Aktien' }, { href: '/analyze', label: 'Analyse' }, { href: '/crypto', label: 'Krypto' }] },
-  { groupLabel: 'Entscheiden', color: '#f59e0b', links: [{ href: '/decision', label: 'Signale' }, { href: '/alerts', label: 'Alerts' }, { href: '/news', label: 'News' }] },
-  { groupLabel: 'Beobachten',  color: '#10b981', links: [{ href: '/watchlist', label: 'Watchlist' }, { href: '/research', label: 'Research' }] },
-];
-
-const CLUSTERS_PRO_PRIMARY: NavCluster[] = [
+// Shared clusters — identical structure in both modes so links never jump between groups
+const NAV_CLUSTERS: NavCluster[] = [
   { groupLabel: 'Entdecken',   color: '#8b5cf6', links: [{ href: '/start',    label: 'Profil' }, { href: '/discover', label: 'Universum' }] },
   { groupLabel: 'Analysieren', color: '#3b82f6', links: [{ href: '/rankings', label: 'Rankings' }, { href: '/stocks', label: 'Aktien' }, { href: '/analyze', label: 'Analyse' }, { href: '/research', label: 'Research' }, { href: '/crypto', label: 'Krypto' }] },
   { groupLabel: 'Entscheiden', color: '#f59e0b', links: [{ href: '/decision', label: 'Signale' }, { href: '/alerts', label: 'Alerts' }, { href: '/news', label: 'News' }] },
@@ -148,11 +141,10 @@ export function NavLinks() {
   }, []);
 
   const isPro = mode === 'pro';
-  const clusters = isPro ? CLUSTERS_PRO_PRIMARY : CLUSTERS_SIMPLE;
 
   return (
     <nav className="flex items-center gap-3 min-w-0" aria-label="Hauptnavigation">
-      {clusters.map((cluster, ci) => (
+      {NAV_CLUSTERS.map((cluster, ci) => (
         <div key={cluster.groupLabel} className="flex items-center gap-3">
           {ci > 0 && <ClusterDivider color={cluster.color} label={cluster.groupLabel} />}
           {cluster.links.map((link) => (

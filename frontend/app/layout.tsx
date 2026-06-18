@@ -4,8 +4,6 @@ import Link from 'next/link';
 
 import { Providers } from '@/app/providers';
 import { NavLinks } from '@/app/nav-links';
-import { ApiStatusBadge } from '@/components/ui/ApiStatusBadge';
-import { ModeToggle } from '@/components/ui/ModeToggle';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { PrismaLogo } from '@/components/ui/PrismaLogo';
 import { NavigationProgressBar } from '@/components/ui/PrismaBar';
@@ -44,8 +42,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
               </Link>
               <NavLinks />
               <div className="ml-auto flex items-center gap-2 pl-4 border-l border-border/40">
-                <ModeToggle />
-                <ApiStatusBadge />
                 <AccountMenu />
                 <ThemeToggle />
               </div>

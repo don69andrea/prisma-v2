@@ -15,8 +15,12 @@ down_revision = "0029"
 
 
 def upgrade() -> None:
-    op.add_column("users", sa.Column("first_name", sa.String(100), nullable=False, server_default=""))
-    op.add_column("users", sa.Column("last_name", sa.String(100), nullable=False, server_default=""))
+    op.add_column(
+        "users", sa.Column("first_name", sa.String(100), nullable=False, server_default="")
+    )
+    op.add_column(
+        "users", sa.Column("last_name", sa.String(100), nullable=False, server_default="")
+    )
 
 
 def downgrade() -> None:

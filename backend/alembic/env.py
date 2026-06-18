@@ -1,12 +1,11 @@
 """Alembic Environment-Konfiguration — async-Modus mit SQLAlchemy 2.0."""
 
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
-
-from backend.config import get_settings
 
 # Importiere alle ORM-Modelle damit Alembic ihre Metadaten kennt.
 # Neue Modelle hier ergänzen, sonst generiert autogenerate keine Migrationen.
@@ -52,8 +51,12 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    """Liest die DATABASE_URL aus den Anwendungs-Settings (überschreibt alembic.ini)."""
-    return get_settings().database_url
+    """Liest DATABASE_URL direkt aus der Umgebung — kein get_settings() damit
+    JWT_SECRET und andere App-Secrets beim Migrieren nicht erforderlich sind."""
+    url = os.environ.get("DATABASE_URL", "postgresql+asyncpg://prisma:prisma@db:5432/prisma")
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
 
 
 def run_migrations_offline() -> None:

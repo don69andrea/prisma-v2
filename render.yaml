@@ -4,8 +4,6 @@ databases:
     user: prisma_v2
     plan: free
     postgresMajorVersion: "16"
-    # pgvector wird automatisch via Alembic-Migration 0008 aktiviert (CREATE EXTENSION IF NOT EXISTS vector).
-    # Kein manueller Schritt nötig — Migration läuft beim ersten Deploy über backend-start.sh.
 
 services:
   - type: web
@@ -16,7 +14,6 @@ services:
     plan: free
     healthCheckPath: /health
     autoDeploy: true
-    # Dockerfile CMD calls /app/backend-start.sh which runs alembic + uvicorn.
     buildFilter:
       paths:
         - backend/**
@@ -25,6 +22,7 @@ services:
         - uv.lock
         - Dockerfile.backend
         - scripts/backend-start.sh
+        - scripts/seed_admin.py
         - render.yaml
     envVars:
       - key: DATABASE_URL
@@ -33,8 +31,6 @@ services:
           property: connectionString
       - key: ANTHROPIC_API_KEY
         sync: false
-      # Admin-API-Key (X-API-Key-Header) für /admin-Endpoints.
-      # sync: false → manuell im Dashboard setzen (openssl rand -hex 32).
       - key: API_KEY
         sync: false
       - key: ENVIRONMENT
@@ -43,21 +39,15 @@ services:
         value: https://prisma-v2-frontend.onrender.com
       - key: PYTHONPATH
         value: /app
-      # Alert Engine: E-Mail-Benachrichtigungen via SendGrid
       - key: SENDGRID_API_KEY
         sync: false
-      # VoyageAI Embedding-Key
       - key: VOYAGE_API_KEY
         sync: false
-      # MCP-Tool-API-Key für X-API-Key auf /api/v1/runs (getrennt vom Admin-Key)
       - key: TOOL_API_KEY
         sync: false
-      # App-Version — wird von /health zurückgegeben
       - key: APP_VERSION
         value: "2.1.0"
       # JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD: manuell im Render-Dashboard setzen.
-      # Nicht hier als sync:false eintragen — Render Blueprint-Sync bricht sonst wenn
-      # die Vars noch nicht im Dashboard existieren.
 
   - type: web
     name: prisma-v2-frontend
@@ -67,12 +57,8 @@ services:
     plan: free
     autoDeploy: true
     envVars:
-      # NEXT_PUBLIC_* variables are baked into the Next.js bundle at build time.
-      # Render passes envVars as both build-time ARGs and runtime env vars for
-      # Docker services, so setting it here is sufficient.
       - key: NEXT_PUBLIC_API_URL
         value: https://prisma-v2-backend.onrender.com
-      # Muss identisch mit API_KEY im Backend sein — manuell im Dashboard setzen.
       - key: NEXT_PUBLIC_API_KEY
         sync: false
     buildFilter:
@@ -86,7 +72,6 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
     branch: main
-    plan: free
     schedule: "0 6 * * *"
     dockerCommand: python -m backend.application.services.news_ingestion_service
     envVars:
@@ -104,7 +89,6 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
     branch: main
-    plan: free
     schedule: "30 6 * * *"
     dockerCommand: python -m backend.scripts.crypto_daily_snapshot
     envVars:
@@ -122,7 +106,6 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
     branch: main
-    plan: free
     schedule: "0 5 * * *"
     dockerCommand: python scripts/update_smi_market_caps.py
     envVars:
@@ -136,7 +119,6 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile.backend
     branch: main
-    plan: free
     schedule: "0 7 * * *"
     dockerCommand: python -m backend.scripts.stock_daily_snapshot
     envVars:

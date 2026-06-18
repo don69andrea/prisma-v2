@@ -40,6 +40,10 @@ from backend.domain.services.crypto_scorer import CryptoScorer
 from backend.infrastructure.adapters.coingecko_adapter import CoinGeckoAdapter
 from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter
 from backend.infrastructure.adapters.yfinance_crypto import YFinanceCryptoAdapter
+from backend.infrastructure.adapters.yfinance_fundamentals_adapter import (
+    YFinanceFundamentalsAdapter,
+)
+from backend.infrastructure.adapters.yfinance_market_data_adapter import YFinanceMarketDataAdapter
 from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.infrastructure.llm.client import LLMClient
 from backend.infrastructure.llm.pricing import PRICING  # Single-Source-of-Truth via DI an LLMClient
@@ -72,8 +76,6 @@ from backend.infrastructure.persistence.session import (
     get_async_session,
     get_session_factory,
 )
-from backend.infrastructure.providers.stub_fundamentals import StubFundamentalsProvider
-from backend.infrastructure.providers.stub_market_data import StubMarketDataProvider
 
 _logger = logging.getLogger(__name__)
 
@@ -98,26 +100,12 @@ async def get_stock_repository(
     return SQLAStockRepository(session=session)
 
 
-async def get_fundamentals_provider(
-    settings: Settings = Depends(get_settings),
-) -> FundamentalsProvider:
-    if settings.environment == "production":
-        _logger.warning(
-            "StubFundamentalsProvider active in production — serving synthetic data. "
-            "Wire a real FundamentalsProvider before going live (Issue #41)."
-        )
-    return StubFundamentalsProvider()
+async def get_fundamentals_provider() -> FundamentalsProvider:
+    return YFinanceFundamentalsAdapter()
 
 
-async def get_market_data_provider(
-    settings: Settings = Depends(get_settings),
-) -> MarketDataProvider:
-    if settings.environment == "production":
-        _logger.warning(
-            "StubMarketDataProvider active in production — serving synthetic data. "
-            "Wire a real MarketDataProvider before going live (Issue #41)."
-        )
-    return StubMarketDataProvider()
+async def get_market_data_provider() -> MarketDataProvider:
+    return YFinanceMarketDataAdapter()
 
 
 async def get_stock_service(

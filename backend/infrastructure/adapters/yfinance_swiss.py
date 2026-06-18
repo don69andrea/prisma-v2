@@ -203,11 +203,8 @@ class YFinanceSwissAdapter(SwissMarketDataProvider):
 
         raw_yield = info.get("dividendYield")
         if raw_yield:
-            raw_float = float(raw_yield)
-            # yfinance gibt dividendYield manchmal als Dezimal (0.038), manchmal als Prozent (3.8)
-            dividend_yield_pct: float | None = round(
-                raw_float if raw_float > 1 else raw_float * 100, 2
-            )
+            # yfinance liefert dividendYield konsistent als Dezimalbruch (0.038 = 3.8%)
+            dividend_yield_pct: float | None = round(float(raw_yield) * 100, 2)
         else:
             dividend_yield_pct = None
 

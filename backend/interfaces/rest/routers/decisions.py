@@ -267,9 +267,12 @@ async def list_decisions(
         signal_upper = None
 
     # Tagesschnitt vorhanden → direkt aus DB (kein yFinance-Call)
+    # Threshold: 80% des Universums müssen vorhanden sein (mind. 1)
     stock_signal_repo = SQLAStockSignalRepository(session)
     snapshots = await stock_signal_repo.get_today_all()
-    if len(snapshots) >= 10:
+    universe_size = max(len(universe.tickers), 1)
+    snapshot_threshold = max(1, int(universe_size * 0.8))
+    if len(snapshots) >= snapshot_threshold:
         _logger.info("list_decisions: Tagesschnitt mit %d Einträgen gefunden", len(snapshots))
         return _build_response(snapshots, signal, eligible_only)
 

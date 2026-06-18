@@ -17,7 +17,10 @@ if ! alembic upgrade head; then
 fi
 
 echo "==> Seeding admin user..."
-python scripts/seed_admin.py
+if ! python scripts/seed_admin.py; then
+    echo "WARNING: seed_admin.py fehlgeschlagen — ADMIN_EMAIL/ADMIN_PASSWORD/JWT_SECRET im Render-Dashboard prüfen."
+    echo "Der Container startet trotzdem — seed kann via Render Shell nachgeholt werden."
+fi
 
 echo "==> Starting uvicorn on 0.0.0.0:${PORT:-8000} ..."
 exec uvicorn backend.interfaces.rest.main:app --host 0.0.0.0 --port "${PORT:-8000}"

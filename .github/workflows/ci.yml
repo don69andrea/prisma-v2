@@ -158,6 +158,7 @@ jobs:
   frontend-e2e:
     name: Frontend E2E (Playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [frontend-build]
     services:
       postgres:

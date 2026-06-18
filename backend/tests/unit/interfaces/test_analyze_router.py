@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -9,7 +10,7 @@ from fastapi.testclient import TestClient
 pytestmark = pytest.mark.unit
 
 
-def _make_app():
+def _make_app() -> FastAPI:
     from backend.interfaces.rest.dependencies import get_investment_director
     from backend.interfaces.rest.routers.analyze import router as analyze_router
 
@@ -18,9 +19,11 @@ def _make_app():
 
     mock_director = AsyncMock()
 
-    async def _fake_run(ticker, context, run_id, event_queue):
+    async def _fake_run(ticker: str, context: str, run_id: str, event_queue: Any) -> None:
         await event_queue.put({"type": "step", "agent": "Director", "status": "planning"})
-        await event_queue.put({"type": "done", "run_id": run_id, "signal": "BUY", "confidence": 0.7})
+        await event_queue.put(
+            {"type": "done", "run_id": run_id, "signal": "BUY", "confidence": 0.7}
+        )
 
     mock_director.run_with_events.side_effect = _fake_run
     mock_director.resolve_checkpoint = AsyncMock(return_value=None)

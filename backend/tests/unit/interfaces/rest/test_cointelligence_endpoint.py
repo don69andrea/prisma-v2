@@ -11,16 +11,24 @@ from backend.domain.schemas.multiagent_schemas import CointelligenceReport
 pytestmark = pytest.mark.unit
 
 _MOCK_REPORT = CointelligenceReport(
-    coin="BTC", price_chf=88000.0, mvrv_zone="FAIR", fear_greed=50,
-    sharpe_crypto=0.8, sharpe_smi=0.5, chf_usd_impact="NEUTRAL",
-    regime_signal="HOLD", max_allocation_pct=5.0,
-    reasoning="Fair bewertet.", disclaimer="Hochspekulative Anlage."
+    coin="BTC",
+    price_chf=88000.0,
+    mvrv_zone="FAIR",
+    fear_greed=50,
+    sharpe_crypto=0.8,
+    sharpe_smi=0.5,
+    chf_usd_impact="NEUTRAL",
+    regime_signal="HOLD",
+    max_allocation_pct=5.0,
+    reasoning="Fair bewertet.",
+    disclaimer="Hochspekulative Anlage.",
 )
 
 
-def _make_app():
+def _make_app() -> FastAPI:
     from backend.interfaces.rest.dependencies import get_cointelligence_agent
     from backend.interfaces.rest.routers.crypto import router as crypto_router
+
     app = FastAPI()
     app.include_router(crypto_router)
     mock_agent = AsyncMock()

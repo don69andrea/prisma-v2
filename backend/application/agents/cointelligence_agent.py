@@ -1,4 +1,5 @@
 """CointelligenceAgent — On-Chain Intelligence für BTC/ETH via Claude Tool-Use."""
+
 from __future__ import annotations
 
 import asyncio
@@ -97,13 +98,15 @@ class CointelligenceAgent:
 
         tool_cache = await self._prefetch(coingecko_id, yf_ticker, coin)
 
-        messages: list[dict[str, Any]] = [{
-            "role": "user",
-            "content": (
-                f"Analysiere {coin} für einen Schweizer Privatanleger (freie Mittel, nicht 3a). "
-                "Nutze alle Tools für ein vollständiges Bild."
-            ),
-        }]
+        messages: list[dict[str, Any]] = [
+            {
+                "role": "user",
+                "content": (
+                    f"Analysiere {coin} für einen Schweizer Privatanleger (freie Mittel, nicht 3a). "
+                    "Nutze alle Tools für ein vollständiges Bild."
+                ),
+            }
+        ]
 
         try:
             for _ in range(_MAX_ITERATIONS):
@@ -136,11 +139,13 @@ class CointelligenceAgent:
                             result = tool_cache.get(
                                 f"get_sharpe_{block.input.get('coin', 'BTC-USD')}", result
                             )
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": json.dumps(result),
-                        })
+                        tool_results.append(
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": block.id,
+                                "content": json.dumps(result),
+                            }
+                        )
 
                 messages.append({"role": "assistant", "content": response.content})
                 messages.append({"role": "user", "content": tool_results})
@@ -211,10 +216,14 @@ class CointelligenceAgent:
                 data = r.json()
                 latest = data[-1]["v"] if data else None
                 zone = (
-                    "EXTREME" if latest and latest > 7
-                    else "EXPENSIVE" if latest and latest > 3
-                    else "FAIR" if latest and latest > 0
-                    else "UNDERBOUGHT" if latest is not None
+                    "EXTREME"
+                    if latest and latest > 7
+                    else "EXPENSIVE"
+                    if latest and latest > 3
+                    else "FAIR"
+                    if latest and latest > 0
+                    else "UNDERBOUGHT"
+                    if latest is not None
                     else "UNKNOWN"
                 )
                 return {"mvrv_z": latest, "zone": zone}
@@ -233,11 +242,16 @@ class CointelligenceAgent:
                 std = float(r.std())
                 return float((r.mean() - rf) / std * (252**0.5)) if std > 1e-8 else 0.0
 
-            return {"crypto_sharpe": round(sharpe(coin_hist), 3), "smi_sharpe": round(sharpe(smi_hist), 3)}
+            return {
+                "crypto_sharpe": round(sharpe(coin_hist), 3),
+                "smi_sharpe": round(sharpe(smi_hist), 3),
+            }
         except Exception:
             return {"crypto_sharpe": 0.0, "smi_sharpe": 0.0}
 
-    def _parse(self, coin: Literal["BTC", "ETH"], text: str, cache: dict[str, Any]) -> CointelligenceReport:
+    def _parse(
+        self, coin: Literal["BTC", "ETH"], text: str, cache: dict[str, Any]
+    ) -> CointelligenceReport:
         try:
             start = text.find("{")
             end = text.rfind("}") + 1

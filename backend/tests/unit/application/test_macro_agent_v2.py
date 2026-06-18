@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -9,7 +10,8 @@ from backend.domain.schemas.multiagent_schemas import MacroToolReport
 
 pytestmark = pytest.mark.unit
 
-def _make_macro_context():
+
+def _make_macro_context() -> Any:
     ctx = MagicMock()
     ctx.leitzins = 0.25
     ctx.chf_eur = 0.935
@@ -17,7 +19,8 @@ def _make_macro_context():
     ctx.climate = "neutral"
     return ctx
 
-def _make_agent(final_json: str | None = None):
+
+def _make_agent(final_json: str | None = None) -> MacroAgentV2:
     macro_service = AsyncMock()
     macro_service.get_context.return_value = _make_macro_context()
     llm = AsyncMock()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -11,11 +12,16 @@ from backend.domain.schemas.multiagent_schemas import MacroToolReport
 pytestmark = pytest.mark.unit
 
 
-def _make_director():
+def _make_director() -> InvestmentDirector:
     macro = AsyncMock()
     macro.get_macro_report.return_value = MacroToolReport(
-        ticker="NESN.SW", score=62.5, leitzins=0.25, chf_eur=0.935,
-        climate="tool-use", chf_impact="NEGATIV", reasoning="Starker CHF."
+        ticker="NESN.SW",
+        score=62.5,
+        leitzins=0.25,
+        chf_eur=0.935,
+        climate="tool-use",
+        chf_impact="NEGATIV",
+        reasoning="Starker CHF.",
     )
     stock_service = AsyncMock()
     mock_stock = MagicMock()
@@ -37,7 +43,7 @@ def _make_director():
 @pytest.mark.asyncio
 async def test_director_emits_events():
     director = _make_director()
-    queue: asyncio.Queue = asyncio.Queue()
+    queue: asyncio.Queue[Any] = asyncio.Queue()
     await director.run_with_events(
         ticker="NESN.SW", context="freie_mittel", run_id="r1", event_queue=queue
     )
@@ -52,9 +58,9 @@ async def test_director_emits_events():
 @pytest.mark.asyncio
 async def test_director_emits_checkpoint_when_context_unknown():
     director = _make_director()
-    queue: asyncio.Queue = asyncio.Queue()
+    queue: asyncio.Queue[Any] = asyncio.Queue()
 
-    async def resolve_after_delay():
+    async def resolve_after_delay() -> None:
         await asyncio.sleep(0.05)
         events_seen = []
         # Drain queue to find checkpoint

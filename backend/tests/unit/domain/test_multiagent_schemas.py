@@ -10,10 +10,12 @@ from backend.domain.schemas.multiagent_schemas import (
 
 pytestmark = pytest.mark.unit
 
+
 def test_director_event_step():
     e = DirectorEvent(type="step", agent="MacroAgent", status="running")
     assert e.type == "step"
     assert e.agent == "MacroAgent"
+
 
 def test_director_event_checkpoint():
     e = DirectorEvent(
@@ -25,9 +27,11 @@ def test_director_event_checkpoint():
     assert e.checkpoint_id == "cp_abc"
     assert len(e.options) == 2
 
+
 def test_director_event_done():
     e = DirectorEvent(type="done", signal="BUY", confidence=0.82, run_id="r1")
     assert e.signal == "BUY"
+
 
 def test_cointelligence_report_validation():
     r = CointelligenceReport(
@@ -45,6 +49,7 @@ def test_cointelligence_report_validation():
     )
     assert r.coin == "BTC"
     assert r.max_allocation_pct <= 10.0
+
 
 def test_macro_tool_report():
     r = MacroToolReport(

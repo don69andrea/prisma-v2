@@ -1,4 +1,5 @@
 """Data Steward Cron — täglich 06:00 UTC via Render."""
+
 from __future__ import annotations
 
 import asyncio

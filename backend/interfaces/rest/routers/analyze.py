@@ -1,4 +1,5 @@
 """Analyze Router — SSE-Stream + HITL-Checkpoint für InvestmentDirector."""
+
 from __future__ import annotations
 
 import asyncio

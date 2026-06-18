@@ -3,6 +3,7 @@
 Fan-out: MacroAgentV2 + StockService (Quant) + SteuerAgent (parallel)
 HITL:   asyncio.Event wartet auf User-Antwort über /checkpoint-Endpoint
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -39,10 +40,14 @@ class InvestmentDirector:
         async def emit(event: dict[str, Any]) -> None:
             await event_queue.put(event)
 
-        await emit({
-            "type": "step", "agent": "Director", "status": "planning",
-            "result": f"Starte Analyse für {ticker}...",
-        })
+        await emit(
+            {
+                "type": "step",
+                "agent": "Director",
+                "status": "planning",
+                "result": f"Starte Analyse für {ticker}...",
+            }
+        )
 
         # Fan-out: Macro + Quant parallel
         await emit({"type": "step", "agent": "MacroAgent V2", "status": "running"})
@@ -56,36 +61,58 @@ class InvestmentDirector:
         quant_result: Any = results[1]
 
         if isinstance(macro_result, Exception):
-            await emit({"type": "step", "agent": "MacroAgent V2", "status": "error",
-                        "result": str(macro_result)})
+            await emit(
+                {
+                    "type": "step",
+                    "agent": "MacroAgent V2",
+                    "status": "error",
+                    "result": str(macro_result),
+                }
+            )
             macro_result = None
         else:
-            await emit({
-                "type": "step", "agent": "MacroAgent V2", "status": "done",
-                "result": f"Score: {macro_result.score:.0f}/100 | {macro_result.chf_impact}",
-            })
+            await emit(
+                {
+                    "type": "step",
+                    "agent": "MacroAgent V2",
+                    "status": "done",
+                    "result": f"Score: {macro_result.score:.0f}/100 | {macro_result.chf_impact}",
+                }
+            )
 
         if isinstance(quant_result, Exception):
-            await emit({"type": "step", "agent": "QuantAgent", "status": "error",
-                        "result": str(quant_result)})
+            await emit(
+                {
+                    "type": "step",
+                    "agent": "QuantAgent",
+                    "status": "error",
+                    "result": str(quant_result),
+                }
+            )
             quant_result = None
         else:
             signal = getattr(quant_result, "signal", "?")
             score = getattr(quant_result, "quant_score", 0)
-            await emit({
-                "type": "step", "agent": "QuantAgent", "status": "done",
-                "result": f"Signal: {signal} | Score: {score:.0f}",
-            })
+            await emit(
+                {
+                    "type": "step",
+                    "agent": "QuantAgent",
+                    "status": "done",
+                    "result": f"Signal: {signal} | Score: {score:.0f}",
+                }
+            )
 
         # HITL: Kontext klären falls unbekannt
         if context == "unknown":
             cp_id = f"cp_{uuid.uuid4().hex[:8]}"
-            await emit({
-                "type": "checkpoint",
-                "checkpoint_id": cp_id,
-                "message": f"Für welches Konto analysiere ich {ticker}?",
-                "options": ["3a-Konto (VIAC)", "Freie Mittel", "Beides analysieren"],
-            })
+            await emit(
+                {
+                    "type": "checkpoint",
+                    "checkpoint_id": cp_id,
+                    "message": f"Für welches Konto analysiere ich {ticker}?",
+                    "options": ["3a-Konto (VIAC)", "Freie Mittel", "Beides analysieren"],
+                }
+            )
             context = await self._wait_for_checkpoint(cp_id)
 
         anlegerprofil = "vorsorge_3a" if "3a" in context.lower() else "privatperson"
@@ -98,37 +125,44 @@ class InvestmentDirector:
                 anlegerprofil=anlegerprofil,
                 halteperiode_jahre=3,
             )
-            await emit({
-                "type": "step", "agent": "SteuerAgent", "status": "done",
-                "result": f"{anlegerprofil} | {', '.join(steuer_result.steuerarten[:2])}",
-            })
+            await emit(
+                {
+                    "type": "step",
+                    "agent": "SteuerAgent",
+                    "status": "done",
+                    "result": f"{anlegerprofil} | {', '.join(steuer_result.steuerarten[:2])}",
+                }
+            )
         except Exception as exc:
             _logger.warning("SteuerAgent fehlgeschlagen: %s", exc)
             steuer_result = None
-            await emit({"type": "step", "agent": "SteuerAgent", "status": "error",
-                        "result": str(exc)})
+            await emit(
+                {"type": "step", "agent": "SteuerAgent", "status": "error", "result": str(exc)}
+            )
 
         signal = getattr(quant_result, "signal", "HOLD") if quant_result else "HOLD"
         confidence = self._calc_confidence(macro_result, quant_result)
 
-        await emit({
-            "type": "done",
-            "run_id": run_id,
-            "signal": signal,
-            "confidence": confidence,
-            "report": {
-                "ticker": ticker,
-                "context": context,
-                "macro_score": macro_result.score if macro_result else None,
-                "macro_reasoning": macro_result.reasoning if macro_result else None,
-                "chf_impact": macro_result.chf_impact if macro_result else None,
-                "quant_signal": getattr(quant_result, "signal", None),
-                "quant_score": getattr(quant_result, "quant_score", None),
-                "steuer_arten": steuer_result.steuerarten if steuer_result else [],
-                "steuer_hinweise": steuer_result.hinweise[:2] if steuer_result else [],
-                "anlegerprofil": anlegerprofil,
-            },
-        })
+        await emit(
+            {
+                "type": "done",
+                "run_id": run_id,
+                "signal": signal,
+                "confidence": confidence,
+                "report": {
+                    "ticker": ticker,
+                    "context": context,
+                    "macro_score": macro_result.score if macro_result else None,
+                    "macro_reasoning": macro_result.reasoning if macro_result else None,
+                    "chf_impact": macro_result.chf_impact if macro_result else None,
+                    "quant_signal": getattr(quant_result, "signal", None),
+                    "quant_score": getattr(quant_result, "quant_score", None),
+                    "steuer_arten": steuer_result.steuerarten if steuer_result else [],
+                    "steuer_hinweise": steuer_result.hinweise[:2] if steuer_result else [],
+                    "anlegerprofil": anlegerprofil,
+                },
+            }
+        )
 
     async def resolve_checkpoint(self, checkpoint_id: str, answer: str) -> None:
         """Vom Checkpoint-Endpoint aufgerufen wenn User antwortet."""

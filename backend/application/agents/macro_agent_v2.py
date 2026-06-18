@@ -1,4 +1,5 @@
 """MacroAgent V2 — LLM Tool-Use Loop statt rule-based if/elif."""
+
 from __future__ import annotations
 
 import json
@@ -15,11 +16,26 @@ _MODEL = "claude-haiku-4-5-20251001"
 _MAX_TOKENS = 600
 _MAX_ITERATIONS = 5
 
-_EXPORT_HEAVY: frozenset[str] = frozenset({
-    "NESN.SW", "ROG.SW", "NOVN.SW", "LONN.SW", "LOGN.SW",
-    "BARN.SW", "GIVN.SW", "ABBN.SW", "KNIN.SW", "SCHP.SW",
-    "LISN.SW", "GEBN.SW", "CFR.SW", "SREN.SW", "STMN.SW", "VACN.SW",
-})
+_EXPORT_HEAVY: frozenset[str] = frozenset(
+    {
+        "NESN.SW",
+        "ROG.SW",
+        "NOVN.SW",
+        "LONN.SW",
+        "LOGN.SW",
+        "BARN.SW",
+        "GIVN.SW",
+        "ABBN.SW",
+        "KNIN.SW",
+        "SCHP.SW",
+        "LISN.SW",
+        "GEBN.SW",
+        "CFR.SW",
+        "SREN.SW",
+        "STMN.SW",
+        "VACN.SW",
+    }
+)
 _DOMESTIC_FOCUS: frozenset[str] = frozenset({"UBSG.SW", "SLHN.SW", "BAER.SW", "PGHN.SW"})
 
 _MACRO_TOOLS: list[dict[str, Any]] = [
@@ -84,22 +100,26 @@ class MacroAgentV2:
             "get_ticker_export_profile": {
                 "ticker": ticker.upper(),
                 "profile": (
-                    "exportlastig" if ticker.upper() in _EXPORT_HEAVY
-                    else "inlandsfokussiert" if ticker.upper() in _DOMESTIC_FOCUS
+                    "exportlastig"
+                    if ticker.upper() in _EXPORT_HEAVY
+                    else "inlandsfokussiert"
+                    if ticker.upper() in _DOMESTIC_FOCUS
                     else "neutral"
                 ),
                 "sector": sector or "unbekannt",
             },
         }
 
-        messages: list[dict[str, Any]] = [{
-            "role": "user",
-            "content": (
-                f"Analysiere den Makro-Score für {ticker.upper()}"
-                + (f" (Sektor: {sector})" if sector else "")
-                + ". Rufe alle relevanten Tools auf und berechne den Score."
-            ),
-        }]
+        messages: list[dict[str, Any]] = [
+            {
+                "role": "user",
+                "content": (
+                    f"Analysiere den Makro-Score für {ticker.upper()}"
+                    + (f" (Sektor: {sector})" if sector else "")
+                    + ". Rufe alle relevanten Tools auf und berechne den Score."
+                ),
+            }
+        ]
 
         try:
             for _ in range(_MAX_ITERATIONS):
@@ -124,11 +144,13 @@ class MacroAgentV2:
                 for block in response.content:
                     if getattr(block, "type", None) == "tool_use":
                         result = _tool_data.get(block.name, {"error": "Tool nicht gefunden"})
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": json.dumps(result),
-                        })
+                        tool_results.append(
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": block.id,
+                                "content": json.dumps(result),
+                            }
+                        )
 
                 messages.append({"role": "assistant", "content": response.content})
                 messages.append({"role": "user", "content": tool_results})

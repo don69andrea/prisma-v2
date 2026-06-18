@@ -10,7 +10,7 @@ from backend.application.agents.data_steward_agent import DataStewardAgent, Data
 pytestmark = pytest.mark.unit
 
 
-def _make_agent(price_age_hours: int = 48, last_price: float = 100.0):
+def _make_agent(price_age_hours: int = 48, last_price: float = 100.0) -> DataStewardAgent:
     repo = AsyncMock()
     mock_stock = MagicMock()
     mock_stock.ticker = "NESN.SW"

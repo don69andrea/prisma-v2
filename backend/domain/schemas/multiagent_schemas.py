@@ -1,4 +1,5 @@
 """Pydantic-Schemas für Multi-Agent Director, Checkpoints und Reports."""
+
 from __future__ import annotations
 
 from typing import Any, Literal

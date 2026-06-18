@@ -177,4 +177,5 @@ async def cointelligence_analysis(
     agent: Any = Depends(get_cointelligence_agent),
 ) -> CointelligenceReport:
     """On-Chain Intelligence Report für BTC oder ETH."""
-    return await agent.analyze(body.coin)
+    result: CointelligenceReport = await agent.analyze(body.coin)
+    return result

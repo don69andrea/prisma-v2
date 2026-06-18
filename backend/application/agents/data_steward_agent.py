@@ -1,4 +1,5 @@
 """DataStewardAgent — automatische Datenpflege und Freshness-Check."""
+
 from __future__ import annotations
 
 import logging
@@ -45,8 +46,11 @@ class DataStewardAgent:
         except Exception as exc:
             _logger.error("DataSteward: list_all() fehlgeschlagen: %s", exc)
             return DataStewardReport(
-                run_at=start, checked_tickers=[], refreshed_tickers=[],
-                quarantined_tickers=[], errors=[str(exc)],
+                run_at=start,
+                checked_tickers=[],
+                refreshed_tickers=[],
+                quarantined_tickers=[],
+                errors=[str(exc)],
                 duration_seconds=0.0,
             )
 

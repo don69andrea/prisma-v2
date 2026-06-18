@@ -10,13 +10,17 @@ from backend.domain.schemas.multiagent_schemas import CointelligenceReport
 pytestmark = pytest.mark.unit
 
 
-def _make_agent(final_json: str | None = None):
+def _make_agent(final_json: str | None = None) -> CointelligenceAgent:
     cg = AsyncMock()
-    cg.get_market_data.return_value = [{
-        "id": "bitcoin", "current_price": 95000.0,
-        "market_cap": 1.8e12, "total_volume": 30e9,
-        "price_change_percentage_24h_in_currency": 2.1,
-    }]
+    cg.get_market_data.return_value = [
+        {
+            "id": "bitcoin",
+            "current_price": 95000.0,
+            "market_cap": 1.8e12,
+            "total_volume": 30e9,
+            "price_change_percentage_24h_in_currency": 2.1,
+        }
+    ]
     fg = AsyncMock()
     fg.get.return_value = {"value": 55, "label": "Greed"}
     macro = AsyncMock()
@@ -38,7 +42,9 @@ def _make_agent(final_json: str | None = None):
     final_resp.stop_reason = "end_turn"
     text_block = MagicMock()
     text_block.type = "text"
-    text_block.text = final_json or """{
+    text_block.text = (
+        final_json
+        or """{
         "price_chf": 88825.0,
         "mvrv_zone": "FAIR",
         "fear_greed": 55,
@@ -50,6 +56,7 @@ def _make_agent(final_json: str | None = None):
         "reasoning": "BTC ist fair bewertet laut MVRV.",
         "disclaimer": "Hochspekulative Anlage. Keine Anlageberatung."
     }"""
+    )
     final_resp.content = [text_block]
 
     llm.messages_create.side_effect = [tool_resp, final_resp]

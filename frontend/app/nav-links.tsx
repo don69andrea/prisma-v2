@@ -37,6 +37,7 @@ const NAV_GROUPS_SIMPLE: NavGroup[] = [
     links: [
       { href: '/rankings', label: 'Rankings' },
       { href: '/stocks',   label: 'Aktien' },
+      { href: '/analyze',  label: 'Analyse' },
     ],
   },
   {
@@ -79,6 +80,7 @@ const NAV_GROUPS_PRO: NavGroup[] = [
     links: [
       { href: '/rankings', label: 'Rankings' },
       { href: '/stocks',   label: 'Aktien' },
+      { href: '/analyze',  label: 'Analyse' },
       { href: '/research', label: 'Research' },
     ],
   },

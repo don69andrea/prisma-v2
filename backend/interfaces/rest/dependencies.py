@@ -23,6 +23,7 @@ from backend.application.services.swiss_market_service import SwissMarketService
 from backend.application.services.universe_service import UniverseService
 from backend.application.services.universe_suggestion_service import UniverseSuggestionService
 from backend.config import Settings, get_settings
+from backend.domain.entities.user import User, UserRole
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
 from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
@@ -34,6 +35,7 @@ from backend.domain.repositories.research_memo_repository import ResearchMemoRep
 from backend.domain.repositories.stock_repository import StockRepository
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
+from backend.domain.repositories.user_repository import UserRepository
 from backend.domain.services.crypto_scorer import CryptoScorer
 from backend.infrastructure.adapters.coingecko_adapter import CoinGeckoAdapter
 from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter
@@ -662,3 +664,52 @@ async def get_chat_service(
     from backend.application.services.chat_service import ChatService
 
     return ChatService(llm_client=llm_client)
+
+
+# ---------------------------------------------------------------------------
+# Auth DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_user_repository(
+    session: AsyncSession = Depends(get_session),
+) -> UserRepository:
+    from backend.infrastructure.persistence.repositories.user_repository import (
+        SQLAUserRepository,
+    )
+
+    return SQLAUserRepository(session=session)
+
+
+async def get_auth_service(
+    repo: UserRepository = Depends(get_user_repository),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    from backend.application.services.auth_service import AuthService
+
+    return AuthService(
+        repo=repo,
+        jwt_secret=settings.jwt_secret,
+        jwt_expire_hours=settings.jwt_expire_hours,
+    )
+
+
+async def require_current_user(
+    authorization: str | None = Header(default=None),
+    service: Any = Depends(get_auth_service),
+) -> User:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization header missing or malformed")
+    token = authorization.removeprefix("Bearer ")
+    try:
+        return await service.verify_token(token)  # type: ignore[no-any-return]
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
+
+
+async def require_admin_role(
+    current_user: User = Depends(require_current_user),
+) -> User:
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    return current_user

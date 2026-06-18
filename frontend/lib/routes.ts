@@ -1,5 +1,5 @@
 export const ROUTES = {
-  start: '/start',
+  login: '/login',
   dashboard: '/',
   discover: '/discover',
   universes: '/universes',
@@ -15,6 +15,8 @@ export const ROUTES = {
   watchlist: '/watchlist',
   steuer: '/steuer',
   research: '/research',
+  admin: '/admin',
+  adminUsers: '/admin/users',
   factsheet: (runId: string, ticker: string) =>
     `/rankings/${runId}/stock/${ticker}` as const,
 } as const;

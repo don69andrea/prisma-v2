@@ -44,6 +44,7 @@ class LLMCallLogORM(Base):
     cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6), nullable=False)
     # Anthropic-internal request ID, optional für Debugging
     request_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
 
     __table_args__ = (
         # Cap-Check-Query nutzt created_at-Range; Index ist Performance-kritisch.

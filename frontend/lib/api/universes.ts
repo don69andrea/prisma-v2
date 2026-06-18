@@ -58,3 +58,15 @@ export function suggestUniverse(description: string): Promise<UniverseSuggestion
     body: JSON.stringify({ description }),
   });
 }
+
+export interface UniverseSyncResponse {
+  universe_id: string;
+  synced_count: number;
+  failed_tickers: string[];
+}
+
+export async function syncUniverseData(universeId: string): Promise<UniverseSyncResponse> {
+  return apiFetch<UniverseSyncResponse>(`/api/v1/universes/${universeId}/sync`, {
+    method: 'POST',
+  });
+}

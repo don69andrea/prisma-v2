@@ -123,10 +123,25 @@ async def http_client(
     Keine echte Datenbankverbindung — geeignet für Integrationstests der
     HTTP-Schicht ohne externe Abhängigkeiten.
     """
+    from uuid import uuid4 as _uuid4
+
+    from backend.domain.entities.user import User as _User
+    from backend.domain.entities.user import UserRole as _UserRole
+    from backend.interfaces.rest.dependencies import require_admin_role, require_current_user
+
+    _fake = _User(
+        id=_uuid4(),
+        email="test-admin@example.com",
+        hashed_password="x",
+        role=_UserRole.admin,
+        is_active=True,
+    )
+
     app = create_app()
 
-    # Dependency-Override: ersetzt SQLAlchemy-Adapter durch In-Memory-Variante
     app.dependency_overrides[get_stock_repository] = lambda: in_memory_repo
+    app.dependency_overrides[require_current_user] = lambda: _fake
+    app.dependency_overrides[require_admin_role] = lambda: _fake
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:

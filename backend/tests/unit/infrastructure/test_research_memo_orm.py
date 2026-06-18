@@ -15,7 +15,7 @@ class TestTableName:
 
 
 class TestColumns:
-    def test_has_all_15_columns(self) -> None:
+    def test_has_all_16_columns(self) -> None:
         expected = {
             "id",
             "stock_id",
@@ -32,6 +32,7 @@ class TestColumns:
             "confidence",
             "model_version",
             "is_error",
+            "user_id",
         }
         actual = {c.name for c in ResearchMemoORM.__table__.columns}
         assert actual == expected

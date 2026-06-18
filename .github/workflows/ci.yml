@@ -178,6 +178,11 @@ jobs:
       PLAYWRIGHT_API_URL: http://localhost:8000
       NEXT_PUBLIC_API_URL: http://localhost:8000
       PLAYWRIGHT_NO_WEBSERVER: "1"
+      JWT_SECRET: ci-test-jwt-secret-minimum-32chars!!
+      ADMIN_EMAIL: admin@ci-test.local
+      ADMIN_PASSWORD: ci-test-password-123
+      E2E_ADMIN_EMAIL: admin@ci-test.local
+      E2E_ADMIN_PASSWORD: ci-test-password-123
     steps:
       - uses: actions/checkout@v4
 
@@ -194,6 +199,9 @@ jobs:
 
       - name: Run Alembic migrations
         run: uv run alembic upgrade head
+
+      - name: Seed admin user
+        run: uv run python scripts/seed_admin.py
 
       - name: Start backend (background)
         run: |

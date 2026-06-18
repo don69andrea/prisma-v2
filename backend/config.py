@@ -60,6 +60,11 @@ class Settings(BaseSettings):
     # Krypto-Feature aktivieren (default: true)
     crypto_feature_enabled: bool = True
 
+    jwt_secret: str = ""
+    jwt_expire_hours: int = 8
+    admin_email: str = ""
+    admin_password: str = ""
+
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 
@@ -121,6 +126,12 @@ class Settings(BaseSettings):
                 raise ValueError("API_KEY muss in der Production-Umgebung gesetzt sein")
             if not self.anthropic_api_key:
                 raise ValueError("ANTHROPIC_API_KEY muss in der Production-Umgebung gesetzt sein")
+        return self
+
+    @model_validator(mode="after")
+    def _jwt_secret_required_in_production(self) -> "Settings":
+        if self.environment == "production" and not self.jwt_secret:
+            raise ValueError("JWT_SECRET muss in der Production-Umgebung gesetzt sein")
         return self
 
 

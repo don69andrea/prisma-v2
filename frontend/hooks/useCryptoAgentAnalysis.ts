@@ -3,7 +3,12 @@
 import { useCallback, useState } from 'react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+
+function getAuthHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('prisma_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export function useCryptoAgentAnalysis() {
   const [analysis, setAnalysis] = useState('');
@@ -18,7 +23,7 @@ export function useCryptoAgentAnalysis() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/crypto/analyze/${ticker}`, {
         method: 'POST',
-        headers: API_KEY ? { 'X-API-Key': API_KEY } : undefined,
+        headers: getAuthHeaders(),
       });
 
       if (!response.ok || !response.body) {

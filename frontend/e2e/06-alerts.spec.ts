@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test("Alert anlegen, in Liste sehen und löschen", async ({ page, request }) => {
   const apiBase = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:8000";

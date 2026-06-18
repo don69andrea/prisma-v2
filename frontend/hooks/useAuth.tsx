@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then(setUser)
       .catch(() => {
         clearTokenCookie();
-        router.replace('/login');
+        // apiFetch already redirects to /login on 401
       })
       .finally(() => setLoading(false));
   }, []);

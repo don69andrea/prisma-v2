@@ -53,7 +53,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       if (response.status === 401 && typeof window !== 'undefined') {
         localStorage.removeItem('prisma_token');
         document.cookie = 'prisma_token=; path=/; max-age=0; SameSite=Strict';
-        window.location.href = '/login';
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
       throw new ApiError(response.status, message);
     }

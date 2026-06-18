@@ -1,6 +1,7 @@
 import { chromium, type FullConfig } from '@playwright/test';
 
 const API_URL = process.env.PLAYWRIGHT_API_URL ?? 'http://localhost:8000';
+const FRONTEND_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'admin@ci-test.local';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'ci-test-password-123';
 
@@ -19,6 +20,15 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
 
   const browser = await chromium.launch();
   const context = await browser.newContext();
+  const page = await context.newPage();
+
+  // Navigate to /login (public page) to establish the origin so localStorage can be set.
+  // addInitScript alone does not populate storageState — we need an actual page load.
+  await page.goto(`${FRONTEND_URL}/login`);
+
+  await page.evaluate((token: string) => {
+    localStorage.setItem('prisma_token', token);
+  }, access_token);
 
   await context.addCookies([
     {
@@ -42,10 +52,6 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
       sameSite: 'Lax',
     },
   ]);
-
-  await context.addInitScript((token: string) => {
-    localStorage.setItem('prisma_token', token);
-  }, access_token);
 
   await context.storageState({ path: 'e2e/.auth-state.json' });
   await browser.close();

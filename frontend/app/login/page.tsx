@@ -32,9 +32,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 p-8 border border-border rounded-xl bg-card">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">PRISMA</h1>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <span className="text-primary font-bold text-sm">P</span>
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight">PRISMA</h1>
+          </div>
           <p className="text-sm text-muted-foreground">
-            Melde dich mit deinem Account an.
+            Swiss Stock Intelligence — Anmelden
           </p>
         </div>
 

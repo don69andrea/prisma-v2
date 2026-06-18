@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then(setUser)
       .catch(() => {
         clearTokenCookie();
+        router.replace('/login');
       })
       .finally(() => setLoading(false));
   }, []);

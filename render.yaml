@@ -25,6 +25,7 @@ services:
         - uv.lock
         - Dockerfile.backend
         - scripts/backend-start.sh
+        - scripts/seed_admin.py
         - render.yaml
     envVars:
       - key: DATABASE_URL
@@ -55,6 +56,14 @@ services:
       # App-Version — wird von /health zurückgegeben
       - key: APP_VERSION
         value: "2.1.0"
+      # JWT auth — openssl rand -hex 32 im Render-Dashboard setzen
+      - key: JWT_SECRET
+        sync: false
+      # Admin-User wird beim Start automatisch via seed_admin.py erstellt
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
 
   - type: web
     name: prisma-v2-frontend

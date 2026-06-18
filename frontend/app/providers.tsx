@@ -2,9 +2,11 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, useEffect, type ReactNode } from 'react';
+import { ApiError } from '@/lib/api/client';
 
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { ColdStartBanner } from '@/components/ui/ColdStartBanner';
+import { WelcomePopup } from '@/components/ui/WelcomePopup';
 import { AuthProvider } from '@/hooks/useAuth';
 
 const LOADING_DURATION_MS = 4000;
@@ -22,7 +24,10 @@ export function Providers({ children }: ProvidersProps) {
           queries: {
             staleTime: 60 * 1000,
             gcTime: 5 * 60 * 1000,
-            retry: 1,
+            retry: (failureCount, error) => {
+              if (error instanceof ApiError && error.status === 401) return false;
+              return failureCount < 1;
+            },
             refetchOnWindowFocus: false,
           },
           mutations: {
@@ -48,6 +53,7 @@ export function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         {showLoading && <LoadingScreen fadeOut={fadeOut} />}
+        <WelcomePopup />
         <ColdStartBanner />
         {children}
       </AuthProvider>

@@ -16,5 +16,8 @@ if ! alembic upgrade head; then
     exit 1
 fi
 
+echo "==> Seeding admin user..."
+python scripts/seed_admin.py
+
 echo "==> Starting uvicorn on 0.0.0.0:${PORT:-8000} ..."
 exec uvicorn backend.interfaces.rest.main:app --host 0.0.0.0 --port "${PORT:-8000}"

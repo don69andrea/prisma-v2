@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 const FIXTURE_MEMO = {
   id: "00000000-0000-0000-0000-000000000099",

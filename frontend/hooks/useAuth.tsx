@@ -7,6 +7,8 @@ import { apiFetch } from '@/lib/api/client';
 export interface AuthUser {
   id: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
   role: 'admin' | 'viewer';
 }
 
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then(setUser)
       .catch(() => {
         clearTokenCookie();
-        router.replace('/login');
+        // apiFetch already redirects to /login on 401
       })
       .finally(() => setLoading(false));
   }, []);
@@ -60,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTokenCookie(res.access_token);
     const me = await apiFetch<AuthUser>('/api/v1/auth/me');
     setUser(me);
+    sessionStorage.setItem('prisma_just_logged_in', 'true');
     router.push('/');
   }
 

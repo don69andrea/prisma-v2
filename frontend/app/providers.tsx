@@ -5,6 +5,7 @@ import { useState, useEffect, type ReactNode } from 'react';
 
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { ColdStartBanner } from '@/components/ui/ColdStartBanner';
+import { WelcomePopup } from '@/components/ui/WelcomePopup';
 import { AuthProvider } from '@/hooks/useAuth';
 
 const LOADING_DURATION_MS = 4000;
@@ -48,6 +49,7 @@ export function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         {showLoading && <LoadingScreen fadeOut={fadeOut} />}
+        <WelcomePopup />
         <ColdStartBanner />
         {children}
       </AuthProvider>

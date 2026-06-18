@@ -67,10 +67,30 @@ const config: Config = {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        'welcome-in': {
+          from: { opacity: '0', transform: 'scale(0.92) translateY(10px)' },
+          to: { opacity: '1', transform: 'scale(1) translateY(0)' },
+        },
+        'scan-h': {
+          '0%': { transform: 'translateX(-120%)' },
+          '100%': { transform: 'translateX(220%)' },
+        },
+        'progress-shrink': {
+          from: { width: '100%' },
+          to: { width: '0%' },
+        },
+        'blink-dot': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.2' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'welcome-in': 'welcome-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'scan-h': 'scan-h 1.8s linear infinite',
+        'progress-shrink': 'progress-shrink 4s linear forwards',
+        'blink-dot': 'blink-dot 1.2s ease-in-out infinite',
       },
     },
   },

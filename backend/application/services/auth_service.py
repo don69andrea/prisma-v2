@@ -36,6 +36,8 @@ class AuthService:
         email: str,
         password: str,
         role: UserRole = UserRole.viewer,
+        first_name: str = "",
+        last_name: str = "",
     ) -> User:
         existing = await self._repo.get_by_email(email)
         if existing:
@@ -43,6 +45,8 @@ class AuthService:
         user = User(
             email=email,
             hashed_password=_hash_password(password),
+            first_name=first_name,
+            last_name=last_name,
             role=role,
         )
         await self._repo.save(user)
@@ -79,6 +83,13 @@ class AuthService:
         if not user:
             raise ValueError("User not found")
         updated = user.model_copy(update={"is_active": is_active})
+        await self._repo.save(updated)
+
+    async def set_name(self, user_id: UUID, first_name: str, last_name: str) -> None:
+        user = await self._repo.get_by_id(user_id)
+        if not user:
+            raise ValueError("User not found")
+        updated = user.model_copy(update={"first_name": first_name, "last_name": last_name})
         await self._repo.save(updated)
 
     async def reset_user_data(self, user_id: UUID) -> None:

@@ -14,6 +14,7 @@ import {
   type ChannelType,
 } from '@/lib/api/alerts';
 import { usePrismaMode } from '@/hooks/usePrismaMode';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -192,6 +193,7 @@ function CreateAlertForm({ onCreated, initialTicker = '' }: { onCreated: () => v
 // ---------------------------------------------------------------------------
 
 function SimpleCreateForm({ onCreated, initialTicker = '' }: { onCreated: () => void; initialTicker?: string }) {
+  const { user } = useAuth();
   const [ticker, setTicker] = useState(initialTicker);
   const [error, setError] = useState('');
 
@@ -216,7 +218,7 @@ function SimpleCreateForm({ onCreated, initialTicker = '' }: { onCreated: () => 
       trigger_type: 'SIGNAL_CHANGE',
       threshold: 0,
       channel: 'EMAIL',
-      target: '',
+      target: user?.email ?? '',
     });
   }
 

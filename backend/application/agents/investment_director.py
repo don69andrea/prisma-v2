@@ -32,7 +32,7 @@ class InvestmentDirector:
         ticker: str,
         context: str,
         run_id: str,
-        event_queue: asyncio.Queue,
+        event_queue: asyncio.Queue[Any],
     ) -> None:
         """Orchestriert alle Agents und schreibt Events in die Queue."""
 
@@ -51,9 +51,9 @@ class InvestmentDirector:
         macro_task = asyncio.create_task(self._run_macro(ticker))
         quant_task = asyncio.create_task(self._run_quant(ticker))
 
-        macro_result, quant_result = await asyncio.gather(
-            macro_task, quant_task, return_exceptions=True
-        )
+        results = await asyncio.gather(macro_task, quant_task, return_exceptions=True)
+        macro_result: Any = results[0]
+        quant_result: Any = results[1]
 
         if isinstance(macro_result, Exception):
             await emit({"type": "step", "agent": "MacroAgent V2", "status": "error",

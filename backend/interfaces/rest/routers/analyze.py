@@ -24,7 +24,7 @@ async def analyze_stream(
 ) -> StreamingResponse:
     """SSE-Endpoint: InvestmentDirector schreibt Events in Queue → Browser."""
     run_id = str(uuid.uuid4())
-    queue: asyncio.Queue = asyncio.Queue()
+    queue: asyncio.Queue[Any] = asyncio.Queue()
 
     asyncio.create_task(
         director.run_with_events(

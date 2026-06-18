@@ -1,8 +1,11 @@
 from __future__ import annotations
+
+from unittest.mock import AsyncMock
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
+
 from backend.domain.schemas.multiagent_schemas import CointelligenceReport
 
 pytestmark = pytest.mark.unit
@@ -16,8 +19,8 @@ _MOCK_REPORT = CointelligenceReport(
 
 
 def _make_app():
-    from backend.interfaces.rest.routers.crypto import router as crypto_router
     from backend.interfaces.rest.dependencies import get_cointelligence_agent
+    from backend.interfaces.rest.routers.crypto import router as crypto_router
     app = FastAPI()
     app.include_router(crypto_router)
     mock_agent = AsyncMock()

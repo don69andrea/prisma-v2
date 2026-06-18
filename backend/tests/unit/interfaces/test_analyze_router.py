@@ -1,16 +1,17 @@
 from __future__ import annotations
-import asyncio
+
+from unittest.mock import AsyncMock
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
 
 pytestmark = pytest.mark.unit
 
 
 def _make_app():
-    from backend.interfaces.rest.routers.analyze import router as analyze_router
     from backend.interfaces.rest.dependencies import get_investment_director
+    from backend.interfaces.rest.routers.analyze import router as analyze_router
 
     app = FastAPI()
     app.include_router(analyze_router, prefix="/api/v1")

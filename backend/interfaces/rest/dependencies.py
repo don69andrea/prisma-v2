@@ -734,3 +734,54 @@ async def get_cointelligence_agent(
         llm_client=llm_client,
         glassnode_api_key=getattr(settings, "glassnode_api_key", ""),
     )
+
+
+# ---------------------------------------------------------------------------
+# InvestmentDirector DI-Chain
+# ---------------------------------------------------------------------------
+
+_director_instance: Any = None
+
+
+def get_investment_director() -> Any:
+    """Lazy Singleton für InvestmentDirector.
+
+    Wird synchron aufgerufen (kein Depends), weil der Director einen
+    prozesslangen Checkpoint-State hält.  Die Abhängigkeiten werden beim
+    ersten Aufruf einmalig aufgebaut.
+    """
+    global _director_instance  # noqa: PLW0603
+    if _director_instance is None:
+        from decimal import Decimal  # noqa: PLC0415
+
+        from backend.application.agents.investment_director import (
+            InvestmentDirector,  # noqa: PLC0415
+        )
+        from backend.application.agents.macro_agent_v2 import MacroAgentV2  # noqa: PLC0415
+        from backend.application.services.macro_service import MacroService  # noqa: PLC0415
+        from backend.infrastructure.persistence.repositories.cost_log_repository import (  # noqa: PLC0415
+            SQLACostLogRepository,
+        )
+
+        settings = get_settings()
+        cost_log_repo = SQLACostLogRepository(session_factory=get_session_factory())
+        cost_tracker = CostTracker(
+            repository=cost_log_repo,
+            pricing=PRICING,
+            cap_usd=Decimal(str(settings.budget_cap_usd)),
+        )
+        llm = LLMClient(
+            anthropic=get_anthropic_client(),
+            voyage=get_voyage_client(),
+            cost_tracker=cost_tracker,
+            pricing=PRICING,
+        )
+        _director_instance = InvestmentDirector(
+            macro_agent=MacroAgentV2(
+                macro_service=MacroService(llm_client=llm),
+                llm_client=llm,
+            ),
+            stock_service=None,
+            steuer_agent=None,
+        )
+    return _director_instance

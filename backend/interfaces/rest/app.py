@@ -45,6 +45,7 @@ from backend.interfaces.rest.routers import (
     universes,
     users,
 )
+from backend.interfaces.rest.routers.analyze import router as analyze_router
 
 _logger = logging.getLogger(__name__)
 
@@ -168,5 +169,6 @@ def create_app() -> FastAPI:
     app.include_router(rebalancing.router, dependencies=_auth)
     app.include_router(alerts.router, dependencies=_auth)
     app.include_router(crypto.router, dependencies=_auth)
+    app.include_router(analyze_router, prefix="/api/v1", dependencies=_auth)
 
     return app

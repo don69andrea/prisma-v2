@@ -1,6 +1,9 @@
 from __future__ import annotations
-import pytest
+
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from backend.application.agents.macro_agent_v2 import MacroAgentV2
 from backend.domain.schemas.multiagent_schemas import MacroToolReport
 

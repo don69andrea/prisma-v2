@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 import asyncio
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from backend.application.agents.investment_director import InvestmentDirector
 from backend.domain.schemas.multiagent_schemas import MacroToolReport
 

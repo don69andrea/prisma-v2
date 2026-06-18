@@ -1,7 +1,11 @@
 from __future__ import annotations
+
 import pytest
+
 from backend.domain.schemas.multiagent_schemas import (
-    DirectorEvent, CointelligenceReport, MacroToolReport
+    CointelligenceReport,
+    DirectorEvent,
+    MacroToolReport,
 )
 
 pytestmark = pytest.mark.unit

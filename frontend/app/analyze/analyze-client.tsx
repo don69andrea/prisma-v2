@@ -82,7 +82,7 @@ export default function AnalyzeClient() {
           </div>
           {result.report && (
             <div className="text-sm space-y-1 text-muted-foreground">
-              {result.report.macro_reasoning && (
+              {result.report.macro_reasoning != null && (
                 <p>{String(result.report.macro_reasoning)}</p>
               )}
               {Array.isArray(result.report.steuer_hinweise) && (

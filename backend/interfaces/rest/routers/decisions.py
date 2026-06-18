@@ -12,6 +12,7 @@ from backend.application.agents.macro_agent import MacroIntelligenceAgent
 from backend.application.services.macro_service import MacroService
 from backend.application.services.signal_aggregation_service import SignalAggregationService
 from backend.application.services.universe_service import UniverseNotFound, UniverseService
+from backend.config import Settings, get_settings
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.infrastructure.persistence.repositories.stock_signal_repository import (
     SQLAStockSignalRepository,
@@ -143,6 +144,7 @@ _EXPLAIN_HAIKU = "claude-haiku-4-5-20251001"
 async def explain_decision(
     body: ExplainRequest,
     llm_client: object = Depends(get_llm_client),
+    settings: Settings = Depends(get_settings),
 ) -> ExplainResponse:
     """Generiert eine Haiku-basierte Erklärung warum TICKER dieses Signal erhalten hat.
 
@@ -177,15 +179,15 @@ Signal: {body.signal} ({round(body.confidence * 100)}% Konfidenz)
 Gewichteter Gesamtscore: {body.weighted_score:.1f}/100 → {body.signal} (BUY ≥65 / HOLD 40–64 / SELL <40)
 
 METRIKEN:
-1. Quant-Score: {body.quant_score:.0f}/100 × 0.45 = {body.quant_score * 0.45:.1f} Punkte
+1. Quant-Score: {body.quant_score:.0f}/100 × {settings.signal_quant_weight} = {body.quant_score * settings.signal_quant_weight:.1f} Punkte
    Einordnung: {quant_band} (Skala: <45=schwach, 45–69=moderat, ≥70=stark)
    Misst: Fundamentalqualität (Bewertung, Dividende, Cashflow, Kapitalrendite) relativ zu SMI-Bändern.
 
-2. ML-Score: {body.ml_score:.0f}/100 × 0.35 = {body.ml_score * 0.35:.1f} Punkte
+2. ML-Score: {body.ml_score:.0f}/100 × {settings.signal_ml_weight} = {body.ml_score * settings.signal_ml_weight:.1f} Punkte
    Modell-Output: {ml_label} (OUTPERFORM=85 / NEUTRAL=50 / UNDERPERFORM=15)
    Misst: LightGBM-Vorhersage auf historischen Preis- und Fundamental-Features.
 
-3. Makro-Score: {body.macro_score:.0f}/100 × 0.20 = {body.macro_score * 0.20:.1f} Punkte
+3. Makro-Score: {body.macro_score:.0f}/100 × {settings.signal_macro_weight} = {body.macro_score * settings.signal_macro_weight:.1f} Punkte
    Einordnung: {macro_band} (Skala: SNB ≤0%=80 / ≤0.5%=65 / ≤1%=50 / ≤1.5%=35 / >1.5%=20)
    Misst: Geldpolitisches Umfeld (SNB-Leitzins, CHF/EUR, Inflation).
 

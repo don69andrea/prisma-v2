@@ -36,16 +36,17 @@ class YFinanceMarketDataAdapter(MarketDataProvider):
 
         for attempt in range(_RETRIES + 1):
             try:
-                raw: pd.DataFrame = await asyncio.to_thread(
-                    self._sync_download, yf_tickers
-                )
+                raw: pd.DataFrame = await asyncio.to_thread(self._sync_download, yf_tickers)
                 break
             except Exception as exc:
                 if attempt < _RETRIES:
-                    delay = _BASE_DELAY * (2 ** attempt)
+                    delay = _BASE_DELAY * (2**attempt)
                     _logger.warning(
                         "yfinance.download Versuch %d/%d fehlgeschlagen: %s — retry in %.1fs",
-                        attempt + 1, _RETRIES + 1, exc, delay,
+                        attempt + 1,
+                        _RETRIES + 1,
+                        exc,
+                        delay,
                     )
                     await asyncio.sleep(delay)
                 else:

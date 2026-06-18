@@ -50,11 +50,13 @@ class YFinanceFundamentalsAdapter(FundamentalsProvider):
                 break
             except Exception as exc:
                 if attempt < _RETRIES:
-                    await asyncio.sleep(_BASE_DELAY * (2 ** attempt))
+                    await asyncio.sleep(_BASE_DELAY * (2**attempt))
                 else:
                     _logger.warning(
                         "%s: yfinance nach %d Versuchen fehlgeschlagen: %s",
-                        ticker, _RETRIES + 1, exc,
+                        ticker,
+                        _RETRIES + 1,
+                        exc,
                     )
                     return {}
 

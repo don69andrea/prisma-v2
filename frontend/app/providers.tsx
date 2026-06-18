@@ -9,7 +9,7 @@ import { ColdStartBanner } from '@/components/ui/ColdStartBanner';
 import { WelcomePopup } from '@/components/ui/WelcomePopup';
 import { AuthProvider } from '@/hooks/useAuth';
 
-const LOADING_DURATION_MS = 4000;
+const LOADING_DURATION_MS = 1800;
 const FADE_OUT_MS = 400;
 
 interface ProvidersProps {

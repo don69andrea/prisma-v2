@@ -11,8 +11,9 @@ export function AccountMenu() {
 
   if (!user) return null;
 
-  const initials = user.email.slice(0, 1).toUpperCase();
-  const shortName = user.email.split('@')[0];
+  const firstName = user.email.split('@')[0].split(/[._-]/)[0];
+  const displayName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  const initials = displayName.charAt(0);
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -24,7 +25,7 @@ export function AccountMenu() {
           <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary/20 text-primary text-[9px] font-bold leading-none">
             {initials}
           </span>
-          <span className="max-w-[80px] truncate">{shortName}</span>
+          <span className="max-w-[80px] truncate">{displayName}</span>
           {user.role === 'admin' && (
             <span className="rounded-sm bg-violet-500/15 px-0.5 text-[9px] text-violet-400">
               admin

@@ -16,4 +16,5 @@ class StockSignalRecord:
     macro_score: float
     confidence: float
     is_3a_eligible: bool
+    ml_is_fallback: bool = False
     created_at: datetime | None = None

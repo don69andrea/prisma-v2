@@ -311,15 +311,15 @@ test.describe('Fear & Greed Gauge', () => {
 
 // ── Simple Mode ───────────────────────────────────────────────────────────────
 
-test.describe('Simple Mode — Beste Einstiegschancen', () => {
+test.describe('Simple Mode — Top Krypto-Signale', () => {
   test.beforeEach(async ({ page }) => {
     await mockCryptoApi(page);
     await setSimpleMode(page);
     await page.goto('/crypto');
   });
 
-  test('zeigt Abschnitt "Beste Einstiegschancen"', async ({ page }) => {
-    await expect(page.getByText('Beste Einstiegschancen')).toBeVisible();
+  test('zeigt Abschnitt "Top Krypto-Signale"', async ({ page }) => {
+    await expect(page.getByText('Top Krypto-Signale')).toBeVisible();
   });
 
   test('zeigt exakt 3 Signal-Karten (Top-BUY)', async ({ page }) => {
@@ -509,22 +509,31 @@ test.describe('Mode-Toggle Simple ↔ Pro', () => {
     await page.goto('/crypto');
   });
 
-  test('Toggle-Schalter ist in der Navigation sichtbar', async ({ page }) => {
+  test('Toggle-Schalter ist im AccountMenu verfügbar', async ({ page }) => {
+    // Der Toggle ist im AccountMenu-Popover — AccountMenu öffnen
+    const accountMenu = page.getByRole('button', { name: /Account-Menü öffnen/i });
+    await accountMenu.click();
     const toggle = page.getByRole('switch');
     await expect(toggle).toBeVisible();
   });
 
   test('Klick auf Toggle wechselt zu Pro Mode', async ({ page }) => {
+    const accountMenu = page.getByRole('button', { name: /Account-Menü öffnen/i });
+    await accountMenu.click();
     const toggle = page.getByRole('switch');
     await toggle.click();
+    await page.keyboard.press('Escape');
     await expect(page.getByTestId('pro-section')).toBeVisible();
     await expect(page.getByTestId('simple-section')).not.toBeVisible();
   });
 
   test('zweiter Klick wechselt zurück zu Simple Mode', async ({ page }) => {
+    const accountMenu = page.getByRole('button', { name: /Account-Menü öffnen/i });
+    await accountMenu.click();
     const toggle = page.getByRole('switch');
     await toggle.click();
     await toggle.click();
+    await page.keyboard.press('Escape');
     await expect(page.getByTestId('simple-section')).toBeVisible();
     await expect(page.getByTestId('pro-section')).not.toBeVisible();
   });
@@ -586,7 +595,7 @@ test.describe('Fehlerbehandlung', () => {
     await expect(page.getByTestId('crypto-disclaimer')).toBeVisible();
   });
 
-  test('zeigt "Keine BUY-Signale" wenn alle Signale HOLD/SELL sind', async ({ page }) => {
+  test('zeigt Top-3 nach Score auch wenn alle Signale HOLD/SELL sind', async ({ page }) => {
     const onlyHoldSignals = MOCK_SIGNALS.map((s) => ({ ...s, signal: 'HOLD' as const }));
     await page.route('**/api/v1/crypto/signals', async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(onlyHoldSignals) });
@@ -596,8 +605,9 @@ test.describe('Fehlerbehandlung', () => {
     });
     await setSimpleMode(page);
     await page.goto('/crypto');
-    await expect(page.getByTestId('no-buy-signals')).toBeVisible();
-    await expect(page.getByTestId('no-buy-signals')).toContainText('Keine BUY-Signale');
+    // Simple Mode zeigt immer Top-3 nach Score, unabhängig vom Signal-Typ
+    await expect(page.getByTestId('simple-section')).toBeVisible();
+    await expect(page.getByTestId('crypto-signal-card')).toHaveCount(3);
   });
 });
 

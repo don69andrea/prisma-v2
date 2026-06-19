@@ -45,9 +45,10 @@ export function CryptoClient() {
     );
   }
 
-  const buySignals = signals?.filter((s) =>
-    s.signal === 'STRONG_BUY' || s.signal === 'BUY'
-  ).slice(0, 3) ?? [];
+  // Simple Mode: top-3 by score regardless of signal direction
+  const topSignals = signals
+    ? [...signals].sort((a, b) => b.score - a.score).slice(0, 3)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -68,11 +69,11 @@ export function CryptoClient() {
         </div>
       </div>
 
-      {/* Simple Mode: Top-3 BUY-Signale */}
+      {/* Simple Mode: Top-3 nach Score */}
       {mode === 'simple' && (
         <div className="space-y-3" data-testid="simple-section">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Beste Einstiegschancen
+            Top Krypto-Signale
           </h2>
           {signalsLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -80,11 +81,9 @@ export function CryptoClient() {
             </div>
           ) : signalsError ? (
             <p className="text-sm text-red-400" data-testid="signals-error">Signale konnten nicht geladen werden.</p>
-          ) : buySignals.length === 0 ? (
-            <p className="text-sm text-muted-foreground" data-testid="no-buy-signals">Keine BUY-Signale aktuell.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {buySignals.map((s) => <CryptoSignalCard key={s.ticker} signal={s} />)}
+              {topSignals.map((s) => <CryptoSignalCard key={s.ticker} signal={s} />)}
             </div>
           )}
         </div>

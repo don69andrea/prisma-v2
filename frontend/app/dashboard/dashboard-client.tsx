@@ -466,36 +466,6 @@ function ProDashboard() {
 }
 
 // ---------------------------------------------------------------------------
-// PRISMA mode switcher (Simple ↔ Pro) — separate from the global Dark/Light
-// ModeToggle in layout.tsx
-// ---------------------------------------------------------------------------
-
-function PrismaModeSwitcher() {
-  const { mode, toggle } = usePrismaMode();
-  return (
-    <div className="mb-6 flex justify-end">
-      <button
-        onClick={toggle}
-        className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        aria-label={mode === 'simple' ? 'Zu Pro-Modus wechseln' : 'Zu Einfach-Modus wechseln'}
-      >
-        {mode === 'simple' ? (
-          <>
-            <BarChart2 className="h-3.5 w-3.5" />
-            Pro-Modus
-          </>
-        ) : (
-          <>
-            <Layers className="h-3.5 w-3.5" />
-            Einfach-Modus
-          </>
-        )}
-      </button>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
 
@@ -504,7 +474,6 @@ export function DashboardClient() {
 
   return (
     <div>
-      <PrismaModeSwitcher />
       {isSimple ? <SimpleDashboard /> : <ProDashboard />}
     </div>
   );

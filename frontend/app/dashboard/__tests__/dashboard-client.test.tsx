@@ -52,6 +52,7 @@ const fakeBuySignal = {
   ml_score: 85,
   macro_score: 80,
   is_3a_eligible: false,
+  ml_is_fallback: false,
   signal_reason: 'Starke Fundamentaldaten.',
 };
 

@@ -26,6 +26,7 @@ class DecisionSignal:
     ml_score: float
     macro_score: float
     is_3a_eligible: bool
+    ml_is_fallback: bool = False
 
     _SIGNAL_THRESHOLDS: ClassVar[dict[str, tuple[float, float]]] = {
         "BUY": (65.0, 100.0),

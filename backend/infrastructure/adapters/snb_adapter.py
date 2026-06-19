@@ -29,13 +29,8 @@ _SNB_RATE_HISTORY: list[tuple[date, float]] = [
 
 
 def _snb_rate_from_history(target: date) -> float:
-    rate = -0.75
-    for change_date, new_rate in _SNB_RATE_HISTORY:
-        if change_date <= target:
-            rate = new_rate
-        else:
-            break
-    return rate
+    eligible = [(d, r) for d, r in sorted(_SNB_RATE_HISTORY) if d <= target]
+    return eligible[-1][1] if eligible else -0.75
 
 
 async def fetch_current_snb_rate() -> float:

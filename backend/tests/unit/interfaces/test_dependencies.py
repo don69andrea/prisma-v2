@@ -6,8 +6,10 @@ from unittest.mock import patch
 import pytest
 
 from backend.config import Settings
-from backend.infrastructure.providers.stub_fundamentals import StubFundamentalsProvider
-from backend.infrastructure.providers.stub_market_data import StubMarketDataProvider
+from backend.infrastructure.adapters.yfinance_fundamentals_adapter import (
+    YFinanceFundamentalsAdapter,
+)
+from backend.infrastructure.adapters.yfinance_market_data_adapter import YFinanceMarketDataAdapter
 from backend.interfaces.rest.dependencies import (
     get_anthropic_client,
     get_fundamentals_provider,
@@ -47,52 +49,12 @@ def test_get_anthropic_client_uses_timeout_30s_and_max_retries_3(
 
 
 @pytest.mark.asyncio
-async def test_get_fundamentals_provider_dev_no_warning(caplog: pytest.LogCaptureFixture) -> None:
-    settings = Settings(environment="development")
-    provider = await get_fundamentals_provider(settings=settings)
-    assert isinstance(provider, StubFundamentalsProvider)
-    assert "production" not in caplog.text
+async def test_get_fundamentals_provider_returns_yfinance_adapter() -> None:
+    provider = await get_fundamentals_provider()
+    assert isinstance(provider, YFinanceFundamentalsAdapter)
 
 
 @pytest.mark.asyncio
-async def test_get_fundamentals_provider_production_logs_warning(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    import logging
-
-    settings = Settings(
-        environment="production",
-        api_key="test-key",
-        anthropic_api_key="sk-ant-test",
-        jwt_secret="test-jwt-secret",
-    )
-    with caplog.at_level(logging.WARNING, logger="backend.interfaces.rest.dependencies"):
-        await get_fundamentals_provider(settings=settings)
-    assert "StubFundamentalsProvider" in caplog.text
-    assert "production" in caplog.text
-
-
-@pytest.mark.asyncio
-async def test_get_market_data_provider_production_logs_warning(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    import logging
-
-    settings = Settings(
-        environment="production",
-        api_key="test-key",
-        anthropic_api_key="sk-ant-test",
-        jwt_secret="test-jwt-secret",
-    )
-    with caplog.at_level(logging.WARNING, logger="backend.interfaces.rest.dependencies"):
-        await get_market_data_provider(settings=settings)
-    assert "StubMarketDataProvider" in caplog.text
-    assert "production" in caplog.text
-
-
-@pytest.mark.asyncio
-async def test_get_market_data_provider_dev_returns_stub(caplog: pytest.LogCaptureFixture) -> None:
-    settings = Settings(environment="development")
-    provider = await get_market_data_provider(settings=settings)
-    assert isinstance(provider, StubMarketDataProvider)
-    assert "production" not in caplog.text
+async def test_get_market_data_provider_returns_yfinance_adapter() -> None:
+    provider = await get_market_data_provider()
+    assert isinstance(provider, YFinanceMarketDataAdapter)

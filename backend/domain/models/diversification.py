@@ -1,7 +1,7 @@
 """Diversification — Ledoit-Wolf-Shrinkage-Kovarianz, Risk-Score je Aktie.
 
 Spec: docs/specs/2026-04-28-quant-mvp-models.md §5
-      docs/specs/2026-04-21-prisma-capstone-design.md §6.5
+      docs/specs/2026-04-21-prisma-prisma-v2-design.md §6.5
 
 Formel:
     1. returns = prices.pct_change().dropna()

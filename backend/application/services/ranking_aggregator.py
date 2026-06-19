@@ -1,6 +1,6 @@
 """RankingAggregator — kombiniert 5 Modell-Ränge zum gewichteten Total-Rank.
 
-Spec: docs/specs/2026-04-21-prisma-capstone-design.md §7
+Spec: docs/specs/2026-04-21-prisma-prisma-v2-design.md §7
 
 Formel:
     weighted_avg(ticker) = Σ(rank_i × w_i) / Σ(w_i)  für verfügbare Modelle i

@@ -300,8 +300,8 @@ function StepLanding({ onEntdecker, onKenner }: { onEntdecker: () => void; onKen
             }}
           />
         </div>
-        <div className="text-3xl font-black tracking-widest text-[#e6edf3]">PRISMA</div>
-        <p className="text-[#8b949e] max-w-md text-sm leading-relaxed">
+        <div className="text-3xl font-black tracking-widest text-[var(--prisma-text)]">PRISMA</div>
+        <p className="text-[var(--prisma-muted)] max-w-md text-sm leading-relaxed">
           Dein persönlicher Investment-Companion. Wir helfen dir herauszufinden,
           was zu dir passt — ohne Fachjargon, ohne Druck.
         </p>
@@ -320,9 +320,9 @@ function StepLanding({ onEntdecker, onKenner }: { onEntdecker: () => void; onKen
           }}
         >
           <Compass className="h-8 w-8 mb-3 text-blue-400 mx-auto" />
-          <div className="font-semibold text-[#e6edf3]">Ich weiss noch nicht, wo ich anfangen soll.</div>
-          <div className="text-sm text-[#8b949e] mt-1">Zeig mir den Weg.</div>
-          <div className="mt-4 text-xs text-[#58a6ff] group-hover:translate-x-1 transition-transform inline-block">
+          <div className="font-semibold text-[var(--prisma-text)]">Ich weiss noch nicht, wo ich anfangen soll.</div>
+          <div className="text-sm text-[var(--prisma-muted)] mt-1">Zeig mir den Weg.</div>
+          <div className="mt-4 text-xs text-[var(--prisma-blue)] group-hover:translate-x-1 transition-transform inline-block">
             Geführte Entdeckung →
           </div>
         </button>
@@ -345,9 +345,9 @@ function StepLanding({ onEntdecker, onKenner }: { onEntdecker: () => void; onKen
             <line x1="12" y1="2" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="22" />
             <line x1="2" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="22" y2="12" />
           </svg>
-          <div className="font-semibold text-[#e6edf3]">Ich weiss, was ich suche.</div>
-          <div className="text-sm text-[#8b949e] mt-1">Direkt zu den Titeln.</div>
-          <div className="mt-4 text-xs text-[#58a6ff] group-hover:translate-x-1 transition-transform inline-block">
+          <div className="font-semibold text-[var(--prisma-text)]">Ich weiss, was ich suche.</div>
+          <div className="text-sm text-[var(--prisma-muted)] mt-1">Direkt zu den Titeln.</div>
+          <div className="mt-4 text-xs text-[var(--prisma-blue)] group-hover:translate-x-1 transition-transform inline-block">
             Direkt zur Suche →
           </div>
         </button>
@@ -366,12 +366,12 @@ function StepBeruf({ onNext }: { onNext: (beruf: string) => void }) {
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
       <StepIndicator current={1} total={7} />
       <div className="text-center space-y-2">
-        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3]">Was machst du beruflich?</h2>
-        <p className="text-sm text-[#8b949e]">
+        <div className="text-xs text-[var(--prisma-blue)] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[var(--prisma-text)]">Was machst du beruflich?</h2>
+        <p className="text-sm text-[var(--prisma-muted)]">
           Keine richtige oder falsche Antwort — ich will nur verstehen, wie du denkst.
         </p>
-        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+        <p className="text-xs text-[var(--prisma-muted)] italic mt-1 mb-3">
           Warum wir das fragen: Damit wir einschätzen können wie viel Finanzwissen wir voraussetzen dürfen.
         </p>
       </div>
@@ -384,10 +384,10 @@ function StepBeruf({ onNext }: { onNext: (beruf: string) => void }) {
           onKeyDown={(e) => e.key === 'Enter' && value.trim() && onNext(value.trim())}
           placeholder="z.B. Softwareentwickler, Lehrerin, Arzt..."
           data-testid="input-beruf"
-          className="w-full rounded-lg px-4 py-3 text-sm text-[#e6edf3] placeholder-[#8b949e] outline-none transition-all"
+          className="w-full rounded-lg px-4 py-3 text-sm text-[var(--prisma-text)] placeholder-[#8b949e] outline-none transition-all"
           style={{
-            background: '#161b22',
-            border: '1px solid #21262d',
+            background: 'var(--prisma-surface)',
+            border: '1px solid var(--prisma-border)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
           }}
           onFocus={(e) => { e.currentTarget.style.borderColor = '#58a6ff'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(88,166,255,0.15)'; }}
@@ -408,13 +408,13 @@ function StepZiel({ onNext }: { onNext: (ziel: Ziel) => void }) {
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
       <StepIndicator current={2} total={7} />
       <div className="text-center space-y-2">
-        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+        <div className="text-xs text-[var(--prisma-blue)] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[var(--prisma-text)] flex items-center justify-center gap-1">
           Wofür ist das Geld irgendwann gedacht?
           <InfoPopover ariaLabel="Mehr Info zu Anlageziel">Was du mit deinem Geld erreichen möchtest</InfoPopover>
         </h2>
-        <p className="text-sm text-[#8b949e]">Kein falsches oder richtiges Ziel — ich will nur verstehen.</p>
-        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+        <p className="text-sm text-[var(--prisma-muted)]">Kein falsches oder richtiges Ziel — ich will nur verstehen.</p>
+        <p className="text-xs text-[var(--prisma-muted)] italic mt-1 mb-3">
           Warum wir das fragen: Ein Rentner und ein Wachstumsinvestor brauchen komplett unterschiedliche Aktien.
         </p>
       </div>
@@ -433,8 +433,8 @@ function StepZiel({ onNext }: { onNext: (ziel: Ziel) => void }) {
                 boxShadow: active ? '0 0 16px rgba(88,166,255,0.2)' : 'none',
               }}
             >
-              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
-              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+              <div className="font-medium text-sm text-[var(--prisma-text)]">{opt.label}</div>
+              <div className="text-xs text-[var(--prisma-muted)] mt-1">{opt.sub}</div>
             </button>
           );
         })}
@@ -453,15 +453,15 @@ function StepRisiko({ onNext }: { onNext: (risiko: Risiko) => void }) {
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
       <StepIndicator current={3} total={7} />
       <div className="text-center space-y-2">
-        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+        <div className="text-xs text-[var(--prisma-blue)] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[var(--prisma-text)] flex items-center justify-center gap-1">
           Stell dir vor: Du siehst das auf deinem Konto.
           <InfoPopover ariaLabel="Mehr Info zu Risikotyp">Wie du auf Wertverluste reagierst</InfoPopover>
         </h2>
-        <p className="text-sm text-[#8b949e]">
+        <p className="text-sm text-[var(--prisma-muted)]">
           Du hast CHF 10&apos;000 investiert. Nach 3 Monaten öffnest du die App.
         </p>
-        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+        <p className="text-xs text-[var(--prisma-muted)] italic mt-1 mb-3">
           Warum wir das fragen: Damit wir dir keine Biotech-Titel empfehlen wenn du nachts schlecht schläfst wenn dein Depot im Minus ist.
         </p>
       </div>
@@ -469,13 +469,13 @@ function StepRisiko({ onNext }: { onNext: (risiko: Risiko) => void }) {
       {/* Risk chart */}
       <div
         className="w-full rounded-xl p-4"
-        style={{ background: '#161b22', border: '1px solid #21262d' }}
+        style={{ background: 'var(--prisma-surface)', border: '1px solid var(--prisma-border)' }}
       >
-        <div className="text-xs text-[#8b949e] mb-3">Dein Portfolio — letzte 3 Monate</div>
+        <div className="text-xs text-[var(--prisma-muted)] mb-3">Dein Portfolio — letzte 3 Monate</div>
         <DownChart />
       </div>
 
-      <div className="text-center text-sm font-medium text-[#e6edf3]">Was denkst du zuerst?</div>
+      <div className="text-center text-sm font-medium text-[var(--prisma-text)]">Was denkst du zuerst?</div>
 
       <div className="w-full space-y-2">
         {RISIKO_OPTIONS.map((opt) => {
@@ -495,8 +495,8 @@ function StepRisiko({ onNext }: { onNext: (risiko: Risiko) => void }) {
               <div className="flex items-start gap-3">
                 <span className="shrink-0">{opt.icon(opt.color)}</span>
                 <div>
-                  <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
-                  <div className="text-xs text-[#8b949e] mt-0.5">{opt.sub}</div>
+                  <div className="font-medium text-sm text-[var(--prisma-text)]">{opt.label}</div>
+                  <div className="text-xs text-[var(--prisma-muted)] mt-0.5">{opt.sub}</div>
                 </div>
               </div>
             </button>
@@ -504,7 +504,7 @@ function StepRisiko({ onNext }: { onNext: (risiko: Risiko) => void }) {
         })}
       </div>
 
-      <p className="text-[11px] text-[#8b949e] text-center max-w-xs">
+      <p className="text-[11px] text-[var(--prisma-muted)] text-center max-w-xs">
         Es gibt keine falsche Antwort. Deine ehrliche Reaktion hilft PRISMA dir die richtigen Titel zu zeigen.
       </p>
 
@@ -536,12 +536,12 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
     <div className="flex flex-col items-center gap-6 py-10 max-w-2xl mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
       <StepIndicator current={4} total={7} />
       <div className="text-center space-y-2">
-        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3]">Welche dieser Schweizer Firmen kennst du?</h2>
-        <p className="text-sm text-[#8b949e]">
+        <div className="text-xs text-[var(--prisma-blue)] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[var(--prisma-text)]">Welche dieser Schweizer Firmen kennst du?</h2>
+        <p className="text-sm text-[var(--prisma-muted)]">
           Aus dem Alltag, der Arbeit, den Nachrichten. Einfach anklicken.
         </p>
-        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+        <p className="text-xs text-[var(--prisma-muted)] italic mt-1 mb-3">
           Warum wir das fragen: Damit dein Universum Aktien enthält die du auch wirklich verstehst.
         </p>
       </div>
@@ -562,7 +562,7 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
       <div className="w-full space-y-5">
         {categories.map((cat) => (
           <div key={cat}>
-            <div className="text-[10px] text-[#8b949e] mb-2 uppercase tracking-[0.1em]">{cat}</div>
+            <div className="text-[10px] text-[var(--prisma-muted)] mb-2 uppercase tracking-[0.1em]">{cat}</div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {BRANDS.filter((b) => b.category === cat).map((brand) => {
                 const isSelected = selected.has(brand.ticker);
@@ -586,8 +586,8 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
                       >
                         {brand.abbr}
                       </div>
-                      <div className="text-xs font-medium text-[#e6edf3] truncate">{brand.name}</div>
-                      <div className="text-[10px] text-[#8b949e]">{brand.ticker}.SW</div>
+                      <div className="text-xs font-medium text-[var(--prisma-text)] truncate">{brand.name}</div>
+                      <div className="text-[10px] text-[var(--prisma-muted)]">{brand.ticker}.SW</div>
 
                       {/* Checkmark */}
                       {isSelected && (
@@ -605,9 +605,9 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
                     {/* Fact tooltip */}
                     {showTip && (
                       <div
-                        className="absolute z-10 bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 rounded-lg p-2.5 text-[11px] text-[#e6edf3] leading-snug pointer-events-none"
+                        className="absolute z-10 bottom-full mb-2 left-1/2 -translate-x-1/2 w-48 rounded-lg p-2.5 text-[11px] text-[var(--prisma-text)] leading-snug pointer-events-none"
                         style={{
-                          background: '#161b22',
+                          background: 'var(--prisma-surface)',
                           border: `1px solid ${brand.color}66`,
                           boxShadow: `0 4px 20px rgba(0,0,0,0.5), 0 0 8px ${brand.color}22`,
                           animation: 'fadeIn 0.2s ease',
@@ -640,13 +640,13 @@ function StepBetrag({ onNext }: { onNext: (betrag: Betrag) => void }) {
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
       <StepIndicator current={5} total={7} />
       <div className="text-center space-y-2">
-        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+        <div className="text-xs text-[var(--prisma-blue)] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[var(--prisma-text)] flex items-center justify-center gap-1">
           Wie viel möchtest du ungefähr investieren?
           <InfoPopover ariaLabel="Mehr Info zu Anlagebetrag">Dein ungefähres Startkapital hilft uns, passende Aktien zu empfehlen</InfoPopover>
         </h2>
-        <p className="text-sm text-[#8b949e]">Es geht nur um eine grobe Einschätzung.</p>
-        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+        <p className="text-sm text-[var(--prisma-muted)]">Es geht nur um eine grobe Einschätzung.</p>
+        <p className="text-xs text-[var(--prisma-muted)] italic mt-1 mb-3">
           Warum wir das fragen: Damit der Sicherheits-Check auf deinem Factsheet in echten CHF-Beträgen rechnet.
         </p>
       </div>
@@ -665,8 +665,8 @@ function StepBetrag({ onNext }: { onNext: (betrag: Betrag) => void }) {
                 boxShadow: active ? '0 0 16px rgba(88,166,255,0.2)' : 'none',
               }}
             >
-              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
-              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+              <div className="font-medium text-sm text-[var(--prisma-text)]">{opt.label}</div>
+              <div className="text-xs text-[var(--prisma-muted)] mt-1">{opt.sub}</div>
             </button>
           );
         })}
@@ -685,13 +685,13 @@ function StepNachhaltigkeit({ onNext }: { onNext: (nachhaltigkeit: Nachhaltigkei
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
       <StepIndicator current={6} total={7} />
       <div className="text-center space-y-2">
-        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+        <div className="text-xs text-[var(--prisma-blue)] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[var(--prisma-text)] flex items-center justify-center gap-1">
           Wie wichtig ist dir Nachhaltigkeit?
           <InfoPopover ariaLabel="Mehr Info zu Nachhaltigkeit">ESG = Environment (Umwelt), Social (Soziales), Governance (Unternehmensführung) — nachhaltige Unternehmen</InfoPopover>
         </h2>
-        <p className="text-sm text-[#8b949e]">ESG-Aktien sind Firmen die nachhaltig wirtschaften.</p>
-        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+        <p className="text-sm text-[var(--prisma-muted)]">ESG-Aktien sind Firmen die nachhaltig wirtschaften.</p>
+        <p className="text-xs text-[var(--prisma-muted)] italic mt-1 mb-3">
           Warum wir das fragen: ESG-Filter schliessen bestimmte Sektoren aus deinem Universum aus.
         </p>
       </div>
@@ -710,8 +710,8 @@ function StepNachhaltigkeit({ onNext }: { onNext: (nachhaltigkeit: Nachhaltigkei
                 boxShadow: active ? '0 0 16px rgba(126,231,135,0.2)' : 'none',
               }}
             >
-              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
-              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+              <div className="font-medium text-sm text-[var(--prisma-text)]">{opt.label}</div>
+              <div className="text-xs text-[var(--prisma-muted)] mt-1">{opt.sub}</div>
             </button>
           );
         })}
@@ -730,13 +730,13 @@ function StepErtrag({ onNext }: { onNext: (ertrag: Ertrag) => void }) {
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
       <StepIndicator current={7} total={7} />
       <div className="text-center space-y-2">
-        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">PRISMA fragt</div>
-        <h2 className="text-xl font-semibold text-[#e6edf3] flex items-center justify-center gap-1">
+        <div className="text-xs text-[var(--prisma-blue)] tracking-widest uppercase">PRISMA fragt</div>
+        <h2 className="text-xl font-semibold text-[var(--prisma-text)] flex items-center justify-center gap-1">
           Was ist dir bei der Rendite wichtiger?
           <InfoPopover ariaLabel="Mehr Info zu Rendite-Fokus">Dividenden = regelmässige Auszahlungen, Wachstum = Kursgewinne</InfoPopover>
         </h2>
-        <p className="text-sm text-[#8b949e]">Du kannst das später noch anpassen.</p>
-        <p className="text-xs text-[#8b949e] italic mt-1 mb-3">
+        <p className="text-sm text-[var(--prisma-muted)]">Du kannst das später noch anpassen.</p>
+        <p className="text-xs text-[var(--prisma-muted)] italic mt-1 mb-3">
           Warum wir das fragen: Dividenden-Aktien und Wachstums-Aktien verhalten sich fundamental anders.
         </p>
       </div>
@@ -755,8 +755,8 @@ function StepErtrag({ onNext }: { onNext: (ertrag: Ertrag) => void }) {
                 boxShadow: active ? '0 0 16px rgba(188,140,255,0.2)' : 'none',
               }}
             >
-              <div className="font-medium text-sm text-[#e6edf3]">{opt.label}</div>
-              <div className="text-xs text-[#8b949e] mt-1">{opt.sub}</div>
+              <div className="font-medium text-sm text-[var(--prisma-text)]">{opt.label}</div>
+              <div className="text-xs text-[var(--prisma-muted)] mt-1">{opt.sub}</div>
             </button>
           );
         })}
@@ -825,8 +825,8 @@ function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () 
       </div>
 
       <div className="text-center space-y-1">
-        <div className="text-xs text-[#8b949e] tracking-widest uppercase">PRISMA hat dein Investorprofil erstellt</div>
-        <h2 className="text-2xl font-bold text-[#e6edf3]">Dein Profil.</h2>
+        <div className="text-xs text-[var(--prisma-muted)] tracking-widest uppercase">PRISMA hat dein Investorprofil erstellt</div>
+        <h2 className="text-2xl font-bold text-[var(--prisma-text)]">Dein Profil.</h2>
       </div>
 
       {/* Profile card — glass morphism */}
@@ -897,7 +897,7 @@ function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () 
 
           {knownBrands.length > 0 && (
             <div>
-              <div className="text-xs text-[#8b949e] mb-2">Du kennst bereits</div>
+              <div className="text-xs text-[var(--prisma-muted)] mb-2">Du kennst bereits</div>
               <div className="flex flex-wrap gap-1.5">
                 {knownBrands.map((b) => (
                   <span
@@ -913,7 +913,7 @@ function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () 
           )}
 
           <div className="border-t pt-4" style={{ borderColor: '#21262d' }}>
-            <div className="text-xs text-[#8b949e]">
+            <div className="text-xs text-[var(--prisma-muted)]">
               PRISMA hat Schweizer Titel für dein Profil ausgewählt.
             </div>
           </div>
@@ -973,14 +973,14 @@ function KennerSearch({ onBack }: { onBack: () => void }) {
     <div className="flex flex-col items-center gap-6 py-10 max-w-lg mx-auto" style={{ animation: 'fadeIn 0.4s ease' }}>
       <button
         onClick={onBack}
-        className="self-start text-xs text-[#8b949e] hover:text-[#e6edf3] transition-colors"
+        className="self-start text-xs text-[var(--prisma-muted)] hover:text-[var(--prisma-text)] transition-colors"
       >
         ← Zurück
       </button>
 
       <div className="text-center space-y-1">
-        <h2 className="text-xl font-semibold text-[#e6edf3]">Direkt zur Analyse</h2>
-        <p className="text-sm text-[#8b949e]">Suche nach Firma, Ticker oder Sektor.</p>
+        <h2 className="text-xl font-semibold text-[var(--prisma-text)]">Direkt zur Analyse</h2>
+        <p className="text-sm text-[var(--prisma-muted)]">Suche nach Firma, Ticker oder Sektor.</p>
       </div>
 
       <div className="w-full relative">
@@ -991,21 +991,21 @@ function KennerSearch({ onBack }: { onBack: () => void }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Nestlé, NESN, Pharma..."
           data-testid="kenner-search-input"
-          className="w-full rounded-lg px-4 py-3 text-sm text-[#e6edf3] placeholder-[#8b949e] outline-none transition-all"
-          style={{ background: '#161b22', border: '1px solid #21262d' }}
+          className="w-full rounded-lg px-4 py-3 text-sm text-[var(--prisma-text)] placeholder-[#8b949e] outline-none transition-all"
+          style={{ background: 'var(--prisma-surface)', border: '1px solid var(--prisma-border)' }}
           onFocus={(e) => { e.currentTarget.style.borderColor = '#58a6ff'; }}
           onBlur={(e)  => { e.currentTarget.style.borderColor = '#21262d'; }}
         />
         {suggestions.length > 0 && (
           <div
             className="absolute top-full mt-1 w-full rounded-lg z-10 overflow-hidden"
-            style={{ background: '#161b22', border: '1px solid #21262d', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+            style={{ background: 'var(--prisma-surface)', border: '1px solid var(--prisma-border)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
           >
             {suggestions.map((b) => (
               <button
                 key={b.ticker}
                 onClick={() => goToStock(b.ticker)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#21262d] text-sm"
+                className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--prisma-border)] text-sm"
               >
                 <span
                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
@@ -1014,8 +1014,8 @@ function KennerSearch({ onBack }: { onBack: () => void }) {
                   {b.abbr}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-[#e6edf3] truncate">{b.name}</div>
-                  <div className="text-xs text-[#8b949e]">{b.ticker}.SW · {b.category}</div>
+                  <div className="font-medium text-[var(--prisma-text)] truncate">{b.name}</div>
+                  <div className="text-xs text-[var(--prisma-muted)]">{b.ticker}.SW · {b.category}</div>
                 </div>
               </button>
             ))}
@@ -1024,14 +1024,14 @@ function KennerSearch({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="w-full space-y-2">
-        <div className="text-xs text-[#8b949e]">Schnellfilter</div>
+        <div className="text-xs text-[var(--prisma-muted)]">Schnellfilter</div>
         <div className="flex flex-wrap gap-2">
           {QUICK_FILTERS.map((f) => (
             <button
               key={f.label}
               onClick={() => goToStock(f.tickers[0])}
-              className="rounded-full px-3 py-1.5 text-xs text-[#8b949e] hover:text-[#58a6ff] transition-colors"
-              style={{ background: '#161b22', border: '1px solid #21262d' }}
+              className="rounded-full px-3 py-1.5 text-xs text-[var(--prisma-muted)] hover:text-[var(--prisma-blue)] transition-colors"
+              style={{ background: 'var(--prisma-surface)', border: '1px solid var(--prisma-border)' }}
             >
               {f.label}
             </button>
@@ -1103,7 +1103,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
           }}
         />
       ))}
-      <span className="ml-2 text-xs text-[#8b949e]">{current} / {total}</span>
+      <span className="ml-2 text-xs text-[var(--prisma-muted)]">{current} / {total}</span>
     </div>
   );
 }
@@ -1111,8 +1111,8 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <span className="text-xs text-[#8b949e] shrink-0">{label}</span>
-      <span className="text-sm font-medium text-[#e6edf3] text-right">{value}</span>
+      <span className="text-xs text-[var(--prisma-muted)] shrink-0">{label}</span>
+      <span className="text-sm font-medium text-[var(--prisma-text)] text-right">{value}</span>
     </div>
   );
 }
@@ -1157,10 +1157,10 @@ function DiscoveryProfileReveal({
       data-testid="discovery-profile-reveal"
     >
       <div className="text-center space-y-2">
-        <div className="text-xs text-[#58a6ff] tracking-widest uppercase">Fertig</div>
-        <h2 className="text-2xl font-bold text-[#e6edf3]">Dein Profil ist bereit.</h2>
+        <div className="text-xs text-[var(--prisma-blue)] tracking-widest uppercase">Fertig</div>
+        <h2 className="text-2xl font-bold text-[var(--prisma-text)]">Dein Profil ist bereit.</h2>
         {result.profile_type && (
-          <p className="text-base text-[#8b949e]">{result.profile_type}</p>
+          <p className="text-base text-[var(--prisma-muted)]">{result.profile_type}</p>
         )}
       </div>
 

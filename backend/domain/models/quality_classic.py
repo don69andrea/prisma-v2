@@ -1,6 +1,6 @@
 """Quality Classic — gleichgewichtete Z-Score-Aggregation aus 8 Fundamentalkennzahlen.
 
-Spec: docs/specs/2026-04-21-prisma-capstone-design.md §6.1
+Spec: docs/specs/2026-04-21-prisma-prisma-v2-design.md §6.1
 Daten: Yahoo Finance + FinancialModelingPrep Free Tier (Snapshot)
 
 Formel:

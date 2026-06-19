@@ -228,7 +228,7 @@ class NarrativeService:
         # Note: CostTracker.check_cap ist ein Soft-Limit ohne DB-Lock (Spec §5
         # Cost-Tracker). Bei concurrent Batches koennen zwei Pre-Checks beide
         # passieren und dann beide realen Kosten anfallen. Akzeptabel fuer
-        # Capstone-Volumen. Mid-Batch-BudgetCapExceeded fangen wir in _one()
+        # Typisches Batch-Volumen. Mid-Batch-BudgetCapExceeded fangen wir in _one()
         # ab und propagieren in error_message.
         estimated_usd = Decimal(top_n) * Decimal("0.025")
         await self._cost_tracker.check_cap(estimated_usd=estimated_usd)
@@ -418,7 +418,7 @@ class NarrativeService:
         # könnte: (1) re-read → still "running", (2) GET-Request kommt rein und
         # setzt "failed", (3) Worker schreibt "complete".
         # Das Fenster ist <1ms (zwei aufeinanderfolgende await-Punkte ohne I/O
-        # dazwischen) — für Capstone-Volumen akzeptabel.
+        # dazwischen) — akzeptabel bei typischen Batch-Grössen.
         # Echte Lösung: optimistic locking mit version-column oder DB-CAS.
         current = await self._batch_repo.get(job_id)
         if current is not None and current.status == "failed":

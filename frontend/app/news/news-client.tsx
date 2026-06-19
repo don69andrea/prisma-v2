@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Download, ExternalLink, Newspaper, Search } from 'lucide-react';
 import Link from 'next/link';
 
@@ -219,33 +219,15 @@ function ProNewsCard({ item }: { item: NewsChunkResult }) {
 // Markt-Sentiment panel (Pro Mode sidebar)
 // ---------------------------------------------------------------------------
 
-const SENTIMENT_BARS = [
-  { label: 'Bullish', pct: 67, color: 'bg-emerald-500' },
-  { label: 'Neutral', pct: 28, color: 'bg-amber-500' },
-  { label: 'Bearish', pct: 5, color: 'bg-red-500' },
-] as const;
-
 function MarktSentimentPanel() {
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-3">
       <h3 className="text-sm font-semibold tracking-wide uppercase">
-        MARKT-SENTIMENT HEUTE
+        Markt-Stimmung
       </h3>
-      <p className="text-sm text-emerald-400">Leicht positiv</p>
-      <div className="space-y-2">
-        {SENTIMENT_BARS.map((s) => (
-          <div key={s.label} className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground w-14">{s.label}</span>
-            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className={`h-full ${s.color} rounded-full`}
-                style={{ width: `${s.pct}%` }}
-              />
-            </div>
-            <span className="text-xs text-muted-foreground w-8 text-right">{s.pct}%</span>
-          </div>
-        ))}
-      </div>
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        Live-Sentiment ist in dieser Version nicht verfügbar. News-basierte Analyse via Suche.
+      </p>
     </div>
   );
 }
@@ -490,18 +472,13 @@ export function NewsClient() {
   const [sortMode, setSortMode] = useState<'relevance' | 'date'>('relevance');
 
   // Daily curated news (auto-loaded)
-  const [dailyNews, setDailyNews] = useState<NewsChunkResult[] | null>(null);
-
-  // Daily news mutation — fires once on mount
-  const dailyMutation = useMutation({
-    mutationFn: () => retrieveNews({ query: DAILY_QUERY, k: 10 }),
-    onSuccess: (data) => setDailyNews(data.results),
+  const { data: dailyData } = useQuery({
+    queryKey: ['daily-news'],
+    queryFn: () => retrieveNews({ query: DAILY_QUERY, k: 10 }),
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
   });
-
-  useEffect(() => {
-    dailyMutation.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const dailyNews = dailyData?.results ?? null;
 
   // Manual search mutation
   const searchMutation = useMutation({

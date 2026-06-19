@@ -616,7 +616,7 @@ def _vol_trend_from_series(volume: pd.Series | None) -> float:
 
 def _chf_eur_on(snap_dt: pd.Timestamp) -> float:
     """Approximiert CHF/EUR für historische Snapshots (Näherungswert)."""
-    # Vereinfachung für Capstone: statischer Wert pro Quartal
+    # Vereinfachung: statischer Näherungswert pro Quartal
     year = snap_dt.year
     if year <= 2022:
         return 0.92

@@ -88,7 +88,7 @@ function SimpleRow({ ticker, signal, hasAlert, onRemove }: SimpleRowProps) {
               </div>
             </div>
           ) : (
-            <span className="text-[#30363d] text-xs">─</span>
+            <span className="text-[var(--prisma-muted)] text-xs opacity-40">─</span>
           )}
         </div>
       </Link>
@@ -243,14 +243,14 @@ function TaxOverview() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div
           className="rounded-lg p-3 space-y-1"
-          style={{ background: 'var(--prisma-bg)', border: '1px solid #30363d' }}
+          style={{ background: 'var(--prisma-bg)', border: '1px solid var(--prisma-border)' }}
         >
           <div className="text-[10px] text-[var(--prisma-muted)] uppercase tracking-wide font-medium">Nächste Dividenden</div>
           <div className="text-xs text-[var(--prisma-muted)] italic">Wird ergänzt</div>
         </div>
         <div
           className="rounded-lg p-3 space-y-1"
-          style={{ background: 'var(--prisma-bg)', border: '1px solid #30363d' }}
+          style={{ background: 'var(--prisma-bg)', border: '1px solid var(--prisma-border)' }}
         >
           <div className="text-[10px] text-[var(--prisma-muted)] uppercase tracking-wide font-medium">Verrechnungssteuer rückforderbar</div>
           <div className="text-xs text-[var(--prisma-muted)] italic">Wird berechnet</div>
@@ -285,8 +285,8 @@ function AddStockPanel({ query, onQueryChange, results, onAdd, onClose }: AddSto
             placeholder="Firma oder Ticker eingeben..."
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 text-sm rounded-lg bg-[var(--prisma-bg)] text-[var(--prisma-text)] placeholder-[#8b949e] outline-none focus:ring-1 focus:ring-[var(--prisma-blue)]/50"
-            style={{ border: '1px solid #30363d' }}
+            className="w-full pl-8 pr-3 py-2 text-sm rounded-lg bg-[var(--prisma-bg)] text-[var(--prisma-text)] placeholder-[var(--prisma-muted)] outline-none focus:ring-1 focus:ring-[var(--prisma-blue)]/50"
+            style={{ border: '1px solid var(--prisma-border)' }}
           />
         </div>
         <button
@@ -304,7 +304,7 @@ function AddStockPanel({ query, onQueryChange, results, onAdd, onClose }: AddSto
             <li key={s.ticker}>
               <button
                 onClick={() => onAdd(s.ticker)}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors hover:bg-[#1c2128]"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors hover:bg-[var(--prisma-surface)]"
               >
                 <span className="text-sm text-[var(--prisma-text)]">{s.name}</span>
                 <span className="text-xs text-[var(--prisma-muted)] font-mono ml-2 shrink-0">{s.ticker}.SW</span>
@@ -468,8 +468,8 @@ export function WatchlistClient() {
         {!isEmpty && (
           <button
             onClick={() => setShowSearch((v) => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-[var(--prisma-muted)] hover:text-[var(--prisma-text)] hover:bg-[#1c2128]"
-            style={{ border: '1px solid #30363d' }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-[var(--prisma-muted)] hover:text-[var(--prisma-text)] hover:bg-[var(--prisma-surface)]"
+            style={{ border: '1px solid var(--prisma-border)' }}
           >
             <Plus className="h-4 w-4" />
             Aktie hinzufügen

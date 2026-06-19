@@ -384,14 +384,14 @@ function StepBeruf({ onNext }: { onNext: (beruf: string) => void }) {
           onKeyDown={(e) => e.key === 'Enter' && value.trim() && onNext(value.trim())}
           placeholder="z.B. Softwareentwickler, Lehrerin, Arzt..."
           data-testid="input-beruf"
-          className="w-full rounded-lg px-4 py-3 text-sm text-[var(--prisma-text)] placeholder-[#8b949e] outline-none transition-all"
+          className="w-full rounded-lg px-4 py-3 text-sm text-[var(--prisma-text)] placeholder-[var(--prisma-muted)] outline-none transition-all"
           style={{
             background: 'var(--prisma-surface)',
             border: '1px solid var(--prisma-border)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
           }}
           onFocus={(e) => { e.currentTarget.style.borderColor = '#58a6ff'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(88,166,255,0.15)'; }}
-          onBlur={(e)  => { e.currentTarget.style.borderColor = '#21262d'; e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.05)'; }}
+          onBlur={(e)  => { e.currentTarget.style.borderColor = 'var(--prisma-border)'; e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.05)'; }}
         />
         <PrismaButton onClick={() => value.trim() && onNext(value.trim())} disabled={!value.trim()}>
           Weiter
@@ -428,8 +428,8 @@ function StepZiel({ onNext }: { onNext: (ziel: Ziel) => void }) {
               data-testid={`ziel-${opt.value}`}
               className="rounded-xl p-4 text-left transition-all"
               style={{
-                background: active ? 'rgba(88,166,255,0.12)' : '#161b22',
-                border: `1px solid ${active ? '#58a6ff' : '#21262d'}`,
+                background: active ? 'rgba(88,166,255,0.12)' : 'var(--prisma-surface)',
+                border: `1px solid ${active ? '#58a6ff' : 'var(--prisma-border)'}`,
                 boxShadow: active ? '0 0 16px rgba(88,166,255,0.2)' : 'none',
               }}
             >
@@ -487,8 +487,8 @@ function StepRisiko({ onNext }: { onNext: (risiko: Risiko) => void }) {
               data-testid={`risiko-${opt.value}`}
               className="w-full rounded-xl p-4 text-left transition-all"
               style={{
-                background: active ? opt.bg : '#161b22',
-                border: `1px solid ${active ? opt.color : '#21262d'}`,
+                background: active ? opt.bg : 'var(--prisma-surface)',
+                border: `1px solid ${active ? opt.color : 'var(--prisma-border)'}`,
                 boxShadow: active ? `0 0 16px ${opt.color}33` : 'none',
               }}
             >
@@ -574,8 +574,8 @@ function StepBrands({ onNext }: { onNext: (brands: string[]) => void }) {
                       data-testid={`brand-${brand.ticker}`}
                       className="relative w-full rounded-lg p-3 text-center transition-all"
                       style={{
-                        background: isSelected ? `${brand.color}18` : '#161b22',
-                        border: `1px solid ${isSelected ? brand.color : '#21262d'}`,
+                        background: isSelected ? `${brand.color}18` : 'var(--prisma-surface)',
+                        border: `1px solid ${isSelected ? brand.color : 'var(--prisma-border)'}`,
                         boxShadow: isSelected ? `0 0 14px ${brand.color}44, inset 0 1px 0 rgba(255,255,255,0.05)` : 'none',
                       }}
                     >
@@ -660,8 +660,8 @@ function StepBetrag({ onNext }: { onNext: (betrag: Betrag) => void }) {
               data-testid={`betrag-${opt.value}`}
               className="w-full rounded-xl p-4 text-left transition-all"
               style={{
-                background: active ? 'rgba(88,166,255,0.12)' : '#161b22',
-                border: `1px solid ${active ? '#58a6ff' : '#21262d'}`,
+                background: active ? 'rgba(88,166,255,0.12)' : 'var(--prisma-surface)',
+                border: `1px solid ${active ? '#58a6ff' : 'var(--prisma-border)'}`,
                 boxShadow: active ? '0 0 16px rgba(88,166,255,0.2)' : 'none',
               }}
             >
@@ -705,8 +705,8 @@ function StepNachhaltigkeit({ onNext }: { onNext: (nachhaltigkeit: Nachhaltigkei
               data-testid={`nachhaltigkeit-${opt.value}`}
               className="w-full rounded-xl p-4 text-left transition-all"
               style={{
-                background: active ? 'rgba(126,231,135,0.1)' : '#161b22',
-                border: `1px solid ${active ? '#7ee787' : '#21262d'}`,
+                background: active ? 'rgba(126,231,135,0.1)' : 'var(--prisma-surface)',
+                border: `1px solid ${active ? '#7ee787' : 'var(--prisma-border)'}`,
                 boxShadow: active ? '0 0 16px rgba(126,231,135,0.2)' : 'none',
               }}
             >
@@ -750,8 +750,8 @@ function StepErtrag({ onNext }: { onNext: (ertrag: Ertrag) => void }) {
               data-testid={`ertrag-${opt.value}`}
               className="w-full rounded-xl p-4 text-left transition-all"
               style={{
-                background: active ? 'rgba(188,140,255,0.1)' : '#161b22',
-                border: `1px solid ${active ? '#bc8cff' : '#21262d'}`,
+                background: active ? 'rgba(188,140,255,0.1)' : 'var(--prisma-surface)',
+                border: `1px solid ${active ? '#bc8cff' : 'var(--prisma-border)'}`,
                 boxShadow: active ? '0 0 16px rgba(188,140,255,0.2)' : 'none',
               }}
             >
@@ -912,7 +912,7 @@ function StepReveal({ profile, onContinue }: { profile: Profile; onContinue: () 
             </div>
           )}
 
-          <div className="border-t pt-4" style={{ borderColor: '#21262d' }}>
+          <div className="border-t pt-4" style={{ borderColor: 'var(--prisma-border)' }}>
             <div className="text-xs text-[var(--prisma-muted)]">
               PRISMA hat Schweizer Titel für dein Profil ausgewählt.
             </div>
@@ -991,10 +991,10 @@ function KennerSearch({ onBack }: { onBack: () => void }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Nestlé, NESN, Pharma..."
           data-testid="kenner-search-input"
-          className="w-full rounded-lg px-4 py-3 text-sm text-[var(--prisma-text)] placeholder-[#8b949e] outline-none transition-all"
+          className="w-full rounded-lg px-4 py-3 text-sm text-[var(--prisma-text)] placeholder-[var(--prisma-muted)] outline-none transition-all"
           style={{ background: 'var(--prisma-surface)', border: '1px solid var(--prisma-border)' }}
           onFocus={(e) => { e.currentTarget.style.borderColor = '#58a6ff'; }}
-          onBlur={(e)  => { e.currentTarget.style.borderColor = '#21262d'; }}
+          onBlur={(e)  => { e.currentTarget.style.borderColor = 'var(--prisma-border)'; }}
         />
         {suggestions.length > 0 && (
           <div
@@ -1062,9 +1062,9 @@ function PrismaButton({
       className="w-full max-w-sm rounded-lg px-4 py-3 text-sm font-semibold text-[#0d1117] transition-all hover:opacity-90 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
       style={{
         background: disabled
-          ? '#21262d'
+          ? 'var(--prisma-border)'
           : 'linear-gradient(135deg, #58a6ff 0%, #7ee787 100%)',
-        color: disabled ? '#8b949e' : '#0d1117',
+        color: disabled ? 'var(--prisma-muted)' : '#0d1117',
         boxShadow: disabled ? 'none' : '0 4px 20px rgba(88,166,255,0.25)',
       }}
     >
@@ -1099,7 +1099,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
           className="h-1 rounded-full transition-all duration-300"
           style={{
             width: i < current ? '24px' : '16px',
-            background: i < current ? '#58a6ff' : '#21262d',
+            background: i < current ? '#58a6ff' : 'var(--prisma-border)',
           }}
         />
       ))}

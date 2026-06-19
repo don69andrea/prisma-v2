@@ -17,13 +17,13 @@ _TIMEOUT = 8.0
 _ECB_BASE = "https://sdw-wsrest.ecb.europa.eu/service/data"
 
 # ECB Series-Keys für relevante Kurse (CHF pro 1 EUR = EXR/D.CHF.EUR.SP00.A invertiert)
-_EUR_CHF_KEY = "EXR/D.CHF.EUR.SP00.A"   # CHF per EUR (direkt, nicht invertiert)
-_USD_CHF_KEY = "EXR/D.CHF.USD.SP00.A"   # CHF per USD
-_GBP_CHF_KEY = "EXR/D.CHF.GBP.SP00.A"   # CHF per GBP
+_EUR_CHF_KEY = "EXR/D.CHF.EUR.SP00.A"  # CHF per EUR (direkt, nicht invertiert)
+_USD_CHF_KEY = "EXR/D.CHF.USD.SP00.A"  # CHF per USD
+_GBP_CHF_KEY = "EXR/D.CHF.GBP.SP00.A"  # CHF per GBP
 
-_FALLBACK_CHF_EUR = 0.93   # ca. CHF 0.93 per EUR (Stand 2025/2026)
-_FALLBACK_CHF_USD = 0.89   # ca. CHF 0.89 per USD
-_FALLBACK_CHF_GBP = 1.13   # ca. CHF 1.13 per GBP
+_FALLBACK_CHF_EUR = 0.93  # ca. CHF 0.93 per EUR (Stand 2025/2026)
+_FALLBACK_CHF_USD = 0.89  # ca. CHF 0.89 per USD
+_FALLBACK_CHF_GBP = 1.13  # ca. CHF 1.13 per GBP
 
 
 async def _fetch_ecb_rate(series_key: str, fallback: float) -> float:
@@ -35,7 +35,7 @@ async def _fetch_ecb_rate(series_key: str, fallback: float) -> float:
     url = f"{_ECB_BASE}/{series_key}"
     params = {
         "format": "jsondata",
-        "lastNObservations": "5",   # letzte 5 Handelstage als Puffer
+        "lastNObservations": "5",  # letzte 5 Handelstage als Puffer
         "detail": "dataonly",
     }
     try:
@@ -104,6 +104,7 @@ async def fetch_all_chf_rates() -> dict[str, float]:
         {"chf_eur": 0.93, "chf_usd": 0.89, "chf_gbp": 1.13}
     """
     import asyncio
+
     eur, usd, gbp = await asyncio.gather(
         fetch_chf_eur(),
         fetch_chf_usd(),
@@ -112,6 +113,9 @@ async def fetch_all_chf_rates() -> dict[str, float]:
     fetched_at = datetime.now(UTC).isoformat()
     _logger.info(
         "ECB FX Rates (%s): CHF/EUR=%.4f CHF/USD=%.4f CHF/GBP=%.4f",
-        fetched_at, eur, usd, gbp,
+        fetched_at,
+        eur,
+        usd,
+        gbp,
     )
     return {"chf_eur": eur, "chf_usd": usd, "chf_gbp": gbp}

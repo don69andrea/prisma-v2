@@ -309,6 +309,7 @@ class MLFeatureService:
         volume = prices["Volume"].squeeze() if "Volume" in prices.columns else None
         # ECB statt yfinance — funktioniert von Render-IPs, kein Rate-Limit
         from backend.infrastructure.adapters.ecb_fx_adapter import fetch_chf_eur as _ecb_chf_eur
+
         chf_eur = await _ecb_chf_eur()
 
         return MLFeatureVector(

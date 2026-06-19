@@ -25,7 +25,7 @@ _FRED_CSV_BASE = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 # Schweizer CPI Index (OECD MEI, 2015=100) — nicht YoY; wird selbst berechnet
 _CH_CPI_SERIES = "CHECPIALLMINMEI"
 
-_FALLBACK_CH_CPI = 0.3   # realistisch für CH 2025/2026
+_FALLBACK_CH_CPI = 0.3  # realistisch für CH 2025/2026
 
 
 async def _fetch_fred_csv_values(series_id: str, n: int = 14) -> list[float]:
@@ -43,7 +43,7 @@ async def _fetch_fred_csv_values(series_id: str, n: int = 14) -> list[float]:
             resp.raise_for_status()
             lines = [ln.strip() for ln in resp.text.splitlines() if ln.strip()]
             values: list[float] = []
-            for line in lines[1:]:   # Zeile 0 = Header
+            for line in lines[1:]:  # Zeile 0 = Header
                 parts = line.split(",")
                 if len(parts) >= 2 and parts[1].strip() not in (".", ""):
                     values.append(float(parts[1].strip()))
@@ -68,7 +68,7 @@ async def fetch_swiss_cpi_fred() -> float:
         year_ago = values[-13]
         if year_ago > 0:
             yoy = round((current / year_ago - 1) * 100, 2)
-            if -5.0 <= yoy <= 15.0:   # Plausibilitäts-Check
+            if -5.0 <= yoy <= 15.0:  # Plausibilitäts-Check
                 _logger.info("Schweizer CPI YoY (FRED): %.2f%%", yoy)
                 return yoy
 

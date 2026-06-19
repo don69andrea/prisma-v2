@@ -67,9 +67,7 @@ class TwelveDataAdapter:
         self._api_key = api_key or _get_api_key()
         self._available = self._api_key is not None
         if not self._available:
-            _logger.info(
-                "TWELVE_DATA_API_KEY nicht gesetzt — Twelve Data Adapter deaktiviert"
-            )
+            _logger.info("TWELVE_DATA_API_KEY nicht gesetzt — Twelve Data Adapter deaktiviert")
 
     @property
     def available(self) -> bool:
@@ -177,9 +175,7 @@ class TwelveDataAdapter:
                     for v in values
                 ]
         except Exception as exc:
-            _logger.warning(
-                "Twelve Data Time Series für %s fehlgeschlagen: %s", ticker, exc
-            )
+            _logger.warning("Twelve Data Time Series für %s fehlgeschlagen: %s", ticker, exc)
             return []
 
     async def get_rsi(self, ticker: str, period: int = 14) -> float | None:
@@ -221,9 +217,7 @@ class TwelveDataAdapter:
         if not self._available or not tickers:
             return {}
 
-        symbols = ",".join(
-            _TICKER_TO_TD.get(t.upper(), f"{t.upper()}:SIX") for t in tickers[:120]
-        )
+        symbols = ",".join(_TICKER_TO_TD.get(t.upper(), f"{t.upper()}:SIX") for t in tickers[:120])
         try:
             async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
                 resp = await client.get(

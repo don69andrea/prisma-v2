@@ -46,7 +46,11 @@ class YFinanceFundamentalsAdapter(FundamentalsProvider):
         info: dict[str, Any] = {}
         for attempt in range(_RETRIES + 1):
             try:
-                info = await asyncio.to_thread(lambda t=yf_ticker: yf.Ticker(t).info)
+
+                def _fetch(t: str = yf_ticker) -> dict[str, Any]:
+                    return dict(yf.Ticker(t).info)  # type: ignore[no-untyped-call]
+
+                info = await asyncio.to_thread(_fetch)
                 break
             except Exception as exc:
                 if attempt < _RETRIES:

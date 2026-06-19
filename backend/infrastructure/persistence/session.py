@@ -31,12 +31,16 @@ def _get_engine(settings: Settings | None = None) -> AsyncEngine:
                 poolclass=NullPool,
             )
         else:
+            # Free-Tier (512 MB RAM): kleiner Pool um OOM zu vermeiden.
+            # asyncpg-Connection ~10 MB → max 5 Connections = ~50 MB für den Pool.
+            pool_size = 2 if cfg.environment == "production" else 5
+            max_overflow = 3 if cfg.environment == "production" else 10
             _engine = create_async_engine(
                 cfg.database_url,
                 echo=cfg.environment != "production",
                 pool_pre_ping=True,
-                pool_size=10,
-                max_overflow=20,
+                pool_size=pool_size,
+                max_overflow=max_overflow,
             )
     return _engine
 

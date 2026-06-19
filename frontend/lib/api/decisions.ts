@@ -12,6 +12,7 @@ export interface DecisionSignal {
   ml_score: number;
   macro_score: number;
   is_3a_eligible: boolean;
+  ml_is_fallback: boolean;
   signal_reason: string;
 }
 

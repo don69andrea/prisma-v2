@@ -17,6 +17,10 @@ class DecisionSignalResponse(BaseModel):
     ml_score: float = Field(..., ge=0.0, le=100.0)
     macro_score: float = Field(..., ge=0.0, le=100.0)
     is_3a_eligible: bool
+    ml_is_fallback: bool = Field(
+        default=False,
+        description="True wenn kein ML-Modell verfügbar — Score ist Neutral-Placeholder",
+    )
     signal_reason: str = Field(default="", description="Alltagssprache-Erklärung des Signals")
 
 

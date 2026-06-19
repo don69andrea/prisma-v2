@@ -109,6 +109,7 @@ class SignalAggregationService:
             macro_score = _snb_macro_score(features.snb_rate)
 
         # Gewichts-Normierung: wenn ML nicht verfügbar, ML-Gewicht auf Quant + Macro verteilen
+        ml_is_fallback = ml_score is None
         if ml_score is not None:
             weighted_score = (
                 self._w_quant * quant_score + self._w_ml * ml_score + self._w_macro * macro_score
@@ -134,6 +135,7 @@ class SignalAggregationService:
             ml_score=round(effective_ml_score, 2),
             macro_score=round(macro_score, 2),
             is_3a_eligible=is_eligible,
+            ml_is_fallback=ml_is_fallback,
         )
 
     async def get_signals(self, tickers: list[str]) -> list[DecisionSignal]:

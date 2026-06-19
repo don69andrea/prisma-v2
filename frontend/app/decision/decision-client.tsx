@@ -310,6 +310,11 @@ function SignalCard({ item }: { item: DecisionSignal }) {
                 3a
               </span>
             )}
+            {item.ml_is_fallback && (
+              <span className="text-[10px] text-amber-500 border border-amber-500/30 rounded px-1.5 py-0.5" title="Kein ML-Modell geladen — ML-Score ist Neutral-Placeholder (50)">
+                ML ⚠
+              </span>
+            )}
           </div>
         </div>
 
@@ -499,6 +504,15 @@ function AllSignalsTable({ signals }: { signals: DecisionSignal[] }) {
 // Pro Mode: full table view
 // ---------------------------------------------------------------------------
 
+function dominantFactor(item: DecisionSignal): string {
+  const quant = item.quant_score * 0.45;
+  const ml    = item.ml_is_fallback ? 0 : item.ml_score * 0.35;
+  const macro = item.macro_score * 0.20;
+  if (quant >= ml && quant >= macro) return 'Quant';
+  if (ml >= macro) return 'ML';
+  return 'Makro';
+}
+
 function ProTable({ signals }: { signals: DecisionSignal[] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-[var(--prisma-border)]">
@@ -529,7 +543,7 @@ function ProTable({ signals }: { signals: DecisionSignal[] }) {
                   </span>
                 </td>
                 <td className="px-4 py-3 tabular-nums text-[var(--prisma-text)]">{Math.round(item.weighted_score)}</td>
-                <td className="px-4 py-3 text-xs text-[var(--prisma-muted)]">—</td>
+                <td className="px-4 py-3 text-xs text-[var(--prisma-muted)]">{dominantFactor(item)}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs">{item.signal_reason ?? '—'}</td>
               </tr>
             );

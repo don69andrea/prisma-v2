@@ -84,6 +84,7 @@ def _build_response(
             ml_score=s.ml_score,
             macro_score=s.macro_score,
             is_3a_eligible=s.is_3a_eligible,
+            ml_is_fallback=s.ml_is_fallback,
             signal_reason=_signal_reason(s.signal, s.weighted_score, s.quant_score),
         )
         for s in signals
@@ -300,6 +301,7 @@ async def list_decisions(
             ml_score=s.ml_score,
             macro_score=s.macro_score,
             is_3a_eligible=s.is_3a_eligible,
+            ml_is_fallback=s.ml_is_fallback,
             signal_reason=_signal_reason(s.signal, s.weighted_score, s.quant_score),
         )
         for s in signals

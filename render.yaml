@@ -71,6 +71,7 @@ services:
     dockerfilePath: ./Dockerfile.frontend
     branch: main
     plan: free
+    healthCheckPath: /
     autoDeploy: true
     envVars:
       # NEXT_PUBLIC_* variables are baked into the Next.js bundle at build time.

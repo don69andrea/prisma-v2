@@ -21,13 +21,13 @@ export function ColdStartBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-x-0 top-0 z-[100] flex items-center justify-center gap-2 bg-amber-500/95 px-4 py-2 text-center text-sm font-medium text-black shadow-md"
+      className="fixed top-4 left-4 z-[100] flex items-center gap-2 rounded-lg bg-amber-500/90 px-3 py-2 text-xs font-medium text-black shadow-lg max-w-xs"
     >
       <span
-        className="inline-block h-3 w-3 rounded-full border-2 border-black/70 border-t-transparent animate-spin shrink-0"
+        className="inline-block h-2.5 w-2.5 rounded-full border-2 border-black/70 border-t-transparent animate-spin shrink-0"
         aria-hidden
       />
-      <span>App startet — kann beim ersten Aufruf bis zu einer Minute dauern…</span>
+      <span>App startet…</span>
     </div>
   );
 }

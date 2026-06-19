@@ -48,7 +48,7 @@ class YFinanceFundamentalsAdapter(FundamentalsProvider):
             try:
 
                 def _fetch(t: str = yf_ticker) -> dict[str, Any]:
-                    return dict(yf.Ticker(t).info)  # type: ignore[no-untyped-call]
+                    return dict(yf.Ticker(t).info)
 
                 info = await asyncio.to_thread(_fetch)
                 break

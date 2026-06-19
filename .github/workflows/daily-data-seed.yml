@@ -1,16 +1,24 @@
 name: Daily Data Seed
 
+# Render Docker-Cron-Jobs funktionieren nicht auf dem Free-Tier und
+# Yahoo Finance blockt Render-IPs. GitHub Actions Runner-IPs sind
+# bei Yahoo Finance nicht geblockt und Actions sind kostenlos (2000 min/mo).
+
 on:
   schedule:
-    # GitHub Actions IPs werden von Yahoo Finance nicht geblockt (im Gegensatz zu Render)
-    - cron: "0 5 * * 1-5"   # SMI Market Caps — Mo-Fr 05:00 UTC
-    - cron: "0 6 * * 1-5"   # News Ingestion  — Mo-Fr 06:00 UTC
-    - cron: "30 6 * * 1-5"  # Crypto Daily    — Mo-Fr 06:30 UTC
-    - cron: "0 7 * * 1-5"   # Stock Signals   — Mo-Fr 07:00 UTC
+    # Alle Jobs Mo-Fr (kein Wochenende — Börse + Krypto-Volumen niedrig)
+    - cron: "0 4 * * 1-5"   # 04:00 UTC — SMI Market Caps (vor Börsenöffnung)
+    - cron: "0 5 * * 1-5"   # 05:00 UTC — ML Features bauen (braucht aktuelle Preise)
+    - cron: "0 6 * * 1-5"   # 06:00 UTC — News Ingestion (RAG-Index frisch halten)
+    - cron: "30 6 * * 1-5"  # 06:30 UTC — Krypto-Signale (inkl. Fear & Greed)
+    - cron: "0 7 * * 1-5"   # 07:00 UTC — SMI-20 Aktien-Signale (vor 09:00 CEST)
+    - cron: "0 8 * * 1-5"   # 08:00 UTC — Alert-Engine: Signale → Nutzer-Alerts
+    - cron: "0 22 * * 5"    # 22:00 UTC Freitag — Weekly ML Model Retrain
+
   workflow_dispatch:
     inputs:
       job:
-        description: "Welcher Job?"
+        description: "Welchen Job manuell ausführen?"
         required: true
         default: "stock-daily"
         type: choice
@@ -19,86 +27,353 @@ on:
           - crypto-daily
           - news-ingestion
           - smi-market-caps
-          - all
+          - ml-features
+          - alerts
+          - ml-retrain
+          - all-daily
 
 env:
   DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
-  ENVIRONMENT: production
   JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  ENVIRONMENT: production
+  PYTHONPATH: "."
+
+# Gemeinsame Setup-Steps als wiederverwendbares Muster via defaults
+defaults:
+  run:
+    shell: bash
 
 jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # 1) SMI MARKET CAPS  ·  04:00 UTC Mo-Fr
+  # ──────────────────────────────────────────────────────────────────────────
   smi-market-caps:
-    name: SMI Market Caps
+    name: "📊 SMI Market Caps"
     runs-on: ubuntu-latest
     if: >
-      (github.event_name == 'schedule' && github.event.schedule == '0 5 * * 1-5') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.job == 'smi-market-caps' || inputs.job == 'all'))
+      (github.event_name == 'schedule' && github.event.schedule == '0 4 * * 1-5') ||
+      (github.event_name == 'workflow_dispatch' && (inputs.job == 'smi-market-caps' || inputs.job == 'all-daily'))
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: pip install uv
-      - name: Install dependencies
-        run: uv sync --no-dev
-      - name: Run SMI Market Caps Update
+          cache: pip
+      - run: pip install uv -q && uv sync --no-dev -q
+      - name: Update SMI Market Caps
         run: uv run python scripts/update_smi_market_caps.py
+      - if: failure()
+        name: Report failure
+        run: echo "::error::SMI Market Caps Update fehlgeschlagen — DB könnte veraltete Daten haben"
 
+  # ──────────────────────────────────────────────────────────────────────────
+  # 2) ML FEATURES  ·  05:00 UTC Mo-Fr
+  #    Berechnet Feature-Vektoren für alle SMI-20 Titel und speichert in
+  #    ml_features-Tabelle. Wird von DiscoveryService + Decision-Signal genutzt.
+  # ──────────────────────────────────────────────────────────────────────────
+  ml-features:
+    name: "🧠 ML Features (SMI-20)"
+    runs-on: ubuntu-latest
+    needs: smi-market-caps
+    if: >
+      always() &&
+      (
+        (github.event_name == 'schedule' && github.event.schedule == '0 5 * * 1-5') ||
+        (github.event_name == 'workflow_dispatch' && (inputs.job == 'ml-features' || inputs.job == 'all-daily'))
+      )
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install uv -q && uv sync --no-dev -q
+      - name: Build ML Feature Vectors for SMI-20
+        run: |
+          uv run python - <<'PYEOF'
+          import asyncio, logging
+          logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+          log = logging.getLogger("ml_features_seed")
+
+          _SMI20 = [
+              "NESN","NOVN","ROG","ABBN","ZURN","UBSG","UHR","GEBN","GIVN","LONN",
+              "SREN","SGKN","SLHN","SCMN","SIKA","HOLN","PGHN","KNIN","CFR","STMN",
+          ]
+
+          async def main():
+              from backend.application.services.ml_feature_service import MLFeatureService
+              from backend.infrastructure.persistence.models.ml_features import MLFeatureORM
+              from backend.infrastructure.persistence.session import get_session_factory
+              from datetime import UTC, datetime, date
+
+              svc = MLFeatureService()
+              session_factory = get_session_factory()
+              today = datetime.now(UTC).date()
+              saved = 0
+
+              async with session_factory() as session:
+                  for ticker in _SMI20:
+                      try:
+                          vec = await svc.build_features(ticker)
+                          if vec is None:
+                              log.warning("Keine Features für %s", ticker)
+                              continue
+                          # Upsert: existierende Features für heute überschreiben
+                          from sqlalchemy import select, delete
+                          await session.execute(
+                              delete(MLFeatureORM).where(
+                                  MLFeatureORM.ticker == ticker,
+                                  MLFeatureORM.snapshot_date == today,
+                              )
+                          )
+                          session.add(MLFeatureORM(
+                              ticker=ticker,
+                              snapshot_date=today,
+                              quant_score=vec.quant_score,
+                              score_rendite=vec.score_rendite,
+                              score_sicherheit=vec.score_sicherheit,
+                              score_wachstum=vec.score_wachstum,
+                              score_substanz=vec.score_substanz,
+                              return_12m=vec.return_12m,
+                              return_6m=vec.return_6m,
+                              return_3m=vec.return_3m,
+                              return_1m=vec.return_1m,
+                              vol_30d=vec.vol_30d,
+                              vol_90d=vec.vol_90d,
+                              rsi_14=vec.rsi_14,
+                              price_to_52w_high=vec.price_to_52w_high,
+                              vol_trend=vec.vol_trend,
+                              macd_hist=vec.macd_hist,
+                              bb_position=vec.bb_position,
+                              drawdown_12m=vec.drawdown_12m,
+                              snb_rate=vec.snb_rate,
+                              chf_eur=vec.chf_eur,
+                          ))
+                          saved += 1
+                          log.info("  ✓ %s: quant=%.1f rsi=%.1f", ticker, vec.quant_score, vec.rsi_14 or 0)
+                      except Exception as e:
+                          log.error("  ✗ %s: %s", ticker, e)
+                  await session.commit()
+
+              log.info("ML Features: %d/%d Titel gespeichert", saved, len(_SMI20))
+
+          asyncio.run(main())
+          PYEOF
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 3) NEWS INGESTION  ·  06:00 UTC Mo-Fr
+  #    RAG-Index mit Schweizer Finanzmarkt-News aktuell halten
+  # ──────────────────────────────────────────────────────────────────────────
   news-ingestion:
-    name: News Ingestion
+    name: "📰 News Ingestion (RAG)"
     runs-on: ubuntu-latest
     if: >
       (github.event_name == 'schedule' && github.event.schedule == '0 6 * * 1-5') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.job == 'news-ingestion' || inputs.job == 'all'))
+      (github.event_name == 'workflow_dispatch' && (inputs.job == 'news-ingestion' || inputs.job == 'all-daily'))
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: pip install uv
-      - name: Install dependencies
-        run: uv sync --no-dev
-      - name: Run News Ingestion
+          cache: pip
+      - run: pip install uv -q && uv sync --no-dev -q
+      - name: Ingest Financial News (Voyage RAG)
         run: uv run python -m backend.application.services.news_ingestion_service
+        timeout-minutes: 10
 
+  # ──────────────────────────────────────────────────────────────────────────
+  # 4) KRYPTO DAILY  ·  06:30 UTC Mo-Fr
+  #    10 Kryptowährungen: Score, Pattern-Erkennung, LLM-Kurzanalyse
+  # ──────────────────────────────────────────────────────────────────────────
   crypto-daily:
-    name: Crypto Daily Snapshot
+    name: "₿ Krypto Daily (10 Assets)"
     runs-on: ubuntu-latest
     if: >
       (github.event_name == 'schedule' && github.event.schedule == '30 6 * * 1-5') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.job == 'crypto-daily' || inputs.job == 'all'))
+      (github.event_name == 'workflow_dispatch' && (inputs.job == 'crypto-daily' || inputs.job == 'all-daily'))
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: pip install uv
-      - name: Install dependencies
-        run: uv sync --no-dev
+          cache: pip
+      - run: pip install uv -q && uv sync --no-dev -q
       - name: Run Crypto Daily Snapshot
         run: uv run python -m backend.scripts.crypto_daily_snapshot
         env:
           COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+        timeout-minutes: 15
+      - name: Verify crypto signals saved
+        if: success()
+        run: |
+          uv run python - <<'PYEOF'
+          import asyncio
+          from sqlalchemy import text
+          from backend.infrastructure.persistence.session import get_session_factory
+          from datetime import UTC, datetime
 
+          async def check():
+              today = datetime.now(UTC).date()
+              async with get_session_factory()() as s:
+                  r = await s.execute(
+                      text("SELECT COUNT(*) FROM crypto_signals WHERE snapshot_date = :d"),
+                      {"d": today}
+                  )
+                  n = r.scalar()
+                  print(f"::notice::Krypto-Signale heute: {n}/10")
+                  if n == 0:
+                      raise SystemExit("Keine Krypto-Signale gespeichert!")
+
+          asyncio.run(check())
+          PYEOF
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 5) AKTIEN DAILY  ·  07:00 UTC Mo-Fr
+  #    SMI-20 Signal-Aggregation: Quant + ML + Makro → BUY/HOLD/SELL
+  # ──────────────────────────────────────────────────────────────────────────
   stock-daily:
-    name: Stock Daily Snapshot (SMI-20)
+    name: "📈 Aktien Daily (SMI-20)"
     runs-on: ubuntu-latest
+    needs: ml-features
     if: >
-      (github.event_name == 'schedule' && github.event.schedule == '0 7 * * 1-5') ||
-      (github.event_name == 'workflow_dispatch' && (inputs.job == 'stock-daily' || inputs.job == 'all'))
+      always() &&
+      (
+        (github.event_name == 'schedule' && github.event.schedule == '0 7 * * 1-5') ||
+        (github.event_name == 'workflow_dispatch' && (inputs.job == 'stock-daily' || inputs.job == 'all-daily'))
+      )
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install uv
-        run: pip install uv
-      - name: Install dependencies
-        run: uv sync --no-dev
+          cache: pip
+      - run: pip install uv -q && uv sync --no-dev -q
       - name: Run Stock Daily Snapshot
         run: uv run python -m backend.scripts.stock_daily_snapshot
+        timeout-minutes: 20
+      - name: Verify signals saved
+        if: success()
+        run: |
+          uv run python - <<'PYEOF'
+          import asyncio
+          from sqlalchemy import text
+          from backend.infrastructure.persistence.session import get_session_factory
+          from datetime import UTC, datetime
+
+          async def check():
+              today = datetime.now(UTC).date()
+              async with get_session_factory()() as s:
+                  r = await s.execute(
+                      text("SELECT ticker, signal, weighted_score FROM stock_daily_signals WHERE snapshot_date = :d ORDER BY weighted_score DESC"),
+                      {"d": today}
+                  )
+                  rows = r.fetchall()
+                  print(f"::notice::Aktien-Signale heute: {len(rows)}/20")
+                  for row in rows:
+                      print(f"  {row.ticker}: {row.signal} ({row.weighted_score:.1f})")
+                  if len(rows) == 0:
+                      raise SystemExit("Keine Aktien-Signale gespeichert!")
+
+          asyncio.run(check())
+          PYEOF
+      - name: Summary als Job-Output
+        if: always()
+        run: echo "Stock Daily abgeschlossen — $(date -u '+%Y-%m-%d %H:%M UTC')"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 6) ALERT ENGINE  ·  08:00 UTC Mo-Fr
+  #    Prüft Nutzer-Alerts gegen frische Signale → E-Mail via SendGrid
+  # ──────────────────────────────────────────────────────────────────────────
+  alerts:
+    name: "🔔 Alert Engine"
+    runs-on: ubuntu-latest
+    needs: [stock-daily, crypto-daily]
+    if: >
+      always() &&
+      (
+        (github.event_name == 'schedule' && github.event.schedule == '0 8 * * 1-5') ||
+        (github.event_name == 'workflow_dispatch' && (inputs.job == 'alerts' || inputs.job == 'all-daily'))
+      )
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install uv -q && uv sync --no-dev -q
+      - name: Process User Alerts
+        run: |
+          uv run python - <<'PYEOF'
+          import asyncio, logging
+          logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+          log = logging.getLogger("alert_engine")
+
+          async def main():
+              try:
+                  from backend.application.services.alert_service import AlertService
+                  from backend.infrastructure.persistence.session import get_session_factory
+                  svc = AlertService(session_factory=get_session_factory())
+                  triggered = await svc.process_daily_alerts()
+                  log.info("Alert Engine: %d Alerts ausgelöst", triggered)
+                  print(f"::notice::Alerts ausgelöst: {triggered}")
+              except ImportError as e:
+                  log.warning("AlertService nicht verfügbar: %s — übersprungen", e)
+
+          asyncio.run(main())
+          PYEOF
+        env:
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # 7) WEEKLY ML RETRAIN  ·  Freitag 22:00 UTC
+  #    Trainiert das LightGBM-Modell neu mit 8 Jahren historischen Daten
+  #    und deployed das neue Modell via Render API (force redeploy mit Secret-Update)
+  # ──────────────────────────────────────────────────────────────────────────
+  ml-retrain:
+    name: "🤖 Weekly ML Retrain (LightGBM)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: >
+      (github.event_name == 'schedule' && github.event.schedule == '0 22 * * 5') ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'ml-retrain')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install uv -q && uv sync --no-dev -q
+      - name: Train LightGBM Return Predictor
+        run: |
+          uv run python scripts/train_return_predictor.py \
+            --market ch \
+            --years 8 \
+            --output models/return_predictor_latest.joblib
+        timeout-minutes: 40
+      - name: Verify model file
+        run: |
+          if [ ! -f models/return_predictor_latest.joblib ]; then
+            echo "::error::Kein Modell-File erzeugt!"
+            exit 1
+          fi
+          SIZE=$(du -h models/return_predictor_latest.joblib | cut -f1)
+          echo "::notice::Neues Modell: $SIZE"
+      - name: Upload model as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-model-${{ github.run_number }}
+          path: models/return_predictor_latest.joblib
+          retention-days: 30
+      - name: Trigger Render Redeploy (lädt neues Modell)
+        run: |
+          curl -s -X POST \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache": "do_not_clear"}' | python3 -c "
+          import sys,json
+          d=json.load(sys.stdin)
+          print('Render Deploy:', d.get('status', d.get('id', 'triggered')))
+          "

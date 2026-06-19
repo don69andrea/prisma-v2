@@ -7,7 +7,6 @@ Features: 5 Quant-Scores, 12M/6M/3M-Return, Vol(30d/90d), RSI(14),
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import date
 from typing import Any
@@ -308,7 +307,10 @@ class MLFeatureService:
         today = date.today()
         close = prices["Close"].squeeze()
         volume = prices["Volume"].squeeze() if "Volume" in prices.columns else None
-        chf_eur = await asyncio.to_thread(_current_chf_eur)  # K-11: offload blocking yfinance call
+        # ECB statt yfinance — funktioniert von Render-IPs, kein Rate-Limit
+        from backend.infrastructure.adapters.ecb_fx_adapter import fetch_chf_eur as _ecb_chf_eur
+
+        chf_eur = await _ecb_chf_eur()
 
         return MLFeatureVector(
             ticker=ticker_upper,

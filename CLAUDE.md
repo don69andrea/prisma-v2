@@ -5,7 +5,7 @@
 | # | Aufgabe | Person | Branch | Status | Blockiert durch |
 |---|---------|--------|--------|--------|-----------------|
 | R2.3-1 | Datenpipeline: SMI seeden + XGBoost trainieren | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | — |
-| R2.3-2 | /decision: echte BUY/HOLD/WATCH Signale | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | — |
+| R2.3-2 | /decision: echte BUY/HOLD/SELL Signale | Andrea | `feature/andrea-datenpipeline` | ✅ DONE | — |
 | R2.3-3 | Frontend: SignalBadge + PrismaScore + ExplainButton | Helin | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.3-4 | Frontend: Glassmorphism Cards + Loading-States | Helin | `feature/helin-ux-components` | ✅ DONE | — |
 | R2.3-5 | Backend: InvestorProfile Model + DB Migration | Aurelius | `feature/aurelius-investorprofile` | ✅ DONE | — |
@@ -61,7 +61,7 @@ gh pr create --base main
 
 **Adapter:** `YFinanceSwissAdapter` (`backend/infrastructure/adapters/yfinance_swiss.py`) implementiert `SwissMarketDataProvider`-Port. Alle yfinance-Calls via `asyncio.to_thread()` (nicht `run_in_executor`). Ticker-Format: `NESN.SW` (SIX-Suffix).
 
-**Scoring:** `SwissQuantScorer` (`backend/domain/services/swiss_quant_scorer.py`) berechnet value/income/quality-Scores mit SMI-kalibrierten Bändern → `SwissQuantScore` Value Object mit Signal BUY/HOLD/WATCH.
+**Scoring:** `SwissQuantScorer` (`backend/domain/services/swiss_quant_scorer.py`) berechnet value/income/quality-Scores mit SMI-kalibrierten Bändern → `SwissQuantScore` Value Object mit Signal BUY/HOLD/SELL.
 
 **Seed-Daten:** `scripts/seed_smi_universe.py` — 20 SMI-Konstituenten. Offene ISIN-TODOs: ABBN, BALN (delisted), STMN.
 
@@ -169,7 +169,7 @@ Am Anfang des Tages, nicht nach 20 CI-Runs. Branch-Divergenz erzeugt Konflikte u
 | **VIAC** | Swiss Life Vorsorge-App mit Einzeltitel-Selektion (VIAC Stocks Initiative) |
 | **FINMA** | Eidgenössische Finanzmarktaufsicht — reguliert 3a-fähige Anlagen |
 | **CH-ISIN** | Schweizer ISIN-Format: `CH` + 9 Ziffern + Luhn-Check-Digit |
-| **BUY/HOLD/WATCH** | Signal aus `SwissQuantScore.signal`: composite ≥70 / 40–69 / <40 |
+| **BUY/HOLD/SELL** | Signal aus `SwissQuantScore.signal`: composite ≥70 / 40–69 / <40 |
 
 ## Wenn unsicher: fragen
 

@@ -52,12 +52,12 @@ Dieses Dokument beschreibt alle identifizierten Probleme und deren Lösung im Ra
 | Problem | Datei | Schwere |
 |---------|-------|---------|
 | ML-Gewicht (0.35) fällt bei ML-Ausfall weg statt umverteilt zu werden | `signal_aggregation_service.py` | HOCH |
-| BUY/HOLD/WATCH Kriterien für User nicht sichtbar | `decision-client.tsx` | MITTEL |
+| BUY/HOLD/SELL Kriterien für User nicht sichtbar | `decision-client.tsx` | MITTEL |
 | Keine Sortierung nach Confidence oder Signal-Stärke als Default | `decision-client.tsx` | MITTEL |
 
 **Geplante Lösung:**
 - `signal_aggregation_service.py`: ML-Ausfall → ML-Gewicht 50/50 auf Quant/Makro verteilen
-- Decision-Client: Tooltip/Erklärung zu BUY/HOLD/WATCH Schwellen (≥70/40–69/<40)
+- Decision-Client: Tooltip/Erklärung zu BUY/HOLD/SELL Schwellen (≥70/40–69/<40)
 - Default-Sort: nach composite_score descending
 
 ### 1.4 Portfolio (`/portfolio`)
@@ -193,7 +193,7 @@ const weightStatus = totalWeight === 100 ? 'ok' : totalWeight > 100 ? 'over' : '
 ### Phase C: UX-Verbesserungen
 6. `dashboard-client.tsx`: Top-Signale + Schnell-Links
 7. `discover-client.tsx`: Bessere Stock-Erklärungen
-8. `decision-client.tsx`: Default-Sort + BUY/HOLD/WATCH Tooltip
+8. `decision-client.tsx`: Default-Sort + BUY/HOLD/SELL Tooltip
 
 ### Phase D: Cleanup
 9. Tote Branches archivieren (Referenz in CLAUDE.md)

@@ -88,7 +88,7 @@ class SwissMarketService:
 # LLM-Outputs: IMMER Pydantic
 class ViacRecommendation(BaseModel):
     ticker: str
-    signal: Literal["BUY", "HOLD", "WATCH"]
+    signal: Literal["BUY", "HOLD", "SELL"]
     langfrist_score: float
     steuer_hinweis: str
     confidence: float = Field(ge=0.0, le=1.0)
@@ -169,7 +169,7 @@ Swiss Market Stocks: immer aus validierter Whitelist (SIX Exchange API), nie aus
 - Sprache: Deutsche Chunks bevorzugen für Swiss-specific Content
 
 ### 6.5 Decision Intelligence Dashboard
-- Signale: BUY / HOLD / WATCH (nie SELL — kein Shorting-Signal)
+- Signale: BUY / HOLD / SELL (nie SELL — kein Shorting-Signal)
 - Jede Entscheidung hat einen Audit Trail (Welche Faktoren? Welcher Agent? Timestamp)
 - Konfidenz-Score sichtbar: "Diese Einschätzung basiert auf X Datenpunkten"
 

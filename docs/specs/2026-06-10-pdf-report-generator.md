@@ -44,7 +44,7 @@ class ReportData:
 
     # Quant
     quant_scores: dict[str, float]      # 5 Modelle: name → score
-    quant_signals: dict[str, str]       # name → BUY/HOLD/WATCH
+    quant_signals: dict[str, str]       # name → BUY/HOLD/SELL
     weighted_avg_score: float
 
     # ML

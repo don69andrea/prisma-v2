@@ -23,7 +23,7 @@
 ```
 Quant-Modelle (45%)  +  ML-Predictor (35%)  +  Makro-Kontext (20%)
               ↓
-     BUY / HOLD / WATCH Signal
+     BUY / HOLD / SELL Signal
               ↓
   Erklärung auf Deutsch — kein Fachjargon
 ```
@@ -89,7 +89,7 @@ direkt in der VIAC-App verwendbar ohne manuelle Prüfung.
          ↓                   ↓                  ↓
     weighted_score = 0.45×Q + 0.35×ML + 0.20×M
          ↓
-    BUY ≥ 65  |  HOLD ≥ 40  |  WATCH < 40
+    BUY ≥ 65  |  HOLD ≥ 40  |  SELL < 40
 ```
 
 **Jedes Signal** wird im Audit-Trail mit vollständiger Begründung gespeichert.
@@ -102,7 +102,7 @@ direkt in der VIAC-App verwendbar ohne manuelle Prüfung.
 
 1. **Universe wählen** → SMI 13 Titel laden (`GET /api/v1/universes`)
 2. **Ranking starten** → Quant-Scores berechnen (`POST /api/v1/runs`)
-3. **Signal Dashboard** → BUY/HOLD/WATCH-Übersicht mit 3a-Filter (`GET /api/v1/decisions`)
+3. **Signal Dashboard** → BUY/HOLD/SELL-Übersicht mit 3a-Filter (`GET /api/v1/decisions`)
 4. **Portfolio allozieren** → Score-Weighted oder Risk-Parity (`POST /api/v1/portfolio/allocate`)
 5. **Fonds-Vergleich** → PRISMA-Portfolio vs. VIAC Global 100 (`POST /api/v1/fonds/vergleich`)
 
@@ -138,12 +138,12 @@ direkt in der VIAC-App verwendbar ohne manuelle Prüfung.
 **Nutzer bleiben ohne aktives Monitoring informiert.**
 
 - **Price Alerts:** Benachrichtigung wenn Kurs um X% abweicht
-- **Signal Alerts:** Benachrichtigung bei BUY→HOLD→WATCH-Wechsel
+- **Signal Alerts:** Benachrichtigung bei BUY→HOLD→SELL-Wechsel
 - **Kanäle:** E-Mail (SendGrid) oder Webhook
 - **Täglicher Worker:** APScheduler prüft automatisch alle aktiven Alerts
 
 **Use Case für VIAC:**  
-Ein Nutzer hält NESN. NESN-Signal wechselt von HOLD zu WATCH.  
+Ein Nutzer hält NESN. NESN-Signal wechselt von HOLD zu SELL.  
 → Automatische E-Mail-Benachrichtigung an den Nutzer.
 
 ---

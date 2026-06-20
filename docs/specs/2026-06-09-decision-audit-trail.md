@@ -10,7 +10,7 @@
 
 ## Ziel
 
-Jede BUY/HOLD/WATCH-Entscheidung wird mit vollständiger Begründung persistiert: Quant-Score, ML-Score, Makro-Score, gewichtete Gesamtscore, 3a-Eignung, Datum. Audit Trail ist abrufbar via REST.
+Jede BUY/HOLD/SELL-Entscheidung wird mit vollständiger Begründung persistiert: Quant-Score, ML-Score, Makro-Score, gewichtete Gesamtscore, 3a-Eignung, Datum. Audit Trail ist abrufbar via REST.
 
 ---
 
@@ -38,7 +38,7 @@ Jede BUY/HOLD/WATCH-Entscheidung wird mit vollständiger Begründung persistiert
 weighted_score = quant_score * 0.45 + ml_score * 0.35 + macro_score * 0.20
 BUY:  weighted_score >= 65
 HOLD: weighted_score >= 40
-WATCH: weighted_score < 40
+SELL: weighted_score < 40
 ```
 
 ### Infrastructure

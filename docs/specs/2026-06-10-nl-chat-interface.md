@@ -46,7 +46,7 @@ tools = [
         "name": "filter_stocks",
         "description": "Filtert Aktien nach Kriterien: Signal, 3a-Eignung, Score-Threshold",
         "input_schema": {
-            "signal": Optional[Literal["BUY", "HOLD", "WATCH"]],
+            "signal": Optional[Literal["BUY", "HOLD", "SELL"]],
             "eligible_3a": Optional[bool],
             "min_score": Optional[float],
             "universe": Optional[str]

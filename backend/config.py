@@ -73,9 +73,10 @@ class Settings(BaseSettings):
     eodhd_api_key: str = ""
 
     # Steuert, welche Fundamentals-Quelle der Feature-/Seed-Pfad nutzt.
-    # auto  = verify_dataset_coverage.py hat den Sieger nach docs/dataset_coverage.md geschrieben
-    # eodhd | fmp | simfin_us | yf_derived
-    dataset_source_fundamentals: str = "simfin_us"
+    # yf_derived = yfinance .info (aktueller Snapshot, nur Quant-Scorer + Dashboard)
+    # simfin_us  = optionales US-Experiment (NICHT im Hauptpfad, laut TEIL F)
+    # eodhd | fmp  = kostenpflichtig, kein Key vorhanden
+    dataset_source_fundamentals: str = "yf_derived"
     dataset_source_prices: str = "yfinance"
     dataset_source_crypto: str = "cryptodatadownload"
 

@@ -1,0 +1,125 @@
+name: V3 Seed & New Cron Jobs
+
+# Folgt dem bewährten Muster aus daily-data-seed.yml:
+# - ein File, mehrere Crons, Job-Selektion via `if: github.event.schedule == ...`
+# - GitHub-Action-IPs sind bei Yahoo nicht geblockt; Actions sind gratis
+# Der einmalige Historien-Seed läuft NUR manuell (workflow_dispatch), nie auf Schedule.
+
+on:
+  schedule:
+    - cron: "30 3 * * 1-5"   # 03:30 UTC Mo-Fr — DataStewardAgent (V3, echter DB-Writer)
+    - cron: "0 9 * * 1-5"    # 09:00 UTC Mo-Fr — SignalAccuracyAgent (+ Continuous Learning)
+    - cron: "0 */4 * * *"    # alle 4h, AUCH Sa/So — CryptoIntradayAgent (BTC/ETH)
+    - cron: "0 3 1-7 * 1"    # 1. Montag/Monat 03:00 — SNBRateUpdateAgent + SimFin-Update
+
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Job manuell ausführen"
+        required: true
+        default: "data-steward"
+        type: choice
+        options:
+          - verify-coverage       # PHASE-0-GATE
+          - seed-prices           # einmaliger Bootstrap
+          - seed-crypto           # einmaliger Bootstrap
+          - seed-fundamentals     # einmaliger Bootstrap
+          - data-steward
+          - signal-accuracy
+          - crypto-intraday
+          - macro-rate-update
+
+env:
+  DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+  EODHD_API_KEY: ${{ secrets.EODHD_API_KEY }}
+  FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+  SIMFIN_API_KEY: ${{ secrets.SIMFIN_API_KEY }}
+  GLASSNODE_API_KEY: ${{ secrets.GLASSNODE_API_KEY }}
+  COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+  ENVIRONMENT: production
+  PYTHONPATH: "."
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ── Phase 0 + Bootstrap (nur manuell) ──────────────────────────────────
+  manual-seed:
+    name: "🌱 Manual Seed / Verify"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && (startsWith(inputs.job, 'seed-') || inputs.job == 'verify-coverage')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install uv -q && uv sync --no-dev -q
+      - name: Run selected seed
+        run: |
+          case "${{ inputs.job }}" in
+            verify-coverage)   uv run python scripts/verify_dataset_coverage.py ;;
+            seed-prices)       uv run python scripts/seed_historical_prices.py --from 2015-01-01 ;;
+            seed-crypto)       uv run python scripts/seed_crypto_history.py --from 2017-01-01 ;;
+            seed-fundamentals) uv run python scripts/seed_fundamentals.py --provider auto --from 2015-01-01 ;;
+          esac
+
+  # ── DataStewardAgent · 03:30 Mo-Fr ─────────────────────────────────────
+  data-steward:
+    name: "🧹 Data Steward"
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'schedule' && github.event.schedule == '30 3 * * 1-5') ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'data-steward')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install uv -q && uv sync --no-dev -q
+      - run: uv run python scripts/data_steward_run.py
+      - if: failure()
+        run: echo "::error::DataSteward fehlgeschlagen — Preisdaten evtl. veraltet"
+
+  # ── SignalAccuracyAgent · 09:00 Mo-Fr ──────────────────────────────────
+  signal-accuracy:
+    name: "🎯 Signal Accuracy + Continuous Learning"
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'schedule' && github.event.schedule == '0 9 * * 1-5') ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'signal-accuracy')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install uv -q && uv sync --no-dev -q
+      - run: uv run python scripts/signal_accuracy_run.py
+
+  # ── CryptoIntradayAgent · alle 4h, auch Wochenende ─────────────────────
+  crypto-intraday:
+    name: "₿ Krypto Intraday (BTC/ETH, 4h)"
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'schedule' && github.event.schedule == '0 */4 * * *') ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'crypto-intraday')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install uv -q && uv sync --no-dev -q
+      - run: uv run python scripts/crypto_intraday_snapshot.py
+
+  # ── SNB-Rate + SimFin-Update · 1. Montag/Monat ─────────────────────────
+  macro-rate-update:
+    name: "🏦 SNB/ECB Rate + Fundamentals-Update"
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'schedule' && github.event.schedule == '0 3 1-7 * 1') ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'macro-rate-update')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install uv -q && uv sync --no-dev -q
+      - run: uv run python scripts/snb_rate_update.py
+      - run: uv run python scripts/seed_fundamentals.py --provider auto --from 2024-01-01

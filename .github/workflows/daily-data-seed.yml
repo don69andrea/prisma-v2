@@ -220,7 +220,7 @@ jobs:
               today = datetime.now(UTC).date()
               async with get_session_factory()() as s:
                   r = await s.execute(
-                      text("SELECT COUNT(*) FROM crypto_signals WHERE snapshot_date = :d"),
+                      text("SELECT COUNT(*) FROM crypto_signals WHERE DATE(created_at AT TIME ZONE 'UTC') = :d"),
                       {"d": today}
                   )
                   n = r.scalar()
@@ -351,8 +351,7 @@ jobs:
         run: |
           uv run python scripts/train_return_predictor.py \
             --market ch \
-            --years 8 \
-            --output models/return_predictor_latest.joblib
+            --years 8
         timeout-minutes: 40
       - name: Verify model file
         run: |

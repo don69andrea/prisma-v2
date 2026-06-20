@@ -41,6 +41,10 @@ _FEATURE_LABELS: dict[str, str] = {
     "drawdown_12m": "Max Drawdown 12M",
     "snb_rate": "SNB Leitzins",
     "chf_eur": "CHF/EUR Kurs",
+    "pe_ratio": "Kurs-Gewinn-Verhältnis (KGV)",
+    "pb_ratio": "Kurs-Buch-Verhältnis (KBV)",
+    "dividend_yield": "Dividendenrendite",
+    "revenue_growth": "Umsatzwachstum",
 }
 _TOP_N_SHAP = 8
 

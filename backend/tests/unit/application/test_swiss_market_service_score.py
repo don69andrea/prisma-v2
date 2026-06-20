@@ -46,7 +46,7 @@ async def test_score_stock_returns_quant_score() -> None:
 
     assert isinstance(result, SwissQuantScore)
     assert result.ticker == "NESN"
-    assert result.signal in ("BUY", "HOLD", "SELL")
+    assert result.signal in ("BUY", "HOLD", "WATCH")
     mock_market_data.get_fundamentals.assert_called_once_with("NESN")
 
 

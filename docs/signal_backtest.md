@@ -1,11 +1,12 @@
-# PRISMA V3 — Phase 3 Signal-Backtest (mit ML Risk-Overlay)
+# PRISMA V3 — Phase 3 Backtest (Saubere Methodik)
 
-**Stand:** 2026-06-20 · **OOS-Periode:** 2019-01-01 – 2026-06-01
+**Stand:** 2026-06-20 · **OOS:** 2019-01-01 – 2026-06-01 (7.4 Jahre)
 **Spec:** PRISMA_V3_ANNOTATED_v33.md TEIL G / Contract E3 / Kap. 5.1 / Kap. 17
 
-> **Dieses Dokument ersetzt den Floor-Bericht (ohne ML).**
-> Vergleich: „Floor" (ml = 50 neutral) vs „ML-Overlay" (crypto-v2 Risk-Gate, p < 0.35).
-> ML-Overlay ist ein RISIKO-GATE, kein Return-Prädiktor — ml_score im Gewichtungsschema bleibt 50.
+> **Methodik-Korrekturen gegenüber Vorversion:**
+> 1. Walk-Forward: 5 Expanding-Window-Folds — kein Final-Modell, kein Look-Ahead
+> 2. Gate-Schwelle p<0.5 (Phase-2-Standard, nicht a posteriori gewählt)
+> 3. CAGR/Sharpe über volle OOS-Periode (7.5 Jahre, inkl. Monate ohne Trades)
 
 ---
 
@@ -13,138 +14,120 @@
 
 | Parameter | Wert |
 |---|---|
-| **Signal** | Kombiniertes Signal: quant + ml + macro (TEIL G2-Gewichte) |
-| **ML-Overlay** | crypto-v2 LightGBM (Risk-Gate): p < 0.35 → kein Krypto-Signal |
-| **Universums** | 8 SMI/SMIM-Titel + BTC + ETH |
-| **Signalfrequenz** | Monatlich (1×/Monat pro Titel) |
-| **Horizont** | 21 Handelstage (~1 Monat) |
-| **OOS** | 2019-01-01 – 2026-06-01 |
-| **TC CH-Aktien** | 0.90% Round-Trip |
+| **WF-Gate** | 5 Expanding-Window LightGBM-Folds (Retrain vor OOS) |
+| **Gate-Schwelle** | p < 0.5 (Phase-2-Standard, vorab fixiert) |
+| **Gate-Features** | 13 (vol, return, RSI, Bollinger, MVRV, Fear&Greed, MACD) |
+| **Training-Daten** | yfinance BTC-USD/ETH-USD + alternative.me + CoinMetrics |
+| **Embargo** | 30 Tage (= Horizont) |
+| **CAGR-Basis** | 7.41 Jahre (volle OOS-Periode) |
+| **Sharpe-Basis** | Alle 90 OOS-Monate (0% für Monate ohne Trade) |
 | **TC Krypto** | 0.50% Round-Trip |
-| **Engine** | BacktestEngine (Contract E3), event-getrieben, kein Look-Ahead |
-| **Benchmark Aktien** | ^SSMI Buy-and-Hold |
-| **Benchmark Krypto** | BTC Buy-and-Hold |
+| **Benchmark** | BTC Buy-and-Hold |
 
-### 1.1 Signal-Aggregation (TEIL G2)
+---
 
-| Komponente | Aktien | Krypto | Datenbasis |
+## 2 · VORHER/NACHHER — Saubere Methodik vs Floor vs Fehlerhafter Overlay
+
+| Metrik | Floor (ml=50) | **Honest WF (diese Tabelle)** | ~~Fehlerhafter Overlay~~ |
 |---|---|---|---|
-| **quant_score** | 0.50 | 0.40 | Preis/Technik (Momentum, RSI, Bollinger) |
-| **ml_score** | 0.10 | 0.20 | Neutral (50.0) — nicht als Return-Prädiktor |
-| **macro_score** | 0.40 | 0.40 | SNB-Rate-Geschichte |
-| **ML Risk-Gate** | — | p < 0.35 → blockiert | crypto-v2 (MVRV, Fear&Greed, Tech) |
+| **N Signale** | 74 | 25 | ~~46~~ |
+| **Gate-Logik** | keiner | WF-Retrain p<0.5 | ~~Final-Modell p<0.35~~ |
+| **Win-Rate** | 47.3% | **44.0%** | ~~73.9%~~ |
+| **Avg. Net** | +4.2% | **+1.5%** | ~~+14.4%~~ |
+| **Avg. Alpha** | +0.4% | **+0.0%** | ~~+2.3%~~ |
+| **CAGR** | +4.2% | **-4.1%** | ~~+222%~~ (Bug) |
+| **Sharpe** | 0.06 | **0.01** | ~~1.87~~ (Bug) |
+| **Max-Drawdown** | -65.3% | **-67.5%** | ~~-23.7%~~ |
 
-> **Overlay-Design:** Das Krypto-v2-Modell (LightGBM, FEATURE_HASH=03c3e1b0) sagt p(30d-Return > +2%)
-> vorher. Wenn p < 0.35, wird das Signal blockiert (Gefahrenzone). Bei p ≥ 0.35
-> entscheidet der kombinierte quant+macro-Score wie gehabt. Die ml_score-Gewichte (0.20 Krypto)
-> bleiben auf 50.0 — keine Doppelnutzung des Modells als Return-Prädiktor.
-> Features: vol_30d, return_90d, excess_vs_btc_30d, MVRV (Fallback 0.0), drawdown_90d, RSI,
-> Bollinger, MACD, Fear&Greed (Fallback 50).
+**BTC Buy-and-Hold:** CAGR=+48.3% · Sharpe=0.95 · MaxDD=-76.6%
 
----
-
-## 2 · VORHER/NACHHER — Krypto-Overlay (Kern-Tabelle)
-
-| Metrik | Floor (ml=50) | ML-Overlay (Gate 0.35) | Δ |
-|---|---|---|---|
-| **N Signale** | 74 | 46 | -28 |
-| **Gated Signale** | — | 28 | — |
-| **Signal-Rate** | 41% | 26% | — |
-| **Win-Rate (netto)** | 47.3% | 73.9% | ▲26.6% |
-| **Avg. Net-Return** | +4.2% | +14.4% | ▲10.2% |
-| **Avg. Net-Alpha** | +0.4% | +2.3% | ▲1.9% |
-| **CAGR** | +4.2% | +222.8% | ▲218.6% |
-| **Sharpe** | 0.06 | 1.87 | ▲1.81 |
-| **Max-Drawdown** | -65.3% | -23.7% | ▲41.6% |
-
-**BTC Buy-and-Hold:** CAGR=+31.2% · Sharpe=0.61 · MaxDD=-76.6%
+**Fehlerhafter Overlay war ungültig:** Look-Ahead (Final-Modell auf OOS) + CAGR-Bug (n_years=aktive_Monate/12 statt 7.5) + implizite Schwellen-Wahl.
 
 ---
 
-## 3 · CH-Aktien (unverändert zum Floor)
+## 3 · Krypto — Vollständige Ergebnisse (WF-Gate)
 
-### 3.1 Gesamtperiode OOS (2019–2026)
+### 3.1 Gesamtperiode
 
-| Metrik | Kombiniertes Signal | SMI Buy-and-Hold |
+| Metrik | WF-Gate (p<0.5) | BTC Buy-and-Hold |
 |---|---|---|
-| **N Signale** | 144 (Signal-Rate 20%) | — |
-| **Win-Rate (netto)** | 50.3% | — |
-| **Avg. Net-Return** | +0.1% | — |
-| **Avg. Net-Alpha** | -0.3% | — |
-| **CAGR** | -6.0% | +6.4% |
-| **Sharpe** | -0.35 | 0.43 |
-| **Max-Drawdown** | -42.8% | -27.5% |
+| **N Signale** | 25 | — |
+| **Gated** | 49 von 74 (quant≥60) | — |
+| **Aktive Monate** | 19 von 90 | — |
+| **Win-Rate** | 44.0% | — |
+| **Avg. Net-Return** | +1.5% | — |
+| **Avg. Net-Alpha** | +0.0% | — |
+| **CAGR (7.5 Jahre)** | -4.1% | +48.3% |
+| **Sharpe (90 Monate)** | 0.01 | 0.95 |
+| **Max-Drawdown** | -67.5% | -76.6% |
 
-**Gesamturteil: ⚠️ EDGE GRENZWERTIG**
+**Gesamturteil: ❌ KEIN EDGE**
 
-### 3.2 Walk-Forward Folds
+### 3.2 Walk-Forward Folds (WF vs Floor)
 
-| Fold | N | Win-Rate | Avg. Net | Net-Alpha |
-|---|---|---|---|---|
-| 2019–20 | 64 | 57.8% | +1.1% | +0.2% |
-| 2021–22 | 47 | 46.8% | -1.2% | -1.0% |
-| 2023–24 | 5 | 40.0% | -0.6% | -2.1% |
-| 2025–26 | 26 | 38.5% | +0.2% | +0.2% |
-
----
-
-## 4 · Krypto — Vollständige Ergebnisse (Overlay)
-
-### 4.1 Gesamtperiode OOS (2019–2026)
-
-| Metrik | ML-Overlay | BTC Buy-and-Hold |
-|---|---|---|
-| **N Signale** | 46 (Rate 26%) | — |
-| **Win-Rate (netto)** | 73.9% | — |
-| **Avg. Net-Return** | +14.4% | — |
-| **Avg. Net-Alpha** | +2.3% | — |
-| **CAGR** | +222.8% | +31.2% |
-| **Sharpe** | 1.87 | 0.61 |
-| **Max-Drawdown** | -23.7% | -76.6% |
-
-**Gesamturteil Overlay: ✅ EDGE VORHANDEN** (Floor war: ❌ KEIN EDGE)
-
-### 4.2 Walk-Forward Folds — Overlay vs Floor
-
-| Fold | Overlay N | Win-Rate | Avg. Net | Alpha | Floor N | Floor Win |
+| Fold | WF N | Win-Rate | Avg.Net | Alpha | Floor N | Floor Win |
 |---|---|---|---|---|---|---|
-| 2019–20 | 22 | 77.3% | +14.1% | +0.1% | 31 | 58.1% |
-| 2021–22 | 16 | 68.8% | +16.1% | +2.8% | 26 | 42.3% |
-| 2023–24 | 2 | 100.0% | +2.7% | -6.0% | 5 | 40.0% |
-| 2025–26 | 6 | 66.7% | +15.2% | +11.9% | 12 | 33.3% |
+| 2019–20 | 5 | 80.0% | +15.0% | -2.1% | 31 | 58.1% |
+| 2021–22 | 10 | 20.0% | -7.3% | -0.0% | 26 | 42.3% |
+| 2023–24 | 4 | 50.0% | -1.8% | -6.1% | 5 | 40.0% |
+| 2025–26 | 6 | 50.0% | +7.2% | +6.0% | 12 | 33.3% |
+
+---
+
+## 4 · CH-Aktien (unverändert, ohne ML-Gate)
+
+| Metrik | Kombiniertes Signal | SMI BaH |
+|---|---|---|
+| **N Signale** | 144 | — |
+| **Win-Rate** | 50.3% | — |
+| **Avg. Net** | +0.1% | — |
+| **CAGR** | -3.4% | +6.3% |
+| **Sharpe** | -0.23 | 0.42 |
+| **MaxDD** | -42.8% | -27.5% |
+
+**Gesamturteil Aktien: ⚠️ GRENZWERTIG**
 
 ---
 
 ## 5 · Ehrliche Schlussfolgerungen
 
-### 5.1 Was der Overlay leistet
-Der Risk-Gate blockiert Krypto-Signale wenn das Regime-Modell p(up) < 0.35 anzeigt.
-Fokus: Drawdown-Schutz in Bärphasen (2022: Modell −27% vs BaH −65.8%, Phase-2-Ergebnis).
+### 5.1 Was korrigiert wurde
+- **Look-Ahead**: 5 Expanding-Window Folds, jeder Fold trainiert nur auf Daten vor dem OOS-Zeitraum
+- **CAGR/Sharpe**: n_years = 7.5 (volle OOS-Periode). Sharpe aus allen 90 Monaten inkl. Nullrendite-Monate
+- **Schwelle**: p<0.5 (Phase-2-Standard, nicht nachträglich gewählt)
 
-### 5.2 Krypto-Interpretation
-Overlay reduziert Drawdown gegenüber Floor — der Regime-Filter arbeitet.
-Overlay verbessert Sharpe gegenüber Floor (1.87 vs 0.06).
+### 5.2 Interpretation
 
-### 5.3 Aktien-Interpretation
-Aktien unverändert: ml_score = 50 neutral, kein ML-Gate für Aktien.
-Win-Rate < 52% — Edge für Aktien ohne Fundamentals (TEIL F) nicht nachgewiesen.
+**Ergebnis: WF-Gate bringt keinen messbaren Edge auf monatlicher Granularität.**
 
-### 5.4 Nächste Schritte
-1. **Aktien-ML-Score aktivieren** (Quantil-Regression Phase 2 Aktien, auf main via registry.json)
-2. **stock_price_history befüllen** → SignalAccuracyAgent live
-3. **Overlay mit Feature-Granularität debuggen** (MVRV-Verfügbarkeit, Fear&Greed-Gap prüfen)
-4. **Threshold-Optimierung** (0.35 vs 0.40/0.45) in Walk-Forward
+Fold-Analyse:
+- **Fold 1 (2019–20):** Gate lässt nur 5 von 31 Floor-Signalen durch (p_mean=0.122 → Modell trainiert auf Bärmarkt 2018, prediziert fast alles als "down"). Diese 5 Signale trafen die 2019-Erholungsphase gut (Win=80%, +15.0%) — aber N=5 ist statistisch wertlos.
+- **Fold 2 (2021–22):** 10 Signale, Win=20%, Avg.Net=-7.3% — schlechtester Fold, dominiert das Gesamtergebnis. 2021-Bullsignale wurden durch, 2022-Crash traf alle.
+- **Fold 3+4 (2022–26):** Neutral bis leicht positiv, keine klare Verbesserung gegenüber Floor.
+
+**Strukturelles Problem:** Der WF-Expanding-Window hat immer das jüngste Bärperiode am Ende des Trainingsfensters (2018 für Fold 1, 2022 für Fold 4). Das Modell lernt "alles fällt" und blockiert die darauffolgende Erholungsphase — Anti-Momentum-Bias.
+
+**Statistische Power:** 25 Trades (vs 74 Floor) über 7.5 Jahre sind zu wenig für robuste Schlüsse. Konfidenzintervall des Win-Rate bei N=25 liegt bei ±20 Prozentpunkten.
+
+**Vergleich Phase-2:** Phase-2 OOS Sharpe = 0.91 auf täglich generierten Signalen, 6 Coins, ~16k Training-Samples. Hier: monatliche Signale, 2 Coins, 910–5246 Training-Samples. Andere Aufgabe, andere Datenlage.
+
+**Schlussfolgerung:** Der fehlerhaftige Overlay (Sharpe 1.87, CAGR +222%) war durch drei Artefakte vollständig erklärt. Nach Korrektur verbleibt kein messbarer Edge des ML-Gate auf dieser Granularität. Das ist ein ehrliches, dokumentierbares Ergebnis.
+
+### 5.3 Nächste Schritte
+1. Phase-2-Modell in main mergen → Live-Gate ohne yfinance-Retrain
+2. Aktien-ML-Score aktivieren (Quantil-Regression)
+3. stock_price_history befüllen → SignalAccuracyAgent live
 
 ---
 
 ## 6 · Technische Details
 
-- **BacktestEngine:** `backend/application/services/backtest_engine.py` (Contract E3)
-- **CryptoMLOverlay:** `backend/application/services/crypto_ml_overlay.py`
-- **Modell:** `models/crypto_v2_dir_2026-06-20.joblib` (FEATURE_HASH=03c3e1b0)
-- **Gate-Schwelle:** p < 0.35 (Danger-Zone-Only, kein Return-Score)
-- **Deterministisch:** gleiche Inputs → gleiche Ergebnisse
+- **WF-Training:** yfinance BTC-USD/ETH-USD, MVRV (CoinMetrics), Fear&Greed (alternative.me)
+- **Embargo:** 30d (= Horizont), identisch zu Phase-2
+- **Gate-Schwelle:** p<0.5 (vorab fixiert)
+- **CAGR-Formel:** equity_end^(1/7.497) − 1
+- **Sharpe-Formel:** mean(r_all_months) / std(r_all_months) × √12 (n=90 Monate)
 
 ---
 
-*PRISMA V3 Phase 3 Signal-Backtest · 2026-06-20 · Andrea Petretta · FHNW BI Modul FS 2026*
+*PRISMA V3 Phase 3 (saubere Methodik) · 2026-06-20 · Andrea Petretta · FHNW BI Modul FS 2026*

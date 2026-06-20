@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     # Steuert, welche Fundamentals-Quelle der Feature-/Seed-Pfad nutzt.
     # auto  = verify_dataset_coverage.py hat den Sieger nach docs/dataset_coverage.md geschrieben
     # eodhd | fmp | simfin_us | yf_derived
-    dataset_source_fundamentals: str = "auto"
+    dataset_source_fundamentals: str = "simfin_us"
     dataset_source_prices: str = "yfinance"
     dataset_source_crypto: str = "cryptodatadownload"
 

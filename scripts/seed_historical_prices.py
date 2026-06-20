@@ -48,7 +48,8 @@ SMI = [
 
 
 _YF_OVERRIDES: dict[str, str] = {
-    "ROG": "RO.SW",  # Roche Holding AG — Bearer-Aktie (ROGN = Namenaktie, ROG = SIX-Kürzel)
+    "ROG": "RO.SW",    # Roche Holding AG — Bearer-Aktie (yfinance nutzt RO.SW, nicht ROG.SW)
+    "AMSN": "AMS.SW",  # ams-OSRAM AG — SIX-Kürzel AMSN, yfinance-Kürzel AMS.SW
 }
 
 

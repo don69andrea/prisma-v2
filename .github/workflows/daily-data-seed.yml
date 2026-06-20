@@ -37,6 +37,8 @@ env:
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
   VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
   JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  API_KEY: ${{ secrets.API_KEY }}
+  TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
   ENVIRONMENT: production
   PYTHONPATH: "."
 

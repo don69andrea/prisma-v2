@@ -565,20 +565,6 @@ def _fx_rate_on(ticker: str, snap: pd.Timestamp, market: str) -> float:
     return 1.0  # EUR-denominierte Märkte (DE, FR, NL, ES, IT, BE, AT)
 
 
-def _current_chf_eur() -> float:
-    """Holt aktuellen CHF/EUR aus yfinance (EUR/CHF invertiert)."""
-    try:
-        import yfinance as yf
-
-        fx = yf.download("EURCHF=X", period="5d", progress=False)
-        if fx is not None and len(fx) > 0:
-            eur_chf = float(fx["Close"].iloc[-1])
-            return round(1 / eur_chf, 6) if eur_chf > 0 else 0.93
-    except Exception:
-        pass
-    return 0.93  # Fallback: ca. CHF 0.93 per EUR
-
-
 def _return_nm_from_series(close: pd.Series, n_days: int) -> float:
     """N-Tage-Return (z.B. 126 ≈ 6 Monate, 63 ≈ 3 Monate)."""
     if len(close) < n_days:

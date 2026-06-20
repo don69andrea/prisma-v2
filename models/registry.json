@@ -38,5 +38,6 @@
       }
     }
   ],
-  "active_quantile": "quantile_meta_2026-06-20.json"
+  "active_quantile": "quantile_meta_2026-06-20.json",
+  "active_crypto_v2": "crypto_v2_dir_2026-06-20.joblib"
 }

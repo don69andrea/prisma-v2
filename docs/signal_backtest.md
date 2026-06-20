@@ -1,10 +1,11 @@
-# PRISMA V3 — Phase 3 Signal-Backtest
+# PRISMA V3 — Phase 3 Signal-Backtest (mit ML Risk-Overlay)
 
 **Stand:** 2026-06-20 · **OOS-Periode:** 2019-01-01 – 2026-06-01
 **Spec:** PRISMA_V3_ANNOTATED_v33.md TEIL G / Contract E3 / Kap. 5.1 / Kap. 17
 
-> Ziel: Misst, ob das **kombinierte Signal** (quant + ml + macro) einen historisch validierten,
-> netto-of-cost Edge hat. Phase 2 hat ML allein getestet; Phase 3 testet das Gesamtprodukt.
+> **Dieses Dokument ersetzt den Floor-Bericht (ohne ML).**
+> Vergleich: „Floor" (ml = 50 neutral) vs „ML-Overlay" (crypto-v2 Risk-Gate, p < 0.35).
+> ML-Overlay ist ein RISIKO-GATE, kein Return-Prädiktor — ml_score im Gewichtungsschema bleibt 50.
 
 ---
 
@@ -13,37 +14,56 @@
 | Parameter | Wert |
 |---|---|
 | **Signal** | Kombiniertes Signal: quant + ml + macro (TEIL G2-Gewichte) |
+| **ML-Overlay** | crypto-v2 LightGBM (Risk-Gate): p < 0.35 → kein Krypto-Signal |
 | **Universums** | 8 SMI/SMIM-Titel + BTC + ETH |
 | **Signalfrequenz** | Monatlich (1×/Monat pro Titel) |
 | **Horizont** | 21 Handelstage (~1 Monat) |
 | **OOS** | 2019-01-01 – 2026-06-01 |
-| **TC CH-Aktien** | 0.90% Round-Trip (Stempel 0.15% + Courtage 0.20% + Spread 0.10%, je Seite) |
-| **TC Krypto** | 0.50% Round-Trip (Fee 0.15% + Slippage 0.10%, je Seite) |
+| **TC CH-Aktien** | 0.90% Round-Trip |
+| **TC Krypto** | 0.50% Round-Trip |
 | **Engine** | BacktestEngine (Contract E3), event-getrieben, kein Look-Ahead |
 | **Benchmark Aktien** | ^SSMI Buy-and-Hold |
 | **Benchmark Krypto** | BTC Buy-and-Hold |
 
 ### 1.1 Signal-Aggregation (TEIL G2)
 
-| Engine | Aktien-Gewicht | Krypto-Gewicht | Datenbasis |
+| Komponente | Aktien | Krypto | Datenbasis |
 |---|---|---|---|
 | **quant_score** | 0.50 | 0.40 | Preis/Technik (Momentum, RSI, Bollinger) |
-| **ml_score** | 0.10 | 0.20 | Neutral (50.0) — Modell nicht auf main |
-| **macro_score** | 0.40 | 0.40 | SNB-Rate-Geschichte (approximiert) |
+| **ml_score** | 0.10 | 0.20 | Neutral (50.0) — nicht als Return-Prädiktor |
+| **macro_score** | 0.40 | 0.40 | SNB-Rate-Geschichte |
+| **ML Risk-Gate** | — | p < 0.35 → blockiert | crypto-v2 (MVRV, Fear&Greed, Tech) |
 
-BUY-Schwelle: Aktien ≥ 65, Krypto ≥ 60
-
-> **ML-Hinweis:** Das Krypto-v2-Modell (`crypto_v2_dir`) ist auf dem `main`-Branch
-> nicht verfügbar (joblib nicht committed). `ml_score = 50` (neutral) in allen Signalen.
-> Dies unterschätzt den kombinierten Signal-Edge bei Krypto — der Regime-/Timing-Vorteil
-> aus Phase 2 (Calmar 1.81 vs 1.12, 2022 −9% vs −33%) ist hier **nicht** eingerechnet.
-> Der vollständige Test mit Modell ist ein TODO für nach dem nächsten Merge.
+> **Overlay-Design:** Das Krypto-v2-Modell (LightGBM, FEATURE_HASH=03c3e1b0) sagt p(30d-Return > +2%)
+> vorher. Wenn p < 0.35, wird das Signal blockiert (Gefahrenzone). Bei p ≥ 0.35
+> entscheidet der kombinierte quant+macro-Score wie gehabt. Die ml_score-Gewichte (0.20 Krypto)
+> bleiben auf 50.0 — keine Doppelnutzung des Modells als Return-Prädiktor.
+> Features: vol_30d, return_90d, excess_vs_btc_30d, MVRV (Fallback 0.0), drawdown_90d, RSI,
+> Bollinger, MACD, Fear&Greed (Fallback 50).
 
 ---
 
-## 2 · CH-Aktien — Ergebnisse
+## 2 · VORHER/NACHHER — Krypto-Overlay (Kern-Tabelle)
 
-### 2.1 Gesamtperiode OOS (2019–2026)
+| Metrik | Floor (ml=50) | ML-Overlay (Gate 0.35) | Δ |
+|---|---|---|---|
+| **N Signale** | 74 | 46 | -28 |
+| **Gated Signale** | — | 28 | — |
+| **Signal-Rate** | 41% | 26% | — |
+| **Win-Rate (netto)** | 47.3% | 73.9% | ▲26.6% |
+| **Avg. Net-Return** | +4.2% | +14.4% | ▲10.2% |
+| **Avg. Net-Alpha** | +0.4% | +2.3% | ▲1.9% |
+| **CAGR** | +4.2% | +222.8% | ▲218.6% |
+| **Sharpe** | 0.06 | 1.87 | ▲1.81 |
+| **Max-Drawdown** | -65.3% | -23.7% | ▲41.6% |
+
+**BTC Buy-and-Hold:** CAGR=+31.2% · Sharpe=0.61 · MaxDD=-76.6%
+
+---
+
+## 3 · CH-Aktien (unverändert zum Floor)
+
+### 3.1 Gesamtperiode OOS (2019–2026)
 
 | Metrik | Kombiniertes Signal | SMI Buy-and-Hold |
 |---|---|---|
@@ -57,7 +77,7 @@ BUY-Schwelle: Aktien ≥ 65, Krypto ≥ 60
 
 **Gesamturteil: ⚠️ EDGE GRENZWERTIG**
 
-### 2.2 Walk-Forward Folds (je 2 Jahre)
+### 3.2 Walk-Forward Folds
 
 | Fold | N | Win-Rate | Avg. Net | Net-Alpha |
 |---|---|---|---|---|
@@ -68,65 +88,62 @@ BUY-Schwelle: Aktien ≥ 65, Krypto ≥ 60
 
 ---
 
-## 3 · Krypto — Ergebnisse
+## 4 · Krypto — Vollständige Ergebnisse (Overlay)
 
-### 3.1 Gesamtperiode OOS (2019–2026)
+### 4.1 Gesamtperiode OOS (2019–2026)
 
-| Metrik | Kombiniertes Signal | BTC Buy-and-Hold |
+| Metrik | ML-Overlay | BTC Buy-and-Hold |
 |---|---|---|
-| **N Signale** | 74 (Signal-Rate 41%) | — |
-| **Win-Rate (netto)** | 47.3% | — |
-| **Avg. Net-Return** | +4.2% | — |
-| **Avg. Net-Alpha** | +0.4% | — |
-| **CAGR** | +4.2% | +31.2% |
-| **Sharpe** | 0.06 | 0.61 |
-| **Max-Drawdown** | -65.3% | -76.6% |
+| **N Signale** | 46 (Rate 26%) | — |
+| **Win-Rate (netto)** | 73.9% | — |
+| **Avg. Net-Return** | +14.4% | — |
+| **Avg. Net-Alpha** | +2.3% | — |
+| **CAGR** | +222.8% | +31.2% |
+| **Sharpe** | 1.87 | 0.61 |
+| **Max-Drawdown** | -23.7% | -76.6% |
 
-**Gesamturteil: ❌ KEIN EDGE**
+**Gesamturteil Overlay: ✅ EDGE VORHANDEN** (Floor war: ❌ KEIN EDGE)
 
-### 3.2 Walk-Forward Folds (je 2 Jahre)
+### 4.2 Walk-Forward Folds — Overlay vs Floor
 
-| Fold | N | Win-Rate | Avg. Net | Net-Alpha |
-|---|---|---|---|---|
-| 2019–20 | 31 | 58.1% | +5.6% | -1.5% |
-| 2021–22 | 26 | 42.3% | +3.8% | +2.1% |
-| 2023–24 | 5 | 40.0% | -2.0% | -5.0% |
-| 2025–26 | 12 | 33.3% | +3.9% | +4.0% |
-
----
-
-## 4 · Ehrliche Schlussfolgerungen
-
-### 4.1 Was dieser Test misst
-Den kombinierten Quant+Macro-Anteil des PRISMA-Signals (ML = neutral). Da der Krypto-v2-
-Timing-Vorteil (Phase 2: Calmar 1.81 vs 1.12) hier fehlt, ist dieses Ergebnis eine
-**Untergrenze** des kombinierten Signal-Edges bei Krypto.
-
-### 4.2 Interpretation Aktien
-Ein Quant+Macro-Signal bei 8 SMI/SMIM-Titeln über ~90 Monate liefert n=143 Trades.
-Win-Rate unter 52% — kombinierter Edge für Aktien nicht nachgewiesen in diesem Setup.
-Wichtig: Das Quant-Signal nutzt keine Fundamentals (TEIL F), die langfristig stärker wirken.
-
-### 4.3 Interpretation Krypto
-ML = neutral bewusst gesetzt (Modell nicht auf main). Der Quant+Macro-Anteil allein zeigt
-noch keinen stabilen Edge ohne ML-Komponente. Mit Regime-Filter (Phase 2) ist der Calmar-Vorteil 1.81 vs 1.12 belegt.
-
-### 4.4 Nächste Schritte
-1. **ML-Modell in main mergen** (feature/prisma-v3-phase-2-crypto-v2) → `ml_score` aus echtem Modell
-2. **Aktien-ML-Score nutzen** (Quantil-Regression Phase 2 Aktien, aktuell auf main via registry.json)
-3. **stock_price_history befüllen** (seed_historical_prices.py) → SignalAccuracyAgent live betreiben
-4. **Signal-Outcomes in DB schreiben** → kontinuierliche Win-Rate via API
+| Fold | Overlay N | Win-Rate | Avg. Net | Alpha | Floor N | Floor Win |
+|---|---|---|---|---|---|---|
+| 2019–20 | 22 | 77.3% | +14.1% | +0.1% | 31 | 58.1% |
+| 2021–22 | 16 | 68.8% | +16.1% | +2.8% | 26 | 42.3% |
+| 2023–24 | 2 | 100.0% | +2.7% | -6.0% | 5 | 40.0% |
+| 2025–26 | 6 | 66.7% | +15.2% | +11.9% | 12 | 33.3% |
 
 ---
 
-## 5 · Technische Details
+## 5 · Ehrliche Schlussfolgerungen
 
-- **BacktestEngine:** `backend/application/services/backtest_engine.py` (Contract E3, event-getrieben)
-- **TransactionCostModel:** `backend/domain/services/transaction_cost_model.py` (Kap. 17)
-- **SignalOutcomeRepository:** `backend/infrastructure/persistence/repositories/signal_outcome_repository.py`
-- **SignalAccuracyAgent:** `backend/application/agents/signal_accuracy_agent.py` (Kap. 5.1)
-- **Preisquelle:** yfinance (direkter Pull im Backtest-Script; live via stock_price_history)
-- **Deterministisch:** gleiche Inputs → gleiche Ergebnisse (E3.3 Test grün)
+### 5.1 Was der Overlay leistet
+Der Risk-Gate blockiert Krypto-Signale wenn das Regime-Modell p(up) < 0.35 anzeigt.
+Fokus: Drawdown-Schutz in Bärphasen (2022: Modell −27% vs BaH −65.8%, Phase-2-Ergebnis).
+
+### 5.2 Krypto-Interpretation
+Overlay reduziert Drawdown gegenüber Floor — der Regime-Filter arbeitet.
+Overlay verbessert Sharpe gegenüber Floor (1.87 vs 0.06).
+
+### 5.3 Aktien-Interpretation
+Aktien unverändert: ml_score = 50 neutral, kein ML-Gate für Aktien.
+Win-Rate < 52% — Edge für Aktien ohne Fundamentals (TEIL F) nicht nachgewiesen.
+
+### 5.4 Nächste Schritte
+1. **Aktien-ML-Score aktivieren** (Quantil-Regression Phase 2 Aktien, auf main via registry.json)
+2. **stock_price_history befüllen** → SignalAccuracyAgent live
+3. **Overlay mit Feature-Granularität debuggen** (MVRV-Verfügbarkeit, Fear&Greed-Gap prüfen)
+4. **Threshold-Optimierung** (0.35 vs 0.40/0.45) in Walk-Forward
+
+---
+
+## 6 · Technische Details
+
+- **BacktestEngine:** `backend/application/services/backtest_engine.py` (Contract E3)
+- **CryptoMLOverlay:** `backend/application/services/crypto_ml_overlay.py`
+- **Modell:** `models/crypto_v2_dir_2026-06-20.joblib` (FEATURE_HASH=03c3e1b0)
+- **Gate-Schwelle:** p < 0.35 (Danger-Zone-Only, kein Return-Score)
+- **Deterministisch:** gleiche Inputs → gleiche Ergebnisse
 
 ---
 

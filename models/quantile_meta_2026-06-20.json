@@ -1,0 +1,26 @@
+{
+  "type": "quantile",
+  "cv": "purged_embargo",
+  "embargo_days": 30,
+  "features": [
+    "return_1m",
+    "return_3m",
+    "return_6m",
+    "return_12m",
+    "vol_30d",
+    "vol_90d",
+    "rsi_14",
+    "price_to_52w_high",
+    "momentum_vs_smi_3m",
+    "bb_position",
+    "macd_hist",
+    "drawdown_12m",
+    "snb_rate",
+    "chf_eur",
+    "inflation_ch"
+  ],
+  "feature_hash": "b9248440",
+  "n_train": 3654,
+  "n_folds": 5,
+  "trained_at": "2026-06-20"
+}

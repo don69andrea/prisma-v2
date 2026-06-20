@@ -9,10 +9,10 @@ net_return = gross_return − round_trip_cost.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class AssetClass(str, Enum):
+class AssetClass(StrEnum):
     CH_STOCK = "ch_stock"
     CRYPTO = "crypto"
 

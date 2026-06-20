@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date
 from typing import Any
 
 import numpy as np
@@ -171,10 +171,6 @@ class BacktestEngine:
         # Benchmark-Equity
         bm_returns = benchmark.pct_change().dropna()
         bm_equity = (1.0 + bm_returns).cumprod()
-        if len(bm_equity) > 0:
-            bm_total = float(bm_equity.iloc[-1] - 1.0)
-        else:
-            bm_total = 0.0
 
         n_years = len(equity_dates) / 12.0 if equity_dates else 0.0
         cagr = _cagr(equity_values, n_years)

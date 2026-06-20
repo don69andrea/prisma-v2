@@ -131,3 +131,67 @@ Fold-Analyse:
 ---
 
 *PRISMA V3 Phase 3 (saubere Methodik) · 2026-06-20 · Andrea Petretta · FHNW BI Modul FS 2026*
+
+
+## 7 · Täglicher Krypto-Overlay — 6 Coins, Walk-Forward OOS (Kern-Validierung)
+
+**Fragestellung:** Bringt das Phase-2-Krypto-Risiko-Modell (Walk-Forward, p≥0.5) messbaren
+Drawdown-Schutz, oder ist ein scheinbarer Vorteil nur auf tiefere Investitionsquote
+(Unter-Investition) zurückzuführen?
+
+**Test:** ML-Timing vs Exposure-Matched Baseline (gleiche ∅-Investitionsquote, kein Timing).
+
+### 7.1 · Methodik
+
+| Parameter | Wert |
+|---|---|
+| **Coins** | BTC, ETH, XRP, LTC, ADA, DOGE — gleichgewichtet (1/6) |
+| **Granularität** | Täglich (Handelstage) |
+| **OOS** | 2019-01-01 – 2026-06-01 (~7.5 Jahre, ~1900 Handelstage) |
+| **WF-Gate** | 5 Expanding-Window Folds, Embargo 30 Tage |
+| **Schwelle** | p ≥ 0.5 = IN, p < 0.5 = OUT (a priori, kein Tuning) |
+| **TC** | 0.25% one-way beim Signal-Wechsel |
+| **∅ Investitionsquote ML** | 28.0% |
+| **Exposure-Matched** | Konstante 28.0% je Coin (kein Timing) |
+| **CAGR-Basis** | 7.41 Jahre (volle OOS-Periode) |
+
+### 7.2 · Haupt-Ergebnis — Timing-Skill-Test
+
+| Metrik | **ML-Timing** | **Buy-and-Hold** | **Exposure-Matched** |
+|---|---|---|---|
+| **CAGR** | +23.2% | +55.1% | +20.1% |
+| **Sharpe** | 0.77 | 0.93 | 0.93 |
+| **Max-Drawdown** | -65.9% | -77.3% | -30.5% |
+| **Calmar** | 0.35 | 0.71 | 0.66 |
+
+**Gesamturteil: ❌ KEIN TIMING-SKILL (ML ≤ Exposure-Matched auf Calmar)**
+
+> *Exposure-Matched = gleiche ∅-Investitionsquote (28.0%) wie ML, aber kein Timing —
+> reines Unterinvestitions-Benchmark. Schlägt ML diesen Benchmark auf Calmar, ist echter
+> Timing-Skill nachgewiesen.*
+
+### 7.3 · Fold-Analyse (Calmar je Zeitraum)
+
+| Zeitraum | ML Calmar | ML MaxDD | EM Calmar | EM MaxDD | BaH MaxDD | ∅ Exposure |
+|---|---|---|---|---|---|---|
+| 2019–20 | 0.11 | -39.3% | 1.16 | -7.7% | -66.9% | 9.1% |
+| 2021–22 | -0.16 | -65.9% | 0.92 | -33.9% | -77.3% | 31.6% |
+| 2023–24 | 5.78 | -20.6% | 2.22 | -18.0% | -41.4% | 40.7% |
+| 2025–26 | 0.17 | -18.8% | -0.44 | -24.5% | -62.2% | 31.8% |
+
+### 7.4 · Interpretation
+
+**ML vs Exposure-Matched:** Der entscheidende Vergleich ist ML Calmar vs EM Calmar.
+- ML Calmar > EM: Das Modell trifft *wann* es investiert besser als Zufall — echter Timing-Skill.
+- ML Calmar ≈ EM: Der Vorteil kommt nur vom tieferen Durchschnitts-Exposure, nicht vom Timing.
+- ML Calmar < EM: Das Timing-Modell wählt aktiv schlechte Eintritte — negativer Timing-Skill.
+
+**Vergleich Phase-2 CV:** Phase-2 Calmar=1.81 (purged CV, tägliche Signale, 6 Coins, 16k Samples).
+Hier: echte OOS-Folds mit Retrain. Differenz zeigt In-Sample-Optimismus aus der CV-Evaluation.
+
+**Drawdown 2022:** Das kritische Jahr für den Risk-Filter ist 2022 (BTC: −76.5% von Peak).
+Fold 3 (OOS 2022) zeigt, ob das Modell vor dem Crash warnt.
+
+---
+
+*Abschnitt 7 ergänzt: tägliche Granularität, 6 Coins, Walk-Forward — 2026-06-20*

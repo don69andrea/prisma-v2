@@ -88,7 +88,7 @@ class CryptoScorer:
         rank = asset.market_cap_rank or 50
         rank_score = float(max(0, 10 - max(0, rank - 10) // 5))
         ath_pct = abs(asset.ath_change_pct or -50.0)
-        ath_score = float(min(5.0, ath_pct // 20))
+        ath_score = max(0.0, 5 - int(ath_pct // 20))
         components["markt"] = rank_score + ath_score
 
         # ── 5. RISIKO (max 10 Pt) ────────────────────────────────

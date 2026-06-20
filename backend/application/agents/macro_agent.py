@@ -7,47 +7,23 @@ import logging
 from pydantic import BaseModel, Field
 
 from backend.application.services.macro_service import MacroService
+from backend.domain.data.macro_profiles import (
+    CHF_STRONG_THRESHOLD as _CHF_STRONG_THRESHOLD,
+)
+from backend.domain.data.macro_profiles import (
+    CHF_WEAK_THRESHOLD as _CHF_WEAK_THRESHOLD,
+)
+from backend.domain.data.macro_profiles import (
+    DOMESTIC_FOCUS as _DOMESTIC_FOCUS,
+)
+from backend.domain.data.macro_profiles import (
+    EXPORT_HEAVY as _EXPORT_HEAVY,
+)
+from backend.domain.data.macro_profiles import (
+    EXPORT_SECTORS as _EXPORT_SECTORS,
+)
 
 _logger = logging.getLogger(__name__)
-
-# SMI/SMIM-Exporteure (Auslandumsatz >80%) — starker CHF = Gegenwind
-_EXPORT_HEAVY: frozenset[str] = frozenset(
-    {
-        "NESN.SW",  # Nestlé — >98% Auslandumsatz
-        "ROG.SW",  # Roche — Pharma, global
-        "NOVN.SW",  # Novartis — Pharma, global
-        "LONN.SW",  # Lonza — Pharma/Biotech, global
-        "LOGN.SW",  # Logitech — Tech, global
-        "BARN.SW",  # Barry Callebaut — Schokolade, global
-        "GIVN.SW",  # Givaudan — Aromen/Duftstoffe, global
-        "ABBN.SW",  # ABB — Industrieausrüstung, global
-        "KNIN.SW",  # Kuehne+Nagel — Logistik, global
-        "SCHP.SW",  # Schindler — Aufzüge, global
-        "LISN.SW",  # Lindt & Sprüngli — Schokolade, global
-        "GEBN.SW",  # Geberit — Sanitärtechnik, europäisch
-        "CFR.SW",  # Richemont — Uhren/Luxus, global
-        "SREN.SW",  # Swiss Re — Rückversicherung, global
-        "STMN.SW",  # Straumann — Dental, global
-        "VACN.SW",  # VAT Group — Tech, global
-    }
-)
-
-# Inlandsfokussierte Titel (CHF-Stärke weniger relevant)
-_DOMESTIC_FOCUS: frozenset[str] = frozenset(
-    {
-        "UBSG.SW",  # UBS — Bankwesen, Schweizer Heimbasis
-        "SLHN.SW",  # Swiss Life — CH Versicherung
-        "BAER.SW",  # Julius Bär — Wealth Management, CHF-Erlöse
-        "PGHN.SW",  # Partners Group — CH domiziliert
-    }
-)
-
-# Sektoren die per se exportlastig sind (Sektor-Hint aus InvestorProfile)
-_EXPORT_SECTORS: frozenset[str] = frozenset({"pharma", "tech", "luxury", "industrial", "chemical"})
-
-# chf_eur = 1 CHF in EUR (Fallback: 0.93). Höher = stärkerer CHF.
-_CHF_STRONG_THRESHOLD = 0.95  # CHF stark → schadet Exporteuren
-_CHF_WEAK_THRESHOLD = 0.91  # CHF schwach → begünstigt Exporteure
 
 
 class MacroScore(BaseModel):

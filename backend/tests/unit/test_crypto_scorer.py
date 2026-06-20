@@ -238,6 +238,56 @@ class TestSignalThresholds:
         assert 0.0 <= score <= 100.0
 
 
+class TestAthScoreFix01:
+    """FIX-01: ATH-Score war invertiert — näher am ATH = höherer Score."""
+
+    def setup_method(self) -> None:
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        self.scorer = CryptoScorer()
+
+    def _ath_component(self, ath_change_pct: float) -> float:
+        asset = _make_asset(ath_change_pct=ath_change_pct)
+        tech = _make_technicals(rsi=50.0)
+        _, components = self.scorer.score(asset, tech, fear_greed=50, correlation_smi_1y=0.0)
+        rank_score = float(max(0, 10 - max(0, (asset.market_cap_rank or 50) - 10) // 5))
+        return components["markt"] - rank_score
+
+    def test_at_ath_gives_max_ath_score(self) -> None:
+        # -1% below ATH → ath_pct=1 → max(0, 5-0) = 5
+        # Hinweis: ath_change_pct=0.0 wird durch `or -50.0` auf -50 gesetzt (Python-Falsy).
+        # In der Praxis kommt exakt 0.0 von yfinance nicht vor.
+        assert self._ath_component(-1.0) == 5.0
+
+    def test_slightly_below_ath_gives_high_score(self) -> None:
+        # 19% below ATH → ath_pct=19 → max(0, 5-0) = 5
+        assert self._ath_component(-19.0) == 5.0
+
+    def test_30pct_below_ath_gives_4(self) -> None:
+        # 30% below ATH → ath_pct=30 → max(0, 5-1) = 4
+        assert self._ath_component(-30.0) == 4.0
+
+    def test_50pct_below_ath_gives_3(self) -> None:
+        # 50% below ATH → ath_pct=50 → max(0, 5-2) = 3
+        assert self._ath_component(-50.0) == 3.0
+
+    def test_90pct_below_ath_gives_0(self) -> None:
+        # 90% below ATH → ath_pct=90 → max(0, 5-4) = 1
+        # 100%+ → 0
+        assert self._ath_component(-100.0) == 0.0
+
+    def test_ath_score_never_negative(self) -> None:
+        # 200% below ATH (edge case) → max(0, ...) = 0
+        assert self._ath_component(-200.0) >= 0.0
+
+    def test_closer_to_ath_means_higher_score(self) -> None:
+        # Monotonie: näher am ATH = besser
+        score_near = self._ath_component(-10.0)
+        score_mid = self._ath_component(-50.0)
+        score_far = self._ath_component(-90.0)
+        assert score_near >= score_mid >= score_far
+
+
 class TestSignalReason:
     def test_oversold_rsi_buy_reason_mentions_rsi(self):
         from backend.domain.services.crypto_scorer import generate_signal_reason

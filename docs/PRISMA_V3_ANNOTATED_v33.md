@@ -356,6 +356,8 @@ SimFin quarterly Fundamentals 2015-2024
 → ~50 Titel × 12 Monate × 9 Jahre = ~5400 Snapshots
 ```
 
+> ⛔ **ÜBERSCHRIEBEN durch TEIL F (Datenstrategie & ML — FINAL).** Die folgende 25+-Feature-Liste mit Fundamentals gilt NICHT mehr. Das ML nutzt nur Preis-/Technik- + Makro-Features; Fundamentals wandern in den Quant-Scorer. Maßgeblich ist TEIL F.
+
 **Features (25+):**
 
 Preisbasiert (aus stock_price_history, Point-in-Time korrekt):
@@ -1176,6 +1178,8 @@ backend/alembic/versions/
 
 ## 15 · Datenstrategie — Quellen, Tiefe & Seed-Pipeline (ersetzt Kap. 2.3 & 10)
 
+> ⛔ **Teilweise ÜBERSCHRIEBEN durch TEIL F.** Kurse/Krypto/Seed-Pipeline aus Kap. 15 gelten weiter. Die Fundamentals-Quellen-Diskussion (SimFin/EODHD/FMP, `dataset_source_fundamentals`) ist durch TEIL F final entschieden: keine historischen CH-Fundamentals, ML ohne Fundamentals. Bei Widerspruch gilt TEIL F.
+
 Bezug: **CH-01 / FIX-14**. SimFin-CH-Free trägt nicht. Hier die konkrete, verdrahtete Lösung.
 
 ### 15.1 Wie viele Jahre zurück?
@@ -1496,6 +1500,8 @@ Damit der Challenge fair bleibt — diese Entscheidungen sind richtig und sollte
 
 ## E1 · Contract — C1 Quantil-Regression (ersetzt das 3-Klassen-Target)
 
+> ⛔ **Feature-Set ÜBERSCHRIEBEN durch TEIL F §F2/§F3.** Quantil-Target, Monotonie, `MLPrediction`, prob_outperform und Tests bleiben exakt gültig. NUR die Feature-Liste ändert sich: `feature_cols` enthält KEINE Fundamentals (nur Preis/Technik/Makro). Alles andere in E1 unverändert.
+
 **Ziel:** Pro (Ticker, Datum) eine Verteilung des 30-Tage-Excess-Returns vs. SMI vorhersagen.
 
 ### E1.1 Value Object — `backend/domain/value_objects/ml_prediction.py` (erweitern)
@@ -1614,6 +1620,185 @@ class BacktestEngine:
 - Kosten wirken: Engine mit Kosten=0 vs. realen Kosten ⇒ zweitere Equity strikt ≤ erstere.
 - Look-Ahead-Test: künstlicher Preis-Spike an Tag d+1 darf Fill an Tag d NICHT verändern.
 - Netto-`signal_outcomes` stimmen mit der Equity-Kurve überein (Reconciliation-Test).
+
+---
+
+---
+
+# TEIL F · DATENSTRATEGIE & ML — FINAL (überschreibt alle Widersprüche)
+
+> **Diese Sektion ist die letzte und maßgebliche Wahrheit zu Daten und ML.** Wo Kap. 2/4/10/15
+> oder die C1-Contract widersprechen, gilt TEIL F. Grund: es gibt keine gratis, point-in-time-
+> korrekten *historischen Schweizer Fundamentaldaten* — alle Free-Anbieter sind US-only
+> (SimFin Free, FMP Free) oder kostenpflichtig für CH (EODHD/FMP Ultimate). Wir bauen NICHT
+> auf Daten, die wir nicht sauber haben. Punkt.
+
+## F1 · Datenstrategie (drei klare Rollen, keine Optionen)
+
+| Datenart | Quelle | Rolle | PIT? |
+|---|---|---|---|
+| **CH-Aktien Kurse** (daily, ab 2015) | yfinance (`.SW`), Bootstrap + täglich | Basis für ML + Anzeige | ✅ |
+| **Krypto Kurse** (1d ab 2017, 1h ab 2020) | CryptoDataDownload CSV → CoinGecko inkrementell | Basis für Krypto-Signale | ✅ |
+| **Makro** (SNB/ECB/Fed, CHF, Inflation) | bestehende Adapter → `macro_rates` | ML-Feature + macro_score | ✅ |
+| **CH-Fundamentals** | yfinance `.info` (aktueller Snapshot) | **NUR** Quant-Scorer + Dashboard-Anzeige | ❌ (nur aktuell) |
+
+- **Kein Bezahl-Account, kein FMP/EODHD-Key.** FMP Free = US-only, CH erst im teuersten Tier.
+- **`simfin_us`**: NICHT mehr Fundament. Höchstens optionales Nebenexperiment (US-Fundamentals→Rendite-Demo). Aus dem Hauptpfad raus.
+- **`seed_fundamentals.py` / SimFin-Seed**: optional. Für den Hauptpfad nicht nötig.
+- **`dataset_source_fundamentals`**: bleibt als Config existent (Phase-0-Infra), Default praktisch irrelevant für ML. Anzeige-Fundamentals kommen aus yfinance-derived.
+
+## F2 · ML — final (was es ist)
+
+**Echtes überwachtes Lernen, nur ehrlich auf Schweizer Daten skaliert.**
+
+- **Modell:** LightGBM (bleibt). Continuous Learning, Champion/Challenger (Kap. 18), Conformal (C3), eine Backtest-Engine (C6) — **alles aus Teil C/E gilt weiter.**
+- **Target:** 30-Tage-Excess-Return vs. SMI, als Verteilung (C1 Quantil-Regression: q10/q50/q90 → `prob_outperform`). Unverändert.
+- **Feature-Set (NEU, ~12–15 Features, alle PIT-frei & gratis):**
+  - Preis/Technik aus `stock_price_history`: `return_1m/3m/6m/12m`, `vol_30d/90d`, `rsi_14`,
+    `price_to_52w_high`, `momentum_vs_smi_3m`, `bb_position`, `macd_hist`, `drawdown_12m`.
+  - Makro aus `macro_rates`: `snb_rate`, `chf_eur`, `inflation_ch`.
+  - Optional später: Regime-Feature (C4), News-Sentiment-Feature aus der RAG (C5).
+- **KEINE Fundamental-Features im ML** (pe, pb, ev_ebitda, roe, debt_equity, fcf_margin,
+  eps_growth, revenue_growth, dividend_yield, dividend_growth → alle raus aus dem ML-Vektor).
+
+**Warum das besser ist, nicht schlechter:**
+1. Das Modell ist über die Sache, die es vorhersagt — **Schweizer** Titel mit **Schweizer** Daten. Kein US→CH-Transferproblem.
+2. Kleinerer Feature-Satz auf kleiner effektiver Stichprobe = **weniger Overfitting** (die 25+-Ambition war durch nicht-beschaffbare Fundamentals aufgebläht).
+3. Für 30-Tage-Horizonte sind Technik/Makro der stärkere Hebel; Fundamentals wirken eher langfristig — und wirken hier über den Quant-Score weiter mit.
+
+## F3 · Wie Fundamentals trotzdem voll mitwirken (die saubere Trennung)
+
+Deine Architektur trennt das bereits: `stock_daily_signals` hat `quant_score`, `ml_score`, `macro_score` getrennt. Die finale Strategie passt nahtlos:
+
+| Engine | Speist | Datenbasis |
+|---|---|---|
+| **ml_score** | Technik/Makro-Vorhersage (kalibrierte Verteilung, „73%") | Preis + Makro (PIT) |
+| **quant_score** | Fundamentale Bewertung (relativer Value vs. Sektor/Historie, SwissQuantScorerV3 Kap. 3) | yfinance-Fundamentals (aktuell) |
+| **macro_score** | Makro-Kontext | `macro_rates` |
+
+→ Die drei verschmelzen zum Endsignal (`weighted_score`) wie im Spec vorgesehen. **Fundamentals sind nicht weg — nur im richtigen Topf.**
+
+## F4 · Was sich konkret im Code/Spec ändert
+
+1. **`ml_feature_service.py`**: Fundamental-Feature-Builder aus dem Trainings-/Inferenzpfad entfernen. Preis/Makro-Features behalten. `_stub_fundamentals()` ganz raus (war eh verboten, jetzt obsolet).
+2. **Kap. 4.2 Feature-Liste**: gilt nur noch in der F2-Variante (Fundamentals gestrichen).
+3. **C1-Contract (E1)**: `feature_cols` = nur Preis/Technik/Makro. Quantil-Logik, Monotonie, `MLPrediction`, Tests unverändert.
+4. **SwissQuantScorerV3 (Kap. 3)**: unverändert wichtig — bekommt yfinance-Fundamentals (aktuell) statt SimFin-Historie. `sector_medians` aus den aktuellen Fundamentals der Universumstitel.
+5. **`seed_fundamentals.py` / simfin**: optional markieren, nicht im kritischen Pfad.
+6. **Dashboard-Cards (Kap. 8.3)**: Fundamental-Zahlen (P/E, ROE, Div-Yield) kommen aus yfinance-derived; ML-Pred-Zeile kommt aus dem Technik/Makro-Modell. Beides nebeneinander — wie schon gezeichnet.
+
+## F5 · Phase-0-Arbeit ist nicht verloren
+
+Migrationen 0031–0035, ETL-Pipeline, der Quellen-Schalter und die Repos bleiben nützlich:
+`stock_fundamentals` wird jetzt von yfinance-derived (aktuell) befüllt statt von SimFin-Historie;
+`crypto_price_history`/`stock_price_history` sind unverändert das Fundament. Nur die *Bedeutung*
+von `simfin_us` schrumpft von „offizieller Datensatz" auf „optionales Experiment".
+
+## F6 · Dozenten-Kriterien bleiben erfüllt
+
+- **ML** ✅ Schweizer LightGBM (Technik/Makro), Quantil-Target, Purged-CV, Continuous Learning.
+- **RAG** ✅ News/Filings; optional als ML-Feature (C5).
+- **Datensatz** ✅ Schweizer Kurshistorie ab 2015 + Krypto — real, reproduzierbar, gross genug.
+- **Agentic** ✅ unverändert (SignalAccuracy, DataSteward, Intraday, Macro).
+- **Fundamentals sichtbar** ✅ über Quant-Score + Dashboard.
+
+---
+
+---
+
+# TEIL G · ÜBERARBEITETER UMSETZUNGSPLAN (nach ML-Befunden, Stand 2026-06-20)
+
+> Diese Sektion aktualisiert den Plan auf Basis der tatsächlich gebauten Phasen 0–2 und der
+> ML-Testergebnisse. Vollständige Testdoku separat in **`PRISMA_V3_ML_BEFUNDE.md`**.
+> TEIL G ist der aktuelle Fahrplan; wo er TEIL D widerspricht, gilt TEIL G.
+
+## G1 · Was wir jetzt wissen (Stand der Realität)
+
+**Gebaut & in `main` (Phase 0–2):** Datenbank-Fundament + Seed-Pipeline; PIT-Universum (30 Titel
+inkl. delistete); Kurse (Aktien/Krypto) + Makro in der DB; ML-Pipeline mit Purged-CV-Harness.
+
+**ML-Befund (Details in BEFUNDE.md):**
+1. ML ist **kein zuverlässiger Return-Prädiktor** — Aktien wie Krypto, sauber gegen Baselines getestet.
+2. ML liefert **messbares Regime-/Risiko-Timing** bei Krypto (Calmar 1.81 vs 1.12 exposure-matched; 2022 −9% vs −33%).
+3. **Momentum trägt Signal** (schlägt das ML im direktionalen F1).
+
+**Der entscheidende Punkt:** Die Vision-Kennzahl „historisch validierte Win-Rate / Wahrscheinlichkeit"
+(Kap. 0) misst NICHT das ML allein, sondern das **kombinierte Signal** (quant + ml + macro) über
+`signal_outcomes` + Backtest. **Das ist noch nicht gebaut/gemessen.** Aus dem ML-Einzelbefund darf
+nicht auf das Gesamtprodukt geschlossen werden.
+
+## G2 · Ehrliche Rollen der drei Engines (Konsequenz)
+
+| Engine | Rolle nach Befund | Gewichtung |
+|---|---|---|
+| **quant_score** | Relative Bewertung (Value/Quality vs Sektor/Historie) | trägt |
+| **ml_score** | KRYPTO: Risiko-/Regime-Filter (Exposure drosseln in Gefahrphasen). AKTIEN: gering | situativ |
+| **macro_score** | Makro-Kontext (SNB/CHF/Inflation) | trägt |
+
+`ml_score` ist also ein **Risiko-Overlay**, kein Return-Orakel. Im UI ehrlich framen: „reduziert
+Drawdown / Regime-Timing", nicht „sagt Preis voraus".
+
+## G3 · Nächste Schritte — priorisiert
+
+**Phase 3 (JETZT) — der eigentliche Produkt-Test:**
+- Signal-Aggregation (`weighted_score` aus quant/ml/macro, ehrliche Gewichte nach G2).
+- `signal_outcomes` + EIN Backtest-Kern (TEIL C §C6) → echte, netto-of-cost Win-Rate/Alpha.
+- SignalAccuracyAgent (Kap. 5.1) befüllt/evaluiert Outcomes.
+- **Erst hier** wird messbar, ob PRISMA als Gesamtsystem einen Edge hat. Das ist der ehrliche „evidence-based"-Beleg.
+
+**Verbesserungshebel fürs ML (parallel/danach, je nach Phase-3-Ergebnis):**
+1. **News-RAG-Features (C5)** — die bestehende RAG nicht nur als Schaufenster, sondern als Feature
+   (Sentiment/News-Surprise). Das ist das, was Momentum NICHT weiß → realistischster Weg zu echtem
+   Vorhersage-Signal. **Höchste Priorität unter den Hebeln.**
+2. **Cross-Sectional Ranking bei Aktien (C2)** — „welcher der 30 Titel relativ vorn" ist lernbarer
+   als absolute Returns; bei Aktien genug Titel. Noch nie getestet.
+3. **Momentum + ML-Ensemble** — Momentum fängt Trend, ML managt Risiko. Zusammen statt gegeneinander.
+
+**Phase 4 — Dashboard + Explainability** (siehe G4) + Compliance.
+
+## G4 · NEU — Visuelle Chart-Analyse & Explainability (Komponente)
+
+> Begründung: Die stärkste Bewertungsachse des BI-Moduls ist „viele Daten → nachvollziehbare
+> Entscheidung". Eine visuelle, automatisierte Chart-Analyse adressiert das direkt — und sie ist
+> **ehrlich von Natur aus**: sie *visualisiert* die Indikatoren/Muster, die zur Entscheidung führen,
+> statt Vorhersagekraft zu behaupten. Sie stärkt Explainability, nicht Alpha.
+
+**Was es ist:** Pro Titel/Coin ein automatisch erzeugter, **annotierter Chart** (Candlestick +
+Overlays + erkannte Muster + Signal-Marker) plus eine kurze, vom Agent generierte Text-Begründung.
+
+**Bausteine (vieles existiert schon):**
+- **Indikatoren/Muster:** `CryptoPatternService` (Candlestick + Formationen) ist da und wird ausgebaut.
+  Für Aktien dieselben Indikatoren anwenden (RSI, MACD, Bollinger, MAs). Bibliothek: **TA-Lib**
+  (200+ Indikatoren, 60+ Candlestick-Patterns) oder pandas-ta; Rendering: **mplfinance**.
+- **Annotierter Chart (Explainability-Kern):** Candlestick + Bollinger-Bänder + RSI-/MACD-Subplots,
+  markiert: erkannte Muster (z.B. „Bullish Engulfing"), Support/Resistance, gleitende Durchschnitte,
+  und der Punkt, an dem das Signal kippte. Annotationen sparsam + konsistent (Legende/Farbschema).
+- **Chart-Analyse-Agent:** liest die berechneten Indikatoren/Muster und erzeugt eine strukturierte,
+  textuelle Lesart („RSI 38 = überverkauft bei steigendem Volumen; Preis testet unteres Bollinger-Band").
+  Stärkt die Agentic-AI-Achse, ohne Vorhersage zu behaupten.
+
+**Gilt für beide Anlageklassen:** Krypto (vorhanden, ausbauen) UND Aktien (neu, gleiche Technik).
+
+**Ehrliche Abgrenzung (wichtig):** Technische Analyse hat akademisch schwache prognostische Validität
+(Markteffizienz). Daher als **Decision-Support / Explainability** positionieren, nicht als Alpha-Quelle —
+konsistent mit dem ML-Befund. Die Charts erklären die Datenlage; die Entscheidung trägt das kombinierte
+Signal (G2) + die Backtest-Evidenz (Phase 3).
+
+**Aufwand:** mittel, niedriges Risiko, hoher Demo-/Notenwert. Reuse von `CryptoPatternService` + Standardbibliotheken.
+
+## G5 · Reflexion — wird das Endresultat gut?
+
+Ja, und zwar gerade *wegen* der Ehrlichkeit. Das Endprodukt ist nicht „ML schlägt den Markt"
+(unhaltbar), sondern ein **angereichertes, nachvollziehbares Entscheidungs-Support-System**:
+- viele Datenquellen (Kurse, Makro, On-Chain, News-RAG) in einer Sicht gebündelt,
+- ein ehrliches Signal mit **backtest-validierter** Win-Rate (Phase 3),
+- ein **Risiko-Overlay**, das nachweislich Drawdown reduziert (Krypto 2022),
+- **visuelle Erklärbarkeit** pro Titel (G4),
+- **Agentic AI + RAG** durchgängig.
+
+Das trifft die Modul-Kriterien voll und ist gegen kritische Prüfung robust — weil jede Behauptung
+belegt und sauber abgegrenzt ist. Der ML-„Misserfolg" als Return-Prädiktor ist im Gesamtbild kein
+Mangel, sondern Teil einer methodisch sauberen Geschichte.
 
 ---
 

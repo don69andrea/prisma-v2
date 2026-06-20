@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date
+from typing import Any
 
 import httpx
 
@@ -34,7 +35,7 @@ class EodhdFundamentalsAdapter:
             return ticker
         return f"{ticker}.SW"
 
-    async def fetch_quarterly(self, ticker: str) -> list[dict]:
+    async def fetch_quarterly(self, ticker: str) -> list[dict[str, Any]]:
         """Liefert eine Liste PIT-korrekter Quartals-Fundamentals als Dicts,
         bereit für stock_fundamentals (Schema 0032). Leere Liste wenn
         deaktiviert oder keine Coverage."""
@@ -60,7 +61,7 @@ class EodhdFundamentalsAdapter:
         general = data.get("General") or {}
         sector = general.get("Sector")
 
-        rows: list[dict] = []
+        rows: list[dict[str, Any]] = []
         for period_end, inc in income.items():
             bal = balance.get(period_end, {})
             cf = cash.get(period_end, {})
@@ -69,14 +70,27 @@ class EodhdFundamentalsAdapter:
         return rows
 
     @staticmethod
-    def _f(d: dict, key: str) -> float | None:
-        v = d.get(key)
+    def _f(d: dict[str, Any], key: str) -> float | None:
+        v: Any = d.get(key)
+        if v is None or v == "":
+            return None
+        if v == "0":
+            return 0.0
         try:
-            return float(v) if v not in (None, "", "0") else (0.0 if v == "0" else None)
+            return float(v)
         except (TypeError, ValueError):
             return None
 
-    def _derive(self, ticker, period_end, inc, bal, cf, hi, sector) -> dict:
+    def _derive(
+        self,
+        ticker: str,
+        period_end: str,
+        inc: dict[str, Any],
+        bal: dict[str, Any],
+        cf: dict[str, Any],
+        hi: dict[str, Any],
+        sector: str | None,
+    ) -> dict[str, Any]:
         """Berechnet abgeleitete Kennzahlen. publish_date = filing_date (PIT!)."""
         net_income = self._f(inc, "netIncome")
         revenue = self._f(inc, "totalRevenue")

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from typing import Any
 
 import pandas as pd
 
@@ -32,12 +33,14 @@ class ValidationReport:
 # --- NORMALIZE ------------------------------------------------------------
 
 
-def normalize_ohlcv(df: pd.DataFrame, *, ticker: str, source: str, currency: str) -> list[dict]:
+def normalize_ohlcv(
+    df: pd.DataFrame, *, ticker: str, source: str, currency: str
+) -> list[dict[str, Any]]:
     """Vereinheitlicht ein OHLCV-DataFrame (yfinance/CSV) auf das DB-Schema
     von stock_price_history. Erwartet Spalten Open/High/Low/Close/Volume und
     einen DatetimeIndex (daily)."""
     df = df.rename(columns=str.lower)
-    out = []
+    out: list[dict[str, Any]] = []
     for ts, r in df.iterrows():
         out.append(
             {
@@ -57,9 +60,9 @@ def normalize_ohlcv(df: pd.DataFrame, *, ticker: str, source: str, currency: str
 
 def normalize_crypto_ohlcv(
     df: pd.DataFrame, *, ticker: str, interval: str, source: str, currency: str = "USD"
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     df = df.rename(columns=str.lower)
-    out = []
+    out: list[dict[str, Any]] = []
     for ts, r in df.iterrows():
         out.append(
             {
@@ -82,23 +85,33 @@ def normalize_crypto_ohlcv(
 
 
 def validate_ohlcv(
-    rows: list[dict], *, table: str, spike_pct: float = 0.25
-) -> tuple[list[dict], ValidationReport]:
+    rows: list[dict[str, Any]], *, table: str, spike_pct: float = 0.25
+) -> tuple[list[dict[str, Any]], ValidationReport]:
     """Wirft kaputte Zeilen raus (NULL/negativ in OHLC, high<low) und meldet
     Preis-Spikes & Datumslücken. WICHTIG: meldet laut statt still zu droppen."""
-    clean, dropped, spikes, gaps = [], 0, [], []
-    prev_close = None
+    clean: list[dict[str, Any]] = []
+    dropped = 0
+    spikes: list[str] = []
+    gaps: list[str] = []
+    prev_close: float | None = None
     for r in rows:
-        o, h, low, c = r.get("open"), r.get("high"), r.get("low"), r.get("close")
-        if None in (o, h, low, c) or min(o, h, low, c) <= 0 or h < low:
+        o: Any = r.get("open")
+        h: Any = r.get("high")
+        low: Any = r.get("low")
+        c: Any = r.get("close")
+        if None in (o, h, low, c):
             dropped += 1
             continue
-        if prev_close is not None and abs(c - prev_close) / prev_close > spike_pct:
+        o_f, h_f, low_f, c_f = float(o), float(h), float(low), float(c)
+        if min(o_f, h_f, low_f, c_f) <= 0 or h_f < low_f:
+            dropped += 1
+            continue
+        if prev_close is not None and abs(c_f - prev_close) / prev_close > spike_pct:
             spikes.append(
-                f"{r['ticker']} {r.get('date') or r.get('timestamp')}: {prev_close:.2f}->{c:.2f}"
+                f"{r['ticker']} {r.get('date') or r.get('timestamp')}: {prev_close:.2f}->{c_f:.2f}"
             )
         clean.append(r)
-        prev_close = c
+        prev_close = c_f
     rep = ValidationReport(
         table=table,
         rows_in=len(rows),

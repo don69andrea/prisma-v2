@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date
+from typing import Any
 
 import httpx
 
@@ -38,7 +39,7 @@ class FmpFundamentalsAdapter:
             return ticker
         return f"{ticker}.SW"
 
-    async def fetch_quarterly(self, ticker: str) -> list[dict]:
+    async def fetch_quarterly(self, ticker: str) -> list[dict[str, Any]]:
         """Liefert PIT-korrekte Quartals-Fundamentals als Dicts,
         bereit für stock_fundamentals (Schema 0032). Leere Liste wenn
         deaktiviert oder keine Coverage."""
@@ -48,7 +49,7 @@ class FmpFundamentalsAdapter:
 
         symbol = self.to_symbol(ticker)
         url = f"{_BASE}/key-metrics/{symbol}"
-        params = {"period": "quarter", "limit": 40, "apikey": self._key}
+        params: dict[str, str | int] = {"period": "quarter", "limit": 40, "apikey": self._key}
 
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(url, params=params)
@@ -62,7 +63,7 @@ class FmpFundamentalsAdapter:
             log.info("FMP %s: leere Antwort", symbol)
             return []
 
-        rows: list[dict] = []
+        rows: list[dict[str, Any]] = []
         for item in data:
             period_end_str = item.get("date")
             filling_date_str = item.get("fillingDate") or period_end_str
@@ -101,7 +102,7 @@ class FmpFundamentalsAdapter:
         return rows
 
 
-def _f(d: dict, key: str) -> float | None:
+def _f(d: dict[str, Any], key: str) -> float | None:
     v = d.get(key)
     if v is None or v == "" or v == 0:
         return None
@@ -111,7 +112,7 @@ def _f(d: dict, key: str) -> float | None:
         return None
 
 
-def _f_pct(d: dict, key: str) -> float | None:
+def _f_pct(d: dict[str, Any], key: str) -> float | None:
     """FMP gibt Quoten als Dezimal (0.15 = 15%) — in Prozent umrechnen."""
     v = _f(d, key)
     return v * 100 if v is not None else None

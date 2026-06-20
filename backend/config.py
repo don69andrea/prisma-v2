@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     # Krypto-Feature aktivieren (default: true)
     crypto_feature_enabled: bool = True
 
+    # SimFin API Key (simfin.com) — US-Fundamentaldaten, Free Tier.
+    # Leer = SimFinAdapter deaktiviert. Free-Tier-Key: https://simfin.com/api/v2/
+    simfin_api_key: str = ""
+
     # EODHD (eodhd.com) — Fundamentals + EOD, echte SIX-Coverage.
     # Free-Tier knapp (20 Calls/Tag); Seed braucht ggf. 1 Monat Paid.
     # Leer = EODHD-Adapter deaktiviert, kein HTTP-Call.

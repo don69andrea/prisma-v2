@@ -47,8 +47,14 @@ SMI = [
 ]
 
 
+_YF_OVERRIDES: dict[str, str] = {
+    "ROG": "RO.SW",  # Roche Holding AG — Bearer-Aktie (yfinance nutzt RO.SW, nicht ROG.SW)
+    "AMSN": "AMS.SW",  # ams-OSRAM AG — SIX-Kürzel AMSN, yfinance-Kürzel AMS.SW
+}
+
+
 def _yf(ticker: str) -> str:
-    return f"{ticker}.SW"
+    return _YF_OVERRIDES.get(ticker, f"{ticker}.SW")
 
 
 async def seed_one(ticker: str, start: str) -> int:

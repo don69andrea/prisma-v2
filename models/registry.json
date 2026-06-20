@@ -36,7 +36,12 @@
         "q50": "quantile_q50_2026-06-20.joblib",
         "q90": "quantile_q90_2026-06-20.joblib"
       }
+    },
+    {
+      "type": "crypto",
+      "date": "2026-06-20"
     }
   ],
-  "active_quantile": "quantile_meta_2026-06-20.json"
+  "active_quantile": "quantile_meta_2026-06-20.json",
+  "active_crypto": "crypto_meta_2026-06-20.json"
 }

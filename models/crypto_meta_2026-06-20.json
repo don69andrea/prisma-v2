@@ -1,0 +1,39 @@
+{
+  "type": "crypto",
+  "trained_at": "2026-06-20",
+  "directional": {
+    "feature_hash": "e7f4255f",
+    "features": [
+      "return_1d",
+      "return_7d",
+      "return_30d",
+      "return_90d",
+      "vol_7d",
+      "vol_30d",
+      "rsi_14",
+      "bb_position",
+      "macd_hist",
+      "drawdown_90d",
+      "fear_greed",
+      "excess_vs_btc_30d"
+    ],
+    "n_train": 2430
+  },
+  "excess_vs_btc": {
+    "features": [
+      "return_1d",
+      "return_7d",
+      "return_30d",
+      "return_90d",
+      "vol_7d",
+      "vol_30d",
+      "rsi_14",
+      "bb_position",
+      "macd_hist",
+      "drawdown_90d",
+      "fear_greed",
+      "excess_vs_btc_30d"
+    ],
+    "n_train": 1985
+  }
+}

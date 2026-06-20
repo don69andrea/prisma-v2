@@ -32,8 +32,6 @@ class SwissQuantScorer:
             "BUY"
             if composite >= _BUY_THRESHOLD
             else "HOLD"
-            if composite >= _HOLD_THRESHOLD
-            else "WATCH"
         )
         signal_reason = self._generate_signal_reason(
             composite=composite,
@@ -82,7 +80,7 @@ class SwissQuantScorer:
             return f"Starkes Kaufsignal: {factors}. PRISMA-Score: {composite:.0f}/100."
         if signal == "HOLD":
             return f"Neutral: {factors}. PRISMA-Score: {composite:.0f}/100. Beobachten."
-        return f"Beobachten: {factors}. PRISMA-Score: {composite:.0f}/100. Aktuell nicht attraktiv."
+        return f"Neutral: {factors}. PRISMA-Score: {composite:.0f}/100. Beobachten."
 
     @staticmethod
     def interpret_score(score: float) -> str:

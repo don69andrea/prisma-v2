@@ -41,10 +41,10 @@ def test_cheap_stock_gets_buy_signal() -> None:
     assert result.composite >= 70
 
 
-def test_expensive_stock_gets_watch_signal() -> None:
+def test_expensive_stock_gets_hold_signal() -> None:
     # P/E 30 → score 25, P/B 8 → 25, div 0.5% → 25, eps negative → 0
     result = _scorer.score("SOME", _fund(pe=30.0, pb=8.0, div=0.005, eps=-1.0))
-    assert result.signal == "WATCH"
+    assert result.signal == "HOLD"
     assert result.composite < 40
 
 

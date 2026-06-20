@@ -180,12 +180,36 @@ def _is_eu_ticker(ticker: str) -> bool:
 
 
 def _snb_rate_on(target: date) -> float:
-    """Gibt den SNB Leitzins zum Stichtag zurück (stufenweise)."""
+    """SNB-Leitzins zum Stichtag — Fallback wenn macro_rates-Tabelle leer."""
     rate = _SNB_RATE_BEFORE_2022
     for effective_date, r in _SNB_RATE_HISTORY:
         if target >= effective_date:
             rate = r
     return rate
+
+
+async def _snb_rate_from_db(target: date) -> float | None:
+    """Liest SNB-Leitzins aus macro_rates-Tabelle; None wenn keine Daten."""
+    from sqlalchemy import text
+
+    from backend.infrastructure.persistence.session import get_session_factory
+
+    try:
+        factory = get_session_factory()
+        async with factory() as session:
+            result = await session.execute(
+                text(
+                    "SELECT rate_pct FROM macro_rates "
+                    "WHERE rate_type = 'snb_policy' AND effective_date <= :d "
+                    "ORDER BY effective_date DESC LIMIT 1"
+                ),
+                {"d": target},
+            )
+            row = result.fetchone()
+            return float(row[0]) if row else None
+    except Exception as exc:
+        _logger.debug("macro_rates nicht erreichbar (%s) — nutze Fallback", exc)
+        return None
 
 
 def _compute_rsi(prices: pd.Series, window: int = 14) -> float:
@@ -311,6 +335,7 @@ class MLFeatureService:
         from backend.infrastructure.adapters.ecb_fx_adapter import fetch_chf_eur as _ecb_chf_eur
 
         chf_eur = await _ecb_chf_eur()
+        snb_rate = await _snb_rate_from_db(today) or _snb_rate_on(today)
 
         return MLFeatureVector(
             ticker=ticker_upper,
@@ -332,7 +357,7 @@ class MLFeatureService:
             bb_position=_compute_bb_position(close),
             return_1m=_return_nm_from_series(close, 21),
             drawdown_12m=_compute_drawdown_12m(close),
-            snb_rate=_snb_rate_on(today),
+            snb_rate=snb_rate,
             chf_eur=chf_eur,
             pe_ratio=fundamentals.pe_ratio or 0.0,
             pb_ratio=fundamentals.pb_ratio or 0.0,

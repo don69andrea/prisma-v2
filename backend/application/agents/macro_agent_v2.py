@@ -8,6 +8,8 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from backend.domain.data.macro_profiles import DOMESTIC_FOCUS as _DOMESTIC_FOCUS
+from backend.domain.data.macro_profiles import EXPORT_HEAVY as _EXPORT_HEAVY
 from backend.domain.schemas.multiagent_schemas import MacroToolReport
 
 _logger = logging.getLogger(__name__)
@@ -15,28 +17,6 @@ _logger = logging.getLogger(__name__)
 _MODEL = "claude-haiku-4-5-20251001"
 _MAX_TOKENS = 600
 _MAX_ITERATIONS = 5
-
-_EXPORT_HEAVY: frozenset[str] = frozenset(
-    {
-        "NESN.SW",
-        "ROG.SW",
-        "NOVN.SW",
-        "LONN.SW",
-        "LOGN.SW",
-        "BARN.SW",
-        "GIVN.SW",
-        "ABBN.SW",
-        "KNIN.SW",
-        "SCHP.SW",
-        "LISN.SW",
-        "GEBN.SW",
-        "CFR.SW",
-        "SREN.SW",
-        "STMN.SW",
-        "VACN.SW",
-    }
-)
-_DOMESTIC_FOCUS: frozenset[str] = frozenset({"UBSG.SW", "SLHN.SW", "BAER.SW", "PGHN.SW"})
 
 _MACRO_TOOLS: list[dict[str, Any]] = [
     {

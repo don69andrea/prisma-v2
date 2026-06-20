@@ -26,6 +26,17 @@
       "feature_count": 23,
       "val_accuracy": 0.4223,
       "val_top_quartile_recall": 0.4938
+    },
+    {
+      "type": "quantile",
+      "date": "2026-06-20",
+      "feature_hash": "b9248440",
+      "files": {
+        "q10": "quantile_q10_2026-06-20.joblib",
+        "q50": "quantile_q50_2026-06-20.joblib",
+        "q90": "quantile_q90_2026-06-20.joblib"
+      }
     }
-  ]
+  ],
+  "active_quantile": "quantile_meta_2026-06-20.json"
 }

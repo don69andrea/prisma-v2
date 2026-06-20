@@ -147,7 +147,8 @@ async def test_build_features_happy_path() -> None:
     scorer_mock.score.return_value = _make_score()
 
     with patch(
-        "backend.application.services.ml_feature_service._current_chf_eur", return_value=0.93
+        "backend.infrastructure.adapters.ecb_fx_adapter.fetch_chf_eur",
+        new=AsyncMock(return_value=0.93),
     ):
         service = MLFeatureService(yfinance_adapter=adapter_mock, scorer=scorer_mock)
         result = await service.build_features("NESN")

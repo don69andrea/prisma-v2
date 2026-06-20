@@ -29,11 +29,11 @@ log = logging.getLogger(__name__)
 _SMI_CURRENT: list[tuple[str, date]] = [
     ("NESN.SW", date(2010, 1, 1)),  # Nestlé
     ("NOVN.SW", date(2010, 1, 1)),  # Novartis
-    ("ROG.SW", date(2010, 1, 1)),   # Roche
+    ("ROG.SW", date(2010, 1, 1)),  # Roche
     ("ABBN.SW", date(2010, 1, 1)),  # ABB
     ("ZURN.SW", date(2010, 1, 1)),  # Zurich Insurance
-    ("UBSG.SW", date(2023, 6, 12)), # UBS (nach Credit-Suisse-Übernahme aufgewertet)
-    ("UHR.SW", date(2010, 1, 1)),   # Swatch Group
+    ("UBSG.SW", date(2023, 6, 12)),  # UBS (nach Credit-Suisse-Übernahme aufgewertet)
+    ("UHR.SW", date(2010, 1, 1)),  # Swatch Group
     ("GEBN.SW", date(2010, 1, 1)),  # Geberit
     ("GIVN.SW", date(2010, 1, 1)),  # Givaudan
     ("LONN.SW", date(2010, 1, 1)),  # Lonza
@@ -42,11 +42,11 @@ _SMI_CURRENT: list[tuple[str, date]] = [
     ("SLHN.SW", date(2010, 1, 1)),  # Swiss Life
     ("SCMN.SW", date(2010, 1, 1)),  # Swisscom
     ("SIKA.SW", date(2018, 4, 1)),  # Sika (2018 in SMI aufgenommen)
-    ("HOLN.SW", date(2021, 9, 20)), # Holcim (vormals LafargeHolcim)
-    ("PGHN.SW", date(2020, 9, 21)), # Partners Group
-    ("KNIN.SW", date(2020, 9, 21)), # Kühne+Nagel
-    ("CFR.SW", date(2010, 1, 1)),   # Richemont
-    ("STMN.SW", date(2017, 9, 18)), # Straumann
+    ("HOLN.SW", date(2021, 9, 20)),  # Holcim (vormals LafargeHolcim)
+    ("PGHN.SW", date(2020, 9, 21)),  # Partners Group
+    ("KNIN.SW", date(2020, 9, 21)),  # Kühne+Nagel
+    ("CFR.SW", date(2010, 1, 1)),  # Richemont
+    ("STMN.SW", date(2017, 9, 18)),  # Straumann
 ]
 
 # Delistete SMI-Mitglieder mit korrektem valid_to
@@ -62,12 +62,12 @@ _SMI_DELISTED: list[tuple[str, date, date]] = [
 _SMIM_CURRENT: list[tuple[str, date]] = [
     ("TEMN.SW", date(2010, 1, 1)),  # Temenos
     ("BALN.SW", date(2010, 1, 1)),  # Bâloise Holding
-    ("BKW.SW", date(2010, 1, 1)),   # BKW
+    ("BKW.SW", date(2010, 1, 1)),  # BKW
     ("EMMN.SW", date(2010, 1, 1)),  # Emmi
-    ("GALEN.SW", date(2010, 1, 1)), # Galenica
+    ("GALEN.SW", date(2010, 1, 1)),  # Galenica
     ("SIGN.SW", date(2020, 3, 1)),  # SIG Group (IPO 2020)
     ("MOBN.SW", date(2010, 1, 1)),  # Mobimo
-    ("LOGN.SW", date(2023, 9, 18)), # Logitech (zurück in SMIM nach SMI-Exit)
+    ("LOGN.SW", date(2023, 9, 18)),  # Logitech (zurück in SMIM nach SMI-Exit)
     ("LISN.SW", date(2010, 1, 1)),  # Lindt & Sprüngli PS
     ("VACN.SW", date(2018, 4, 1)),  # VAT Group (IPO 2016, SMIM ab ca. 2018)
     ("EFGN.SW", date(2010, 1, 1)),  # EFG International
@@ -128,9 +128,7 @@ async def seed(dry_run: bool = False) -> dict[str, int]:
             log.info("[dry-run] Würde %d Zeilen einfügen", len(rows))
             return {"inserted": 0, "skipped": 0, "total": len(rows)}
 
-        count_before_result = await session.execute(
-            text("SELECT COUNT(*) FROM index_constituents")
-        )
+        count_before_result = await session.execute(text("SELECT COUNT(*) FROM index_constituents"))
         count_before: int = count_before_result.scalar_one()
 
         for row in rows:
@@ -145,9 +143,7 @@ async def seed(dry_run: bool = False) -> dict[str, int]:
 
         await session.commit()
 
-        count_after_result = await session.execute(
-            text("SELECT COUNT(*) FROM index_constituents")
-        )
+        count_after_result = await session.execute(text("SELECT COUNT(*) FROM index_constituents"))
         count_after: int = count_after_result.scalar_one()
         inserted = count_after - count_before
         skipped = len(rows) - inserted
@@ -174,9 +170,7 @@ def _pit_members(index_name: str, snap_date: date, session_sync: object) -> list
     raise NotImplementedError("Nur für async-Nutzung — verwende _pit_members_async()")
 
 
-async def pit_members(
-    index_name: str, snap_date: date, session: object
-) -> list[str]:
+async def pit_members(index_name: str, snap_date: date, session: object) -> list[str]:
     """Gibt alle Ticker zurück, die am snap_date im Index waren (PIT)."""
     from sqlalchemy.ext.asyncio import AsyncSession
 

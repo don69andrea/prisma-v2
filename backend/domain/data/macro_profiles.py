@@ -39,9 +39,7 @@ DOMESTIC_FOCUS: frozenset[str] = frozenset(
 )
 
 # Sektoren die per se exportlastig sind (Sektor-Hint aus InvestorProfile)
-EXPORT_SECTORS: frozenset[str] = frozenset(
-    {"pharma", "tech", "luxury", "industrial", "chemical"}
-)
+EXPORT_SECTORS: frozenset[str] = frozenset({"pharma", "tech", "luxury", "industrial", "chemical"})
 
 # chf_eur = 1 CHF in EUR. Höher = stärkerer CHF.
 CHF_STRONG_THRESHOLD = 0.95  # CHF stark → schadet Exporteuren

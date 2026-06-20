@@ -63,6 +63,28 @@ class Settings(BaseSettings):
     # Krypto-Feature aktivieren (default: true)
     crypto_feature_enabled: bool = True
 
+    # SimFin API Key (simfin.com) — US-Fundamentaldaten, Free Tier.
+    # Leer = SimFinAdapter deaktiviert. Free-Tier-Key: https://simfin.com/api/v2/
+    simfin_api_key: str = ""
+
+    # EODHD (eodhd.com) — Fundamentals + EOD, echte SIX-Coverage.
+    # Free-Tier knapp (20 Calls/Tag); Seed braucht ggf. 1 Monat Paid.
+    # Leer = EODHD-Adapter deaktiviert, kein HTTP-Call.
+    eodhd_api_key: str = ""
+
+    # Steuert, welche Fundamentals-Quelle der Feature-/Seed-Pfad nutzt.
+    # yf_derived = yfinance .info (aktueller Snapshot, nur Quant-Scorer + Dashboard)
+    # simfin_us  = optionales US-Experiment (NICHT im Hauptpfad, laut TEIL F)
+    # eodhd | fmp  = kostenpflichtig, kein Key vorhanden
+    dataset_source_fundamentals: str = "yf_derived"
+    dataset_source_prices: str = "yfinance"
+    dataset_source_crypto: str = "cryptodatadownload"
+
+    # Trainings-/Seed-Tiefe (überschreibbar per ENV für Tests).
+    seed_stocks_from: str = "2015-01-01"
+    seed_crypto_daily_from: str = "2017-01-01"
+    seed_crypto_hourly_from: str = "2020-01-01"
+
     jwt_secret: str = ""
     jwt_expire_hours: int = 8
     admin_email: str = ""

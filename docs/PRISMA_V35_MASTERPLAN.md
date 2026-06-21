@@ -246,7 +246,8 @@ Orchestrierungs-Framework, das frische Sub-Agent-Kontexte für Research/Plan/Exe
 
 ## 8 · Roadmap (4 Phasen, risikoarm, je benotbar)
 
-> Auf Feature-Branches arbeiten (Branch Protection aktiv), PRs gegen `main`, CI grün abwarten — wie gehabt.
+> Branch-Workflow laut Repo-`AGENTS.md`: `feature/* → develop → main`. Auf `feat/*`-Branches arbeiten, PRs gegen
+> **`develop`** (Integration), CI grün abwarten. `main` nur beim Release aus develop (Branch Protection aktiv).
 
 **Phase A — Vol-Modell + Trend-Backbone „echt machen" (1 Wave).** PoC aus diesem Dokument in die Pipeline
 heben: Vol-Forecast-Modell sauber als Walk-Forward, Trend+Vol-Targeting über **mehr Coins** (Top 10–15),

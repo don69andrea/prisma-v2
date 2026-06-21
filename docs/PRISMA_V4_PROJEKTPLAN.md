@@ -232,8 +232,10 @@ Bestehendes Dashboard war SMI/3a (BUY/HOLD/WATCH, „nie SELL"). V4 erweitert au
 
 ## 8 · Roadmap (Phasen, je benotbar, risikoarm)
 
-Branch-Protection aktiv → Feature-Branches, PRs gegen `main`/`develop`, CI grün. Umsetzung über **GSD**
-(`/gsd-plan-phase` → `/gsd-execute-phase` → `/gsd-verify-work`) mit den Sub-Agenten aus dem Schwester-MD.
+**Branch-Workflow (verbindlich, aus der Repo-`AGENTS.md`): `feature/* → develop → main`.** Jede Phase läuft auf
+einem `feat/*`-Branch und wird per PR nach **`develop`** gemerged (develop = Integration, geschützt). `main`
+(Production, geschützt) wird **nur beim Release** aus develop aktualisiert — siehe Phase V4-7. CI muss grün sein.
+Umsetzung über **GSD** (`/gsd-plan-phase` → `/gsd-execute-phase` → `/gsd-verify-work` → `/gsd-ship`).
 
 | Phase | Inhalt | Ergebnis / Benotbarkeit |
 |---|---|---|
@@ -244,9 +246,12 @@ Branch-Protection aktiv → Feature-Branches, PRs gegen `main`/`develop`, CI gr�
 | **V4-4 RAG-Sentiment** | News/Fear&Greed → Sentiment-Feature/Veto in Schicht 2 | **RAG-Vorgabe** funktional erfüllt |
 | **V4-5 UI** | Signal-Dashboard, Explainability, Chart-Indikatoren, Backtest-Panel | sichtbare, benotbare Krönung |
 | **V4-6 Begleitdoku** | Negativ- + Positivbefund + Methodik für den Dozenten | starke wissenschaftliche Story |
+| **V4-7 Release → `main`** | **Abschluss-Release.** Wenn V4-1…V4-6 auf `develop` integriert & grün sind: Release-PR `develop → main`, CI grün, Tag `v4.0`. In GSD via `/gsd-complete-milestone`. | vorzeig-/abgabefähiger Production-Stand auf `main` |
 
 **Empfohlene Reihenfolge:** V4-0 → V4-1 zuerst (liefert den positiven Befund + die Engine, auf der alles
-aufbaut). V4-3 (Agenten) und V4-5 (UI) danach, weil sie auf den Engine-Outputs sitzen.
+aufbaut). V4-3 (Agenten) und V4-5 (UI) danach, weil sie auf den Engine-Outputs sitzen. **V4-7 (Release nach
+`main`) ist der letzte Schritt** — erst wenn der Meilenstein steht (spätestens vor der Modul-Abgabe), nicht nach
+jeder Einzelphase. Faustregel: `main` = jederzeit vorzeig-/abgabefähig, `develop` = woran gerade gebaut wird.
 
 ---
 

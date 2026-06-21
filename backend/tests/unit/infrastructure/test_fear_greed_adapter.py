@@ -160,9 +160,11 @@ async def test_fetch_history_extracts_value_as_int() -> None:
         adapter = FearGreedAdapter()
         df = await adapter.fetch_history()
 
+    import numpy as np
+
     assert "fear_greed" in df.columns
     assert df.iloc[0]["fear_greed"] == 25
-    assert isinstance(df.iloc[0]["fear_greed"], int | float)  # numpy int auch ok
+    assert isinstance(df.iloc[0]["fear_greed"], int | float | np.integer)  # numpy int auch ok
 
 
 @pytest.mark.asyncio

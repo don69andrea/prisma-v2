@@ -14,6 +14,7 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
+from backend.config import Settings, get_settings
 from backend.interfaces.rest.app import create_app
 from backend.interfaces.rest.schemas.signals import BacktestReport, SignalVector
 
@@ -74,15 +75,22 @@ _BACKTEST_BTC = BacktestReport(
 # ── Test-Client-Fixture ───────────────────────────────────────────────────────
 
 
+_TEST_API_KEY = "test-key"
+
+
 @pytest_asyncio.fixture
 async def client() -> AsyncClient:
     app = create_app()
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        api_key=_TEST_API_KEY, environment="development"
+    )
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
-        headers={"X-API-Key": "test-key"},
+        headers={"X-API-Key": _TEST_API_KEY},
     ) as ac:
         yield ac
+    app.dependency_overrides.clear()
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
@@ -171,7 +179,16 @@ async def test_signalvector_schema_complete(client: AsyncClient) -> None:
     assert response.status_code == 200
     data = response.json()
 
-    required_fields = {"coin", "asof", "action", "size_factor", "consensus", "sub_scores", "confidence", "disclaimer"}
+    required_fields = {
+        "coin",
+        "asof",
+        "action",
+        "size_factor",
+        "consensus",
+        "sub_scores",
+        "confidence",
+        "disclaimer",
+    }
     assert required_fields <= set(data.keys()), (
         f"Fehlende Felder: {required_fields - set(data.keys())}"
     )

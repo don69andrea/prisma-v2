@@ -27,7 +27,7 @@ pytestmark = pytest.mark.unit
 # ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
 
-def _run[_T](coro: Coroutine[Any, Any, _T]) -> _T:
+def _run[T](coro: Coroutine[Any, Any, T]) -> T:
     """Führe eine Coroutine synchron aus (Python 3.10+)."""
     return asyncio.run(coro)
 

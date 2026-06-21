@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 01
-status: "Phase 01 shipped — PR #296"
-stopped_at: Phase 02 context gathered
-last_updated: "2026-06-21T16:01:29.384Z"
+current_phase: 02
+status: "Phase 02 Plan 04 complete — meta-label API + coverage tests"
+stopped_at: "Completed 02-04-PLAN.md"
+last_updated: "2026-06-21T17:05:00.000Z"
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 7
-  completed_plans: 7
-  percent: 17
+  total_plans: 11
+  completed_plans: 8
+  percent: 27
 ---
 
 # PRISMA — Project State
 
 **Last updated:** 2026-06-21  
-**Current phase:** 01
-**Status:** Phase 01 shipped — PR #296
+**Current phase:** 02
+**Status:** Phase 02 Plan 04 complete — meta-label API + coverage tests
 
 ## What's Done
 
@@ -27,25 +27,40 @@ progress:
 - ✅ V4 docs committed to docs/ (MASTERPLAN, PROJEKTPLAN, AGENTS, V4-1 PHASENPLAN)
 - ✅ Codebase mapped (.planning/codebase/ — 7 docs, 883 lines)
 - ✅ GSD project initialized (PROJECT.md, REQUIREMENTS.md, ROADMAP.md)
+- ✅ Phase 02 Plan 01-04 complete: meta-labeling engine + API endpoint
 
 ## Active Branch
 
-`docs/prisma-v4-plan` (merged to develop as PR #292)
+`feat/v4-2-meta-labeling`
 
 ## Next Step
 
-`/gsd-plan-phase 1` → Build Phase V4-1 Signal-Engine
+Phase 02 Wave E → integration tests / remaining plans
 
 ## Key Context
 
 - Highest migration: 0022 (need 0037-0039 for crypto tables)
-- No `backend/application/signals/` yet — full new build
-- `signal_aggregation_service.py` and `signal_validation_service.py` exist for SMI — must NOT break
-- `steuer_agent.py` = gold standard pattern for new agents
-- yfinance_swiss.py = extension point for crypto adapter
+- `backend/application/signals/meta_label.py` exists — 97.1% coverage
+- `backend/application/backtest/walkforward.py` exists — 100% coverage
+- `GET /api/v1/signals/meta-label/{coin}` endpoint live with asyncio.to_thread
+- Coverage gap: backend overall 76.8% (gate needs 80%, pre-existing debt)
+
+## Decisions Made
+
+- asyncio.to_thread() for all ML sync computation (CLAUDE.md mandatory)
+- coin whitelist via _CRYPTO_UNIVERSE (10-coin in-memory fallback)
+- vol_pred/momentum_rank NaN-fill before dropna to prevent empty aligned dataset
+- finding logic: positive if meta_sharpe > always_sharpe AND meta_calmar > always_calmar; secondary_pass if trades reduced >=10% without >5% perf loss
+- test_indicators.py graceful skip when ta library absent
+
+## Performance Metrics
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 02    | 04   | ~60m     | 3     | 5     |
 
 ## Session
 
-**Last session:** 2026-06-21T16:01:29.373Z
-**Stopped at:** Phase 02 context gathered
-**Resume file:** .planning/phases/PRISMA-02-v4-2-meta-labeling-planned/02-CONTEXT.md
+**Last session:** 2026-06-21T17:05:00.000Z
+**Stopped at:** Completed 02-04-PLAN.md
+**Resume file:** .planning/phases/PRISMA-02-v4-2-meta-labeling-planned/02-04-SUMMARY.md

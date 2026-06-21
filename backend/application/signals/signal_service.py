@@ -82,7 +82,11 @@ async def evaluate(
         Wenn coin nicht in prices_df.columns vorhanden ist oder zu wenig Daten vorliegen.
     """
     # ── Look-Ahead-Guard: Nur Daten bis asof verwenden ───────────────────────
-    asof_ts = pd.Timestamp(asof)
+    # Timezone-aware Timestamp: falls Index UTC-aware ist, muss asof_ts auch UTC sein.
+    asof_ts = pd.Timestamp(asof, tz="UTC")
+    if prices_df.index.tz is None:
+        # Index ist tz-naive — Timestamp ohne tz für Vergleich
+        asof_ts = pd.Timestamp(asof)
     prices_filtered = prices_df[prices_df.index <= asof_ts].copy()
 
     if coin not in prices_filtered.columns:

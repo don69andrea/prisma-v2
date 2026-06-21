@@ -147,7 +147,7 @@ async def test_backtest_returns_report(client: AsyncClient) -> None:
     ):
         response = await client.get("/api/v1/backtest/BTC-USD")
 
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     data = response.json()
     assert data["coin"] == "BTC-USD"
     assert isinstance(data["beats_exposure_matched"], bool)

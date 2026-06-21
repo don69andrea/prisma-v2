@@ -1802,4 +1802,32 @@ Mangel, sondern Teil einer methodisch sauberen Geschichte.
 
 ---
 
+## G6 · ML-Endbefund (final, 2026-06-21) — überschreibt frühere ML-Annahmen
+
+> Volldoku: `PRISMA_V3_ML_BEFUNDE.md`. Dieser Abschnitt ist die maßgebliche, abschließende
+> Aussage zum ML. Wo Kap. 0/4 oder frühere Teile dem widersprechen, gilt G6.
+
+**Befund:** Nach rigoroser Prüfung (Aktien-Quantil, Krypto v1/v2, Monats-Signal-Backtest,
+strikter täglicher Walk-Forward) gibt es **keinen robusten, generalisierbaren ML-Edge** auf den
+verfügbaren Daten — weder Return-Vorhersage noch generalisierbares Regime-Timing.
+
+**Zentrale Lehre — In-Sample-Optimismus:** Der vielversprechende Phase-2-Wert (Calmar 1.81, Purged CV)
+kollabierte im strikten Walk-Forward auf **Calmar 0.35** — *unter* der Exposure-Matched-Baseline (0.66).
+Die Purged-CV-Folds hatten über Expanding-Window indirekt Zugang zu Crash-Daten. Echter Timing-Skill
+nur in 1 von 4 OOS-Folds (2023–24). Das ist der eigentliche wissenschaftliche Befund.
+
+**Konsequenzen (verbindlich):**
+1. **`ml_score` in Produktion = aus/minimal.** Keine Alpha- oder Timing-Behauptung im UI.
+2. **Das ML bleibt als dokumentierte Forschungskomponente** (saubere Pipeline + ehrliche
+   Negativ-Evaluation) — erfüllt „ML-basiert" voll und zeigt Methodik-Kompetenz.
+3. **Kein weiteres ML-Tuning** als Projektpfad. Einziger optionaler Rest-Hebel: News-RAG-Features
+   (C5), nicht projektkritisch.
+4. **Produktwert + Note** kommen aus: angereicherter Datensicht, Agentic AI, RAG, Quant-Score als
+   Decision-Support und **visueller Chart-Analyse/Explainability (G4)** — nicht aus einem Alpha-Modell.
+
+**Projektvorgaben:** weiterhin voll erfüllt (Agentic ✓, ML-basiert ✓ inkl. ehrlicher Evaluation,
+RAG ✓, Datensatz/Historisch+Live ✓). Der Negativbefund ist akademisch eine Stärke, kein Mangel.
+
+---
+
 *Challenge-Layer V3.1 · Reviewer-Annotationen zu PRISMA V3 Master Spec · 2026-06-20*

@@ -333,3 +333,51 @@ class TestMetaFilter:
             check_names=False,
             obj="OOS-Datumsabdeckung muss identisch sein (ML-07)",
         )
+
+
+# ---------------------------------------------------------------------------
+# T06 — Edge-branch coverage for walkforward private metric helpers
+# ---------------------------------------------------------------------------
+
+
+class TestPrivateMetricEdgeCases:
+    """Cover edge-case branches in _sharpe, _cagr, _max_drawdown, _calmar."""
+
+    def test_sharpe_empty_returns(self) -> None:
+        """_sharpe returns 0.0 for empty series (line 38 branch)."""
+        from backend.application.backtest.walkforward import _sharpe  # noqa: PLC0415
+
+        assert _sharpe(pd.Series([], dtype=float)) == 0.0
+
+    def test_sharpe_zero_std(self) -> None:
+        """_sharpe returns 0.0 when std == 0 (constant returns, line 38 branch)."""
+        from backend.application.backtest.walkforward import _sharpe  # noqa: PLC0415
+
+        assert _sharpe(pd.Series([0.01, 0.01, 0.01])) == 0.0
+
+    def test_cagr_empty_returns(self) -> None:
+        """_cagr returns 0.0 for empty series (line 45 branch)."""
+        from backend.application.backtest.walkforward import _cagr  # noqa: PLC0415
+
+        assert _cagr(pd.Series([], dtype=float)) == 0.0
+
+    def test_cagr_total_zero_or_negative(self) -> None:
+        """_cagr returns -1.0 when cumulative product <= 0 (line 48 branch)."""
+        from backend.application.backtest.walkforward import _cagr  # noqa: PLC0415
+
+        # Returns that produce total <= 0: -100% loss
+        assert _cagr(pd.Series([-1.0])) == -1.0
+
+    def test_max_drawdown_empty_returns(self) -> None:
+        """_max_drawdown returns 0.0 for empty series (line 55 branch)."""
+        from backend.application.backtest.walkforward import _max_drawdown  # noqa: PLC0415
+
+        assert _max_drawdown(pd.Series([], dtype=float)) == 0.0
+
+    def test_calmar_zero_drawdown(self) -> None:
+        """_calmar returns 0.0 when max_drawdown == 0 (line 67 branch)."""
+        from backend.application.backtest.walkforward import _calmar  # noqa: PLC0415
+
+        # Monotonically increasing returns → no drawdown
+        returns = pd.Series([0.01, 0.01, 0.01, 0.01, 0.01])
+        assert _calmar(returns) == 0.0

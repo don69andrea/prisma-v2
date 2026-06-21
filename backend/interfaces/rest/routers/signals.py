@@ -285,7 +285,17 @@ def _sync_meta_label(coin: str, prices_df: pd.DataFrame) -> MetaLabelReport:
 
     X = build_meta_features(feat_frame)
 
-    # Align X and y (drop rows where both NaN after shift)
+    # Fill optional columns absent from stub frame: vol_pred → 0.0, momentum_rank → 0.5
+    # (these are NaN when stub prices don't have vol_pred/momentum_rank columns,
+    # which would otherwise cause dropna() to remove all rows)
+    X = X.copy()
+    if X["vol_pred"].isna().all():
+        X["vol_pred"] = 0.0
+    if X["momentum_rank"].isna().all():
+        X["momentum_rank"] = 0.5
+
+    # Align X and y (drop rows where NaN after shift warmup)
+    y.name = "label"
     aligned = pd.concat([X, y], axis=1).dropna()
     if aligned.empty:
         return MetaLabelReport(

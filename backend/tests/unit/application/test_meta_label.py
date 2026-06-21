@@ -408,6 +408,235 @@ def test_no_snooping() -> None:
         )
 
 
+# ── ML-07: Edge-branch coverage for >= 80% gate (ML-10) ─────────────────────
+
+
+def test_triple_barrier_nan_price_in_window() -> None:
+    """ML-10-a: NaN price inside forward scan → skipped (line 98 branch)."""
+    triple_barrier_labels, _, _ = _import()
+
+    n = 30
+    idx = pd.date_range("2021-01-01", periods=n, freq="D")
+    prices = np.linspace(100.0, 130.0, n)
+    # Insert NaN at position 5 — inside the forward scan of bar 0..3
+    prices[5] = float("nan")
+    close = pd.Series(prices, index=idx)
+    high = close.ffill() + 0.5
+    low = close.ffill() - 0.5
+
+    labels = triple_barrier_labels(close, high, low, atr_window=5, horizon=10)
+    assert set(labels.dropna().unique()).issubset({-1, 0, 1})
+
+
+def test_trend_scan_nan_window_skip() -> None:
+    """ML-10-b: NaN inside trend_scan window → skipped (line 157 branch)."""
+    _, trend_scan_labels, _ = _import()
+
+    n = 30
+    idx = pd.date_range("2021-01-01", periods=n, freq="D")
+    prices = np.linspace(100.0, 115.0, n)
+    prices[3] = float("nan")  # NaN inside early window
+    close = pd.Series(prices, index=idx)
+
+    labels = trend_scan_labels(close, min_window=3, max_window=6, t_stat_threshold=1.5)
+    assert set(labels.dropna().unique()).issubset({-1, 0, 1})
+
+
+def test_build_meta_features_with_onchain_health() -> None:
+    """ML-10-c: onchain_health column present → shift(1) applied (line 238 branch)."""
+    _, _, build_meta_features = _import()
+
+    df = _feature_df(n=40)
+    df["onchain_health"] = 0.8  # add the column that triggers line 238
+
+    meta = build_meta_features(df)
+    assert "onchain_health" in meta.columns
+    # First row is NaN due to shift(1) on the onchain_health column
+    # (all cols shifted, onchain is now shifted too)
+    assert len(meta) == len(df)
+
+
+def test_fit_meta_classifier_lgbm() -> None:
+    """ML-10-d: lgbm fallback path in fit_meta_classifier (lines 290-299)."""
+    fit_meta_classifier, _, _ = _import_classifier()
+
+    rng = np.random.default_rng(1)
+    X = pd.DataFrame({"f0": rng.normal(0, 1, 80), "f1": rng.normal(0, 1, 80)})
+    y = pd.Series((rng.normal(0, 1, 80) > 0).astype(int))
+
+    result = fit_meta_classifier(X, y, model="lgbm")
+    assert result["model_type"] == "lgbm"
+    assert "model" in result
+
+
+def test_predict_meta_label_insufficient_folds() -> None:
+    """ML-10-e: n_folds < 10 → finding='negative','insufficient_oos_folds' (line 456)."""
+    _, predict_meta_label, _ = _import_classifier()
+
+    # Small dataset: only 300 rows → can't produce 10 folds with min_train=252
+    rng = np.random.default_rng(7)
+    n = 300
+    idx = pd.date_range("2020-01-01", periods=n, freq="D")
+    X = pd.DataFrame({"f0": rng.normal(0, 1, n)}, index=idx)
+    y = pd.Series((rng.normal(0, 1, n) > 0).astype(int), index=idx, name="label")
+
+    result = predict_meta_label(X, y, min_train=252, step=21, embargo=5, model="logreg")
+    assert result["n_folds"] < 10
+    assert result["finding"] == "negative"
+    assert result["finding_reason"] == "insufficient_oos_folds"
+
+
+def test_walkforward_meta_cv_single_class_fold_skipped() -> None:
+    """ML-10-f: fold with < 2 classes in y_train is skipped (line 382-383 branch)."""
+    _, _, _walkforward_meta_cv = _import_classifier()
+
+    # All-zeros y → every train fold has only 1 class → all skipped → n_folds = 0
+    n = 400
+    idx = pd.date_range("2020-01-01", periods=n, freq="D")
+    X = pd.DataFrame({"f0": np.ones(n)}, index=idx)
+    y = pd.Series(np.zeros(n, dtype=int), index=idx)
+
+    result = _walkforward_meta_cv(X, y, min_train=252, step=21, embargo=5)
+    # All folds skipped due to single class → n_folds == 0
+    assert result["n_folds"] == 0
+
+
+# ── ML-10-g: Direct unit tests for _sync_meta_label finding branches ─────────
+
+
+def test_sync_meta_label_returns_meta_label_report() -> None:
+    """ML-10-g: _sync_meta_label direct call returns valid MetaLabelReport."""
+    from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
+        _make_stub_prices,
+        _sync_meta_label,
+    )
+    from backend.interfaces.rest.schemas.signals import MetaLabelReport  # noqa: PLC0415
+
+    prices_df = _make_stub_prices("BTC-USD", n=500)
+    report = _sync_meta_label("BTC-USD", prices_df)
+    assert isinstance(report, MetaLabelReport)
+    assert report.coin == "BTC-USD"
+    assert report.finding in {"positive", "secondary_pass", "negative"}
+
+
+def test_sync_meta_label_small_dataset_negative_finding() -> None:
+    """ML-10-h: Small dataset (25 rows) → n_folds<10 → finding='negative'."""
+    from backend.interfaces.rest.routers.signals import (
+        _make_stub_prices,  # noqa: PLC0415
+        _sync_meta_label,  # noqa: PLC0415
+    )
+
+    # 25 rows: enough for ATR warmup but too few for >= 10 walk-forward folds
+    prices_df = _make_stub_prices("ETH-USD", n=25)
+    report = _sync_meta_label("ETH-USD", prices_df)
+    # Small dataset → either insufficient_data or insufficient_oos_folds
+    assert report.finding == "negative"
+    assert "insufficient" in report.finding_reason
+
+
+# ── ML-10-i: Cover finding branches in _sync_meta_label via monkeypatching ──
+
+
+def test_sync_meta_label_positive_finding(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ML-10-i: Positive finding when meta_sharpe > always_sharpe AND calmar.
+
+    Monkeypatch predict_meta_label to return n_folds >= 10 so finding-logic
+    branches (lines 355-384 in signals.py) are exercised.
+    """
+    import backend.interfaces.rest.routers.signals as _router_mod  # noqa: PLC0415
+    from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
+        _make_stub_prices,
+        _sync_meta_label,
+    )
+
+    def _fake_predict(X, y, **kw):  # type: ignore
+        return {
+            "n_folds": 12,
+            "mean_precision": 0.65,
+            "mean_recall": 0.60,
+            "mean_f1": 0.62,
+            "final_model_info": None,
+            "folds": [],
+            "finding": "positive",
+            "finding_reason": "oos_precision_above_random",
+        }
+
+    def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # type: ignore
+        if meta_filter is None:
+            return {"strategy_sharpe": 0.5, "strategy_calmar": 0.3, "n_trades": 100}
+        return {"strategy_sharpe": 1.0, "strategy_calmar": 0.8, "n_trades": 50}
+
+    monkeypatch.setattr(_router_mod, "predict_meta_label", _fake_predict)
+    monkeypatch.setattr(_router_mod, "_run_wf_details", _fake_wf)
+
+    prices_df = _make_stub_prices("SOL-USD", n=500)
+    report = _sync_meta_label("SOL-USD", prices_df)
+    assert report.finding == "positive"
+    assert report.beats_baseline is True
+
+
+def test_sync_meta_label_secondary_pass_finding(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ML-10-j: Secondary-pass when n_filtered < 90% of n_always, no perf loss."""
+    import backend.interfaces.rest.routers.signals as _router_mod  # noqa: PLC0415
+    from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
+        _make_stub_prices,
+        _sync_meta_label,
+    )
+
+    def _fake_predict(X, y, **kw):  # type: ignore
+        return {
+            "n_folds": 12, "mean_precision": 0.45, "mean_recall": 0.5,
+            "mean_f1": 0.47, "final_model_info": None, "folds": [],
+            "finding": "negative", "finding_reason": "oos_precision_at_or_below_random",
+        }
+
+    def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # type: ignore
+        if meta_filter is None:
+            return {"strategy_sharpe": 1.0, "strategy_calmar": 0.8, "n_trades": 100}
+        return {"strategy_sharpe": 0.97, "strategy_calmar": 0.78, "n_trades": 85}
+
+    monkeypatch.setattr(_router_mod, "predict_meta_label", _fake_predict)
+    monkeypatch.setattr(_router_mod, "_run_wf_details", _fake_wf)
+
+    prices_df = _make_stub_prices("ADA-USD", n=500)
+    report = _sync_meta_label("ADA-USD", prices_df)
+    assert report.finding == "secondary_pass"
+    assert report.beats_baseline is True
+
+
+def test_sync_meta_label_negative_finding_no_improvement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """ML-10-k: Negative when meta_filter doesn't improve over always-trade."""
+    import backend.interfaces.rest.routers.signals as _router_mod  # noqa: PLC0415
+    from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
+        _make_stub_prices,
+        _sync_meta_label,
+    )
+
+    def _fake_predict(X, y, **kw):  # type: ignore
+        return {
+            "n_folds": 12, "mean_precision": 0.45, "mean_recall": 0.5,
+            "mean_f1": 0.47, "final_model_info": None, "folds": [],
+            "finding": "negative", "finding_reason": "oos_precision_at_or_below_random",
+        }
+
+    def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # type: ignore
+        if meta_filter is None:
+            return {"strategy_sharpe": 1.0, "strategy_calmar": 0.8, "n_trades": 100}
+        # Worse performance AND not enough trade reduction
+        return {"strategy_sharpe": 0.6, "strategy_calmar": 0.5, "n_trades": 95}
+
+    monkeypatch.setattr(_router_mod, "predict_meta_label", _fake_predict)
+    monkeypatch.setattr(_router_mod, "_run_wf_details", _fake_wf)
+
+    prices_df = _make_stub_prices("XRP-USD", n=500)
+    report = _sync_meta_label("XRP-USD", prices_df)
+    assert report.finding == "negative"
+    assert report.finding_reason == "meta_filter_does_not_improve_over_always_trade"
+    assert report.beats_baseline is False
+
+
 # ── Wave D — REST Endpoint Tests (ML-09, ML-10) ─────────────────────────────
 
 # Minimal FastAPI TestClient fixture for signals router
@@ -467,3 +696,236 @@ def test_meta_label_unknown_coin_404() -> None:
     assert resp.status_code == 404, (
         f"Expected 404 for unknown coin, got {resp.status_code}: {resp.text[:200]}"
     )
+
+
+def test_meta_label_coin_case_insensitive() -> None:
+    """Coin parameter is uppercased: btc-usd → BTC-USD."""
+    from backend.interfaces.rest.schemas.signals import MetaLabelReport  # noqa: PLC0415
+
+    client = _make_test_app()
+    resp = client.get("/api/v1/signals/meta-label/btc-usd")
+    assert resp.status_code == 200
+    MetaLabelReport.model_validate(resp.json())
+
+
+def test_cache_helpers() -> None:
+    """Direct unit tests for _is_cache_valid, _get_cached_signal, _set_cached_signal."""
+    import time  # noqa: PLC0415
+    from datetime import date  # noqa: PLC0415
+
+    from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
+        _get_cached_signal,
+        _is_cache_valid,
+        _set_cached_signal,
+        _signal_cache,
+    )
+    from backend.interfaces.rest.schemas.signals import SignalVector  # noqa: PLC0415
+
+    # _is_cache_valid: fresh timestamp → valid
+    assert _is_cache_valid(time.monotonic()) is True
+    # _is_cache_valid: very old timestamp → invalid
+    assert _is_cache_valid(time.monotonic() - 7200) is False
+
+    # _get_cached_signal: unknown coin → None
+    assert _get_cached_signal("UNKNOWN-COIN") is None
+
+    # _set_cached_signal + _get_cached_signal round-trip
+    sv = SignalVector(
+        coin="TEST-USD",
+        asof=date.today(),
+        action="BUY",
+        size_factor=0.5,
+        consensus="2/3",
+        sub_scores={"ma_signal": 1.0},
+        confidence=0.8,
+    )
+    _set_cached_signal("TEST-USD", sv)
+    result = _get_cached_signal("TEST-USD")
+    assert result is not None
+    assert result.coin == "TEST-USD"
+    # Cleanup: remove test entry
+    _signal_cache.pop("TEST-USD", None)
+
+
+def test_signals_router_get_signal_valid(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cover GET /{coin} → get_signal endpoint (lines 154-178 in signals.py)."""
+    from datetime import date  # noqa: PLC0415
+
+    from fastapi import FastAPI  # noqa: PLC0415
+    from fastapi.testclient import TestClient  # noqa: PLC0415
+
+    import backend.application.signals.signal_service as _svc  # noqa: PLC0415
+    from backend.interfaces.rest.routers.signals import _signal_cache, router  # noqa: PLC0415
+    from backend.interfaces.rest.schemas.signals import SignalVector  # noqa: PLC0415
+
+    _signal_cache.clear()
+
+    sv = SignalVector(
+        coin="ETH-USD",
+        asof=date.today(),
+        action="HOLD",
+        size_factor=0.5,
+        consensus="2/3",
+        sub_scores={"ma_signal": 1.0},
+        confidence=0.6,
+    )
+
+    async def _fake_evaluate(coin, asof, prices_df):  # type: ignore
+        return sv
+
+    monkeypatch.setattr(_svc, "evaluate", _fake_evaluate)
+
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app)
+    resp = client.get("/api/v1/signals/ETH-USD")
+    assert resp.status_code == 200
+    assert resp.json()["coin"] == "ETH-USD"
+
+
+def test_signals_router_get_signal_unknown_coin() -> None:
+    """Cover 404 branch of get_signal (coin not in _CRYPTO_UNIVERSE)."""
+    from fastapi import FastAPI  # noqa: PLC0415
+    from fastapi.testclient import TestClient  # noqa: PLC0415
+
+    from backend.interfaces.rest.routers.signals import router  # noqa: PLC0415
+
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app)
+    resp = client.get("/api/v1/signals/NOTACOIN")
+    assert resp.status_code == 404
+
+
+def test_signals_router_list_signals(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cover GET / → list_signals endpoint (lines 119-139 in signals.py)."""
+    from datetime import date  # noqa: PLC0415
+
+    from fastapi import FastAPI  # noqa: PLC0415
+    from fastapi.testclient import TestClient  # noqa: PLC0415
+
+    import backend.application.signals.signal_service as _svc  # noqa: PLC0415
+    from backend.interfaces.rest.routers.signals import _signal_cache, router  # noqa: PLC0415
+    from backend.interfaces.rest.schemas.signals import SignalVector  # noqa: PLC0415
+
+    _signal_cache.clear()
+
+    sv = SignalVector(
+        coin="BTC-USD",
+        asof=date.today(),
+        action="BUY",
+        size_factor=1.0,
+        consensus="3/3",
+        sub_scores={"ma_signal": 1.0},
+        confidence=0.9,
+    )
+
+    async def _fake_evaluate(coin, asof, prices_df):  # type: ignore
+        return sv
+
+    monkeypatch.setattr(_svc, "evaluate", _fake_evaluate)
+
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app)
+    resp = client.get("/api/v1/signals")
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+
+@pytest.mark.asyncio
+async def test_run_walkforward_async_wrapper() -> None:
+    """Cover run_walkforward async wrapper (lines 188-197 in signals.py)."""
+    from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
+        _make_stub_prices,
+        run_walkforward,
+    )
+    from backend.interfaces.rest.schemas.signals import BacktestReport  # noqa: PLC0415
+
+    prices_df = _make_stub_prices("BTC-USD", n=300)
+    prices_df.columns = pd.Index(["close"])  # type: ignore
+
+    report = await run_walkforward(coin="BTC-USD", prices_df=prices_df)
+    assert isinstance(report, BacktestReport)
+    assert report.coin == "BTC-USD"
+
+
+def test_backtest_router_get_backtest_unknown_coin() -> None:
+    """Cover 404 branch of get_backtest (lines 213-231 in signals.py)."""
+    from fastapi import FastAPI  # noqa: PLC0415
+    from fastapi.testclient import TestClient  # noqa: PLC0415
+
+    from backend.interfaces.rest.routers.signals import backtest_router  # noqa: PLC0415
+
+    app = FastAPI()
+    app.include_router(backtest_router)
+    client = TestClient(app)
+    resp = client.get("/api/v1/backtest/NOTACOIN")
+    assert resp.status_code == 404
+
+
+def test_backtest_router_get_backtest_valid_coin() -> None:
+    """Cover happy path of get_backtest (lines 221-231 in signals.py)."""
+    from fastapi import FastAPI  # noqa: PLC0415
+    from fastapi.testclient import TestClient  # noqa: PLC0415
+
+    from backend.interfaces.rest.routers.signals import backtest_router  # noqa: PLC0415
+
+    app = FastAPI()
+    app.include_router(backtest_router)
+    client = TestClient(app)
+    resp = client.get("/api/v1/backtest/BTC-USD")
+    assert resp.status_code == 200
+    assert resp.json()["coin"] == "BTC-USD"
+
+
+def test_signals_router_list_signals_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cover list_signals cache hit path (lines 119-120 in signals.py)."""
+    import time  # noqa: PLC0415
+
+    from fastapi import FastAPI  # noqa: PLC0415
+    from fastapi.testclient import TestClient  # noqa: PLC0415
+
+    import backend.interfaces.rest.routers.signals as _signals_mod  # noqa: PLC0415
+    from backend.interfaces.rest.routers.signals import router  # noqa: PLC0415
+    from backend.interfaces.rest.schemas.signals import SignalVector  # noqa: PLC0415
+
+    sv = SignalVector(
+        coin="BTC-USD",
+        asof=__import__("datetime").date.today(),
+        action="BUY",
+        size_factor=1.0,
+        consensus="3/3",
+        sub_scores={"ma_signal": 1.0},
+        confidence=0.9,
+    )
+    _signals_mod._list_cache = (time.monotonic(), [sv])
+
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app)
+    resp = client.get("/api/v1/signals")
+    assert resp.status_code == 200
+    _signals_mod._list_cache = None
+
+
+def test_signals_router_get_signal_error_422(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cover ValueError → 422 path in get_signal (lines 164, 170-172)."""
+    from fastapi import FastAPI  # noqa: PLC0415
+    from fastapi.testclient import TestClient  # noqa: PLC0415
+
+    import backend.application.signals.signal_service as _svc  # noqa: PLC0415
+    from backend.interfaces.rest.routers.signals import _signal_cache, router  # noqa: PLC0415
+
+    _signal_cache.clear()
+
+    async def _raise_value_error(coin, asof, prices_df):  # type: ignore
+        raise ValueError("invalid input")
+
+    monkeypatch.setattr(_svc, "evaluate", _raise_value_error)
+
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app)
+    resp = client.get("/api/v1/signals/BTC-USD")
+    assert resp.status_code == 422

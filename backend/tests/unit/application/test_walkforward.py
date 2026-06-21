@@ -224,3 +224,157 @@ class TestPoCReproduction:
         report = run_walkforward(prices, signals, coin="TEST")
 
         assert report.n_trades > 0
+
+
+# ---------------------------------------------------------------------------
+# T05 — meta_filter Integration (ML-07, ML-08)
+# ---------------------------------------------------------------------------
+
+
+class TestMetaFilter:
+    def test_meta_filter_backward_compat(self) -> None:
+        """ML-08: Kein meta_filter-Arg → identische Metriken; all-ones Filter = kein Filter.
+
+        Beide Varianten müssen bit-identische Ergebnisse liefern (atol 1e-12).
+        """
+        from backend.application.backtest.walkforward import run_walkforward_with_details
+
+        prices = _make_trending_prices(600)
+        signals = _make_signals_from_ma(prices)
+
+        # Baseline: keine meta_filter (Default None)
+        no_filter = run_walkforward_with_details(prices, signals, costs=0.001)
+
+        # all-ones Filter: Position bleibt unverändert → identisch
+        all_ones = pd.Series(1.0, index=prices.index)
+        with_ones = run_walkforward_with_details(prices, signals, costs=0.001, meta_filter=all_ones)
+
+        # Metriken müssen bit-identisch sein
+        np.testing.assert_allclose(
+            no_filter["strategy_sharpe"],
+            with_ones["strategy_sharpe"],
+            atol=1e-12,
+            err_msg="strategy_sharpe weicht mit all-ones Filter ab",
+        )
+        np.testing.assert_allclose(
+            no_filter["strategy_calmar"],
+            with_ones["strategy_calmar"],
+            atol=1e-12,
+            err_msg="strategy_calmar weicht mit all-ones Filter ab",
+        )
+        np.testing.assert_allclose(
+            no_filter["n_trades"],
+            with_ones["n_trades"],
+            atol=1e-12,
+            err_msg="n_trades weicht mit all-ones Filter ab",
+        )
+
+    def test_meta_filter_masks_positions(self) -> None:
+        """Positionen müssen auf 0 gesetzt werden wo meta_filter == 0.
+
+        Ein Block von Null-Werten im Filter muss n_trades und Exposure reduzieren.
+        """
+        from backend.application.backtest.walkforward import run_walkforward_with_details
+
+        prices = _make_trending_prices(600)
+        signals = _make_signals_from_ma(prices)
+
+        # Ungefilterter Lauf (Referenz)
+        unfiltered = run_walkforward_with_details(prices, signals, costs=0.001)
+
+        # Filter mit einem grossen Null-Block (50% der Daten = 0)
+        meta_filter = pd.Series(1.0, index=prices.index)
+        mid = len(prices) // 2
+        meta_filter.iloc[:mid] = 0.0  # erste Hälfte: keine Trades
+
+        filtered = run_walkforward_with_details(
+            prices, signals, costs=0.001, meta_filter=meta_filter
+        )
+
+        # Exposure muss gesunken sein (weniger investierte Tage)
+        assert filtered["avg_exposure"] < unfiltered["avg_exposure"], (
+            f"Erwartet avg_exposure < {unfiltered['avg_exposure']:.4f}, "
+            f"got {filtered['avg_exposure']:.4f}"
+        )
+
+        # n_trades muss kleiner oder gleich sein
+        assert filtered["n_trades"] <= unfiltered["n_trades"], (
+            f"Erwartet n_trades <= {unfiltered['n_trades']}, got {filtered['n_trades']}"
+        )
+
+    def test_baseline_same_oos_period(self) -> None:
+        """ML-07: Always-trade und meta-filtered müssen über denselben OOS-Zeitraum verglichen werden.
+
+        Index-Gleichheit der return-Serien muss gegeben sein (identische Daten-Datumsabdeckung).
+        """
+        from backend.application.backtest.walkforward import run_walkforward_with_details
+
+        prices = _make_trending_prices(600)
+        signals = _make_signals_from_ma(prices)
+
+        # always-trade: kein Filter
+        always = run_walkforward_with_details(prices, signals, costs=0.001)
+
+        # meta-filtered: partieller Filter
+        meta_filter = pd.Series(1.0, index=prices.index)
+        meta_filter.iloc[::3] = 0.0  # jeden dritten Tag: kein Trade
+
+        filtered = run_walkforward_with_details(
+            prices, signals, costs=0.001, meta_filter=meta_filter
+        )
+
+        # Beide net_returns müssen denselben DatetimeIndex teilen (ML-07)
+        pd.testing.assert_index_equal(
+            always["net_returns"].index,
+            filtered["net_returns"].index,
+            check_names=False,
+            obj="OOS-Datumsabdeckung muss identisch sein (ML-07)",
+        )
+
+
+# ---------------------------------------------------------------------------
+# T06 — Edge-branch coverage for walkforward private metric helpers
+# ---------------------------------------------------------------------------
+
+
+class TestPrivateMetricEdgeCases:
+    """Cover edge-case branches in _sharpe, _cagr, _max_drawdown, _calmar."""
+
+    def test_sharpe_empty_returns(self) -> None:
+        """_sharpe returns 0.0 for empty series (line 38 branch)."""
+        from backend.application.backtest.walkforward import _sharpe  # noqa: PLC0415
+
+        assert _sharpe(pd.Series([], dtype=float)) == 0.0
+
+    def test_sharpe_zero_std(self) -> None:
+        """_sharpe returns 0.0 when std == 0 (constant returns, line 38 branch)."""
+        from backend.application.backtest.walkforward import _sharpe  # noqa: PLC0415
+
+        assert _sharpe(pd.Series([0.01, 0.01, 0.01])) == 0.0
+
+    def test_cagr_empty_returns(self) -> None:
+        """_cagr returns 0.0 for empty series (line 45 branch)."""
+        from backend.application.backtest.walkforward import _cagr  # noqa: PLC0415
+
+        assert _cagr(pd.Series([], dtype=float)) == 0.0
+
+    def test_cagr_total_zero_or_negative(self) -> None:
+        """_cagr returns -1.0 when cumulative product <= 0 (line 48 branch)."""
+        from backend.application.backtest.walkforward import _cagr  # noqa: PLC0415
+
+        # Returns that produce total <= 0: -100% loss
+        assert _cagr(pd.Series([-1.0])) == -1.0
+
+    def test_max_drawdown_empty_returns(self) -> None:
+        """_max_drawdown returns 0.0 for empty series (line 55 branch)."""
+        from backend.application.backtest.walkforward import _max_drawdown  # noqa: PLC0415
+
+        assert _max_drawdown(pd.Series([], dtype=float)) == 0.0
+
+    def test_calmar_zero_drawdown(self) -> None:
+        """_calmar returns 0.0 when max_drawdown == 0 (line 67 branch)."""
+        from backend.application.backtest.walkforward import _calmar  # noqa: PLC0415
+
+        # Monotonically increasing returns → no drawdown
+        returns = pd.Series([0.01, 0.01, 0.01, 0.01, 0.01])
+        assert _calmar(returns) == 0.0

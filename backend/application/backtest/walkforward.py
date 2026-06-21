@@ -92,6 +92,7 @@ def run_walkforward(
     costs: float = 0.001,
     min_train: int = 252,
     step: int = 63,
+    meta_filter: pd.Series | None = None,
 ) -> BacktestReport:
     """Führt einen expanding-window Walk-Forward-Backtest durch.
 
@@ -103,6 +104,8 @@ def run_walkforward(
         costs: Transaktionskosten pro Handels-Einheit (default: 0.001 = 0.1%).
         min_train: Mindestanzahl Trainingstage (default: 252).
         step: Schrittweite in Tagen für das Expanding Window (default: 63).
+        meta_filter: Optionale Series {0, 1} — 1 = Trade erlaubt, 0 = Position maskiert.
+                     Default None = kein Filter (identisches Verhalten wie bisher, ML-08).
 
     Returns:
         BacktestReport (Pydantic) mit allen Metriken.
@@ -113,6 +116,7 @@ def run_walkforward(
         costs=costs,
         min_train=min_train,
         step=step,
+        meta_filter=meta_filter,
     )
 
     return BacktestReport(
@@ -133,6 +137,7 @@ def run_walkforward_with_details(
     costs: float = 0.001,
     min_train: int = 252,
     step: int = 63,
+    meta_filter: pd.Series | None = None,
 ) -> dict[str, Any]:
     """Wie run_walkforward, gibt aber alle Zwischengrößen zurück (für Tests).
 
@@ -160,6 +165,15 @@ def run_walkforward_with_details(
     # Das Signal an Tag t sagt, ob wir MORGEN (t+1) investiert sein wollen.
     # shift(1) stellt sicher, dass die Entscheidung nur auf Vergangenheitsdaten basiert.
     position = signals.shift(1).fillna(0.0).clip(0.0, 1.5)
+
+    # -----------------------------------------------------------------------
+    # 2b. Meta-Filter Masking (ML-07, ML-08)
+    # -----------------------------------------------------------------------
+    # Wenn meta_filter gesetzt ist, werden Positionen auf 0 maskiert wo filter=0.
+    # Default None → kein Masking (backward-kompatibel, ML-08).
+    if meta_filter is not None:
+        meta_aligned = meta_filter.reindex(close.index).fillna(0.0)
+        position = position * meta_aligned
 
     # -----------------------------------------------------------------------
     # 3. Brutto-Rendite der Strategie (vor Kosten)

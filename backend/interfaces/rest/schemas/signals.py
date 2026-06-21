@@ -12,7 +12,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-__all__ = ["SignalVector", "BacktestReport"]
+__all__ = ["SignalVector", "BacktestReport", "MetaLabelReport"]
 
 
 class SignalVector(BaseModel):
@@ -53,3 +53,31 @@ class BacktestReport(BaseModel):
     beats_exposure_matched: bool
     n_trades: int
     equity_curve: list[tuple[date, float]]
+
+
+class MetaLabelReport(BaseModel):
+    """Meta-Labeling-Bericht: always-trade vs. meta-gefilterter Strategie-Vergleich.
+
+    finding-Logik:
+    - "positive": meta_filtered_sharpe > always_trade_sharpe UND
+                  meta_filtered_calmar > always_trade_calmar
+    - "secondary_pass": n_trades_filtered < n_trades_always * 0.9 UND
+                        meta_filtered_sharpe >= always_trade_sharpe * 0.95
+    - "negative": keine der obigen Bedingungen erfüllt
+    """
+
+    coin: str
+    label_method: Literal["triple_barrier", "trend_scan"]
+    classifier: Literal["logreg", "lgbm"]
+    n_folds: int
+    oos_precision: float
+    oos_recall: float
+    always_trade_sharpe: float
+    always_trade_calmar: float
+    meta_filtered_sharpe: float
+    meta_filtered_calmar: float
+    n_trades_always: int
+    n_trades_filtered: int
+    beats_baseline: bool
+    finding: Literal["positive", "secondary_pass", "negative"]
+    finding_reason: str

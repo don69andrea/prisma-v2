@@ -9,11 +9,20 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-from ta.momentum import RSIIndicator
-from ta.trend import MACD, EMAIndicator, SMAIndicator
-from ta.volatility import AverageTrueRange, BollingerBands
 
-pytestmark = pytest.mark.unit
+try:
+    from ta.momentum import RSIIndicator
+    from ta.trend import MACD, EMAIndicator, SMAIndicator
+    from ta.volatility import AverageTrueRange, BollingerBands
+
+    _TA_AVAILABLE = True
+except ImportError:
+    _TA_AVAILABLE = False
+
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.skipif(not _TA_AVAILABLE, reason="ta library not installed"),
+]
 
 RNG_SEED = 42
 N_BARS = 100

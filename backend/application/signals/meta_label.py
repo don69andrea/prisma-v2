@@ -17,13 +17,18 @@ Design decisions (locked in 02-CONTEXT.md):
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
 from backend.application.signals.indicators import atr, macd, rsi
 
 __all__ = [
+    "_walkforward_meta_cv",
     "build_meta_features",
+    "fit_meta_classifier",
+    "predict_meta_label",
     "trend_scan_labels",
     "triple_barrier_labels",
 ]
@@ -250,3 +255,236 @@ def build_meta_features(df: pd.DataFrame) -> pd.DataFrame:
         index=df.index,
     )
     return result
+
+
+# ── Wave B: Classifier + Walk-Forward ────────────────────────────────────────
+
+
+def fit_meta_classifier(
+    X: pd.DataFrame,
+    y: pd.Series,
+    model: str = "logreg",
+) -> dict[str, Any]:
+    """Fitte einen binären Meta-Classifier auf (X, y).
+
+    Primär: LogisticRegression (L2, max_iter=1000, class_weight='balanced').
+    Fallback: LGBMClassifier (nur wenn explizit model='lgbm' übergeben wird).
+
+    Parameters
+    ----------
+    X:
+        Feature-Matrix (bereits shift(1), keine NaN).
+    y:
+        Binäre Labels {0, 1}.
+    model:
+        'logreg' (Standard) oder 'lgbm'.
+
+    Returns
+    -------
+    dict
+        {model, model_type, feature_cols}
+    """
+    feature_cols = list(X.columns)
+
+    if model == "lgbm":
+        from lightgbm import LGBMClassifier  # noqa: PLC0415
+
+        clf: object = LGBMClassifier(
+            n_estimators=100,
+            max_depth=4,
+            learning_rate=0.05,
+            n_jobs=1,
+            verbose=-1,
+        )
+        model_type = "lgbm"
+    else:
+        from sklearn.linear_model import LogisticRegression  # noqa: PLC0415
+
+        clf = LogisticRegression(
+            C=1.0,
+            max_iter=1000,
+            class_weight="balanced",
+            random_state=42,
+        )
+        model_type = "logreg"
+
+    # fit expects numpy arrays
+    from sklearn.base import BaseEstimator  # noqa: PLC0415
+
+    if not isinstance(clf, BaseEstimator):
+        raise TypeError(f"Expected sklearn estimator, got {type(clf)}")
+    clf.fit(X.values, y.values)
+
+    return {"model": clf, "model_type": model_type, "feature_cols": feature_cols}
+
+
+def _walkforward_meta_cv(
+    X: pd.DataFrame,
+    y: pd.Series,
+    min_train: int = 252,
+    step: int = 21,
+    embargo: int = 5,
+    model_type: str = "logreg",
+) -> dict[str, Any]:
+    """Expanding-Window Walk-Forward CV mit Embargo für den Meta-Classifier.
+
+    Embargo-Regel: test_start = train_end + embargo. Dies verhindert
+    Label-Leakage aus dem Triple-Barrier Forward-Horizon (5 Tage).
+
+    No-Snooping-Garantie: Classifier wird NUR auf Trainings-Folds gefittet.
+    OOS-Folds werden NIE während des Fits gesehen.
+
+    Parameters
+    ----------
+    X:
+        Feature-Matrix mit DatetimeIndex (shift(1) bereits angewendet).
+    y:
+        Binäre Labels {0, 1} mit gleichem Index wie X.
+    min_train:
+        Minimale Trainings-Grösse in Bars (Standard 252).
+    step:
+        Walk-Forward-Schrittweite in Bars (Standard 21).
+    embargo:
+        Embargo-Gap zwischen Train-Ende und Test-Start (Standard 5 Bars).
+    model_type:
+        'logreg' oder 'lgbm'.
+
+    Returns
+    -------
+    dict
+        {folds: list[dict], n_folds: int}
+        Jedes Fold-Dict enthält: precision, recall, f1, n_trades_taken,
+        n_trades_skipped, train_end_idx, test_start_idx.
+    """
+    from sklearn.metrics import f1_score, precision_score, recall_score  # noqa: PLC0415
+
+    # Align X and y, drop NaN rows
+    data = pd.concat([X, y.rename("__label__")], axis=1).dropna()
+    n = len(data)
+
+    fold_results: list[dict[str, Any]] = []
+
+    # Expanding loop: train = data[:start], test = data[start+embargo : start+embargo+step]
+    for start in range(min_train, n - step - embargo + 1, step):
+        train = data.iloc[:start]
+        test_start = start + embargo
+        test_end = test_start + step
+        if test_end > n:
+            break
+        test = data.iloc[test_start:test_end]
+
+        X_train = train.drop(columns=["__label__"])
+        y_train = train["__label__"]
+        X_test = test.drop(columns=["__label__"])
+        y_test = test["__label__"].values
+
+        # Skip folds where train has < 2 classes (classifier cannot fit)
+        if len(y_train.unique()) < 2:
+            continue
+
+        model_info = fit_meta_classifier(X_train, y_train, model=model_type)
+        clf = model_info["model"]
+
+        from sklearn.base import BaseEstimator  # noqa: PLC0415
+
+        if not isinstance(clf, BaseEstimator):
+            raise TypeError(f"Expected sklearn estimator, got {type(clf)}")
+        y_pred = clf.predict(X_test.values)
+
+        fold_results.append(
+            {
+                "precision": float(
+                    precision_score(y_test, y_pred, zero_division=0)
+                ),
+                "recall": float(recall_score(y_test, y_pred, zero_division=0)),
+                "f1": float(f1_score(y_test, y_pred, zero_division=0)),
+                "n_trades_taken": int(y_pred.sum()),
+                "n_trades_skipped": int((y_pred == 0).sum()),
+                "train_end_idx": int(start - 1),
+                "test_start_idx": int(test_start),
+            }
+        )
+
+    return {"folds": fold_results, "n_folds": len(fold_results)}
+
+
+def predict_meta_label(
+    X: pd.DataFrame,
+    y: pd.Series,
+    min_train: int = 252,
+    step: int = 21,
+    embargo: int = 5,
+    model: str = "logreg",
+) -> dict[str, Any]:
+    """Walk-Forward Meta-Label Prediction mit aggregierten OOS-Metriken.
+
+    Führt _walkforward_meta_cv durch, aggregiert Mean-Precision/-Recall
+    und fitttet ein finales Modell auf allen Daten für Production-Scoring.
+
+    Pitfall 6: Wenn n_folds < 10, wird finding='negative' mit Grund
+    'insufficient_oos_folds' zurückgegeben — keine Metriken-Fabrikation.
+
+    Parameters
+    ----------
+    X:
+        Feature-Matrix (shift(1) bereits angewendet).
+    y:
+        Binäre Labels {0, 1}.
+    min_train:
+        Minimale Trainings-Grösse (Standard 252).
+    step:
+        Walk-Forward-Schrittweite (Standard 21).
+    embargo:
+        Embargo-Gap in Bars (Standard 5).
+    model:
+        'logreg' oder 'lgbm'.
+
+    Returns
+    -------
+    dict
+        {n_folds, mean_precision, mean_recall, mean_f1, final_model_info,
+         folds, finding, finding_reason}
+    """
+    cv_result = _walkforward_meta_cv(
+        X, y, min_train=min_train, step=step, embargo=embargo, model_type=model
+    )
+
+    n_folds = int(cv_result["n_folds"])
+    folds: list[dict[str, Any]] = cv_result["folds"]
+
+    if n_folds < 10:
+        return {
+            "n_folds": n_folds,
+            "mean_precision": 0.0,
+            "mean_recall": 0.0,
+            "mean_f1": 0.0,
+            "final_model_info": None,
+            "folds": folds,
+            "finding": "negative",
+            "finding_reason": "insufficient_oos_folds",
+        }
+
+    mean_precision = float(np.mean([f["precision"] for f in folds]))
+    mean_recall = float(np.mean([f["recall"] for f in folds]))
+    mean_f1 = float(np.mean([f["f1"] for f in folds]))
+
+    # Final model refit on all aligned data (for production scoring only)
+    data_all = pd.concat([X, y.rename("__label__")], axis=1).dropna()
+    X_all = data_all.drop(columns=["__label__"])
+    y_all = data_all["__label__"]
+    final_model_info = fit_meta_classifier(X_all, y_all, model=model)
+
+    return {
+        "n_folds": n_folds,
+        "mean_precision": mean_precision,
+        "mean_recall": mean_recall,
+        "mean_f1": mean_f1,
+        "final_model_info": final_model_info,
+        "folds": folds,
+        "finding": "positive" if mean_precision > 0.50 else "negative",
+        "finding_reason": (
+            "oos_precision_above_random"
+            if mean_precision > 0.50
+            else "oos_precision_at_or_below_random"
+        ),
+    }

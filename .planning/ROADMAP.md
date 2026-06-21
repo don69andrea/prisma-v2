@@ -28,8 +28,17 @@ Includes:
 - 3 read-only REST endpoints
 - All A7 test cases green, Coverage ≥ 80%
 
-### Phase 2: V4-2 Meta-Labeling (planned)
-Triple-Barrier / Trend-Scan labels + classifier "take trade now?". Tested vs always-trade baseline.
+### Phase 2: V4-2 Meta-Labeling
+**Goal:** Binary meta-classifier ("take trade now / skip") that filters the V4-1 consensus signal, with an honest walk-forward comparison against the always-trade baseline (negative finding is a valid result).
+**Branch:** `feat/v4-2-meta-labeling`
+**Status:** planned
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Wave A: Triple-Barrier + Trend-Scan labels + shift-safe meta features (TDD)
+- [ ] 02-02-PLAN.md — Wave B: Meta-classifier (LogReg + LGBM fallback) + embargoed walk-forward (TDD)
+- [ ] 02-03-PLAN.md — Wave C: walkforward.py meta_filter param + MetaLabelReport schema (TDD)
+- [ ] 02-04-PLAN.md — Wave D: GET /api/v1/signals/meta-label/{coin} + coverage gate ≥ 80%
 
 ### Phase 3: V4-3 Agentic Layer (planned)
 TechnicalAnalyst, OnChain, Sentiment, Bull/Bear, Risk, SignalDirector agents.

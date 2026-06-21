@@ -9,7 +9,17 @@
 **Goal:** Deterministic, tested Signal Engine for Top-10 crypto universe that reproduces the PoC finding (strategy beats exposure-matched baseline on Sharpe AND Calmar in walk-forward, net costs).  
 **Branch:** `feat/v4-1-signal-engine`  
 **Spec:** `docs/PRISMA_V4-1_PHASENPLAN_Signal-Engine.md`  
-**Status:** in-progress
+**Status:** in-progress  
+**Plans:** 7 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Wave 1a: Crypto universe + OHLCV seed
+- [ ] 01-02-PLAN.md — Wave 1b+1c: On-chain + Fear&Greed adapters
+- [ ] 01-03-PLAN.md — Wave 2a: Indicators + 2-of-3 consensus (test-first)
+- [ ] 01-04-PLAN.md — Wave 2b+2c: Factors + walk-forward vol forecast
+- [ ] 01-05-PLAN.md — Wave 3: Vol-targeting sizing + SignalVector service
+- [ ] 01-06-PLAN.md — Wave 4: Strict walk-forward backtest engine
+- [ ] 01-07-PLAN.md — Wave 5: Read-only REST API (3 endpoints)
 
 Includes:
 - Crypto data seed (Top-10 OHLCV + On-Chain + Fear&Greed)

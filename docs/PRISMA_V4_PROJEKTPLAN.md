@@ -29,8 +29,9 @@ erklärbaren 3-Schichten-Signal-System (WAS/WANN/WIEVIEL) auf **Krypto-Spot** al
 Konsens (2-von-3 MA+MACD+RSI) schlägt die exposure-matched Baseline (BTC Sharpe 1.50/Calmar 1.38) — der Test,
 an dem V3-ML scheiterte.
 
-**Nächster Bau-Schritt:** Phase V4-1 (Daten + Signal-Engine) — Detailplan in
-`PRISMA_V4-1_PHASENPLAN_Signal-Engine.md`.
+**V4-1 ✅ verifiziert (A1 OOS bestanden, PR #296) — Fortschritt siehe docs/PRISMA_V4_FORTSCHRITT.md**
+
+**Nächster Bau-Schritt:** Phase V4-2 (Meta-Labeling) auf Branch `feat/v4-2-meta-labeling`.
 
 **Doku-Standorte:** Pläne → `docs/`; PoC-Skripte → `docs/research/` (oder `research/`); Agent-Brief
 `PRISMA_V4_AGENTS.md` wird zusätzlich an GSD/Claude Code übergeben.

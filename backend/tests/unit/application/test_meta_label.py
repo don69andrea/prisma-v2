@@ -13,6 +13,8 @@ Tests ML-05..ML-06 (Wave B):
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -21,7 +23,7 @@ pytestmark = pytest.mark.unit
 
 
 # ── Lazy import Wave A ───────────────────────────────────────────────────────
-def _import() -> tuple:  # type: ignore[type-arg]
+def _import() -> tuple[Any, ...]:
     from backend.application.signals.meta_label import (  # noqa: PLC0415
         build_meta_features,
         trend_scan_labels,
@@ -32,7 +34,7 @@ def _import() -> tuple:  # type: ignore[type-arg]
 
 
 # ── Lazy import Wave B — schlägt fehl (RED) bis Implementierung existiert ───
-def _import_classifier() -> tuple:  # type: ignore[type-arg]
+def _import_classifier() -> tuple[Any, ...]:
     from backend.application.signals.meta_label import (  # noqa: PLC0415
         _walkforward_meta_cv,
         fit_meta_classifier,
@@ -551,7 +553,7 @@ def test_sync_meta_label_positive_finding(monkeypatch: pytest.MonkeyPatch) -> No
         _sync_meta_label,
     )
 
-    def _fake_predict(X, y, **kw):  # type: ignore
+    def _fake_predict(X, y, **kw):  # noqa: ANN001 ANN202
         return {
             "n_folds": 12,
             "mean_precision": 0.65,
@@ -563,7 +565,7 @@ def test_sync_meta_label_positive_finding(monkeypatch: pytest.MonkeyPatch) -> No
             "finding_reason": "oos_precision_above_random",
         }
 
-    def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # type: ignore
+    def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # noqa: ANN001 ANN202
         if meta_filter is None:
             return {"strategy_sharpe": 0.5, "strategy_calmar": 0.3, "n_trades": 100}
         return {"strategy_sharpe": 1.0, "strategy_calmar": 0.8, "n_trades": 50}
@@ -585,7 +587,7 @@ def test_sync_meta_label_secondary_pass_finding(monkeypatch: pytest.MonkeyPatch)
         _sync_meta_label,
     )
 
-    def _fake_predict(X, y, **kw):  # type: ignore
+    def _fake_predict(X, y, **kw):  # noqa: ANN001 ANN202
         return {
             "n_folds": 12,
             "mean_precision": 0.45,
@@ -597,7 +599,7 @@ def test_sync_meta_label_secondary_pass_finding(monkeypatch: pytest.MonkeyPatch)
             "finding_reason": "oos_precision_at_or_below_random",
         }
 
-    def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # type: ignore
+    def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # noqa: ANN001 ANN202
         if meta_filter is None:
             return {"strategy_sharpe": 1.0, "strategy_calmar": 0.8, "n_trades": 100}
         return {"strategy_sharpe": 0.97, "strategy_calmar": 0.78, "n_trades": 85}
@@ -621,7 +623,7 @@ def test_sync_meta_label_negative_finding_no_improvement(
         _sync_meta_label,
     )
 
-    def _fake_predict(X, y, **kw):  # type: ignore
+    def _fake_predict(X, y, **kw):  # noqa: ANN001 ANN202
         return {
             "n_folds": 12,
             "mean_precision": 0.45,
@@ -633,7 +635,7 @@ def test_sync_meta_label_negative_finding_no_improvement(
             "finding_reason": "oos_precision_at_or_below_random",
         }
 
-    def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # type: ignore
+    def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # noqa: ANN001 ANN202
         if meta_filter is None:
             return {"strategy_sharpe": 1.0, "strategy_calmar": 0.8, "n_trades": 100}
         # Worse performance AND not enough trade reduction
@@ -653,7 +655,7 @@ def test_sync_meta_label_negative_finding_no_improvement(
 
 
 # Minimal FastAPI TestClient fixture for signals router
-def _make_test_app():  # type: ignore[no-untyped-def]
+def _make_test_app() -> Any:
     """Erstelle minimale FastAPI-App mit signals router für Unit-Tests."""
     from fastapi import FastAPI  # noqa: PLC0415
     from fastapi.testclient import TestClient  # noqa: PLC0415
@@ -781,7 +783,7 @@ def test_signals_router_get_signal_valid(monkeypatch: pytest.MonkeyPatch) -> Non
         confidence=0.6,
     )
 
-    async def _fake_evaluate(coin, asof, prices_df):  # type: ignore
+    async def _fake_evaluate(coin, asof, prices_df):  # noqa: ANN001 ANN202
         return sv
 
     monkeypatch.setattr(_svc, "evaluate", _fake_evaluate)
@@ -831,7 +833,7 @@ def test_signals_router_list_signals(monkeypatch: pytest.MonkeyPatch) -> None:
         confidence=0.9,
     )
 
-    async def _fake_evaluate(coin, asof, prices_df):  # type: ignore
+    async def _fake_evaluate(coin, asof, prices_df):  # noqa: ANN001 ANN202
         return sv
 
     monkeypatch.setattr(_svc, "evaluate", _fake_evaluate)
@@ -854,7 +856,7 @@ async def test_run_walkforward_async_wrapper() -> None:
     from backend.interfaces.rest.schemas.signals import BacktestReport  # noqa: PLC0415
 
     prices_df = _make_stub_prices("BTC-USD", n=300)
-    prices_df.columns = pd.Index(["close"])  # type: ignore
+    prices_df.columns = pd.Index(["close"])
 
     report = await run_walkforward(coin="BTC-USD", prices_df=prices_df)
     assert isinstance(report, BacktestReport)
@@ -930,7 +932,7 @@ def test_signals_router_get_signal_error_422(monkeypatch: pytest.MonkeyPatch) ->
 
     _signal_cache.clear()
 
-    async def _raise_value_error(coin, asof, prices_df):  # type: ignore
+    async def _raise_value_error(coin, asof, prices_df):  # noqa: ANN001 ANN202
         raise ValueError("invalid input")
 
     monkeypatch.setattr(_svc, "evaluate", _raise_value_error)

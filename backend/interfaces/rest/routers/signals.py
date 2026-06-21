@@ -18,6 +18,7 @@ import asyncio
 import logging
 import time
 from datetime import UTC, date, datetime
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -332,7 +333,7 @@ def _sync_meta_label(coin: str, prices_df: pd.DataFrame) -> MetaLabelReport:
     n_folds = int(ml_result["n_folds"])
     oos_precision = float(ml_result.get("mean_precision", 0.0))
     oos_recall = float(ml_result.get("mean_recall", 0.0))
-    classifier_used = "logreg"
+    classifier_used: Literal["logreg", "lgbm"] = "logreg"
 
     # ── 5. Backtest: always-trade vs meta-filtered ────────────────────────────
     # Build a simple SMA-crossover signal for the backtest (same as run_walkforward)
@@ -362,6 +363,7 @@ def _sync_meta_label(coin: str, prices_df: pd.DataFrame) -> MetaLabelReport:
     n_filtered = int(filtered["n_trades"])
 
     # ── 6. Finding-Logik ──────────────────────────────────────────────────────
+    finding: Literal["positive", "secondary_pass", "negative"]
     if n_folds < 10:
         finding = "negative"
         finding_reason = "insufficient_oos_folds"
@@ -397,7 +399,7 @@ def _sync_meta_label(coin: str, prices_df: pd.DataFrame) -> MetaLabelReport:
         n_trades_always=n_always,
         n_trades_filtered=n_filtered,
         beats_baseline=beats,
-        finding=finding,  # type: ignore[arg-type]
+        finding=finding,
         finding_reason=finding_reason,
     )
 

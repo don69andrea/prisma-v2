@@ -61,7 +61,7 @@ Plans:
 **Branch:** `feat/v4-3-agentic-layer`
 **Spec:** `docs/PRISMA_V4_AGENTS.md`
 **Status:** planned
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 **Wave 1**
@@ -78,7 +78,7 @@ Plans:
 
 **Wave 4** *(blocked on Waves 1+3)*
 
-- [ ] 03-04-PLAN.md — Bull/Bear Research + RiskAgent via Claude Tool-Use (state-from-tool, no-shorting) (TDD)
+- [x] 03-04-PLAN.md — Bull/Bear Research + RiskAgent via Claude Tool-Use (state-from-tool, no-shorting) (TDD)
 
 **Wave 5** *(blocked on Waves 1-4)*
 

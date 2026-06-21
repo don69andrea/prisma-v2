@@ -55,7 +55,7 @@ def _max_drawdown(returns: pd.Series) -> float:
         return 0.0
     equity = (1 + returns).cumprod()
     running_max = equity.cummax()
-    dd = (equity / running_max - 1)
+    dd = equity / running_max - 1
     return float(dd.min())
 
 

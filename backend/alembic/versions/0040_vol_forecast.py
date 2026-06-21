@@ -25,9 +25,24 @@ def upgrade() -> None:
         "vol_forecast",
         sa.Column("coin_id", sa.Integer(), nullable=False),
         sa.Column("date", sa.Date(), nullable=False),
-        sa.Column("horizon", sa.Integer(), nullable=False, comment="Forecast horizon in days (e.g. 1 or 5)"),
-        sa.Column("pred_vol", sa.Float(), nullable=False, comment="Predicted daily vol (annualized, HAR or LightGBM)"),
-        sa.Column("realized_vol", sa.Float(), nullable=True, comment="Realized vol ex-post (for back-fill)"),
+        sa.Column(
+            "horizon",
+            sa.Integer(),
+            nullable=False,
+            comment="Forecast horizon in days (e.g. 1 or 5)",
+        ),
+        sa.Column(
+            "pred_vol",
+            sa.Float(),
+            nullable=False,
+            comment="Predicted daily vol (annualized, HAR or LightGBM)",
+        ),
+        sa.Column(
+            "realized_vol",
+            sa.Float(),
+            nullable=True,
+            comment="Realized vol ex-post (for back-fill)",
+        ),
         sa.Column("model_version", sa.String(length=64), nullable=False, server_default="har-v1"),
         sa.ForeignKeyConstraint(
             ["coin_id"],

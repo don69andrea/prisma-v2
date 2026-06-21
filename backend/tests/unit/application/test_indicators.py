@@ -3,6 +3,7 @@
 Each indicator is validated against the `ta` library reference implementation.
 Delta < 1e-6 is required for all comparisons.
 """
+
 from __future__ import annotations
 
 import numpy as np

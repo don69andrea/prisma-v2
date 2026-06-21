@@ -94,9 +94,7 @@ def test_evaluate_returns_signal_vector() -> None:
     asof = date(2025, 12, 31)
     result = _run(evaluate("BTC", asof, prices_df=prices))
 
-    assert isinstance(result, SignalVector), (
-        f"Erwartet SignalVector, erhalten {type(result)}"
-    )
+    assert isinstance(result, SignalVector), f"Erwartet SignalVector, erhalten {type(result)}"
 
 
 def test_evaluate_correct_coin_and_date() -> None:
@@ -119,9 +117,7 @@ def test_evaluate_action_valid() -> None:
     asof = date(2025, 12, 31)
     result = _run(evaluate("BTC", asof, prices_df=prices))
 
-    assert result.action in ("BUY", "HOLD", "SELL"), (
-        f"Unzulässige action: {result.action}"
-    )
+    assert result.action in ("BUY", "HOLD", "SELL"), f"Unzulässige action: {result.action}"
 
 
 def test_evaluate_sell_size_zero() -> None:
@@ -130,8 +126,9 @@ def test_evaluate_sell_size_zero() -> None:
 
     # Erzeuge Preisdaten für schlechtes Momentum (letztes Coin im Ranking)
     # Wir testen alle Coins und prüfen jede SELL-Aktion
-    prices = make_prices_df(n_days=300, coins=["BTC", "ETH", "SOL", "BNB", "XRP",
-                                                "ADA", "AVAX", "DOGE", "LINK", "DOT"])
+    prices = make_prices_df(
+        n_days=300, coins=["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "AVAX", "DOGE", "LINK", "DOT"]
+    )
     asof = date(2025, 12, 31)
 
     results = []
@@ -164,8 +161,14 @@ def test_evaluate_sub_scores_keys() -> None:
     """sub_scores muss alle erforderlichen Keys enthalten."""
     from backend.application.signals.signal_service import evaluate
 
-    required_keys = {"ma_signal", "macd_signal", "rsi_signal", "vol_pred",
-                     "momentum_rank", "onchain_score"}
+    required_keys = {
+        "ma_signal",
+        "macd_signal",
+        "rsi_signal",
+        "vol_pred",
+        "momentum_rank",
+        "onchain_score",
+    }
 
     prices = make_prices_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
@@ -211,9 +214,7 @@ def test_evaluate_confidence_bounds() -> None:
     asof = date(2025, 12, 31)
     result = _run(evaluate("BTC", asof, prices_df=prices))
 
-    assert 0.0 <= result.confidence <= 1.0, (
-        f"confidence={result.confidence} ausserhalb [0, 1]"
-    )
+    assert 0.0 <= result.confidence <= 1.0, f"confidence={result.confidence} ausserhalb [0, 1]"
 
 
 def test_evaluate_with_onchain_data() -> None:
@@ -250,8 +251,7 @@ def test_evaluate_no_lookahead_future_data_clipped() -> None:
     """Nur Daten bis asof_date dürfen verwendet werden (Look-Ahead-Guard)."""
     from backend.application.signals.signal_service import evaluate
 
-    prices = make_prices_df(n_days=300, coins=["BTC", "ETH", "SOL"],
-                            end_date=date(2025, 12, 31))
+    prices = make_prices_df(n_days=300, coins=["BTC", "ETH", "SOL"], end_date=date(2025, 12, 31))
     # asof_date ist deutlich vor dem letzten Datum in prices
     asof = date(2025, 6, 30)
 

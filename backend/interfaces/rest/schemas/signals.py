@@ -31,7 +31,9 @@ class SignalVector(BaseModel):
     action: Literal["BUY", "HOLD", "SELL"]
     size_factor: float = Field(ge=0.0, le=1.5)
     consensus: str  # z. B. "2/3", "3/3"
-    sub_scores: dict[str, float]  # ma_signal, macd_signal, rsi_signal, vol_pred, momentum_rank, onchain_score
+    sub_scores: dict[
+        str, float
+    ]  # ma_signal, macd_signal, rsi_signal, vol_pred, momentum_rank, onchain_score
     confidence: float = Field(ge=0.0, le=1.0)
     disclaimer: str = "Entscheidungsunterstützung, kein Anlagerat."
 

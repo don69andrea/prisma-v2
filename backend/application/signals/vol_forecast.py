@@ -26,7 +26,7 @@ from sklearn.linear_model import LinearRegression
 logger = logging.getLogger(__name__)
 
 _ANN_FACTOR = 252.0  # Annualisierungsfaktor (Handelstage)
-_DEFAULT_STEP = 21   # Walk-Forward-Schritt (ca. 1 Monat — mehr OOS-Punkte)
+_DEFAULT_STEP = 21  # Walk-Forward-Schritt (ca. 1 Monat — mehr OOS-Punkte)
 
 
 # ── Hilfsfunktionen ──────────────────────────────────────────────────────────
@@ -127,9 +127,7 @@ def fit_walkforward(
 
     for coin in close.columns:
         try:
-            results[coin] = _fit_single_coin(
-                close[coin], min_train=min_train, step=step
-            )
+            results[coin] = _fit_single_coin(close[coin], min_train=min_train, step=step)
         except Exception as exc:  # noqa: BLE001
             logger.warning("Vol-Forecast fit fehlgeschlagen für %s: %s", coin, exc)
 
@@ -312,8 +310,12 @@ def predict_vol(
 
     # Ersetze NaN durch 0.0 (defensiv)
     X = np.array(
-        [[feature_map.get(c, 0.0) if not np.isnan(feature_map.get(c, 0.0)) else 0.0
-          for c in feature_cols]]
+        [
+            [
+                feature_map.get(c, 0.0) if not np.isnan(feature_map.get(c, 0.0)) else 0.0
+                for c in feature_cols
+            ]
+        ]
     )
 
     pred = float(model.predict(X)[0])

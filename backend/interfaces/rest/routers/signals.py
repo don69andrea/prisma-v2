@@ -73,6 +73,7 @@ def _set_cached_signal(coin: str, vector: SignalVector) -> None:
 
 # ── Hilfsfunktion: Minimale Preisdaten synthetisieren (für Demo / Fallback) ───
 
+
 def _make_stub_prices(coin: str, n: int = 200) -> pd.DataFrame:
     """Erzeugt synthetische Preisdaten für Tests und Fallback ohne DB.
 

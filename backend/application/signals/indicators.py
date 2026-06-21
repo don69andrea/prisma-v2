@@ -10,6 +10,7 @@ Design decisions:
 - Look-ahead guard: consumers must apply df.shift(1) on price inputs before
   computing signals to ensure signal@t uses only data <= t-1.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -68,7 +69,7 @@ def rsi(close: pd.Series, window: int = 14) -> pd.Series:
         index=close.index,
     )
     # Restore NaN for the warmup period (first `window` bars after diff)
-    rsi_values.iloc[: window] = np.nan
+    rsi_values.iloc[:window] = np.nan
     return rsi_values
 
 

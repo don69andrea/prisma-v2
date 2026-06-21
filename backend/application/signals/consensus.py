@@ -8,6 +8,7 @@ for the consensus to fire (return 1).
 Look-ahead guard: input signals must already be shifted by the caller so that
 signal@t uses only data <= t-1.
 """
+
 from __future__ import annotations
 
 import pandas as pd

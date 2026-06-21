@@ -3,6 +3,7 @@
 Tests cover the full truth table (all 8 binary input combinations) plus
 weighted voting and graceful handling of unknown signal columns.
 """
+
 from __future__ import annotations
 
 import pandas as pd

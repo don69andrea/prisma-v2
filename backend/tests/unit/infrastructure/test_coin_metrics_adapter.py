@@ -134,7 +134,9 @@ async def test_fetch_onchain_field_mapping() -> None:
     assert "mvrv_z" in df.columns, "SplyMVRVCur muss auf mvrv_z gemappt werden"
     assert "realized_cap" in df.columns, "RealizedCap muss auf realized_cap gemappt werden"
     assert "active_addresses" in df.columns, "AdrActCnt muss auf active_addresses gemappt werden"
-    assert "exchange_netflow" in df.columns, "FlowOut-FlowIn muss auf exchange_netflow gemappt werden"
+    assert "exchange_netflow" in df.columns, (
+        "FlowOut-FlowIn muss auf exchange_netflow gemappt werden"
+    )
 
     # Werte prüfen (erste Zeile)
     first_row = df.iloc[0]

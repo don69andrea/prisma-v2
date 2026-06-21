@@ -183,12 +183,14 @@ class TestPoCReproduction:
         rng = np.random.default_rng(7)
         n = 800
         # Bullischer Trend mit Crash-Phasen (MA-Signal schützt davor)
-        returns = np.concatenate([
-            rng.normal(0.002, 0.015, 300),   # Bull
-            rng.normal(-0.004, 0.030, 100),  # Crash
-            rng.normal(0.002, 0.015, 300),   # Bull
-            rng.normal(-0.005, 0.030, 100),  # Crash
-        ])
+        returns = np.concatenate(
+            [
+                rng.normal(0.002, 0.015, 300),  # Bull
+                rng.normal(-0.004, 0.030, 100),  # Crash
+                rng.normal(0.002, 0.015, 300),  # Bull
+                rng.normal(-0.005, 0.030, 100),  # Crash
+            ]
+        )
         prices = 1000.0 * np.cumprod(1 + returns)
         idx = pd.date_range("2018-01-01", periods=n, freq="D")
         df = pd.DataFrame({"close": prices}, index=idx)

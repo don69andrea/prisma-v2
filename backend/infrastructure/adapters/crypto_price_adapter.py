@@ -118,7 +118,9 @@ class CryptoPriceAdapter:
             Bereinigter DataFrame mit Kleinbuchstaben-Spalten und symbol
         """
         if raw_df.empty:
-            return pd.DataFrame(columns=["date", "open", "high", "low", "close", "volume", "symbol"])
+            return pd.DataFrame(
+                columns=["date", "open", "high", "low", "close", "volume", "symbol"]
+            )
 
         # Flache MultiIndex-Spalten wenn yfinance MultiIndex zurückgibt
         if isinstance(raw_df.columns, pd.MultiIndex):

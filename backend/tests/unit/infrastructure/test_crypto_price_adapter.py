@@ -107,7 +107,9 @@ async def test_fetch_ohlcv_date_index_or_column(mock_yf: MagicMock) -> None:
 @pytest.mark.asyncio
 @patch("backend.infrastructure.adapters.crypto_price_adapter.asyncio")
 @patch("backend.infrastructure.adapters.crypto_price_adapter.yfinance")
-async def test_fetch_ohlcv_uses_asyncio_to_thread(mock_yf: MagicMock, mock_asyncio: MagicMock) -> None:
+async def test_fetch_ohlcv_uses_asyncio_to_thread(
+    mock_yf: MagicMock, mock_asyncio: MagicMock
+) -> None:
     """Adapter muss asyncio.to_thread verwenden (nicht run_in_executor)."""
     from backend.infrastructure.adapters.crypto_price_adapter import CryptoPriceAdapter
 
@@ -130,7 +132,9 @@ async def test_fetch_ohlcv_uses_asyncio_to_thread(mock_yf: MagicMock, mock_async
 @pytest.mark.asyncio
 @patch("backend.infrastructure.adapters.crypto_price_adapter.asyncio")
 @patch("backend.infrastructure.adapters.crypto_price_adapter.yfinance")
-async def test_fetch_ohlcv_retries_on_network_error(mock_yf: MagicMock, mock_asyncio: MagicMock) -> None:
+async def test_fetch_ohlcv_retries_on_network_error(
+    mock_yf: MagicMock, mock_asyncio: MagicMock
+) -> None:
     """Adapter muss bei Netzwerkfehler maximal 2x neu versuchen."""
     from backend.infrastructure.adapters.crypto_price_adapter import CryptoPriceAdapter
 
@@ -154,7 +158,9 @@ async def test_fetch_ohlcv_retries_on_network_error(mock_yf: MagicMock, mock_asy
 @pytest.mark.asyncio
 @patch("backend.infrastructure.adapters.crypto_price_adapter.asyncio")
 @patch("backend.infrastructure.adapters.crypto_price_adapter.yfinance")
-async def test_fetch_ohlcv_raises_after_max_retries(mock_yf: MagicMock, mock_asyncio: MagicMock) -> None:
+async def test_fetch_ohlcv_raises_after_max_retries(
+    mock_yf: MagicMock, mock_asyncio: MagicMock
+) -> None:
     """Adapter muss nach 2 Retries die Exception weiterwerfen."""
     from backend.infrastructure.adapters.crypto_price_adapter import CryptoPriceAdapter
 
@@ -172,7 +178,9 @@ async def test_fetch_ohlcv_raises_after_max_retries(mock_yf: MagicMock, mock_asy
 @pytest.mark.asyncio
 @patch("backend.infrastructure.adapters.crypto_price_adapter.asyncio")
 @patch("backend.infrastructure.adapters.crypto_price_adapter.yfinance")
-async def test_fetch_ohlcv_retry_uses_exponential_backoff(mock_yf: MagicMock, mock_asyncio: MagicMock) -> None:
+async def test_fetch_ohlcv_retry_uses_exponential_backoff(
+    mock_yf: MagicMock, mock_asyncio: MagicMock
+) -> None:
     """Adapter muss bei Retries exponentielles Backoff verwenden (1.0, 2.0 Sekunden)."""
     from backend.infrastructure.adapters.crypto_price_adapter import CryptoPriceAdapter
 

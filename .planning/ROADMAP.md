@@ -55,9 +55,38 @@ Plans:
 
 - [ ] 02-04-PLAN.md — Wave D: GET /api/v1/signals/meta-label/{coin} + coverage gate ≥ 80%
 
-### Phase 3: V4-3 Agentic Layer (planned)
+### Phase 3: V4-3 Agentic Layer
 
-TechnicalAnalyst, OnChain, Sentiment, Bull/Bear, Risk, SignalDirector agents.
+**Goal:** LLM Agentic Layer on top of the deterministic Signal Engine — six interpreting/debating agents (Technical, OnChain, Sentiment-stub, MacroRegime, Bull/Bear, Risk) plus a hybrid-orchestrated SignalDirector that synthesizes a Pydantic `TradeSignal`, persists every run to an immutable audit trail, and is exposed via `GET /api/v1/agent-signal/{coin}`. Agents interpret/explain but compute nothing (iron rule); all 7 §6/D-06 mandatory tests green, coverage ≥ 80%.
+**Branch:** `feat/v4-3-agentic-layer`
+**Spec:** `docs/PRISMA_V4_AGENTS.md`
+**Status:** planned
+**Plans:** 6 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Agent Pydantic schemas (agent_schemas.py) + schema tests (TDD)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 03-02-PLAN.md — Migration 0041 + AgentAuditTrail ORM + append-only repository (TDD)
+
+**Wave 3** *(blocked on Wave 1)*
+
+- [ ] 03-03-PLAN.md — Four Analyst agents: Technical, OnChain, Sentiment-stub (real F&G), MacroRegime (TDD)
+
+**Wave 4** *(blocked on Waves 1+3)*
+
+- [ ] 03-04-PLAN.md — Bull/Bear Research + RiskAgent via Claude Tool-Use (state-from-tool, no-shorting) (TDD)
+
+**Wave 5** *(blocked on Waves 1-4)*
+
+- [ ] 03-05-PLAN.md — SignalDirector hybrid orchestration + fallback + HITL checkpoint + audit persist (TDD)
+
+**Wave 6** *(blocked on Waves 1-5)*
+
+- [ ] 03-06-PLAN.md — GET /api/v1/agent-signal/{coin} + all 7 mandatory tests + coverage gate ≥ 80% (TDD)
 
 ### Phase 4: V4-4 RAG Sentiment (planned)
 

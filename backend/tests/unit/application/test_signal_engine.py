@@ -13,7 +13,7 @@ Alle Tests ohne I/O — rein funktional mit synthetischen Daten.
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 
 import numpy as np
 import pandas as pd
@@ -442,7 +442,9 @@ class TestOnchainHealthScore:
                 "coin_id": ["BTC"] * n + ["ETH"] * n,
                 "date": list(pd.date_range("2024-01-01", periods=n)) * 2,
                 "mvrv_z": np.random.default_rng(5).normal(0, 1, 2 * n),
-                "active_addresses": np.random.default_rng(6).integers(1000, 100000, 2 * n).astype(float),
+                "active_addresses": np.random.default_rng(6)
+                .integers(1000, 100000, 2 * n)
+                .astype(float),
             }
         )
 
@@ -727,7 +729,14 @@ class TestSignalServiceEvaluate:
 
         prices_df = self._make_prices_df("BTC-USD")
         sv = await evaluate(coin="BTC-USD", asof=date.today(), prices_df=prices_df)
-        expected_keys = {"ma_signal", "macd_signal", "rsi_signal", "vol_pred", "momentum_rank", "onchain_score"}
+        expected_keys = {
+            "ma_signal",
+            "macd_signal",
+            "rsi_signal",
+            "vol_pred",
+            "momentum_rank",
+            "onchain_score",
+        }
         assert expected_keys <= set(sv.sub_scores.keys())
 
     @pytest.mark.asyncio
@@ -780,7 +789,9 @@ class TestSignalServiceEvaluate:
                 # UTC-aware Dates für Kompatibilität mit tz-aware prices Index
                 "date": pd.date_range("2024-01-01", periods=n, tz="UTC"),
                 "mvrv_z": np.random.default_rng(99).normal(0, 1, n),
-                "active_addresses": np.random.default_rng(100).integers(1000, 100000, n).astype(float),
+                "active_addresses": np.random.default_rng(100)
+                .integers(1000, 100000, n)
+                .astype(float),
             }
         )
         sv = await evaluate(

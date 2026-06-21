@@ -26,7 +26,7 @@ def test_vol_target_size_monotone() -> None:
     for i in range(len(sizes) - 1):
         assert sizes[i] >= sizes[i + 1], (
             f"Monotonizität verletzt bei pred_vol={pred_vols[i]} -> {sizes[i]:.4f} "
-            f"vs pred_vol={pred_vols[i+1]} -> {sizes[i+1]:.4f}"
+            f"vs pred_vol={pred_vols[i + 1]} -> {sizes[i + 1]:.4f}"
         )
     # Mindestens eine strikte Verringerung muss auftreten
     assert sizes[0] > sizes[-1], "Erster und letzter Wert müssen sich unterscheiden"
@@ -50,9 +50,9 @@ def test_vol_target_size_strictly_monotone_at_key_points() -> None:
 
 def test_vol_target_size_bounds() -> None:
     """size_factor immer ∈ [0.0, cap] für pred_vol ∈ [0.05, 2.0]."""
-    from backend.application.signals.sizing import vol_target_size
-
     import numpy as np
+
+    from backend.application.signals.sizing import vol_target_size
 
     cap = 1.5
     for pred_vol in np.linspace(0.05, 2.0, 40):
@@ -96,9 +96,7 @@ def test_sell_action_zero_size() -> None:
     test_cases = [0.05, 0.10, 0.30, 0.60, 1.00, 1.50, 2.00]
     for pred_vol in test_cases:
         size = apply_sizing("SELL", pred_vol)
-        assert size == 0.0, (
-            f"SELL mit pred_vol={pred_vol} → size={size}, erwartet 0.0"
-        )
+        assert size == 0.0, f"SELL mit pred_vol={pred_vol} → size={size}, erwartet 0.0"
 
 
 def test_sell_action_never_negative() -> None:

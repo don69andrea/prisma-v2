@@ -128,6 +128,23 @@ Output: RiskVerdict{approve: bool, max_size: float, breaches: list[str], reasoni
 ```
 **Regel:** Portfolio-Exposure kommt aus dem **Store/Tool**, NIE aus LLM-Memory (epistemische-Halluzination-Schutz).
 
+### 3.7 Operations- & Lernschleife-Agenten  🟢 neu  (Phase V4-6, kein Request-Trigger — laufen auf Schedule)
+Diese sind **keine** LLM-„Rate"-Agenten, sondern deterministische Background-Jobs (wie der DataStewardAgent).
+Ein optionaler LLM-`EvaluationAgent` interpretiert nur deren fertige Kennzahlen.
+
+- **`SignalEvaluationJob` (täglich).** Trägt für fällige Signale die realen Ergebnisse nach
+  (`signal_outcomes.realized_fwd_return`, `vol_forecast.realized_vol`) und berechnet rollierende Live-Metriken
+  (Hit-Rate, Live-Sharpe/Calmar, Vol-Fehler). Kein Look-Ahead beim Befüllen (Test-Pflicht).
+- **`RetrainingJob` (periodisch, z. B. monatlich).** Re-Fit von Vol-Modell + Meta-Labeler auf **expandierendem
+  Walk-Forward-Fenster**, neue `model_version`. **Champion-/Challenger:** neue Version wird nur aktiviert, wenn
+  sie die alte im strikten OOS schlägt — sonst bleibt die alte. Verhindert In-Sample-Optimismus.
+- **`DriftMonitor` (täglich).** Live vs. Backtest-Erwartung; bei signifikanter Abweichung Alert via
+  `MailAlertAgent` + Dashboard-Flag.
+- **`EvaluationAgent` (optional, LLM).** Liest NUR die obigen Kennzahlen (aus Tools) und schreibt eine
+  Klartext-Einschätzung in den Audit-Trail. Rechnet nichts selbst (Halluzinations-Regel §0).
+
+**Regel:** Modellwechsel immer versioniert + protokolliert; kein automatisches Aktivieren ohne OOS-Vorteil.
+
 ---
 
 ## 4 · Zusammenspiel — ein Signal-Durchlauf (Sequenz)
@@ -162,7 +179,7 @@ Alle Zahlen in Schritt 1/4 sind deterministisch. Die Agenten in 2/3 liefern *Int
 | Echtes Tool-Use (kein if/elif) | Alle Agenten als LLM-Tool-Use-Loop; Zahlen aus Tools |
 | Bull/Bear-Debatte / Mehr-Perspektiven | Bull- vs BearResearchAgent |
 | Human-in-the-Loop | Checkpoint-Pattern (confidence/size) |
-| Memory + Dazulernen | Trust-Scores (DataSteward) + Audit-Trail-Historie |
+| Memory + Dazulernen | Trust-Scores (DataSteward) + Audit-Trail-Historie + **Lernschleife V4-6** (SignalEvaluationJob, RetrainingJob mit Champion/Challenger, DriftMonitor) |
 | Erklärbarkeit (STRESSS) | `rationale_by_layer` + Bull/Bear/Risk im Audit-Trail |
 | Verlässlichkeit | Halluzinations-Guards, Fallback auf Engine-Signal |
 

@@ -19,7 +19,7 @@ pytestmark = pytest.mark.unit
 
 
 # ── Lazy import — schlägt fehl (RED) bis Implementierung existiert ──────────
-def _import():
+def _import() -> tuple:  # type: ignore[type-arg]
     from backend.application.signals.vol_forecast import (  # noqa: PLC0415
         build_har_features,
         fit_walkforward,

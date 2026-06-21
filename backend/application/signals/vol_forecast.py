@@ -83,7 +83,7 @@ def build_har_features(rv: pd.Series) -> pd.DataFrame:
     )
 
 
-def _oos_r2(y_true: np.ndarray, y_pred: np.ndarray, y_baseline: float) -> float:
+def _oos_r2(y_true: np.ndarray[Any, Any], y_pred: np.ndarray[Any, Any], y_baseline: float) -> float:
     """OOS-R² gegenüber konstantem Baseline (Trainingsmittelwert)."""
     ss_res = float(np.sum((y_true - y_pred) ** 2))
     ss_base = float(np.sum((y_true - y_baseline) ** 2))
@@ -250,7 +250,7 @@ def _fit_single_coin(
 
     return {
         "model": final_model,
-        "oos_r2": float(oos_r2),
+        "oos_r2": float(oos_r2) if oos_r2 is not None else 0.0,
         "model_type": model_type,
         "har_r2": float(har_r2),
         "lgbm_r2": float(lgbm_r2) if lgbm_r2 is not None else None,

@@ -10,7 +10,7 @@ pytestmark = pytest.mark.unit
 
 
 # ── Lazy import — schlägt fehl (RED) bis Implementierung existiert ──────────
-def _import():
+def _import() -> tuple:  # type: ignore[type-arg]
     from backend.application.signals.factors import (  # noqa: PLC0415
         cross_sectional_momentum,
         onchain_health_score,

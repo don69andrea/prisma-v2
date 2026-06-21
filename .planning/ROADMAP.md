@@ -61,7 +61,7 @@ Plans:
 **Branch:** `feat/v4-3-agentic-layer`
 **Spec:** `docs/PRISMA_V4_AGENTS.md`
 **Status:** planned
-**Plans:** 1/6 plans executed
+**Plans:** 3/6 plans executed
 
 Plans:
 **Wave 1**
@@ -70,11 +70,11 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 03-02-PLAN.md — Migration 0041 + AgentAuditTrail ORM + append-only repository (TDD)
+- [x] 03-02-PLAN.md — Migration 0041 + AgentAuditTrail ORM + append-only repository (TDD)
 
 **Wave 3** *(blocked on Wave 1)*
 
-- [ ] 03-03-PLAN.md — Four Analyst agents: Technical, OnChain, Sentiment-stub (real F&G), MacroRegime (TDD)
+- [x] 03-03-PLAN.md — Four Analyst agents: Technical, OnChain, Sentiment-stub (real F&G), MacroRegime (TDD)
 
 **Wave 4** *(blocked on Waves 1+3)*
 

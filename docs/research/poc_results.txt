@@ -1,0 +1,29 @@
+==============================================================================
+PRISMA V3.5 — MACHBARKEITS-PoC  (echte yfinance-Daten, täglich)
+==============================================================================
+
+### BTC-USD  | 2017-01-02 .. 2026-06-21  (N=3457)
+(A) VOL-FORECAST (OOS, 1352 Tage):
+    OOS-R² vs konstante Baseline :  52.1%   (>0 = Vol IST lernbar)
+    OOS-R² vs naive Persistenz   :  -1.2%
+    Korrelation Prognose/Realität: 0.18
+(B) TREND-FOLLOWING + VOL-TARGETING (Ø-Exposure 60%):
+    Strategie (netto)      CAGR   64.8%  Sharpe  1.28  MaxDD  -49.5%  Calmar  1.31
+    Exposure-Matched       CAGR   37.8%  Sharpe  0.99  MaxDD  -62.9%  Calmar  0.60
+    Buy & Hold             CAGR   55.2%  Sharpe  0.99  MaxDD  -83.4%  Calmar  0.66
+    Jahres-Stabilität: Strategie-Sharpe > B&H-Sharpe in 2/10 Jahren
+
+### ETH-USD  | 2017-11-10 .. 2026-06-21  (N=3145)
+(A) VOL-FORECAST (OOS, 1227 Tage):
+    OOS-R² vs konstante Baseline :  31.0%   (>0 = Vol IST lernbar)
+    OOS-R² vs naive Persistenz   : -16.3%
+    Korrelation Prognose/Realität: 0.22
+(B) TREND-FOLLOWING + VOL-TARGETING (Ø-Exposure 46%):
+    Strategie (netto)      CAGR   34.2%  Sharpe  0.86  MaxDD  -59.7%  Calmar  0.57
+    Exposure-Matched       CAGR   19.8%  Sharpe  0.66  MaxDD  -68.8%  Calmar  0.29
+    Buy & Hold             CAGR   21.6%  Sharpe  0.66  MaxDD  -94.0%  Calmar  0.23
+    Jahres-Stabilität: Strategie-Sharpe > B&H-Sharpe in 2/10 Jahren
+
+==============================================================================
+
+ROBUSTHEIT (Calmar/Sharpe je Trend-Fenster) siehe Masterplan Abschnitt 2.

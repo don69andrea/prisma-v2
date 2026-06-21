@@ -406,3 +406,64 @@ def test_no_snooping() -> None:
             f"> test_start_idx={test_start}. "
             f"Train darf nie OOS-Daten sehen."
         )
+
+
+# ── Wave D — REST Endpoint Tests (ML-09, ML-10) ─────────────────────────────
+
+# Minimal FastAPI TestClient fixture for signals router
+def _make_test_app():  # type: ignore[no-untyped-def]
+    """Erstelle minimale FastAPI-App mit signals router für Unit-Tests."""
+    from fastapi import FastAPI  # noqa: PLC0415
+    from fastapi.testclient import TestClient  # noqa: PLC0415
+
+    from backend.interfaces.rest.routers.signals import router  # noqa: PLC0415
+
+    app = FastAPI()
+    app.include_router(router)
+    return TestClient(app)
+
+
+# ── ML-09: REST endpoint returns valid MetaLabelReport ───────────────────────
+
+
+def test_rest_returns_pydantic() -> None:
+    """ML-09: GET /api/v1/signals/meta-label/BTC-USD returns 200 + MetaLabelReport.
+
+    Validates all required Pydantic fields are present and finding is in the
+    allowed Literal set {"positive", "secondary_pass", "negative"}.
+    """
+    from backend.interfaces.rest.schemas.signals import MetaLabelReport  # noqa: PLC0415
+
+    client = _make_test_app()
+    resp = client.get("/api/v1/signals/meta-label/BTC-USD")
+    assert resp.status_code == 200, (
+        f"Expected 200, got {resp.status_code}: {resp.text[:200]}"
+    )
+    body = resp.json()
+    # Full Pydantic validation — raises if any required field is missing/wrong type
+    report = MetaLabelReport.model_validate(body)
+    assert report.coin == "BTC-USD"
+    assert report.finding in {"positive", "secondary_pass", "negative"}, (
+        f"finding '{report.finding}' not in allowed Literal set"
+    )
+    assert report.label_method in {"triple_barrier", "trend_scan"}
+    assert report.classifier in {"logreg", "lgbm"}
+    assert isinstance(report.n_folds, int)
+    assert isinstance(report.oos_precision, float)
+    assert isinstance(report.oos_recall, float)
+    assert isinstance(report.beats_baseline, bool)
+
+
+# ── ML-10: Unknown coin returns 404 ──────────────────────────────────────────
+
+
+def test_meta_label_unknown_coin_404() -> None:
+    """ML-10: GET /api/v1/signals/meta-label/FAKE-USD returns 404.
+
+    coin not in _CRYPTO_UNIVERSE whitelist → HTTP 404 with whitelist detail.
+    """
+    client = _make_test_app()
+    resp = client.get("/api/v1/signals/meta-label/FAKE-USD")
+    assert resp.status_code == 404, (
+        f"Expected 404 for unknown coin, got {resp.status_code}: {resp.text[:200]}"
+    )

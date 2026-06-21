@@ -109,8 +109,9 @@ def test_triple_barrier_labels_synthetic() -> None:
     rising = _rising_close(n=80, step=10.0)
     high_r = rising + 0.5
     low_r = rising - 0.5
-    labels_up = triple_barrier_labels(rising, high_r, low_r, atr_window=20, upper_mult=2.0,
-                                      lower_mult=1.0, horizon=5)
+    labels_up = triple_barrier_labels(
+        rising, high_r, low_r, atr_window=20, upper_mult=2.0, lower_mult=1.0, horizon=5
+    )
     # Nach Warmup (atr_window Bars) sollte die Mehrheit +1 sein
     valid_up = labels_up.iloc[20:].dropna()
     assert len(valid_up) > 0, "Keine validen Labels für steigende Reihe"
@@ -122,8 +123,9 @@ def test_triple_barrier_labels_synthetic() -> None:
     falling = _falling_close(n=80, step=10.0)
     high_f = falling + 0.5
     low_f = falling - 0.5
-    labels_dn = triple_barrier_labels(falling, high_f, low_f, atr_window=20, upper_mult=2.0,
-                                      lower_mult=1.0, horizon=5)
+    labels_dn = triple_barrier_labels(
+        falling, high_f, low_f, atr_window=20, upper_mult=2.0, lower_mult=1.0, horizon=5
+    )
     valid_dn = labels_dn.iloc[20:].dropna()
     assert len(valid_dn) > 0, "Keine validen Labels für fallende Reihe"
     assert (valid_dn == -1).sum() > (valid_dn == 1).sum(), (
@@ -134,8 +136,9 @@ def test_triple_barrier_labels_synthetic() -> None:
     flat = _flat_close(n=80, value=100.0)
     high_flat = flat + 0.01
     low_flat = flat - 0.01
-    labels_flat = triple_barrier_labels(flat, high_flat, low_flat, atr_window=20, upper_mult=2.0,
-                                        lower_mult=1.0, horizon=5)
+    labels_flat = triple_barrier_labels(
+        flat, high_flat, low_flat, atr_window=20, upper_mult=2.0, lower_mult=1.0, horizon=5
+    )
     valid_flat = labels_flat.iloc[20:].dropna()
     assert len(valid_flat) > 0, "Keine validen Labels für flache Reihe"
     # Bei flacher Reihe mit sehr kleinem ATR → 0 Labels dominieren
@@ -273,10 +276,12 @@ def test_label_horizon_isolation() -> None:
     high_b = close_b + 0.5
     low_b = close_b - 0.5
 
-    labels_a = triple_barrier_labels(close_a, high_a, low_a, atr_window=20, upper_mult=2.0,
-                                     lower_mult=1.0, horizon=5)
-    labels_b = triple_barrier_labels(close_b, high_b, low_b, atr_window=20, upper_mult=2.0,
-                                     lower_mult=1.0, horizon=5)
+    labels_a = triple_barrier_labels(
+        close_a, high_a, low_a, atr_window=20, upper_mult=2.0, lower_mult=1.0, horizon=5
+    )
+    labels_b = triple_barrier_labels(
+        close_b, high_b, low_b, atr_window=20, upper_mult=2.0, lower_mult=1.0, horizon=5
+    )
 
     # Label@t muss gleich sein (ATR ab t+1 ist gleich, forward-Scan gleich)
     label_a_t = labels_a.iloc[t_idx]
@@ -360,8 +365,7 @@ def test_classifier_oos_above_random() -> None:
 
     n_folds = result["n_folds"]
     assert n_folds >= 10, (
-        f"ML-05: Zu wenige OOS-Folds ({n_folds} < 10) — "
-        f"n=600 sollte mindestens 15 Folds liefern"
+        f"ML-05: Zu wenige OOS-Folds ({n_folds} < 10) — n=600 sollte mindestens 15 Folds liefern"
     )
 
     mean_precision = result["mean_precision"]
@@ -393,9 +397,7 @@ def test_no_snooping() -> None:
     result = _walkforward_meta_cv(X, y, min_train=252, step=21, embargo=embargo)
 
     folds = result["folds"]
-    assert len(folds) >= 10, (
-        f"ML-06: Zu wenige Folds ({len(folds)}) für valide Invarianten-Prüfung"
-    )
+    assert len(folds) >= 10, f"ML-06: Zu wenige Folds ({len(folds)}) für valide Invarianten-Prüfung"
 
     for i, fold in enumerate(folds):
         train_end = fold["train_end_idx"]
@@ -585,9 +587,14 @@ def test_sync_meta_label_secondary_pass_finding(monkeypatch: pytest.MonkeyPatch)
 
     def _fake_predict(X, y, **kw):  # type: ignore
         return {
-            "n_folds": 12, "mean_precision": 0.45, "mean_recall": 0.5,
-            "mean_f1": 0.47, "final_model_info": None, "folds": [],
-            "finding": "negative", "finding_reason": "oos_precision_at_or_below_random",
+            "n_folds": 12,
+            "mean_precision": 0.45,
+            "mean_recall": 0.5,
+            "mean_f1": 0.47,
+            "final_model_info": None,
+            "folds": [],
+            "finding": "negative",
+            "finding_reason": "oos_precision_at_or_below_random",
         }
 
     def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # type: ignore
@@ -616,9 +623,14 @@ def test_sync_meta_label_negative_finding_no_improvement(
 
     def _fake_predict(X, y, **kw):  # type: ignore
         return {
-            "n_folds": 12, "mean_precision": 0.45, "mean_recall": 0.5,
-            "mean_f1": 0.47, "final_model_info": None, "folds": [],
-            "finding": "negative", "finding_reason": "oos_precision_at_or_below_random",
+            "n_folds": 12,
+            "mean_precision": 0.45,
+            "mean_recall": 0.5,
+            "mean_f1": 0.47,
+            "final_model_info": None,
+            "folds": [],
+            "finding": "negative",
+            "finding_reason": "oos_precision_at_or_below_random",
         }
 
     def _fake_wf(prices, signals, costs=0.001, meta_filter=None, **kw):  # type: ignore
@@ -638,6 +650,7 @@ def test_sync_meta_label_negative_finding_no_improvement(
 
 
 # ── Wave D — REST Endpoint Tests (ML-09, ML-10) ─────────────────────────────
+
 
 # Minimal FastAPI TestClient fixture for signals router
 def _make_test_app():  # type: ignore[no-untyped-def]
@@ -665,9 +678,7 @@ def test_rest_returns_pydantic() -> None:
 
     client = _make_test_app()
     resp = client.get("/api/v1/signals/meta-label/BTC-USD")
-    assert resp.status_code == 200, (
-        f"Expected 200, got {resp.status_code}: {resp.text[:200]}"
-    )
+    assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text[:200]}"
     body = resp.json()
     # Full Pydantic validation — raises if any required field is missing/wrong type
     report = MetaLabelReport.model_validate(body)

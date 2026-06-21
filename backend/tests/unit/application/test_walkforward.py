@@ -247,9 +247,7 @@ class TestMetaFilter:
 
         # all-ones Filter: Position bleibt unverändert → identisch
         all_ones = pd.Series(1.0, index=prices.index)
-        with_ones = run_walkforward_with_details(
-            prices, signals, costs=0.001, meta_filter=all_ones
-        )
+        with_ones = run_walkforward_with_details(prices, signals, costs=0.001, meta_filter=all_ones)
 
         # Metriken müssen bit-identisch sein
         np.testing.assert_allclose(
@@ -301,8 +299,7 @@ class TestMetaFilter:
 
         # n_trades muss kleiner oder gleich sein
         assert filtered["n_trades"] <= unfiltered["n_trades"], (
-            f"Erwartet n_trades <= {unfiltered['n_trades']}, "
-            f"got {filtered['n_trades']}"
+            f"Erwartet n_trades <= {unfiltered['n_trades']}, got {filtered['n_trades']}"
         )
 
     def test_baseline_same_oos_period(self) -> None:

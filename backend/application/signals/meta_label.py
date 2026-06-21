@@ -226,11 +226,13 @@ def build_meta_features(df: pd.DataFrame) -> pd.DataFrame:
     atr_norm = (atr_series / close.replace(0, np.nan)).shift(1)
 
     # ── Pass-through Features: aus df lesen + shift(1) ───────────────────────
-    vol_pred_col = df["vol_pred"].shift(1) if "vol_pred" in df.columns else pd.Series(
-        np.nan, index=df.index
+    vol_pred_col = (
+        df["vol_pred"].shift(1) if "vol_pred" in df.columns else pd.Series(np.nan, index=df.index)
     )
-    momentum_rank_col = df["momentum_rank"].shift(1) if "momentum_rank" in df.columns else (
-        pd.Series(np.nan, index=df.index)
+    momentum_rank_col = (
+        df["momentum_rank"].shift(1)
+        if "momentum_rank" in df.columns
+        else (pd.Series(np.nan, index=df.index))
     )
 
     # onchain_health: 0.5 als neutraler Default wenn nicht vorhanden
@@ -393,9 +395,7 @@ def _walkforward_meta_cv(
 
         fold_results.append(
             {
-                "precision": float(
-                    precision_score(y_test, y_pred, zero_division=0)
-                ),
+                "precision": float(precision_score(y_test, y_pred, zero_division=0)),
                 "recall": float(recall_score(y_test, y_pred, zero_division=0)),
                 "f1": float(f1_score(y_test, y_pred, zero_division=0)),
                 "n_trades_taken": int(y_pred.sum()),

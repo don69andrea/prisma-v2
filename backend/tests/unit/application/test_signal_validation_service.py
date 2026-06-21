@@ -190,20 +190,25 @@ class TestSwissQuantScorerInterpret:
 
     def test_interpret_score_ausgezeichnet(self) -> None:
         from backend.domain.services.swiss_quant_scorer import SwissQuantScorer  # noqa: PLC0415
+
         assert SwissQuantScorer.interpret_score(85.0) == "Ausgezeichnet"
 
     def test_interpret_score_gut(self) -> None:
         from backend.domain.services.swiss_quant_scorer import SwissQuantScorer  # noqa: PLC0415
+
         assert SwissQuantScorer.interpret_score(70.0) == "Gut"
 
     def test_interpret_score_durchschnittlich(self) -> None:
         from backend.domain.services.swiss_quant_scorer import SwissQuantScorer  # noqa: PLC0415
+
         assert SwissQuantScorer.interpret_score(55.0) == "Durchschnittlich"
 
     def test_interpret_score_schwach(self) -> None:
         from backend.domain.services.swiss_quant_scorer import SwissQuantScorer  # noqa: PLC0415
+
         assert SwissQuantScorer.interpret_score(40.0) == "Schwach"
 
     def test_interpret_score_sehr_schwach(self) -> None:
         from backend.domain.services.swiss_quant_scorer import SwissQuantScorer  # noqa: PLC0415
+
         assert SwissQuantScorer.interpret_score(20.0) == "Sehr schwach"

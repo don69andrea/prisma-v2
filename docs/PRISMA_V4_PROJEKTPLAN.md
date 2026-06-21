@@ -245,13 +245,41 @@ Umsetzung über **GSD** (`/gsd-plan-phase` → `/gsd-execute-phase` → `/gsd-ve
 | **V4-3 Agentic-Layer** | Analyst-/Bull-Bear-/Risk-Agenten, Director-Synthese, Halluzinations-Guards | **Agentic-AI-Vorgabe** voll erfüllt |
 | **V4-4 RAG-Sentiment** | News/Fear&Greed → Sentiment-Feature/Veto in Schicht 2 | **RAG-Vorgabe** funktional erfüllt |
 | **V4-5 UI** | Signal-Dashboard, Explainability, Chart-Indikatoren, Backtest-Panel | sichtbare, benotbare Krönung |
-| **V4-6 Begleitdoku** | Negativ- + Positivbefund + Methodik für den Dozenten | starke wissenschaftliche Story |
-| **V4-7 Release → `main`** | **Abschluss-Release.** Wenn V4-1…V4-6 auf `develop` integriert & grün sind: Release-PR `develop → main`, CI grün, Tag `v4.0`. In GSD via `/gsd-complete-milestone`. | vorzeig-/abgabefähiger Production-Stand auf `main` |
+| **V4-6 Operations & Lernschleife** | Täglicher Auswertungs-Job + periodisches Retraining + Drift-Monitor (Details §8.1) | **kontinuierliche, ehrliche ML-Pipeline** (live + nachvollziehbar) |
+| **V4-7 Begleitdoku** | Negativ- + Positivbefund + Methodik für den Dozenten | starke wissenschaftliche Story |
+| **V4-8 Release → `main`** | **Abschluss-Release.** Wenn V4-1…V4-7 auf `develop` integriert & grün sind: Release-PR `develop → main`, CI grün, Tag `v4.0`. In GSD via `/gsd-complete-milestone`. | vorzeig-/abgabefähiger Production-Stand auf `main` |
 
 **Empfohlene Reihenfolge:** V4-0 → V4-1 zuerst (liefert den positiven Befund + die Engine, auf der alles
-aufbaut). V4-3 (Agenten) und V4-5 (UI) danach, weil sie auf den Engine-Outputs sitzen. **V4-7 (Release nach
+aufbaut). V4-3 (Agenten) und V4-5 (UI) danach, weil sie auf den Engine-Outputs sitzen. **V4-8 (Release nach
 `main`) ist der letzte Schritt** — erst wenn der Meilenstein steht (spätestens vor der Modul-Abgabe), nicht nach
 jeder Einzelphase. Faustregel: `main` = jederzeit vorzeig-/abgabefähig, `develop` = woran gerade gebaut wird.
+
+### 8.1 · Phase V4-6 im Detail — Operations & Lernschleife (das „lebende" System)
+
+Damit PRISMA nicht ein Einmal-Backtest bleibt, sondern sich über die Zeit *ehrlich* selbst auswertet und nachzieht.
+Setzt auf den schon vorhandenen Haken auf (`signal_outcomes.realized_fwd_return`, `vol_forecast.realized_vol`,
+`model_version`) und auf dem bestehenden **DataStewardAgent** (täglicher Background-Job). Drei Bausteine:
+
+**1. `SignalEvaluationJob` (täglich, Background).** Trägt für fällige Signale die tatsächlichen Ergebnisse nach
+(`realized_fwd_return`, `realized_vol`) und berechnet rollierende **Live-Metriken**: Hit-Rate, Live-Sharpe/Calmar,
+Vol-Forecast-Fehler. Schreibt sie in die DB → speist später das UI (V4-5) und die Begleitdoku.
+
+**2. `RetrainingJob` (periodisch, z. B. monatlich).** Fittet Vol-Modell + Meta-Labeler **neu auf einem
+expandierenden Walk-Forward-Fenster** (nur Vergangenheit), erzeugt eine neue `model_version` und aktiviert sie
+**nur, wenn sie die alte Version im strikten OOS-Vergleich schlägt** (Champion-/Challenger-Prinzip, sonst bleibt
+die alte aktiv). Jeder Modellwechsel wird versioniert und protokolliert.
+> ⚠️ **Kein Performance-Chasing.** „Feinjustierung über die Zeit" heißt diszipliniertes periodisches Re-Fit mit
+> fester Methodik — **nicht** Parameter so lange drehen, bis der Backtest schön aussieht. Genau das war der
+> In-Sample-Optimismus-Fehler aus V3; die Champion-/Challenger-Regel verhindert ihn.
+
+**3. `DriftMonitor` (täglich) + Alert.** Vergleicht Live-Performance gegen die Backtest-Erwartung. Laufen sie
+signifikant auseinander (z. B. Live-Sharpe ≪ erwartet, Vol-Fehler steigt), → Alert via bestehenden
+`MailAlertAgent` und Flag im Dashboard („Modell driftet, prüfen"). Optional interpretiert ein **EvaluationAgent**
+(LLM, liest nur die Job-Kennzahlen) die Lage in Klartext für den Audit-Trail.
+
+**Tests (Pflicht):** Outcome-Nachtrag korrekt (kein Look-Ahead beim Befüllen); Retraining nur mit Vergangenheit;
+Challenger wird nur bei echtem OOS-Vorteil aktiviert; Drift-Alert feuert bei künstlich gesetztem Drift.
+**Erfüllt:** „Memory + Dazulernen"-Modulvorgabe (Renold) messbar, plus eine ehrliche MLOps-Story.
 
 ---
 

@@ -5,6 +5,10 @@ Tests ML-01..ML-04 (Wave A):
 - ML-02: trend_scan_labels Richtung bei Aufwärts-/Abwärtstrend und Flat
 - ML-03: build_meta_features kein Look-Ahead (shift(1) erzwungen)
 - ML-04: Label-Horizont-Isolation (Label@t hängt nur von close[t..t+horizon] ab)
+
+Tests ML-05..ML-06 (Wave B):
+- ML-05: Classifier Walk-Forward OOS Precision > 50% auf synthetischen Daten
+- ML-06: No-Snooping — Classifier nie auf OOS-Folds gefittet (Embargo-Invariante)
 """
 
 from __future__ import annotations
@@ -16,7 +20,7 @@ import pytest
 pytestmark = pytest.mark.unit
 
 
-# ── Lazy import — schlägt fehl (RED) bis Implementierung existiert ──────────
+# ── Lazy import Wave A ───────────────────────────────────────────────────────
 def _import() -> tuple:  # type: ignore[type-arg]
     from backend.application.signals.meta_label import (  # noqa: PLC0415
         build_meta_features,
@@ -25,6 +29,17 @@ def _import() -> tuple:  # type: ignore[type-arg]
     )
 
     return triple_barrier_labels, trend_scan_labels, build_meta_features
+
+
+# ── Lazy import Wave B — schlägt fehl (RED) bis Implementierung existiert ───
+def _import_classifier() -> tuple:  # type: ignore[type-arg]
+    from backend.application.signals.meta_label import (  # noqa: PLC0415
+        _walkforward_meta_cv,
+        fit_meta_classifier,
+        predict_meta_label,
+    )
+
+    return fit_meta_classifier, predict_meta_label, _walkforward_meta_cv
 
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -270,3 +285,124 @@ def test_label_horizon_isolation() -> None:
         f"Label-Horizont-Isolation verletzt: label_a@{t_idx}={label_a_t}, "
         f"label_b@{t_idx}={label_b_t} — Label darf nur von close[t..t+horizon] abhängen"
     )
+
+
+# ── Wave B Fixtures ───────────────────────────────────────────────────────────
+
+
+def _learnable_xy(n: int = 600) -> tuple[pd.DataFrame, pd.Series]:
+    """Synthetische (X, y)-Daten mit lernbarem Muster für Classifier-Tests.
+
+    n >= min_train(252) + embargo(5) + 10*step(21) = 467 → 600 gibt >=15 Folds.
+    y ist eine deterministische Funktion von feature_0 plus leichtem Rauschen.
+    Der Classifier kann dieses Muster sicher lernen (OOS precision >> 50%).
+
+    Parameters
+    ----------
+    n:
+        Anzahl Zeitschritte (Standard 600 — garantiert >= 10 Folds).
+
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.Series]
+        X: DataFrame mit 3 numerischen Features und DatetimeIndex.
+        y: Binäre Series {0, 1} — deterministische Funktion von feature_0.
+    """
+    rng = np.random.default_rng(42)
+    idx = pd.date_range("2020-01-01", periods=n, freq="D")
+
+    # Feature 0: stark prädiktiv — y = 1 wenn feature_0 > 0, sonst 0
+    feature_0 = rng.normal(0, 1.0, n)
+    # Feature 1 und 2: Rauschen (kein prädiktiver Wert)
+    feature_1 = rng.normal(0, 1.0, n)
+    feature_2 = rng.normal(0, 1.0, n)
+
+    X = pd.DataFrame(
+        {"feature_0": feature_0, "feature_1": feature_1, "feature_2": feature_2},
+        index=idx,
+    )
+
+    # y = deterministische Funktion + 10% Rauschen → klar lernbar
+    noise = rng.uniform(0, 1.0, n)
+    y_clean = (feature_0 > 0).astype(int)
+    # 10% Flip-Rate für Rauschen
+    flip_mask = noise < 0.10
+    y = y_clean.copy()
+    y[flip_mask] = 1 - y_clean[flip_mask]
+    y_series = pd.Series(y, index=idx, name="label", dtype=int)
+
+    return X, y_series
+
+
+# ── ML-05: Classifier Walk-Forward OOS Precision > 50% ───────────────────────
+
+
+def test_classifier_oos_above_random() -> None:
+    """ML-05: Walk-Forward mittlere OOS-Precision > 50% auf lernbaren Daten.
+
+    Der Classifier muss auf synthetischen Daten mit bekanntem Muster
+    (y = Funktion von feature_0) eine mittlere OOS-Precision > 0.50 erreichen.
+    Dies stellt sicher, dass der Walk-Forward korrekt implementiert ist und
+    der Classifier echtes Signal extrahiert (kein Dummy-Classifier).
+    """
+    fit_meta_classifier, predict_meta_label, _ = _import_classifier()
+
+    X, y = _learnable_xy(n=600)
+
+    result = predict_meta_label(
+        X,
+        y,
+        min_train=252,
+        step=21,
+        embargo=5,
+        model="logreg",
+    )
+
+    n_folds = result["n_folds"]
+    assert n_folds >= 10, (
+        f"ML-05: Zu wenige OOS-Folds ({n_folds} < 10) — "
+        f"n=600 sollte mindestens 15 Folds liefern"
+    )
+
+    mean_precision = result["mean_precision"]
+    assert mean_precision > 0.50, (
+        f"ML-05: OOS-Precision {mean_precision:.3f} <= 0.50 — "
+        f"Classifier sollte lernbares Muster (feature_0 > 0 → y=1) extrahieren"
+    )
+
+
+# ── ML-06: No-Snooping — Embargo-Invariante ──────────────────────────────────
+
+
+def test_no_snooping() -> None:
+    """ML-06: Embargo-Invariante — Train-Ende + embargo <= Test-Start für jeden Fold.
+
+    Für jeden Walk-Forward-Fold muss gelten:
+      fold['train_end_idx'] + embargo <= fold['test_start_idx']
+
+    Dies stellt sicher, dass:
+    1. OOS-Daten nie während des Fits gesehen werden (kein Snooping).
+    2. Der Embargo-Dead-Zone von 5 Bars eingehalten wird (verhindert
+       Label-Leakage aus dem Triple-Barrier Forward-Horizon).
+    """
+    _, _, _walkforward_meta_cv = _import_classifier()
+
+    X, y = _learnable_xy(n=600)
+    embargo = 5
+
+    result = _walkforward_meta_cv(X, y, min_train=252, step=21, embargo=embargo)
+
+    folds = result["folds"]
+    assert len(folds) >= 10, (
+        f"ML-06: Zu wenige Folds ({len(folds)}) für valide Invarianten-Prüfung"
+    )
+
+    for i, fold in enumerate(folds):
+        train_end = fold["train_end_idx"]
+        test_start = fold["test_start_idx"]
+        assert train_end + embargo <= test_start, (
+            f"ML-06: Snooping-Verletzung in Fold {i}: "
+            f"train_end_idx={train_end} + embargo={embargo} = {train_end + embargo} "
+            f"> test_start_idx={test_start}. "
+            f"Train darf nie OOS-Daten sehen."
+        )

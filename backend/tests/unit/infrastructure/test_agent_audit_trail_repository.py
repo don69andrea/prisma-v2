@@ -13,14 +13,13 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import AsyncGenerator
-from datetime import UTC, date, datetime
+from datetime import date
 
 import pytest
 import pytest_asyncio
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from backend.infrastructure.persistence.base import Base
 from backend.infrastructure.persistence.models.agent_audit_trail import AgentAuditTrailORM
 from backend.infrastructure.persistence.repositories.agent_audit_trail_repository import (
     AgentAuditTrailRepository,

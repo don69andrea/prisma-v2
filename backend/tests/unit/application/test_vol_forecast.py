@@ -9,10 +9,11 @@ Alle Tests gemäss Plan A7.4:
 
 from __future__ import annotations
 
+from datetime import date
+
 import numpy as np
 import pandas as pd
 import pytest
-from datetime import date
 
 pytestmark = pytest.mark.unit
 
@@ -69,10 +70,10 @@ def test_realized_vol_positive():
 
 
 def test_realized_vol_annualized():
-    """Tägliche Vol × √252 → annualisierte Zahl > 0."""
+    """Tägliche Vol × √252 → annualisierte Zahl > 0 (window=5 Standard)."""
     realized_vol, *_ = _import()
     close = _synthetic_close(vol=0.02)
-    rv = realized_vol(close, window=1)
+    rv = realized_vol(close)  # Standard window=5
     assert rv.dropna().mean() > 0.0
 
 

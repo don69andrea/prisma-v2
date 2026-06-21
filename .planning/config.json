@@ -1,0 +1,20 @@
+{
+  "model_profile": "balanced",
+  "commit_docs": true,
+  "parallelization": true,
+  "project_code": "PRISMA",
+  "phase_naming": "sequential",
+  "git": {
+    "branching_strategy": "branch-per-phase",
+    "base_branch": "develop",
+    "phase_branch_template": "feat/v4-1-signal-engine"
+  },
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true,
+    "tdd_mode": true,
+    "human_verify_mode": "end-of-phase",
+    "auto_advance": false
+  }
+}

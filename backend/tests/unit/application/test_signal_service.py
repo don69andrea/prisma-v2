@@ -11,7 +11,9 @@ Alle Tests:
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Coroutine
 from datetime import date
+from typing import Any, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -21,11 +23,13 @@ from backend.interfaces.rest.schemas.signals import SignalVector
 
 pytestmark = pytest.mark.unit
 
+_T = TypeVar("_T")
+
 
 # ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
 
-def _run(coro):  # type: ignore[no-untyped-def]
+def _run(coro: Coroutine[Any, Any, _T]) -> _T:
     """Führe eine Coroutine synchron aus (Python 3.10+)."""
     return asyncio.run(coro)
 

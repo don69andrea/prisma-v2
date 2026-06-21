@@ -7,6 +7,7 @@ Teststrategie: Service-Layer wird gemockt — kein echter DB-Zugriff nötig.
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from datetime import date
 from unittest.mock import AsyncMock, patch
 
@@ -79,7 +80,7 @@ _TEST_API_KEY = "test-key"
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncClient:
+async def client() -> AsyncGenerator[AsyncClient, None]:
     app = create_app()
     app.dependency_overrides[get_settings] = lambda: Settings(
         api_key=_TEST_API_KEY, environment="development"

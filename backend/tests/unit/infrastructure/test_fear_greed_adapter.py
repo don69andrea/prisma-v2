@@ -9,6 +9,7 @@ Test-First (TDD / RED-Phase):
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -52,7 +53,7 @@ _SINGLE_RESPONSE = {
 }
 
 
-def _make_mock_response(json_data: dict, status_code: int = 200) -> MagicMock:
+def _make_mock_response(json_data: dict[str, Any], status_code: int = 200) -> MagicMock:
     """Erstellt einen Mock für eine httpx-Response."""
     mock_resp = MagicMock()
     mock_resp.status_code = status_code
@@ -218,7 +219,7 @@ async def test_fetch_history_retry_on_transient_error() -> None:
 
     call_count = 0
 
-    async def side_effect(*args, **kwargs):  # type: ignore[no-untyped-def]
+    async def side_effect(*args: Any, **kwargs: Any) -> None:
         nonlocal call_count
         call_count += 1
         if call_count <= 2:
@@ -268,7 +269,7 @@ async def test_fetch_history_exponential_backoff() -> None:
     call_count = 0
     sleep_delays: list[float] = []
 
-    async def side_effect(*args, **kwargs):  # type: ignore[no-untyped-def]
+    async def side_effect(*args: Any, **kwargs: Any) -> None:
         nonlocal call_count
         call_count += 1
         if call_count <= 2:

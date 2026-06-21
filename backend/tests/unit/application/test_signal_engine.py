@@ -14,6 +14,7 @@ Alle Tests ohne I/O — rein funktional mit synthetischen Daten.
 from __future__ import annotations
 
 from datetime import date
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -587,7 +588,7 @@ class TestFitWalkforward:
 
 
 class TestPredictVol:
-    def _make_model_info(self) -> tuple[pd.Series, dict]:
+    def _make_model_info(self) -> tuple[pd.Series, dict[str, Any]]:
         from sklearn.linear_model import LinearRegression
 
         from backend.application.signals.vol_forecast import build_har_features, realized_vol

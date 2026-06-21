@@ -172,7 +172,7 @@ async def run_walkforward(coin: str, prices_df: pd.DataFrame) -> BacktestReport:
     """
     # Einfaches SMA-Signal: investiert wenn close > SMA(30)
     prices_with_close = prices_df.copy()
-    prices_with_close.columns = ["close"]  # type: ignore[assignment]
+    prices_with_close.columns = pd.Index(["close"])
     close = prices_with_close["close"]
     sma30 = close.rolling(30, min_periods=1).mean()
     signals = (close > sma30).astype(float)

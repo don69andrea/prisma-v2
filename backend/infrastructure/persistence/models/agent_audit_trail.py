@@ -7,7 +7,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.infrastructure.persistence.base import Base
@@ -33,8 +33,9 @@ class AgentAuditTrailORM(Base):
     )
     coin: Mapped[str] = mapped_column(sa.String(), nullable=False)
     asof: Mapped[date] = mapped_column(sa.Date(), nullable=False)
-    # JSONB on PostgreSQL; falls back to JSON dialect for SQLite in unit tests.
-    agent_run: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    # sa.JSON() works on both PostgreSQL (as JSON) and SQLite (for unit tests).
+    # The Alembic migration (0041) explicitly uses JSONB for PostgreSQL DDL.
+    agent_run: Mapped[dict[str, Any]] = mapped_column(sa.JSON(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,

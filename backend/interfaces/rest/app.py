@@ -38,6 +38,7 @@ from backend.interfaces.rest.routers import (
     rebalancing,
     reports,
     runs,
+    signals,
     steuer,
     stocks,
     universes,
@@ -161,5 +162,7 @@ def create_app() -> FastAPI:
     app.include_router(fonds_vergleich.router, dependencies=_auth)
     app.include_router(rebalancing.router, dependencies=_auth)
     app.include_router(alerts.router, dependencies=_auth)
+    app.include_router(signals.router, dependencies=_auth)
+    app.include_router(signals.backtest_router, dependencies=_auth)
 
     return app

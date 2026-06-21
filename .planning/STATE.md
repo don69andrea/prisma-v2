@@ -1,8 +1,23 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+current_phase: 01
+status: "Phase 01 shipped — PR #296"
+last_updated: "2026-06-21T14:57:16.910Z"
+progress:
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 7
+  completed_plans: 0
+  percent: 0
+---
+
 # PRISMA — Project State
 
 **Last updated:** 2026-06-21  
-**Current phase:** 1 (V4-1 Signal-Engine)  
-**Status:** Planning
+**Current phase:** 01
+**Status:** Phase 01 shipped — PR #296
 
 ## What's Done
 

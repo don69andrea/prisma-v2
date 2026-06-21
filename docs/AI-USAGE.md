@@ -1059,3 +1059,12 @@ LLM-Code mit StubClient grün ≠ production-ready. Mindestens 1× gegen echte A
 - **Was nicht klappte**: Keine Implementierung in diesem Task — reine Spec/Plan-Session.
 - **Nachbearbeitung nötig bei**: Vor Implementierungsstart klären: Alembic-Migration-Strategie für `macro_sensitivity` (0020 oder Inline-ALTER), Turn-5-Skip-Logik bei hohem Konfidenz-Score, sessionStorage vs. HttpOnly-Cookie für Mobile.
 - **Autor**: Andrea Petretta (mit Claude Code)
+
+## 2026-06-21 · PRISMA V4-1 Signal Engine — Phase 01 Waves 1–5 (Plan 01-07)
+
+- **Agent**: Claude Code (Sonnet 4.6, GSD-Execute-Phase-Orchestrator)
+- **Scope**: Vollständige Crypto Signal Engine: Layer 1 (Cross-Sectional Momentum + On-Chain Health), Layer 2 (SMA/MACD/RSI Consensus 2-of-3), Layer 3 (Vol-Targeting Sizing + Drawdown-Brake), Walk-Forward Backtest Engine, und 3 REST-Endpoints (GET /api/v1/signals, GET /api/v1/signals/{coin}, GET /api/v1/backtest/{coin}). TDD-Ansatz (RED → GREEN). Coverage 93.4% auf signals/ + backtest/.
+- **Was gut lief**: Parallele Wave-Ausführung in 5 Wellen mit sauber getrennten Commits. TDD erzwang präzise Testbarkeit ohne DB-Abhängigkeit — Mocking auf Service-Layer-Ebene reichte vollständig. Die Pydantic-Schema-Entscheidung (SignalVector + BacktestReport) aus Wave 3 zahlte sich in Wave 5 aus: Integrationstests erforderten null Anpassungen an den Response-Shapes.
+- **Was nicht klappte**: `pd.Timestamp(asof)` ohne Timezone-Argument schlägt bei UTC-aware DatetimeIndex fehl — klassischer CLAUDE.md-Fehler (Datumshandling ohne Timezone). Musste in signal_service.py inline gefixt werden. Tests mussten mehrfach für tz-Kompatibilität überarbeitet werden.
+- **Nachbearbeitung nötig bei**: `vol_forecast.py` (87.5% Coverage — LightGBM-Zweig mit walk-forward hauptsächlich ungetestet, da Training ~3s). In Produktion: Preisdaten aus echter DB, nicht synthetischer Random-Walk.
+- **Autor**: Andrea Petretta (mit Claude Code / GSD-Execute-Agent)

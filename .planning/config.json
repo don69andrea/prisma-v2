@@ -15,6 +15,7 @@
     "verifier": true,
     "tdd_mode": true,
     "human_verify_mode": "end-of-phase",
-    "auto_advance": false
+    "auto_advance": false,
+    "_auto_chain_active": false
   }
 }

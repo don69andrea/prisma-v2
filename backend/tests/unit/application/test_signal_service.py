@@ -25,6 +25,11 @@ pytestmark = pytest.mark.unit
 # ── Hilfsfunktionen ───────────────────────────────────────────────────────────
 
 
+def _run(coro):  # type: ignore[no-untyped-def]
+    """Führe eine Coroutine synchron aus (Python 3.10+)."""
+    return asyncio.run(coro)
+
+
 def make_prices_df(
     n_days: int = 300,
     coins: list[str] | None = None,
@@ -87,9 +92,7 @@ def test_evaluate_returns_signal_vector() -> None:
 
     prices = make_prices_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices))
 
     assert isinstance(result, SignalVector), (
         f"Erwartet SignalVector, erhalten {type(result)}"
@@ -102,9 +105,7 @@ def test_evaluate_correct_coin_and_date() -> None:
 
     prices = make_prices_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices))
 
     assert result.coin == "BTC", f"Falscher Coin: {result.coin}"
     assert result.asof == asof, f"Falsches Datum: {result.asof}"
@@ -116,9 +117,7 @@ def test_evaluate_action_valid() -> None:
 
     prices = make_prices_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices))
 
     assert result.action in ("BUY", "HOLD", "SELL"), (
         f"Unzulässige action: {result.action}"
@@ -137,9 +136,7 @@ def test_evaluate_sell_size_zero() -> None:
 
     results = []
     for coin in prices.columns:
-        r = asyncio.get_event_loop().run_until_complete(
-            evaluate(coin, asof, prices_df=prices)
-        )
+        r = _run(evaluate(coin, asof, prices_df=prices))
         results.append(r)
 
     for r in results:
@@ -157,9 +154,7 @@ def test_evaluate_size_factor_bounds() -> None:
     asof = date(2025, 12, 31)
 
     for coin in prices.columns:
-        result = asyncio.get_event_loop().run_until_complete(
-            evaluate(coin, asof, prices_df=prices)
-        )
+        result = _run(evaluate(coin, asof, prices_df=prices))
         assert 0.0 <= result.size_factor <= 1.5, (
             f"{coin}: size_factor={result.size_factor} ausserhalb [0, 1.5]"
         )
@@ -174,9 +169,7 @@ def test_evaluate_sub_scores_keys() -> None:
 
     prices = make_prices_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices))
 
     missing = required_keys - set(result.sub_scores.keys())
     assert not missing, f"Fehlende Keys in sub_scores: {missing}"
@@ -188,9 +181,7 @@ def test_evaluate_disclaimer_set() -> None:
 
     prices = make_prices_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices))
 
     assert result.disclaimer, "disclaimer ist leer"
     assert "Entscheidungsunterstützung" in result.disclaimer, (
@@ -204,9 +195,7 @@ def test_evaluate_consensus_format() -> None:
 
     prices = make_prices_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices))
 
     assert "/" in result.consensus, f"Unerwartetes consensus-Format: {result.consensus}"
     parts = result.consensus.split("/")
@@ -220,9 +209,7 @@ def test_evaluate_confidence_bounds() -> None:
 
     prices = make_prices_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices))
 
     assert 0.0 <= result.confidence <= 1.0, (
         f"confidence={result.confidence} ausserhalb [0, 1]"
@@ -237,12 +224,10 @@ def test_evaluate_with_onchain_data() -> None:
     onchain = make_onchain_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
 
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices, onchain_df=onchain)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices, onchain_df=onchain))
 
     assert isinstance(result, SignalVector)
-    assert result.sub_scores["onchain_score"] != 0.5 or True  # Kann 0.5 sein, muss aber gesetzt sein
+    # onchain_score muss gesetzt sein (kann 0.5 sein als Neutral-Fallback)
     assert "onchain_score" in result.sub_scores
 
 
@@ -252,9 +237,7 @@ def test_evaluate_pydantic_validates() -> None:
 
     prices = make_prices_df(coins=["BTC", "ETH", "SOL"])
     asof = date(2025, 12, 31)
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices))
 
     # model_dump() und Re-Konstruktion muss ohne Fehler gehen
     dumped = result.model_dump()
@@ -272,9 +255,7 @@ def test_evaluate_no_lookahead_future_data_clipped() -> None:
     # asof_date ist deutlich vor dem letzten Datum in prices
     asof = date(2025, 6, 30)
 
-    result = asyncio.get_event_loop().run_until_complete(
-        evaluate("BTC", asof, prices_df=prices)
-    )
+    result = _run(evaluate("BTC", asof, prices_df=prices))
 
     # asof im Result muss dem übergebenen Datum entsprechen
     assert result.asof == asof, f"asof falsch gesetzt: {result.asof}"

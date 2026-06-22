@@ -18,11 +18,11 @@ import asyncio
 import logging
 import time
 from datetime import UTC, date, datetime
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pandas as pd
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.application.backtest.walkforward import (
     run_walkforward as _run_walkforward_sync,
@@ -36,11 +36,16 @@ from backend.application.signals.meta_label import (
     predict_meta_label,
     triple_barrier_labels,
 )
+from backend.domain.schemas.agent_schemas import TradeSignal
+from backend.interfaces.rest.dependencies import get_signal_director
 from backend.interfaces.rest.schemas.signals import (
     BacktestReport,
     MetaLabelReport,
     SignalVector,
 )
+
+if TYPE_CHECKING:
+    from backend.application.agents.signal_director import SignalDirector
 
 _logger = logging.getLogger(__name__)
 
@@ -48,6 +53,7 @@ _logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/signals", tags=["signals"])
 backtest_router = APIRouter(prefix="/api/v1/backtest", tags=["backtest"])
+agent_router = APIRouter(prefix="/api/v1/agent-signal", tags=["agent-signal"])
 
 # ── Bekannte Crypto-Coins (Crypto-Universe) ────────────────────────────────────
 
@@ -414,6 +420,47 @@ async def run_meta_label(coin: str, prices_df: pd.DataFrame) -> MetaLabelReport:
         return _sync_meta_label(coin, prices_df)
 
     return await asyncio.to_thread(_call)
+
+
+# ── Agent-Signal Endpoint (V4-3 Agentic Layer) ────────────────────────────────
+
+
+@agent_router.get(
+    "/{coin}",
+    response_model=TradeSignal,
+    summary="Agentic Trade-Signal für einen Coin",
+    description=(
+        "Führt die vollständige V4-3 Agentic Pipeline aus: Signal-Engine + "
+        "4 Analyst-Agents (parallel) + Bull/Bear/Risk (sequentiell) → TradeSignal. "
+        "coin muss im Crypto-Universe enthalten sein. "
+        "404 wenn unbekannt. 503 wenn LLM nicht verfügbar und Fallback unmöglich."
+    ),
+)
+async def get_agent_signal(
+    coin: str,
+    director: "SignalDirector" = Depends(get_signal_director),
+) -> TradeSignal:
+    """GET /api/v1/agent-signal/{coin} → TradeSignal.
+
+    Security: coin validated against _CRYPTO_UNIVERSE allowlist (T-03-06).
+    LLM outage: maps to HTTP 503 if fallback cannot recover (T-03-04).
+    """
+    coin_upper = coin.upper()
+    if coin_upper not in _CRYPTO_UNIVERSE:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Coin '{coin_upper}' ist nicht im Crypto-Universe. "
+            f"Verfügbar: {_CRYPTO_UNIVERSE}",
+        )
+
+    try:
+        return await director.run(coin_upper)
+    except Exception as exc:  # noqa: BLE001
+        _logger.error("SignalDirector fehlgeschlagen für %s: %s", coin_upper, exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Agentic Signal temporär nicht verfügbar für {coin_upper}.",
+        ) from exc
 
 
 @router.get(

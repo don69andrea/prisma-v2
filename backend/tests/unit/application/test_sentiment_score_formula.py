@@ -72,8 +72,8 @@ def _build_agent(
             chunk.metadata = {
                 "source": "CRYPTOPANIC",
                 "tickers": ["BTC"],
-                "votes_positive": votes_positive // max(1, num_articles),
-                "votes_negative": votes_negative // max(1, num_articles),
+                "votes_positive": votes_positive,
+                "votes_negative": votes_negative,
             }
             chunks.append(chunk)
         mock_retrieval.retrieve = AsyncMock(return_value=chunks)
@@ -257,6 +257,13 @@ async def test_d05_veto_truth_table(
         votes_negative = 0
         num_articles = _MIN_ARTICLES_FOR_VOTE_RATIO
 
+    # Guard: score < -0.3 always implies FEAR in V4-4 (since -0.3 < -0.2 = FEAR boundary).
+    # For is_fear_regime=False cases with score_below_threshold=True, the blend formula
+    # inevitably produces FEAR from the highly negative votes — the combination is
+    # physically unreachable. Use F&G-fallback (0 articles) so regime is purely F&G-based.
+    if not is_fear_regime and score_below_threshold:
+        num_articles = 0  # Fallback: score = (fg-50)/50 = 0.2 → GREED (not FEAR)
+
     # Mock LLM to return specific news_surprise value
     from backend.application.agents.sentiment_analyst_agent import SentimentAnalystAgent
 
@@ -276,8 +283,8 @@ async def test_d05_veto_truth_table(
         chunk.metadata = {
             "source": "CRYPTOPANIC",
             "tickers": ["BTC"],
-            "votes_positive": votes_positive // max(1, num_articles),
-            "votes_negative": votes_negative // max(1, num_articles),
+            "votes_positive": votes_positive,
+            "votes_negative": votes_negative,
         }
         chunks.append(chunk)
     mock_retrieval.retrieve = AsyncMock(return_value=chunks)

@@ -94,7 +94,7 @@ Plans:
 **Branch:** `feat/v4-4-rag-sentiment`
 **Spec:** `docs/PRISMA_V4_AGENTS.md` §3.3 + `.planning/phases/PRISMA-04-v4-4-rag-sentiment-planned/04-CONTEXT.md` (D-01..D-08)
 **Status:** planned
-**Plans:** 2/7 plans executed
+**Plans:** 3/7 plans executed
 
 Plans:
 **Wave 1** *(blockers + RED test stubs — runs first, blocks everything)*
@@ -104,7 +104,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 04-03-PLAN.md — CryptoPanicAdapter: free-API JSON → RawCryptoPanicArticle, retry/backoff, []-on-malformed (TDD)
+- [x] 04-03-PLAN.md — CryptoPanicAdapter: free-API JSON → RawCryptoPanicArticle, retry/backoff, []-on-malformed (TDD)
 
 **Wave 3** *(blocked on Wave 2)*
 

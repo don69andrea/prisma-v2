@@ -156,6 +156,18 @@ Compare: Sharpe, Calmar, MaxDD, Hit-Rate, # trades vetoed.
   optional veto-only mode documented; **honest result documented in `docs/PRISMA_V4_FORTSCHRITT.md`**
 - NO overoptimization of thresholds to make backtest look good
 
+### D-09: CryptoPanic Ingestion — Separate Method (Overrides DEFAULT_FEEDS Reference)
+
+CONTEXT.md `canonical_refs` and `code_context` originally referenced "add CryptoPanic to
+DEFAULT_FEEDS". RESEARCH.md Blocker B-03 identified that `DEFAULT_FEEDS` is a
+`list[tuple[str, str]]` (source_name, feed_url) structure that assumes RSS. CryptoPanic has no
+feed URL; injecting it as a tuple would break the existing `ingest_all()` loop.
+
+Decision: use a separate `async def ingest_cryptopanic(self, coins: list[str]) -> int` method on
+`NewsIngestionService`. This is the lower-risk approach and is implemented in plan 04-04. The
+original DEFAULT_FEEDS reference in `canonical_refs`/`code_context` is superseded by this
+decision.
+
 </decisions>
 
 <canonical_refs>
@@ -176,7 +188,7 @@ Compare: Sharpe, Calmar, MaxDD, Hit-Rate, # trades vetoed.
 - `backend/infrastructure/llm/prompts/sentiment_analyst.de.md.j2` — existing V4-3 prompt; V4-4 updates this for RAG chunks input
 
 ### Existing News-RAG Infra (reuse, do NOT rebuild)
-- `backend/application/services/news_ingestion_service.py` — NewsIngestionService with DEFAULT_FEEDS; add CryptoPanic
+- `backend/application/services/news_ingestion_service.py` — NewsIngestionService with DEFAULT_FEEDS; add CryptoPanic via separate ingest_cryptopanic() method (see D-09)
 - `backend/application/services/news_retrieval_service.py` — NewsRetrievalService (Voyage-3-large, HNSW)
 - `backend/domain/repositories/news_repository.py` — NewsRepository port (find_nearest with ticker filter)
 - `backend/domain/entities/news_chunk.py` + `backend/domain/entities/news_article.py` — domain entities
@@ -227,7 +239,7 @@ Compare: Sharpe, Calmar, MaxDD, Hit-Rate, # trades vetoed.
 - CryptoPanic `currencies` tags → `tickers[]` field (no TickerNer pass needed)
 
 ### Integration Points
-- `NewsIngestionService.DEFAULT_FEEDS` → add CryptoPanic entry (new adapter type, not RSS)
+- `NewsIngestionService` → add CryptoPanic via separate `ingest_cryptopanic(coins)` method (D-09; NOT via DEFAULT_FEEDS — see D-09)
 - `SentimentAnalystAgent.__init__` → inject `NewsRetrievalService` + `LLMClient` + `db_session`
 - `SignalDirector.__init__` → `senti_agent` already injected; `_synthesize()` gets veto logic
 - `backend/config.py` → add `sentiment_enabled: bool = False` (reads from `SENTIMENT_ENABLED` env var)

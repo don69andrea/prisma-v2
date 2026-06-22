@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -121,16 +122,16 @@ def _make_risk_verdict(approve: bool = True, max_size: float = 0.8) -> RiskVerdi
 
 
 def _make_director(
-    engine_signal=None,
-    tech_view=None,
-    onchain_view=None,
-    senti_view=None,
-    macro_regime=None,
-    bull_case=None,
-    bear_case=None,
-    risk_verdict=None,
-    audit_uuid=None,
-):
+    engine_signal: Any = None,
+    tech_view: Any = None,
+    onchain_view: Any = None,
+    senti_view: Any = None,
+    macro_regime: Any = None,
+    bull_case: Any = None,
+    bear_case: Any = None,
+    risk_verdict: Any = None,
+    audit_uuid: Any = None,
+) -> tuple[Any, MagicMock]:
     """Build a SignalDirector with all dependencies mocked."""
     from backend.application.agents.signal_director import SignalDirector
 

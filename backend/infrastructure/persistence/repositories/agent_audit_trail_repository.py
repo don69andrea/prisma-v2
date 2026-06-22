@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,7 +32,7 @@ class AgentAuditTrailRepository:
         self,
         coin: str,
         asof: date,
-        agent_run: dict,
+        agent_run: dict[str, Any],
     ) -> uuid.UUID:
         """Persist a new agent run record and return its generated UUID.
 

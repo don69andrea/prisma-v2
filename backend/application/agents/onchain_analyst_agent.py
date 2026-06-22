@@ -126,26 +126,30 @@ class OnChainAnalystAgent:
         addr = tool_data.get("active_addresses", {}).get("active_addresses_norm", 0.5)
 
         # Valuation from MVRV-Z
+        from typing import Literal
+
+        valuation_val: Literal["CHEAP", "FAIR", "EXPENSIVE"]
         if mvrv < 0.3:
-            valuation = "CHEAP"
+            valuation_val = "CHEAP"
         elif mvrv > 0.7:
-            valuation = "EXPENSIVE"
+            valuation_val = "EXPENSIVE"
         else:
-            valuation = "FAIR"
+            valuation_val = "FAIR"
 
         # Network health from active addresses + NVT
         health_score = (addr + (1.0 - nvt)) / 2.0
+        network_health_val: Literal["STRONG", "NEUTRAL", "WEAK"]
         if health_score > 0.6:
-            network_health = "STRONG"
+            network_health_val = "STRONG"
         elif health_score < 0.4:
-            network_health = "WEAK"
+            network_health_val = "WEAK"
         else:
-            network_health = "NEUTRAL"
+            network_health_val = "NEUTRAL"
 
         return OnChainView(
             coin=coin,
-            valuation=valuation,
-            network_health=network_health,
+            valuation=valuation_val,
+            network_health=network_health_val,
             confidence=0.4,  # lowered — fallback path
             reasoning=(
                 f"Fallback-Analyse für {coin}. "

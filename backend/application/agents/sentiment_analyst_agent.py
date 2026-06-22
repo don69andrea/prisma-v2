@@ -66,17 +66,20 @@ class SentimentAnalystAgent:
             score: float = (fg_value - 50) / 50
 
             # Map score to regime by threshold
+            from typing import Literal
+
+            regime_val: Literal["FEAR", "NEUTRAL", "GREED"]
             if score < _FEAR_THRESHOLD:
-                regime = "FEAR"
+                regime_val = "FEAR"
             elif score > _GREED_THRESHOLD:
-                regime = "GREED"
+                regime_val = "GREED"
             else:
-                regime = "NEUTRAL"
+                regime_val = "NEUTRAL"
 
             return SentimentView(
                 coin=coin,
                 score=score,
-                regime=regime,
+                regime=regime_val,
                 news_surprise=None,  # RAG pending V4-4
                 veto=False,  # no veto in stub
                 reasoning=(

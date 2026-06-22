@@ -12,6 +12,7 @@ They verify:
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 import pytest
 from pydantic import ValidationError
@@ -38,7 +39,7 @@ from backend.domain.schemas.agent_schemas import (  # noqa: E402
 
 
 class TestTechnicalView:
-    def _valid(self, **overrides: object) -> dict:
+    def _valid(self, **overrides: Any) -> dict[str, Any]:
         base = {
             "coin": "BTC",
             "stance": "BULLISH",
@@ -92,7 +93,7 @@ class TestTechnicalView:
 
 
 class TestOnChainView:
-    def _valid(self, **overrides: object) -> dict:
+    def _valid(self, **overrides: Any) -> dict[str, Any]:
         base = {
             "coin": "BTC",
             "valuation": "CHEAP",
@@ -139,7 +140,7 @@ class TestOnChainView:
 
 
 class TestSentimentView:
-    def _valid(self, **overrides: object) -> dict:
+    def _valid(self, **overrides: Any) -> dict[str, Any]:
         base = {
             "coin": "BTC",
             "score": 0.3,
@@ -202,7 +203,7 @@ class TestSentimentView:
 
 
 class TestMacroRegime:
-    def _valid(self, **overrides: object) -> dict:
+    def _valid(self, **overrides: Any) -> dict[str, Any]:
         base = {
             "regime": "RISK_ON",
             "drivers": ["Low real rates", "DXY weakness"],
@@ -250,7 +251,7 @@ class TestMacroRegime:
 
 
 class TestBullCase:
-    def _valid(self, **overrides: object) -> dict:
+    def _valid(self, **overrides: Any) -> dict[str, Any]:
         base = {
             "thesis": "BTC poised for rally on ETF inflows.",
             "strongest_points": ["Institutional demand", "Supply shock post-halving"],
@@ -277,7 +278,7 @@ class TestBullCase:
 
 
 class TestBearCase:
-    def _valid(self, **overrides: object) -> dict:
+    def _valid(self, **overrides: Any) -> dict[str, Any]:
         base = {
             "thesis": "BTC faces headwinds from tighter liquidity.",
             "strongest_points": ["Rising real rates", "Exchange outflows slowing"],
@@ -303,7 +304,7 @@ class TestBearCase:
 
 
 class TestRiskVerdict:
-    def _valid(self, **overrides: object) -> dict:
+    def _valid(self, **overrides: Any) -> dict[str, Any]:
         base = {
             "approve": True,
             "max_size": 1.0,
@@ -354,7 +355,7 @@ _EXPECTED_DISCLAIMER = "Entscheidungsunterstützung, kein Anlagerat. Kein Auto-T
 
 
 class TestTradeSignal:
-    def _valid(self, **overrides: object) -> dict:
+    def _valid(self, **overrides: Any) -> dict[str, Any]:
         base = {
             "coin": "BTC",
             "action": "BUY",

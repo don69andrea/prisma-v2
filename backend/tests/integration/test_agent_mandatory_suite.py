@@ -466,10 +466,11 @@ async def test_d06_5_pydantic_schema() -> None:
     # D-06 #5 — All 8 schemas are Pydantic BaseModel subclasses
 
     # 1. TechnicalView — stance must be Literal["BULLISH", "NEUTRAL", "BEARISH"]
+    _bad_stance: Any = "VERY_BULLISH"
     with pytest.raises(ValidationError):
         TechnicalView(
             coin=COIN,
-            stance="VERY_BULLISH",  # freetext — must be rejected
+            stance=_bad_stance,
             consensus="3/3",
             key_signals=[],
             confidence=0.5,
@@ -477,45 +478,51 @@ async def test_d06_5_pydantic_schema() -> None:
         )
 
     # 2. OnChainView — valuation must be Literal["CHEAP", "FAIR", "EXPENSIVE"]
+    _bad_valuation: Any = "UNDERVALUED"
     with pytest.raises(ValidationError):
         OnChainView(
             coin=COIN,
-            valuation="UNDERVALUED",  # freetext — must be rejected
+            valuation=_bad_valuation,
             network_health="STRONG",
             confidence=0.5,
             reasoning="ok",
         )
 
     # 3. SentimentView — regime must be Literal["FEAR", "NEUTRAL", "GREED"]
+    _bad_regime_senti: Any = "EXTREME_GREED"
     with pytest.raises(ValidationError):
         SentimentView(
             coin=COIN,
             score=0.5,
-            regime="EXTREME_GREED",  # freetext — must be rejected
+            regime=_bad_regime_senti,
             reasoning="ok",
         )
 
     # 4. MacroRegime — regime must be Literal["RISK_ON", "NEUTRAL", "RISK_OFF"]
+    _bad_regime_macro: Any = "UNCERTAIN"
     with pytest.raises(ValidationError):
         MacroRegime(
-            regime="UNCERTAIN",  # freetext — must be rejected
+            regime=_bad_regime_macro,
             drivers=[],
             confidence=0.5,
             reasoning="ok",
         )
 
     # 5. BullCase — no Literal fields but thesis must be str (not int)
+    _bad_thesis_int: Any = 12345
+    _bad_points_str: Any = "not a list"
     with pytest.raises(ValidationError):
         BullCase(
-            thesis=12345,  # type: ignore[arg-type]  — wrong type
-            strongest_points="not a list",  # type: ignore[arg-type]
+            thesis=_bad_thesis_int,
+            strongest_points=_bad_points_str,
             risks_acknowledged=[],
         )
 
     # 6. BearCase — thesis must be str
+    _bad_thesis_none: Any = None
     with pytest.raises(ValidationError):
         BearCase(
-            thesis=None,  # type: ignore[arg-type]  — must be rejected
+            thesis=_bad_thesis_none,
             strongest_points=[],
             counter_to_bull=[],
         )
@@ -524,16 +531,17 @@ async def test_d06_5_pydantic_schema() -> None:
     with pytest.raises(ValidationError):
         RiskVerdict(
             approve=True,
-            max_size=-0.1,  # violates ge=0.0 — must be rejected
+            max_size=-0.1,
             breaches=[],
             reasoning="ok",
         )
 
     # 8. TradeSignal — action must be Literal["BUY", "HOLD", "SELL"]
+    _bad_action: Any = "SHORT"
     with pytest.raises(ValidationError):
         TradeSignal(
             coin=COIN,
-            action="SHORT",  # freetext — must be rejected
+            action=_bad_action,
             size_factor=0.5,
             confidence=0.5,
             rationale_by_layer={},

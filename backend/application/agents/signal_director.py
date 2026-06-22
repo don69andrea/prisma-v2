@@ -22,7 +22,7 @@ import asyncio
 import logging
 import uuid
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
 from backend.domain.schemas.agent_schemas import (
     BearCase,
@@ -101,10 +101,12 @@ def _fallback_macro() -> MacroRegime:
 # ---------------------------------------------------------------------------
 
 
-def _action_from_engine(engine_action: str) -> str:
+def _action_from_engine(engine_action: str) -> Literal["BUY", "HOLD", "SELL"]:
     """Map engine action to TradeSignal action (BUY/HOLD/SELL)."""
-    if engine_action in ("BUY", "HOLD", "SELL"):
-        return engine_action
+    if engine_action == "BUY":
+        return "BUY"
+    if engine_action == "SELL":
+        return "SELL"
     return "HOLD"
 
 
@@ -234,18 +236,22 @@ class SignalDirector:
         )
 
         # Step 2: 4 analysts in parallel, failures produce Exception objects
-        tech_raw, onchain_raw, senti_raw, macro_raw = await asyncio.gather(
+        _gather = await asyncio.gather(
             self._tech_agent.analyze(coin, getattr(engine_signal, "sub_scores", {})),
             self._onchain_agent.analyze(coin, {}),
             self._senti_agent.analyze(coin, {}),
             self._macro_agent.analyze(coin, {}),
             return_exceptions=True,
         )
+        tech_raw: TechnicalView | BaseException = _gather[0]
+        onchain_raw: OnChainView | BaseException = _gather[1]
+        senti_raw: SentimentView | BaseException = _gather[2]
+        macro_raw: MacroRegime | BaseException = _gather[3]
 
         # Fallback substitution for any failed analysts
         has_fallback = False
 
-        if isinstance(tech_raw, Exception):
+        if isinstance(tech_raw, BaseException):
             _logger.warning(
                 "TechnicalAnalystAgent failed for %s: %s — using fallback", coin, tech_raw
             )
@@ -254,7 +260,7 @@ class SignalDirector:
         else:
             tech = tech_raw
 
-        if isinstance(onchain_raw, Exception):
+        if isinstance(onchain_raw, BaseException):
             _logger.warning(
                 "OnChainAnalystAgent failed for %s: %s — using fallback", coin, onchain_raw
             )
@@ -263,7 +269,7 @@ class SignalDirector:
         else:
             onchain = onchain_raw
 
-        if isinstance(senti_raw, Exception):
+        if isinstance(senti_raw, BaseException):
             _logger.warning(
                 "SentimentAnalystAgent failed for %s: %s — using fallback", coin, senti_raw
             )
@@ -272,7 +278,7 @@ class SignalDirector:
         else:
             senti = senti_raw
 
-        if isinstance(macro_raw, Exception):
+        if isinstance(macro_raw, BaseException):
             _logger.warning("MacroRegimeAgent failed for %s: %s — using fallback", coin, macro_raw)
             macro: MacroRegime = _fallback_macro()
             has_fallback = True

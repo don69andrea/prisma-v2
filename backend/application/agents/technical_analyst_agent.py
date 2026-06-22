@@ -83,16 +83,19 @@ class TechnicalAnalystAgent:
         momentum = sub_scores.get("momentum", 0.5)
         avg = (rsi + momentum) / 2.0
 
+        from typing import Literal
+
+        stance_val: Literal["BULLISH", "NEUTRAL", "BEARISH"]
         if avg > 0.6:
-            stance = "BULLISH"
+            stance_val = "BULLISH"
         elif avg < 0.4:
-            stance = "BEARISH"
+            stance_val = "BEARISH"
         else:
-            stance = "NEUTRAL"
+            stance_val = "NEUTRAL"
 
         return TechnicalView(
             coin=coin,
-            stance=stance,
+            stance=stance_val,
             consensus="1/3",
             key_signals=[
                 f"RSI={rsi:.4f} (engine value)",

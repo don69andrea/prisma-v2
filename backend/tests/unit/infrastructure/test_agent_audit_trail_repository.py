@@ -14,6 +14,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import AsyncGenerator
 from datetime import date
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -48,7 +49,7 @@ async def session() -> AsyncGenerator[AsyncSession, None]:
         # Create only the agent_audit_trail table — avoids pulling in full
         # metadata for unrelated tables that have FK dependencies.
         await conn.run_sync(
-            lambda sync_conn: AgentAuditTrailORM.__table__.create(sync_conn, checkfirst=True)
+            lambda sync_conn: AgentAuditTrailORM.__table__.create(sync_conn, checkfirst=True)  # type: ignore[attr-defined]
         )
 
     factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
@@ -68,7 +69,7 @@ async def session() -> AsyncGenerator[AsyncSession, None]:
 # Helpers
 # ---------------------------------------------------------------------------
 
-_SAMPLE_AGENT_RUN: dict = {
+_SAMPLE_AGENT_RUN: dict[str, Any] = {
     "tech_view": {"stance": "BULLISH", "confidence": 0.8},
     "onchain_view": {"valuation": "CHEAP", "network_health": "STRONG"},
     "senti_view": {"score": 0.3, "regime": "GREED"},

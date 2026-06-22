@@ -28,6 +28,7 @@ from backend.domain.schemas.agent_schemas import (  # noqa: E402
     MacroRegime,
     OnChainView,
     RiskVerdict,
+    SentimentLLMOutput,
     SentimentView,
     TechnicalView,
     TradeSignal,
@@ -459,3 +460,59 @@ class TestTradeSignal:
         assert signal.action == "SELL"
         assert signal.size_factor == 0.0
         assert signal.size_factor >= 0.0
+
+
+# ---------------------------------------------------------------------------
+# SentimentLLMOutput (Phase 04-01 — D-04 / §0 Iron Rule)
+# ---------------------------------------------------------------------------
+
+
+class TestSentimentLLMOutput:
+    """SentimentLLMOutput must have exactly news_surprise: bool + reasoning: str.
+
+    §0 Iron Rule: LLM never produces a number. No score, veto, or regime field.
+    """
+
+    def test_valid_news_surprise_true(self) -> None:
+        """SentimentLLMOutput(news_surprise=True, reasoning='x').news_surprise is True."""
+        out = SentimentLLMOutput(news_surprise=True, reasoning="Hack detected.")
+        assert out.news_surprise is True
+
+    def test_valid_news_surprise_false(self) -> None:
+        out = SentimentLLMOutput(news_surprise=False, reasoning="No significant event.")
+        assert out.news_surprise is False
+
+    def test_valid_reasoning_preserved(self) -> None:
+        out = SentimentLLMOutput(news_surprise=True, reasoning="BTC regulation shock.")
+        assert out.reasoning == "BTC regulation shock."
+
+    def test_non_bool_news_surprise_raises_validation_error(self) -> None:
+        """§0 Iron Rule: LLM must not emit a string like 'maybe' for a bool field."""
+        with pytest.raises(ValidationError):
+            SentimentLLMOutput(news_surprise="maybe", reasoning="x")  # type: ignore[arg-type]
+
+    def test_integer_news_surprise_is_coerced_or_rejected(self) -> None:
+        """Pydantic strict bool: integer 1/0 must raise ValidationError (not coerce)."""
+        with pytest.raises(ValidationError):
+            SentimentLLMOutput(news_surprise=1, reasoning="x")  # type: ignore[arg-type]
+
+    def test_has_no_score_field(self) -> None:
+        """§0 Iron Rule: no numeric score field allowed on SentimentLLMOutput."""
+        out = SentimentLLMOutput(news_surprise=True, reasoning="x")
+        assert not hasattr(out, "score"), "score field must NOT exist on SentimentLLMOutput"
+
+    def test_has_no_veto_field(self) -> None:
+        """§0 Iron Rule: no veto field on SentimentLLMOutput (veto is Python rule-set)."""
+        out = SentimentLLMOutput(news_surprise=True, reasoning="x")
+        assert not hasattr(out, "veto"), "veto field must NOT exist on SentimentLLMOutput"
+
+    def test_has_no_regime_field(self) -> None:
+        """§0 Iron Rule: no regime field on SentimentLLMOutput (regime is computed)."""
+        out = SentimentLLMOutput(news_surprise=True, reasoning="x")
+        assert not hasattr(out, "regime"), "regime field must NOT exist on SentimentLLMOutput"
+
+    def test_exactly_two_fields(self) -> None:
+        """SentimentLLMOutput has exactly news_surprise and reasoning — no other data fields."""
+        out = SentimentLLMOutput(news_surprise=False, reasoning="y")
+        field_names = set(out.model_fields.keys())
+        assert field_names == {"news_surprise", "reasoning"}

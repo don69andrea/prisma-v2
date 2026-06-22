@@ -541,3 +541,76 @@ async def get_swiss_filing_retrieval_service(
 
     voyage = get_voyage_client()
     return SwissFilingRetrievalService(repository=repo, voyage_client=voyage)
+
+
+# ---------------------------------------------------------------------------
+# SignalDirector DI-Chain (V4-3 Agentic Layer)
+# ---------------------------------------------------------------------------
+
+
+async def get_signal_director(
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    """Construct SignalDirector with all agent dependencies injected.
+
+    Uses stub prices_df (same as signals router) since the REST endpoint is
+    per-coin and the director needs a prices frame at construction time.
+    No live DB read — agents get mocked or lightweight stubs in tests via
+    dependency_overrides.
+    """
+    import numpy as np
+    import pandas as pd
+    from datetime import UTC, datetime
+
+    from backend.application.agents.bear_research_agent import BearResearchAgent
+    from backend.application.agents.bull_research_agent import BullResearchAgent
+    from backend.application.agents.macro_regime_agent import MacroRegimeAgent
+    from backend.application.agents.onchain_analyst_agent import OnChainAnalystAgent
+    from backend.application.agents.risk_agent import ExposureStore, RiskAgent
+    from backend.application.agents.sentiment_analyst_agent import SentimentAnalystAgent
+    from backend.application.agents.signal_director import SignalDirector
+    from backend.application.agents.technical_analyst_agent import TechnicalAnalystAgent
+    from backend.application.signals import signal_service as _signal_service_module
+    from backend.infrastructure.persistence.repositories.agent_audit_trail_repository import (
+        AgentAuditTrailRepository,
+    )
+
+    # Stub prices_df (200 bars, same as signals router _make_stub_prices)
+    rng = np.random.default_rng(seed=42)
+    returns = rng.normal(0.001, 0.03, size=200)
+    prices = 100.0 * np.cumprod(1 + returns)
+    idx = pd.date_range(end=datetime.now(UTC), periods=200, freq="D", tz="UTC")
+    prices_df = pd.DataFrame({"BTC": prices}, index=idx)
+
+    llm_client = await get_llm_client(
+        cost_tracker=await get_cost_tracker(
+            repository=await get_cost_log_repository(),
+            settings=settings,
+        )
+    )
+
+    prompt_loader = get_prompt_loader()
+    audit_repo = AgentAuditTrailRepository(session=session)
+
+    # Stub ExposureStore: returns 0.0 exposure (safe default; wired to real store in V4-4)
+    class _StubExposureStore:
+        async def get_exposure(self, coin: str) -> float:  # noqa: ARG002
+            return 0.0
+
+    return SignalDirector(
+        signal_service=_signal_service_module,
+        tech_agent=TechnicalAnalystAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        onchain_agent=OnChainAnalystAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        senti_agent=SentimentAnalystAgent(db_session=session),
+        macro_agent=MacroRegimeAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        bull_agent=BullResearchAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        bear_agent=BearResearchAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        risk_agent=RiskAgent(
+            llm_client=llm_client,
+            prompt_loader=prompt_loader,
+            exposure_store=_StubExposureStore(),
+        ),
+        audit_repo=audit_repo,
+        prices_df=prices_df,
+    )

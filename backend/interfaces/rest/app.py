@@ -164,5 +164,6 @@ def create_app() -> FastAPI:
     app.include_router(alerts.router, dependencies=_auth)
     app.include_router(signals.router, dependencies=_auth)
     app.include_router(signals.backtest_router, dependencies=_auth)
+    app.include_router(signals.agent_router, dependencies=_auth)
 
     return app

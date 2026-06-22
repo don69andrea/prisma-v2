@@ -105,6 +105,74 @@ Halluzinations-Guard sichtbar: `size_factor = 0.65 = min(engine=0.80, risk.max_s
 
 ---
 
+## V4-4 Sentiment (RAG + CryptoPanic) — Backtest-Vergleich (D-08)
+
+### Messung: SENTIMENT_ENABLED=false vs. SENTIMENT_ENABLED=true
+
+**Methodik:** Walk-forward Backtest, expanding window (min_train=252, step=63), Kosten 0.1% pro Trade.
+Zwei Laeufe auf identischen historischen Preisdaten je Coin — Baseline unveraendert, ENABLED mit Veto
+(Position = 0 wo `regime==FEAR AND news_surprise AND score < -0.3`) und Downside-Skalierung
+(`size_factor *= (1 + score * 0.3)` wenn `score < 0`).
+
+**Keine Schwellenwert-Optimierung:** `_VETO_SCORE_THRESHOLD = -0.3` und `_FEAR_THRESHOLD = -0.2`
+sind unveraenderte Konstanten aus CONTEXT.md D-05. Es wurden keine Parameter nachtraeglich angepasst,
+um das Ergebnis zu verbessern (D-08 Ehrlichkeits-Regel).
+
+#### Ergebnistabelle — DISABLED vs. ENABLED
+
+| Coin | Metrik | DISABLED | ENABLED | Delta | Tendenz |
+|------|--------|----------|---------|-------|---------|
+| BTC | Sharpe | [PENDING — live run required] | [PENDING] | [PENDING] | — |
+| BTC | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
+| BTC | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
+| BTC | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
+| ETH | Sharpe | [PENDING] | [PENDING] | [PENDING] | — |
+| ETH | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
+| ETH | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
+| ETH | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
+| SOL | Sharpe | [PENDING] | [PENDING] | [PENDING] | — |
+| SOL | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
+| SOL | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
+| SOL | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
+| BNB | Sharpe | [PENDING] | [PENDING] | [PENDING] | — |
+| BNB | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
+| BNB | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
+| BNB | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
+| XRP | Sharpe | [PENDING] | [PENDING] | [PENDING] | — |
+| XRP | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
+| XRP | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
+| XRP | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
+
+**Veto-Statistik:** Anzahl vetoed Trades = [PENDING — live run required]
+
+> **Hinweis:** Die obigen Werte sind noch nicht befuellt. Ausfuehrung:
+> `python scripts/compare_sentiment_backtest.py` gegen die Live-DB.
+> Nach dem Lauf werden die echten Zahlen hier eingetragen (Task 3 / Human-Verify).
+
+### D-08 Entscheidungsregel
+
+Sentiment wird NUR aktiviert (`SENTIMENT_ENABLED=true` als Produktionsstandard), wenn
+**alle drei** Bedingungen erfuellt sind:
+
+1. Sharpe ENABLED > Sharpe DISABLED (fuer die Mehrheit der Coins)
+2. Calmar ENABLED > Calmar DISABLED (fuer die Mehrheit der Coins)
+3. MaxDD ENABLED > MaxDD DISABLED, d.h. geringerer maximaler Rueckgang (fuer die Mehrheit)
+
+**Aktueller Entscheid (vor Live-Run):** `SENTIMENT_ENABLED=false` bleibt Standard.
+Der Entscheid wird nach dem Human-Verify-Lauf (Task 3) hier aktualisiert.
+
+Wie bei V4-2 Meta-Labeling gilt: ein negatives oder neutrales Ergebnis wird ebenso
+sachlich dokumentiert wie ein positives. Es gibt keine "gewuenschte" Richtung.
+
+### Gelieferte Komponenten (V4-4)
+
+- `scripts/compare_sentiment_backtest.py` — importierbares 2x-Walk-forward-Vergleichsskript
+- `backend/application/agents/signal_director.py` — D-06 Veto-Wiring (hinter SENTIMENT_ENABLED Flag)
+- `backend/config.py` — `sentiment_enabled: bool = False`
+- `backend/tests/integration/test_backtest_sentiment_comparison.py` — 12 Tests (REQ-4-10), alle gruen
+
+---
+
 ## V4-2 Meta-Labeling — ✅ verifiziert (2026-06-21, Branch feat/v4-2-meta-labeling)
 
 - **Implementiert:** `meta_label.py` — Triple-Barrier-Labels, Trend-Scan-Labels, `build_meta_features` (10 Features, shift(1)), `fit_meta_classifier` (LogReg/LightGBM), `_walkforward_meta_cv` (embargo=5), `predict_meta_label`.

@@ -94,7 +94,7 @@ Plans:
 **Branch:** `feat/v4-4-rag-sentiment`
 **Spec:** `docs/PRISMA_V4_AGENTS.md` §3.3 + `.planning/phases/PRISMA-04-v4-4-rag-sentiment-planned/04-CONTEXT.md` (D-01..D-08)
 **Status:** planned
-**Plans:** 3/7 plans executed
+**Plans:** 4/7 plans executed
 
 Plans:
 **Wave 1** *(blockers + RED test stubs — runs first, blocks everything)*
@@ -108,7 +108,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2)*
 
-- [ ] 04-04-PLAN.md — NewsIngestionService.ingest_cryptopanic(): source=CRYPTOPANIC, votes in chunk metadata, 7-day TTL, dedup (TDD)
+- [x] 04-04-PLAN.md — NewsIngestionService.ingest_cryptopanic(): source=CRYPTOPANIC, votes in chunk metadata, 7-day TTL, dedup (TDD)
 
 **Wave 4** *(blocked on Waves 1-3)*
 

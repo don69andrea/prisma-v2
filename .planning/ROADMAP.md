@@ -61,7 +61,7 @@ Plans:
 **Branch:** `feat/v4-3-agentic-layer`
 **Spec:** `docs/PRISMA_V4_AGENTS.md`
 **Status:** planned
-**Plans:** 4/6 plans executed
+**Plans:** 5/6 plans executed
 
 Plans:
 **Wave 1**
@@ -82,7 +82,7 @@ Plans:
 
 **Wave 5** *(blocked on Waves 1-4)*
 
-- [ ] 03-05-PLAN.md — SignalDirector hybrid orchestration + fallback + HITL checkpoint + audit persist (TDD)
+- [x] 03-05-PLAN.md — SignalDirector hybrid orchestration + fallback + HITL checkpoint + audit persist (TDD)
 
 **Wave 6** *(blocked on Waves 1-5)*
 

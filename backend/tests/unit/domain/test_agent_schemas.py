@@ -513,6 +513,5 @@ class TestSentimentLLMOutput:
 
     def test_exactly_two_fields(self) -> None:
         """SentimentLLMOutput has exactly news_surprise and reasoning — no other data fields."""
-        out = SentimentLLMOutput(news_surprise=False, reasoning="y")
-        field_names = set(out.model_fields.keys())
+        field_names = set(SentimentLLMOutput.model_fields.keys())
         assert field_names == {"news_surprise", "reasoning"}

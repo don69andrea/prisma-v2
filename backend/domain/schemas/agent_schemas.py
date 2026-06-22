@@ -22,6 +22,7 @@ __all__ = [
     "TechnicalView",
     "OnChainView",
     "SentimentView",
+    "SentimentLLMOutput",
     "MacroRegime",
     "BullCase",
     "BearCase",
@@ -68,6 +69,25 @@ class SentimentView(BaseModel):
     veto: bool = False
     reasoning: str
     sources: list[str] = []
+
+
+class SentimentLLMOutput(BaseModel):
+    """LLM-Ausgabe für SentimentAnalystAgent — ausschliesslich news_surprise.
+
+    §0 Iron Rule: LLM erzeugt KEINE Zahl. score, veto und regime werden
+    deterministisch in Python berechnet — nie vom LLM (D-04).
+
+    Felder:
+      news_surprise: bool  — True wenn LLM ein bedeutendes neues Ereignis erkennt
+                             (Hack, Regulierung, Partnership). Strikt bool (kein int,
+                             kein String 'maybe'). T-4-03 Pydantic-Validierung.
+      reasoning: str       — <= 3 Sätze Begründung.
+    """
+
+    model_config = {"strict": True}
+
+    news_surprise: bool
+    reasoning: str
 
 
 class MacroRegime(BaseModel):

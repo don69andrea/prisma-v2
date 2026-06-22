@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-_VALID_SOURCES = frozenset({"NZZ", "SRF"})
+_VALID_SOURCES = frozenset({"NZZ", "SRF", "CRYPTOPANIC"})
 
 
 @dataclass(frozen=True)

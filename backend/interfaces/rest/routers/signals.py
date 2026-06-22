@@ -438,7 +438,7 @@ async def run_meta_label(coin: str, prices_df: pd.DataFrame) -> MetaLabelReport:
 )
 async def get_agent_signal(
     coin: str,
-    director: "SignalDirector" = Depends(get_signal_director),
+    director: SignalDirector = Depends(get_signal_director),
 ) -> TradeSignal:
     """GET /api/v1/agent-signal/{coin} → TradeSignal.
 

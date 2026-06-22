@@ -24,8 +24,6 @@ import uuid
 from datetime import date
 from typing import Any
 
-import pandas as pd
-
 from backend.domain.schemas.agent_schemas import (
     BearCase,
     BullCase,

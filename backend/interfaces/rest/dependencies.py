@@ -559,15 +559,16 @@ async def get_signal_director(
     No live DB read — agents get mocked or lightweight stubs in tests via
     dependency_overrides.
     """
+    from datetime import UTC, datetime
+
     import numpy as np
     import pandas as pd
-    from datetime import UTC, datetime
 
     from backend.application.agents.bear_research_agent import BearResearchAgent
     from backend.application.agents.bull_research_agent import BullResearchAgent
     from backend.application.agents.macro_regime_agent import MacroRegimeAgent
     from backend.application.agents.onchain_analyst_agent import OnChainAnalystAgent
-    from backend.application.agents.risk_agent import ExposureStore, RiskAgent
+    from backend.application.agents.risk_agent import RiskAgent
     from backend.application.agents.sentiment_analyst_agent import SentimentAnalystAgent
     from backend.application.agents.signal_director import SignalDirector
     from backend.application.agents.technical_analyst_agent import TechnicalAnalystAgent

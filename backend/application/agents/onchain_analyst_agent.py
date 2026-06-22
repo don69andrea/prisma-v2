@@ -13,8 +13,6 @@ import json
 import logging
 from typing import Any
 
-from pydantic import ValidationError
-
 from backend.domain.schemas.agent_schemas import OnChainView
 from backend.infrastructure.llm.client import LLMClient
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader

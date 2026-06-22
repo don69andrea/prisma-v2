@@ -205,7 +205,6 @@ class RiskAgent:
     @staticmethod
     def _fallback(coin: str, engine_signal: Any) -> RiskVerdict:
         """Conservative deterministic fallback when LLM is unavailable."""
-        action = getattr(engine_signal, "action", "HOLD")
         return RiskVerdict(
             approve=False,
             max_size=0.0,

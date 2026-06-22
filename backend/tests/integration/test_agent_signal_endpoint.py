@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 
 from backend.domain.schemas.agent_schemas import TradeSignal
 from backend.interfaces.rest.app import create_app
-from backend.interfaces.rest.dependencies import get_signal_director, get_settings
+from backend.interfaces.rest.dependencies import get_settings, get_signal_director
 
 pytestmark = pytest.mark.integration
 

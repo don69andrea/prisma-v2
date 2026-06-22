@@ -594,9 +594,8 @@ class TestRiskAgent:
     @pytest.mark.asyncio
     async def test_assess_llm_exception_returns_conservative_verdict(self) -> None:
         """On LLM Exception, RiskAgent returns conservative RiskVerdict (no raise)."""
-        from backend.domain.schemas.agent_schemas import RiskVerdict
-
         from backend.application.agents.risk_agent import RiskAgent
+        from backend.domain.schemas.agent_schemas import RiskVerdict
 
         mock_llm = AsyncMock()
         mock_llm.messages_create.side_effect = RuntimeError("LLM service unavailable")

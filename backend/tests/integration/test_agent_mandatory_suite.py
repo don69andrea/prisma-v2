@@ -24,10 +24,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from backend.application.agents.signal_director import (
-    SignalDirector,
-    _FALLBACK_CONFIDENCE_PENALTY,
     _LOW_CONFIDENCE_THRESHOLD,
-    _synthesize,
+    SignalDirector,
 )
 from backend.domain.schemas.agent_schemas import (
     BearCase,
@@ -379,7 +377,7 @@ async def test_d06_3_minority_protection() -> None:
         bear_case=bear_case,
     )
 
-    signal = await director.run(COIN)
+    await director.run(COIN)
 
     # MINORITY-PROTECTION: audit_repo.insert must have been called
     audit_repo.insert.assert_called_once()

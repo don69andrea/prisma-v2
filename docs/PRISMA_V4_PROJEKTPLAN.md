@@ -31,7 +31,9 @@ an dem V3-ML scheiterte.
 
 **V4-1 ✅ verifiziert (A1 OOS bestanden, PR #296) — Fortschritt siehe docs/PRISMA_V4_FORTSCHRITT.md**
 
-**Nächster Bau-Schritt:** Phase V4-2 (Meta-Labeling) auf Branch `feat/v4-2-meta-labeling`.
+**V4-2 ✅ verifiziert (Befund negativ, Meta-Label-Filter standardmäßig AUS, PR #297) — Fortschritt siehe docs/PRISMA_V4_FORTSCHRITT.md**
+
+**Nächster Bau-Schritt:** Phase V4-3 (Agentic-Layer) auf Branch `feat/v4-3-agentic-layer`.
 
 **Doku-Standorte:** Pläne → `docs/`; PoC-Skripte → `docs/research/` (oder `research/`); Agent-Brief
 `PRISMA_V4_AGENTS.md` wird zusätzlich an GSD/Claude Code übergeben.

@@ -94,13 +94,13 @@ Plans:
 **Branch:** `feat/v4-4-rag-sentiment`
 **Spec:** `docs/PRISMA_V4_AGENTS.md` §3.3 + `.planning/phases/PRISMA-04-v4-4-rag-sentiment-planned/04-CONTEXT.md` (D-01..D-08)
 **Status:** planned
-**Plans:** 7 plans
+**Plans:** 2/7 plans executed
 
 Plans:
 **Wave 1** *(blockers + RED test stubs — runs first, blocks everything)*
 
-- [ ] 04-01-PLAN.md — Domain/repo/schema/config blockers: _VALID_SOURCES + NewsRetrievalResult.url + find_nearest TTL + SentimentLLMOutput + sentiment_enabled (TDD)
-- [ ] 04-02-PLAN.md — Migration 0042 (widen source VARCHAR) + all Wave-0 RED test stubs
+- [x] 04-01-PLAN.md — Domain/repo/schema/config blockers: _VALID_SOURCES + NewsRetrievalResult.url + find_nearest TTL + SentimentLLMOutput + sentiment_enabled (TDD)
+- [x] 04-02-PLAN.md — Migration 0042 (widen source VARCHAR) + all Wave-0 RED test stubs
 
 **Wave 2** *(blocked on Wave 1)*
 

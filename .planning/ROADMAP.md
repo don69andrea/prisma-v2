@@ -61,7 +61,7 @@ Plans:
 **Branch:** `feat/v4-3-agentic-layer`
 **Spec:** `docs/PRISMA_V4_AGENTS.md`
 **Status:** planned
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 **Wave 1**
@@ -86,7 +86,7 @@ Plans:
 
 **Wave 6** *(blocked on Waves 1-5)*
 
-- [ ] 03-06-PLAN.md — GET /api/v1/agent-signal/{coin} + all 7 mandatory tests + coverage gate ≥ 80% (TDD)
+- [x] 03-06-PLAN.md — GET /api/v1/agent-signal/{coin} + all 7 mandatory tests + coverage gate ≥ 80% (TDD)
 
 ### Phase 4: V4-4 RAG Sentiment (planned)
 

@@ -413,7 +413,7 @@ class TestBacktestSentimentComparison:
             senti_view = multi_coin_vetoed_sentiment_views[coin]
             director, _ = _make_director(coin=coin, senti_view=senti_view)
 
-            with patch("backend.config.get_settings") as mock_settings:
+            with patch("backend.application.agents.signal_director.get_settings") as mock_settings:
                 settings = MagicMock()
                 settings.sentiment_enabled = True
                 mock_settings.return_value = settings
@@ -443,7 +443,7 @@ class TestBacktestSentimentComparison:
             senti_view = multi_coin_vetoed_sentiment_views[coin]
             director, _ = _make_director(coin=coin, senti_view=senti_view)
 
-            with patch("backend.config.get_settings") as mock_settings:
+            with patch("backend.application.agents.signal_director.get_settings") as mock_settings:
                 settings = MagicMock()
                 settings.sentiment_enabled = False
                 mock_settings.return_value = settings
@@ -468,7 +468,7 @@ class TestBacktestSentimentComparison:
             senti_view = multi_coin_sentiment_views[coin]
             director, _ = _make_director(coin=coin, senti_view=senti_view)
 
-            with patch("backend.config.get_settings") as mock_settings:
+            with patch("backend.application.agents.signal_director.get_settings") as mock_settings:
                 settings = MagicMock()
                 settings.sentiment_enabled = True
                 mock_settings.return_value = settings
@@ -496,7 +496,7 @@ class TestBacktestSentimentComparison:
 
             director, _ = _make_director(coin=coin, senti_view=senti_view)
 
-            with patch("backend.config.get_settings") as mock_settings:
+            with patch("backend.application.agents.signal_director.get_settings") as mock_settings:
                 settings = MagicMock()
                 settings.sentiment_enabled = True
                 mock_settings.return_value = settings
@@ -520,7 +520,7 @@ class TestBacktestSentimentComparison:
             senti_view = multi_coin_sentiment_views[coin]
             director, _ = _make_director(coin=coin, senti_view=senti_view)
 
-            with patch("backend.config.get_settings") as mock_settings:
+            with patch("backend.application.agents.signal_director.get_settings") as mock_settings:
                 settings = MagicMock()
                 settings.sentiment_enabled = True
                 mock_settings.return_value = settings
@@ -553,7 +553,7 @@ class TestVetoedTradeCount:
             senti_view = multi_coin_vetoed_sentiment_views[coin]
             director, _ = _make_director(coin=coin, senti_view=senti_view)
 
-            with patch("backend.config.get_settings") as mock_settings:
+            with patch("backend.application.agents.signal_director.get_settings") as mock_settings:
                 settings = MagicMock()
                 settings.sentiment_enabled = True
                 mock_settings.return_value = settings

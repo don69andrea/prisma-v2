@@ -27,6 +27,7 @@ from backend.application.agents.signal_director import (
     _LOW_CONFIDENCE_THRESHOLD,
     SignalDirector,
 )
+from backend.config import get_settings
 from backend.domain.schemas.agent_schemas import (
     BearCase,
     BullCase,
@@ -659,3 +660,138 @@ async def test_d06_7_no_shorting() -> None:
         "size_factor must be 0.0 when Risk vetoes with max_size=0.0, even for BUY action"
     )
     assert signal_veto.size_factor >= 0.0, "size_factor must never be negative"
+
+
+# ── D-06 Tests 8-11: SENTIMENT WIRING (04-06) ─────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_d06_8_sentiment_veto_enabled_buy_becomes_hold() -> None:
+    """D-06 #8 SENTIMENT-VETO: SENTIMENT_ENABLED=true + veto=True + BUY → HOLD.
+
+    When sentiment_enabled is True and senti.veto is True, a BUY action
+    from the engine must be overridden to HOLD (downside protection).
+    """
+    senti_view = SentimentView(
+        coin=COIN,
+        score=-0.8,
+        regime="FEAR",
+        reasoning="Extreme fear — veto active.",
+        veto=True,
+    )
+    engine_signal = _make_signal_vector(action="BUY", size_factor=0.8)
+
+    director, _ = _make_director(engine_signal=engine_signal, senti_view=senti_view)
+
+    get_settings.cache_clear()
+    with patch.dict("os.environ", {"SENTIMENT_ENABLED": "true"}):
+        get_settings.cache_clear()
+        signal = await director.run(COIN)
+
+    get_settings.cache_clear()
+
+    assert signal.action == "HOLD", (
+        f"Expected HOLD when veto=True and sentiment_enabled=True, got {signal.action}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_d06_9_sentiment_veto_disabled_no_override() -> None:
+    """D-06 #9 SENTIMENT-FLAG-OFF: SENTIMENT_ENABLED=false + veto=True → action unchanged.
+
+    When sentiment_enabled is False (default), the veto must have no effect.
+    BUY stays BUY regardless of senti.veto.
+    """
+    senti_view = SentimentView(
+        coin=COIN,
+        score=-0.8,
+        regime="FEAR",
+        reasoning="Extreme fear — veto active.",
+        veto=True,
+    )
+    engine_signal = _make_signal_vector(action="BUY", size_factor=0.8)
+
+    director, _ = _make_director(engine_signal=engine_signal, senti_view=senti_view)
+
+    get_settings.cache_clear()
+    with patch.dict("os.environ", {"SENTIMENT_ENABLED": "false"}):
+        get_settings.cache_clear()
+        signal = await director.run(COIN)
+
+    get_settings.cache_clear()
+
+    assert signal.action == "BUY", (
+        f"Expected BUY (no override) when sentiment_enabled=False, got {signal.action}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_d06_10_sentiment_negative_score_reduces_size() -> None:
+    """D-06 #10 SENTIMENT-SIZE-DOWN: SENTIMENT_ENABLED=true + score=-0.5 → size scaled down.
+
+    size_factor must equal original * (1 + (-0.5) * 0.3) = original * 0.85.
+    """
+    senti_view = SentimentView(
+        coin=COIN,
+        score=-0.5,
+        regime="FEAR",
+        reasoning="Negative sentiment reduces size.",
+        veto=False,
+    )
+    engine_signal = _make_signal_vector(action="BUY", size_factor=0.8)
+    risk_verdict = _make_risk_verdict(approve=True, max_size=1.0)
+
+    director, _ = _make_director(
+        engine_signal=engine_signal,
+        senti_view=senti_view,
+        risk_verdict=risk_verdict,
+    )
+
+    get_settings.cache_clear()
+    with patch.dict("os.environ", {"SENTIMENT_ENABLED": "true"}):
+        get_settings.cache_clear()
+        signal = await director.run(COIN)
+
+    get_settings.cache_clear()
+
+    # min(0.8, 1.0) = 0.8; then 0.8 * (1 + (-0.5)*0.3) = 0.8 * 0.85 = 0.68
+    expected = min(engine_signal.size_factor, risk_verdict.max_size) * (1 + (-0.5) * 0.3)
+    assert abs(signal.size_factor - expected) < 1e-9, (
+        f"size_factor {signal.size_factor} != expected {expected} (score=-0.5 scaling failed)"
+    )
+
+
+@pytest.mark.asyncio
+async def test_d06_11_sentiment_positive_score_no_amplification() -> None:
+    """D-06 #11 SENTIMENT-NO-AMPLIFY: SENTIMENT_ENABLED=true + score=+0.5 → size unchanged.
+
+    Positive sentiment score must NOT amplify size_factor (downside-only rule).
+    """
+    senti_view = SentimentView(
+        coin=COIN,
+        score=0.5,
+        regime="GREED",
+        reasoning="Positive sentiment — but no amplification allowed.",
+        veto=False,
+    )
+    engine_signal = _make_signal_vector(action="BUY", size_factor=0.8)
+    risk_verdict = _make_risk_verdict(approve=True, max_size=1.0)
+
+    director, _ = _make_director(
+        engine_signal=engine_signal,
+        senti_view=senti_view,
+        risk_verdict=risk_verdict,
+    )
+
+    get_settings.cache_clear()
+    with patch.dict("os.environ", {"SENTIMENT_ENABLED": "true"}):
+        get_settings.cache_clear()
+        signal = await director.run(COIN)
+
+    get_settings.cache_clear()
+
+    # min(0.8, 1.0) = 0.8; positive score → NO amplification → stays 0.8
+    expected = min(engine_signal.size_factor, risk_verdict.max_size)
+    assert abs(signal.size_factor - expected) < 1e-9, (
+        f"size_factor {signal.size_factor} != expected {expected} (positive score must not amplify)"
+    )

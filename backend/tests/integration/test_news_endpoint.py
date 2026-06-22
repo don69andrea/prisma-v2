@@ -29,6 +29,7 @@ _SAMPLE_RESULT = NewsRetrievalResult(
     content="NESN verbucht Rekordumsatz.",
     similarity=0.92,
     title="NESN Quartalsgewinn",
+    url="https://www.nzz.ch/finanzen/nesn-quartalsgewinn",
     source="NZZ",
     tickers=("NESN",),
     published_at=_NOW,

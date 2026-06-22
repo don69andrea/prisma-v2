@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 
+    # Sentiment-Veto + Size-Scaling (D-06 / C-04): default false = identisch zu V4-3
+    sentiment_enabled: bool = False
+
     max_concurrent_batch_workers: int = 3
     stale_batch_timeout_seconds: int = 600
 

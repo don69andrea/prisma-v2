@@ -1,11 +1,10 @@
-"""Unit-Tests für sentiment_enabled Settings-Feld (Phase 04-01, D-06).
+"""Unit-Tests für sentiment_enabled Settings-Feld (Phase 04, D-06 / REQ-4-09).
 
-TDD RED: written before sentiment_enabled exists in config.py.
 Verifies:
   - Default is False when SENTIMENT_ENABLED env var not set
   - Reads True when SENTIMENT_ENABLED=true in env
-  - Does NOT instantiate Settings() directly — uses direct constructor with _env_file=None
-    to isolate from local .env (pattern from test_config.py)
+  - Reads False when SENTIMENT_ENABLED=false in env
+  - Does NOT use get_settings() singleton — uses direct constructor with _env_file=None
 """
 
 from __future__ import annotations
@@ -30,7 +29,6 @@ class TestSentimentEnabledSetting:
         monkeypatch.setenv("SENTIMENT_ENABLED", "true")
         from backend.config import Settings
 
-        # Build a fresh Settings instance — do NOT use get_settings() (lru_cache singleton)
         settings = Settings(_env_file=None)  # type: ignore[call-arg]
         assert settings.sentiment_enabled is True
 
@@ -41,3 +39,9 @@ class TestSentimentEnabledSetting:
 
         settings = Settings(_env_file=None)  # type: ignore[call-arg]
         assert settings.sentiment_enabled is False
+
+    def test_sentiment_enabled_field_exists(self) -> None:
+        """Settings class must have a sentiment_enabled field."""
+        from backend.config import Settings
+
+        assert "sentiment_enabled" in Settings.model_fields

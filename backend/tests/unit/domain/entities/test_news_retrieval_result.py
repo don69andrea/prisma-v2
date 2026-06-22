@@ -1,6 +1,6 @@
 """Unit-Tests für NewsRetrievalResult-Entity.
 
-Phase 04-01 TDD RED: verify url field exists (B-02 / D-07).
+Phase 04-01/04-02 TDD: verify url field exists (B-02 / D-07 / REQ-4-04).
 """
 
 from __future__ import annotations

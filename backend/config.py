@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     max_concurrent_batch_workers: int = 3
     stale_batch_timeout_seconds: int = 600
 
+    # V4-4 Sentiment feature flag (reads SENTIMENT_ENABLED env var)
+    # Default false: Verhalten identisch mit V4-3 bis Backtest Wert bestaetigt (D-08)
+    sentiment_enabled: bool = False
+
     # Signal-Aggregation: Gewichtung der drei Signal-Quellen (Summe muss 1.0 ergeben)
     # Konfigurierbar via ENV: SIGNAL_QUANT_WEIGHT, SIGNAL_ML_WEIGHT, SIGNAL_MACRO_WEIGHT
     signal_quant_weight: float = 0.45

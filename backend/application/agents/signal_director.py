@@ -150,11 +150,23 @@ def _synthesize(
     # Action mirrors engine action
     action = _action_from_engine(engine_signal.action)
 
+    # D-06: Sentiment veto + downside-only size scaling (behind SENTIMENT_ENABLED flag)
+    from backend.config import get_settings  # noqa: PLC0415 — imported here to avoid circular
+    _settings = get_settings()
+
+    if _settings.sentiment_enabled and senti.veto:
+        action = "HOLD"  # Block BUY; SELL is never upgraded to BUY
+
     # No-shorting: clamp size_factor to risk.max_size
     base_size: float = getattr(engine_signal, "size_factor", 0.5)
     size_factor = min(base_size, risk.max_size)
     # Guarantee non-negative (schema enforces ge=0.0 but belt-and-suspenders)
     size_factor = max(0.0, size_factor)
+
+    # D-06: Downside-only size scaling (after no-shorting clamp)
+    if _settings.sentiment_enabled and senti.score < 0:
+        size_factor = size_factor * (1 + senti.score * 0.3)
+        size_factor = max(0.0, size_factor)  # belt-and-suspenders no-short
 
     # All 7 layer rationale keys
     rationale_by_layer: dict[str, str] = {

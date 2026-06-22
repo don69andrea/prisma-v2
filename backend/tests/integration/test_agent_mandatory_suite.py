@@ -370,9 +370,9 @@ async def test_d06_3_minority_protection() -> None:
     bull_case = _make_bull_case()
 
     director, audit_repo = _make_director(
-        tech_view=_make_technical_view(confidence=0.9),   # bullish
+        tech_view=_make_technical_view(confidence=0.9),  # bullish
         onchain_view=_make_onchain_view(confidence=0.85),  # bullish
-        macro_regime=_make_macro_regime(confidence=0.8),   # risk-on (bullish)
+        macro_regime=_make_macro_regime(confidence=0.8),  # risk-on (bullish)
         bull_case=bull_case,
         bear_case=bear_case,
     )
@@ -387,7 +387,9 @@ async def test_d06_3_minority_protection() -> None:
     agent_run: dict[str, Any] = call_args[0][2]
 
     # bear_case key must always be in the agent_run (minority protection)
-    assert "bear_case" in agent_run, "bear_case missing from agent_run — minority protection violated"
+    assert "bear_case" in agent_run, (
+        "bear_case missing from agent_run — minority protection violated"
+    )
 
     # The stored bear_case must contain the actual bear thesis
     stored_bear = agent_run["bear_case"]
@@ -426,7 +428,9 @@ async def test_d06_4_fallback() -> None:
     # No exception must propagate
     signal = await director.run(COIN)
 
-    assert isinstance(signal, TradeSignal), "SignalDirector must return TradeSignal even on LLM failure"
+    assert isinstance(signal, TradeSignal), (
+        "SignalDirector must return TradeSignal even on LLM failure"
+    )
 
     # Confidence must be lowered (fallback penalty applied)
     # All 4 analysts failed → has_fallback=True → penalty applied
@@ -537,8 +541,12 @@ async def test_d06_5_pydantic_schema() -> None:
         )
 
     # Positive: valid instances of all 8 schemas must succeed
-    assert TechnicalView(coin=COIN, stance="BULLISH", consensus="3/3", key_signals=[], confidence=0.5, reasoning="ok")
-    assert OnChainView(coin=COIN, valuation="FAIR", network_health="STRONG", confidence=0.5, reasoning="ok")
+    assert TechnicalView(
+        coin=COIN, stance="BULLISH", consensus="3/3", key_signals=[], confidence=0.5, reasoning="ok"
+    )
+    assert OnChainView(
+        coin=COIN, valuation="FAIR", network_health="STRONG", confidence=0.5, reasoning="ok"
+    )
     assert SentimentView(coin=COIN, score=0.0, regime="NEUTRAL", reasoning="ok")
     assert MacroRegime(regime="NEUTRAL", drivers=[], confidence=0.5, reasoning="ok")
     assert BullCase(thesis="ok", strongest_points=[], risks_acknowledged=[])
@@ -571,7 +579,9 @@ async def test_d06_6_checkpoint() -> None:
         macro_regime=_make_macro_regime(confidence=0.0),
     )
 
-    with patch.object(logging.getLogger("backend.application.agents.signal_director"), "warning") as mock_warn:
+    with patch.object(
+        logging.getLogger("backend.application.agents.signal_director"), "warning"
+    ) as mock_warn:
         signal = await director.run(COIN)
 
     # Non-blocking: must return a TradeSignal, not raise
@@ -579,7 +589,8 @@ async def test_d06_6_checkpoint() -> None:
 
     # Exactly one warning call about low confidence
     low_conf_calls = [
-        call for call in mock_warn.call_args_list
+        call
+        for call in mock_warn.call_args_list
         if "LOW CONFIDENCE" in str(call) or "confidence" in str(call).lower()
     ]
     assert len(low_conf_calls) >= 1, (
@@ -620,9 +631,7 @@ async def test_d06_7_no_shorting() -> None:
     assert signal.action == "SELL", f"Expected SELL, got {signal.action}"
 
     # size_factor must be 0.0 (no-shorting: min(engine.size_factor, risk.max_size) = min(0.8, 0.0))
-    assert signal.size_factor == 0.0, (
-        f"size_factor must be 0.0 for SELL, got {signal.size_factor}"
-    )
+    assert signal.size_factor == 0.0, f"size_factor must be 0.0 for SELL, got {signal.size_factor}"
 
     # RiskVerdict.max_size == 0.0 → confirmed in setup, verify it flows through
     assert risk_zero.max_size == 0.0

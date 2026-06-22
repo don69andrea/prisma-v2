@@ -21,8 +21,8 @@ from backend.domain.schemas.agent_schemas import SentimentView
 _logger = logging.getLogger(__name__)
 
 # Regime thresholds — score = (fg_value - 50) / 50
-_FEAR_THRESHOLD = -0.2   # score < -0.2 → FEAR
-_GREED_THRESHOLD = 0.2   # score > 0.2  → GREED
+_FEAR_THRESHOLD = -0.2  # score < -0.2 → FEAR
+_GREED_THRESHOLD = 0.2  # score > 0.2  → GREED
 
 
 class SentimentAnalystAgent:
@@ -77,13 +77,12 @@ class SentimentAnalystAgent:
                 coin=coin,
                 score=score,
                 regime=regime,
-                news_surprise=None,   # RAG pending V4-4
-                veto=False,           # no veto in stub
+                news_surprise=None,  # RAG pending V4-4
+                veto=False,  # no veto in stub
                 reasoning=(
-                    f"Fear&Greed index {fg_value} ({fg_classification}). "
-                    "News-RAG: V4-4 pending."
+                    f"Fear&Greed index {fg_value} ({fg_classification}). News-RAG: V4-4 pending."
                 ),
-                sources=[],           # RAG pending V4-4
+                sources=[],  # RAG pending V4-4
             )
 
         except Exception as exc:

@@ -44,10 +44,10 @@ def get_us_realrate() -> dict[str, Any]:
     Returns normalized values for LLM context.
     """
     return {
-        "ffr": 5.33,              # Federal Funds Rate %
-        "cpi": 3.1,               # CPI YoY %
-        "real_rate": 2.23,        # FFR - CPI
-        "trend_90d": "falling",   # direction
+        "ffr": 5.33,  # Federal Funds Rate %
+        "cpi": 3.1,  # CPI YoY %
+        "real_rate": 2.23,  # FFR - CPI
+        "trend_90d": "falling",  # direction
     }
 
 
@@ -72,7 +72,7 @@ def get_btc_risk_correlation() -> dict[str, Any]:
     """
     return {
         "corr_spy_30d": 0.42,
-        "risk_on_regime": True,   # True if BTC shows crypto-specific upside
+        "risk_on_regime": True,  # True if BTC shows crypto-specific upside
         "computed_at": "2026-06-21",
     }
 

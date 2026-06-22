@@ -246,21 +246,27 @@ class SignalDirector:
         has_fallback = False
 
         if isinstance(tech_raw, Exception):
-            _logger.warning("TechnicalAnalystAgent failed for %s: %s — using fallback", coin, tech_raw)
+            _logger.warning(
+                "TechnicalAnalystAgent failed for %s: %s — using fallback", coin, tech_raw
+            )
             tech: TechnicalView = _fallback_technical(coin)
             has_fallback = True
         else:
             tech = tech_raw
 
         if isinstance(onchain_raw, Exception):
-            _logger.warning("OnChainAnalystAgent failed for %s: %s — using fallback", coin, onchain_raw)
+            _logger.warning(
+                "OnChainAnalystAgent failed for %s: %s — using fallback", coin, onchain_raw
+            )
             onchain: OnChainView = _fallback_onchain(coin)
             has_fallback = True
         else:
             onchain = onchain_raw
 
         if isinstance(senti_raw, Exception):
-            _logger.warning("SentimentAnalystAgent failed for %s: %s — using fallback", coin, senti_raw)
+            _logger.warning(
+                "SentimentAnalystAgent failed for %s: %s — using fallback", coin, senti_raw
+            )
             senti: SentimentView = _fallback_sentiment(coin)
             has_fallback = True
         else:

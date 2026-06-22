@@ -45,7 +45,9 @@ _TRADE_SIGNAL = TradeSignal(
 )
 
 
-def _make_mock_director(return_value: TradeSignal | None = None, raises: Exception | None = None) -> MagicMock:
+def _make_mock_director(
+    return_value: TradeSignal | None = None, raises: Exception | None = None
+) -> MagicMock:
     director = MagicMock()
     if raises is not None:
         director.run = AsyncMock(side_effect=raises)

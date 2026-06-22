@@ -43,7 +43,9 @@ COIN = "BTC"
 ASOF = date(2026, 1, 1)
 
 
-def _make_signal_vector(action: str = "BUY", size_factor: float = 0.8, confidence: float = 0.75) -> MagicMock:
+def _make_signal_vector(
+    action: str = "BUY", size_factor: float = 0.8, confidence: float = 0.75
+) -> MagicMock:
     sv = MagicMock()
     sv.coin = COIN
     sv.asof = ASOF
@@ -360,8 +362,14 @@ async def test_all_8_outputs_in_agent_run():
     agent_run_dict = call_args[0][2]
 
     expected_keys = {
-        "tech_view", "onchain_view", "senti_view", "macro_regime",
-        "bull_case", "bear_case", "risk_verdict", "trade_signal",
+        "tech_view",
+        "onchain_view",
+        "senti_view",
+        "macro_regime",
+        "bull_case",
+        "bear_case",
+        "risk_verdict",
+        "trade_signal",
     }
     assert expected_keys == set(agent_run_dict.keys()), (
         f"Missing keys: {expected_keys - set(agent_run_dict.keys())}"

@@ -29,9 +29,7 @@ __all__ = [
     "TradeSignal",
 ]
 
-_TRADE_DISCLAIMER = (
-    "Entscheidungsunterstützung, kein Anlagerat. Kein Auto-Trading."
-)
+_TRADE_DISCLAIMER = "Entscheidungsunterstützung, kein Anlagerat. Kein Auto-Trading."
 
 
 class TechnicalView(BaseModel):

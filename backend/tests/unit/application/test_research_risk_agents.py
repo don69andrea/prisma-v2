@@ -284,7 +284,10 @@ class TestBearResearchAgent:
 
         tool_data = {
             "thesis": "BTC faces severe headwinds from regulatory pressure.",
-            "strongest_points": ["SEC enforcement actions accelerating", "Mt. Gox repayments incoming"],
+            "strongest_points": [
+                "SEC enforcement actions accelerating",
+                "Mt. Gox repayments incoming",
+            ],
             "counter_to_bull": ["MVRV-Z recovery is lagging", "On-chain volumes declining"],
         }
         response = _make_llm_response(_make_tool_use_block("submit_bear_case", tool_data))
@@ -448,11 +451,15 @@ class TestRiskAgent:
         mock_store = AsyncMock()
         mock_store.get_exposure = AsyncMock(return_value=store_exposure)
 
-        return RiskAgent(
-            llm_client=mock_llm,
-            prompt_loader=mock_prompts,
-            exposure_store=mock_store,
-        ), mock_llm, mock_store
+        return (
+            RiskAgent(
+                llm_client=mock_llm,
+                prompt_loader=mock_prompts,
+                exposure_store=mock_store,
+            ),
+            mock_llm,
+            mock_store,
+        )
 
     def _make_verdict_data(
         self,

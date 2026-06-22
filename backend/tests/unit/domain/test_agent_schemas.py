@@ -36,6 +36,7 @@ from backend.domain.schemas.agent_schemas import (  # noqa: E402
 # TechnicalView
 # ---------------------------------------------------------------------------
 
+
 class TestTechnicalView:
     def _valid(self, **overrides: object) -> dict:
         base = {
@@ -89,6 +90,7 @@ class TestTechnicalView:
 # OnChainView
 # ---------------------------------------------------------------------------
 
+
 class TestOnChainView:
     def _valid(self, **overrides: object) -> dict:
         base = {
@@ -134,6 +136,7 @@ class TestOnChainView:
 # ---------------------------------------------------------------------------
 # SentimentView
 # ---------------------------------------------------------------------------
+
 
 class TestSentimentView:
     def _valid(self, **overrides: object) -> dict:
@@ -197,6 +200,7 @@ class TestSentimentView:
 # MacroRegime
 # ---------------------------------------------------------------------------
 
+
 class TestMacroRegime:
     def _valid(self, **overrides: object) -> dict:
         base = {
@@ -244,6 +248,7 @@ class TestMacroRegime:
 # BullCase
 # ---------------------------------------------------------------------------
 
+
 class TestBullCase:
     def _valid(self, **overrides: object) -> dict:
         base = {
@@ -270,6 +275,7 @@ class TestBullCase:
 # BearCase
 # ---------------------------------------------------------------------------
 
+
 class TestBearCase:
     def _valid(self, **overrides: object) -> dict:
         base = {
@@ -295,6 +301,7 @@ class TestBearCase:
 # RiskVerdict
 # ---------------------------------------------------------------------------
 
+
 class TestRiskVerdict:
     def _valid(self, **overrides: object) -> dict:
         base = {
@@ -312,7 +319,9 @@ class TestRiskVerdict:
         assert rv.max_size == 1.0
 
     def test_valid_rejected(self) -> None:
-        rv = RiskVerdict(**self._valid(approve=False, max_size=0.0, breaches=["Concentration > 20%"]))
+        rv = RiskVerdict(
+            **self._valid(approve=False, max_size=0.0, breaches=["Concentration > 20%"])
+        )
         assert rv.approve is False
         assert rv.max_size == 0.0
 

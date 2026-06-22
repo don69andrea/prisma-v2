@@ -88,9 +88,39 @@ Plans:
 
 - [x] 03-06-PLAN.md — GET /api/v1/agent-signal/{coin} + all 7 mandatory tests + coverage gate ≥ 80% (TDD)
 
-### Phase 4: V4-4 RAG Sentiment (planned)
+### Phase 4: V4-4 RAG Sentiment
 
-News/Fear&Greed → Sentiment feature/veto in Layer 2.
+**Goal:** Upgrade `SentimentAnalystAgent` from the Fear&Greed-only V4-3 stub to a real Krypto-News-RAG system: CryptoPanic articles ingested into the existing pgvector corpus, retrieved per-coin, interpreted by the LLM for `news_surprise` only (§0 Iron Rule), with score and veto computed deterministically in Python. Sentiment feeds `TradeSignal` as a downside-only size feature and a HOLD veto, both behind `SENTIMENT_ENABLED` (default false), and a 2× walk-forward backtest measures the impact honestly (negative/neutral finding is valid — D-08).
+**Branch:** `feat/v4-4-rag-sentiment`
+**Spec:** `docs/PRISMA_V4_AGENTS.md` §3.3 + `.planning/phases/PRISMA-04-v4-4-rag-sentiment-planned/04-CONTEXT.md` (D-01..D-08)
+**Status:** planned
+**Plans:** 7 plans
+
+Plans:
+**Wave 1** *(blockers + RED test stubs — runs first, blocks everything)*
+
+- [ ] 04-01-PLAN.md — Domain/repo/schema/config blockers: _VALID_SOURCES + NewsRetrievalResult.url + find_nearest TTL + SentimentLLMOutput + sentiment_enabled (TDD)
+- [ ] 04-02-PLAN.md — Migration 0042 (widen source VARCHAR) + all Wave-0 RED test stubs
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 04-03-PLAN.md — CryptoPanicAdapter: free-API JSON → RawCryptoPanicArticle, retry/backoff, []-on-malformed (TDD)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 04-04-PLAN.md — NewsIngestionService.ingest_cryptopanic(): source=CRYPTOPANIC, votes in chunk metadata, 7-day TTL, dedup (TDD)
+
+**Wave 4** *(blocked on Waves 1-3)*
+
+- [ ] 04-05-PLAN.md — SentimentAnalystAgent body: RAG + D-03 score + LLM news_surprise + D-05 veto + sources; RAG prompt rewrite (TDD)
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [ ] 04-06-PLAN.md — SignalDirector._synthesize() veto→HOLD + downside-only size scaling behind SENTIMENT_ENABLED + 4 mandatory tests (TDD)
+
+**Wave 6** *(blocked on Waves 4-5)*
+
+- [ ] 04-07-PLAN.md — compare_sentiment_backtest.py 2× walk-forward + honest FORTSCHRITT reporting (human-verify)
 
 ### Phase 5: V4-5 UI (planned)
 

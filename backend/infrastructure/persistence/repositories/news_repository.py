@@ -83,8 +83,12 @@ class SQLANewsRepository(NewsRepository):
         query_embedding: list[float],
         k: int,
         ticker: str | None = None,
+        max_age_days: int | None = None,
     ) -> list[NewsRetrievalResult]:
         ticker_filter = "AND :ticker = ANY(nd.tickers)" if ticker else ""
+        # Optional 7-day soft-TTL filter: only return articles published within max_age_days
+        # Uses a bound parameter — NEVER string-concat the interval value (AGENTS.md §7/§8).
+        age_filter = "AND nd.published_at > NOW() - INTERVAL '1 day' * :max_age_days" if max_age_days is not None else ""
         # K-6: Validate embedding values — NaN/Inf would cause a PostgreSQL parsing error.
         validated = [float(v) for v in query_embedding]
         if any(not math.isfinite(v) for v in validated):
@@ -98,6 +102,7 @@ class SQLANewsRepository(NewsRepository):
                 nc.content,
                 nc.metadata,
                 nd.title,
+                nd.url,
                 nd.source,
                 nd.tickers,
                 nd.published_at,
@@ -105,7 +110,7 @@ class SQLANewsRepository(NewsRepository):
                                    AS similarity
             FROM news_chunks nc
             JOIN news_documents nd ON nd.id = nc.news_document_id
-            WHERE 1=1 {ticker_filter}
+            WHERE 1=1 {ticker_filter} {age_filter}
             ORDER BY (nc.embedding::halfvec(2048)) <=> ('{query_vector_str}'::vector(2048)::halfvec(2048))
             LIMIT :k
         """
@@ -114,6 +119,8 @@ class SQLANewsRepository(NewsRepository):
         params: dict[str, object] = {"k": k}
         if ticker:
             params["ticker"] = ticker
+        if max_age_days is not None:
+            params["max_age_days"] = max_age_days
 
         async with self._session_factory() as session:
             rows = (await session.execute(text(raw_sql), params)).mappings().all()
@@ -133,6 +140,7 @@ class SQLANewsRepository(NewsRepository):
                     content=str(row["content"]),
                     similarity=sim,
                     title=str(row["title"]),
+                    url=str(row["url"]),
                     source=str(row["source"]),
                     tickers=tuple(raw_tickers) if raw_tickers else (),
                     published_at=published,

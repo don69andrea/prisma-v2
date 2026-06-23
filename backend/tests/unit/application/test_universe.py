@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from datetime import date
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -28,7 +27,7 @@ def _make_df(n: int, close: float, volume: float, start: str = "2019-01-01") -> 
 
 class TestUniverseAlwaysIn:
     def test_btc_eligible_from_first_day(self) -> None:
-        from backend.application.backtest.universe import UniverseMembership, ALWAYS_IN
+        from backend.application.backtest.universe import ALWAYS_IN
         assert "BTC-USD" in ALWAYS_IN
         assert "ETH-USD" in ALWAYS_IN
 

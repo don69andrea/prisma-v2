@@ -14,12 +14,10 @@ Covers:
 
 from __future__ import annotations
 
-import importlib
 import io
-import sys
 from contextlib import redirect_stdout
 from datetime import date
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -360,9 +358,8 @@ class TestMainSmoke:
             return responses.get(sym, pd.DataFrame())
 
         buf = io.StringIO()
-        with patch("yfinance.download", side_effect=_mock_download):
-            with redirect_stdout(buf):
-                main(["--coins", "BTC-USD", "ETH-USD", "--start", "2019-01-01"])
+        with patch("yfinance.download", side_effect=_mock_download), redirect_stdout(buf):
+            main(["--coins", "BTC-USD", "ETH-USD", "--start", "2019-01-01"])
 
         out = buf.getvalue()
         assert "Sharpe" in out

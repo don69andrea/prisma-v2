@@ -23,6 +23,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from backend.application.backtest.universe import UniverseMembership
+
 pytestmark = pytest.mark.unit
 
 _100M = 100_000_000.0
@@ -52,8 +54,7 @@ def _make_portfolio_prices(coins: list[str], n: int = _N_DAYS) -> dict[str, pd.D
             for i, coin in enumerate(coins)}
 
 
-def _make_universe(price_data: dict[str, pd.DataFrame]) -> "UniverseMembership":
-    from backend.application.backtest.universe import UniverseMembership
+def _make_universe(price_data: dict[str, pd.DataFrame]) -> UniverseMembership:
     return UniverseMembership(price_data)
 
 
@@ -140,7 +141,7 @@ class TestPITGuard:
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
-        for coin, d in report.pit_universe.items():
+        for _coin, d in report.pit_universe.items():
             assert isinstance(d, str)
             # Must parse as valid ISO date
             date.fromisoformat(d)
@@ -212,7 +213,7 @@ class TestPerCoinStats:
         prices = _make_portfolio_prices(["BTC-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
-        for coin, stats in report.per_coin_stats.items():
+        for _coin, stats in report.per_coin_stats.items():
             assert isinstance(stats, PortfolioCoinStats)
             assert stats.avg_weight >= 0.0
             assert stats.days_in_portfolio >= 0

@@ -24,7 +24,7 @@ _DD_THRESHOLD = -0.15
 
 class TestPortfolioWeightsSchema:
     def test_returns_portfolio_weights(self) -> None:
-        from backend.application.backtest.portfolio import allocate_portfolio, PortfolioWeights
+        from backend.application.backtest.portfolio import PortfolioWeights, allocate_portfolio
         signals = {"BTC-USD": ("BUY", 0.8), "ETH-USD": ("BUY", 0.6)}
         vols = {"BTC-USD": 0.60, "ETH-USD": 0.70}
         result = allocate_portfolio(signals, vols, eligible_coins=frozenset(signals))

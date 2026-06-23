@@ -9,8 +9,8 @@ Tests cover:
 
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 import pytest
 
@@ -95,7 +95,7 @@ class TestRobustnessAnalysis:
 
     def test_all_ten_coins_run(self) -> None:
         """All 10 coins in the universe can be analyzed."""
-        from scripts.robustness_analysis import run_robustness_analysis, _COIN_SPECS
+        from scripts.robustness_analysis import _COIN_SPECS, run_robustness_analysis
         rows = run_robustness_analysis(
             coins=list(_COIN_SPECS.keys()),
             ma_windows=[100],

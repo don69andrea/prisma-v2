@@ -9,9 +9,6 @@ Tests cover:
 
 from __future__ import annotations
 
-from datetime import date
-from unittest.mock import AsyncMock, patch
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -62,8 +59,8 @@ def _make_test_app_with_mocked_adapter(
     """Build a TestClient with monkeypatched adapter and walkforward."""
     from fastapi import FastAPI  # noqa: PLC0415
     from fastapi.testclient import TestClient  # noqa: PLC0415
+
     from backend.interfaces.rest.routers.signals import backtest_router  # noqa: PLC0415
-    from backend.interfaces.rest.schemas.signals import PortfolioBacktestReport  # noqa: PLC0415
 
     app = FastAPI()
     app.include_router(backtest_router)
@@ -103,7 +100,6 @@ class TestPortfolioEndpointReturns200:
     def test_all_required_fields_present(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """All required PortfolioBacktestReport fields present in response."""
         from backend.interfaces.rest.routers import signals as signals_module
-        from backend.interfaces.rest.schemas.signals import PortfolioBacktestReport
 
         async def _mock_fetch(self_: object, symbol: str, start: str = "2017-01-01") -> pd.DataFrame:
             return _make_stub_ohlcv(symbol)
@@ -158,7 +154,6 @@ class TestPortfolioEndpointCache:
     def test_cache_second_call_skips_walkforward(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Second call within TTL must return cached result without re-fetching."""
         from backend.interfaces.rest.routers import signals as signals_module
-        from backend.interfaces.rest.schemas.signals import PortfolioBacktestReport
 
         call_count = {"n": 0}
 

@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 04
-status: Phase 06 (V4-4b Portfolio-Layer) in progress
+status: "Phase PRISMA-06 shipped — PR #302"
 stopped_at: context exhaustion at 77% (2026-06-23)
-last_updated: "2026-06-23T17:32:33.021Z"
+last_updated: "2026-06-23T22:26:31.510Z"
 progress:
   total_phases: 6
   completed_phases: 4
@@ -18,7 +18,7 @@ progress:
 
 **Last updated:** 2026-06-21  
 **Current phase:** 04
-**Status:** Phase 04 shipped — PR #299
+**Status:** Phase PRISMA-06 shipped — PR #302
 
 ## What's Done
 

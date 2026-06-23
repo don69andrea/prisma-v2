@@ -123,7 +123,7 @@ class SentimentAnalystAgent:
         self._llm = llm_client
         self._prompts = prompt_loader
 
-    async def analyze(self, coin: str, _context: dict = {}) -> SentimentView:  # noqa: B006
+    async def analyze(self, coin: str, _context: dict[str, Any] = {}) -> SentimentView:  # noqa: B006
         """RAG + D-03-Score + LLM news_surprise + D-05-Veto → SentimentView.
 
         C-01: zweites Argument _context wird akzeptiert aber nie im Body referenziert.

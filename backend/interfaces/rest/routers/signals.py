@@ -41,6 +41,7 @@ from backend.interfaces.rest.dependencies import get_signal_director
 from backend.interfaces.rest.schemas.signals import (
     BacktestReport,
     MetaLabelReport,
+    PortfolioBacktestReport,
     SignalVector,
 )
 
@@ -75,6 +76,7 @@ _CRYPTO_UNIVERSE: list[str] = [
 _CACHE_TTL_SECONDS = 3600
 _signal_cache: dict[str, tuple[float, SignalVector]] = {}  # coin → (timestamp, vector)
 _list_cache: tuple[float, list[SignalVector]] | None = None
+_portfolio_cache: dict[str, tuple[float, PortfolioBacktestReport]] = {}
 
 
 def _is_cache_valid(timestamp: float) -> bool:
@@ -202,6 +204,58 @@ async def run_walkforward(coin: str, prices_df: pd.DataFrame) -> BacktestReport:
         return _run_walkforward_sync(prices=prices_with_close, signals=signals, coin=coin)
 
     return await asyncio.to_thread(_sync_call)
+
+
+_PORTFOLIO_CACHE_KEY = "portfolio"
+
+
+@backtest_router.get(
+    "/portfolio",
+    response_model=PortfolioBacktestReport,
+    summary="Portfolio Walk-Forward Backtest (V4-4b)",
+    description=(
+        "Führt einen expanding-window Walk-Forward-Backtest über das PIT-Top-10-"
+        "Krypto-Universum durch. Universe-Mitgliedschaft ist point-in-time "
+        "(trailing-30d avg Dollar-Vol ≥ $100M; BTC/ETH immer eligible). "
+        "Ergebnis wird 1 Stunde gecacht."
+    ),
+)
+async def get_portfolio_backtest() -> PortfolioBacktestReport:
+    """GET /api/v1/backtest/portfolio → PortfolioBacktestReport."""
+    cached = _portfolio_cache.get(_PORTFOLIO_CACHE_KEY)
+    if cached and _is_cache_valid(cached[0]):
+        return cached[1]
+
+    from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+    from backend.application.backtest.universe import UniverseMembership
+    from backend.infrastructure.adapters.crypto_price_adapter import CryptoPriceAdapter
+
+    adapter = CryptoPriceAdapter()
+    price_data: dict[str, pd.DataFrame] = {}
+
+    try:
+        for symbol in _CRYPTO_UNIVERSE:
+            df = await adapter.fetch_ohlcv(symbol)
+            price_data[symbol] = df
+    except Exception as exc:  # noqa: BLE001
+        _logger.error("Portfolio-Backtest: Datenabruf fehlgeschlagen: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Portfolio-Backtest temporär nicht verfügbar (Datenabruf fehlgeschlagen).",
+        ) from exc
+
+    try:
+        universe = UniverseMembership(price_data)
+        report = await asyncio.to_thread(run_portfolio_walkforward, price_data, universe)
+    except Exception as exc:  # noqa: BLE001
+        _logger.error("Portfolio-Walkforward fehlgeschlagen: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Portfolio Walk-Forward Backtest temporär nicht verfügbar.",
+        ) from exc
+
+    _portfolio_cache[_PORTFOLIO_CACHE_KEY] = (time.monotonic(), report)
+    return report
 
 
 @backtest_router.get(

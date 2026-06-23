@@ -12,7 +12,13 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-__all__ = ["SignalVector", "BacktestReport", "MetaLabelReport"]
+__all__ = [
+    "SignalVector",
+    "BacktestReport",
+    "MetaLabelReport",
+    "PortfolioCoinStats",
+    "PortfolioBacktestReport",
+]
 
 
 class SignalVector(BaseModel):
@@ -81,3 +87,33 @@ class MetaLabelReport(BaseModel):
     beats_baseline: bool
     finding: Literal["positive", "secondary_pass", "negative"]
     finding_reason: str
+
+
+class PortfolioCoinStats(BaseModel):
+    """Per-coin statistics from the portfolio walk-forward backtest."""
+
+    avg_weight: float
+    days_in_portfolio: int
+
+
+class PortfolioBacktestReport(BaseModel):
+    """Portfolio-level walk-forward backtest report (V4-4b).
+
+    Compares the PIT-universe portfolio strategy against:
+    - Equal-weight Buy&Hold basket (all eligible coins, equal weight)
+    - Exposure-matched basket (avg_exposure × EW-BH returns)
+    """
+
+    coins: list[str]
+    sharpe: float
+    calmar: float
+    max_dd: float
+    cagr: float
+    avg_exposure: float
+    n_rebalances: int
+    beats_equal_weight_bh: bool
+    beats_exposure_matched: bool
+    equity_curve: list[tuple[date, float]]
+    per_coin_stats: dict[str, PortfolioCoinStats]
+    pit_universe: dict[str, str]  # coin → first_eligible_date ISO string
+    costs: float

@@ -9,6 +9,8 @@ Tests cover:
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -29,7 +31,7 @@ def _make_stub_ohlcv(symbol: str, n: int = _N, seed: int = 0) -> pd.DataFrame:
     return pd.DataFrame({"close": close, "volume": volume}, index=idx)
 
 
-def _stub_report() -> dict:
+def _stub_report() -> dict[str, Any]:
     """Minimal valid PortfolioBacktestReport JSON."""
     return {
         "coins": ["BTC-USD", "ETH-USD"],
@@ -52,9 +54,9 @@ def _stub_report() -> dict:
 
 
 def _make_test_app_with_mocked_adapter(
-    adapter_side_effect=None,
-    adapter_return=None,
-    wf_return=None,
+    adapter_side_effect: Any = None,
+    adapter_return: Any = None,
+    wf_return: Any = None,
 ) -> TestClient:
     """Build a TestClient with monkeypatched adapter and walkforward."""
     from fastapi import FastAPI  # noqa: PLC0415
@@ -85,7 +87,7 @@ class TestPortfolioEndpointReturns200:
         )
 
         # Clear portfolio cache
-        signals_module._portfolio_cache.clear()  # type: ignore[attr-defined]
+        signals_module._portfolio_cache.clear()
 
         app = FastAPI()
         app.include_router(signals_module.backtest_router)
@@ -112,7 +114,7 @@ class TestPortfolioEndpointReturns200:
             "backend.infrastructure.adapters.crypto_price_adapter.CryptoPriceAdapter.fetch_ohlcv",
             _mock_fetch,
         )
-        signals_module._portfolio_cache.clear()  # type: ignore[attr-defined]
+        signals_module._portfolio_cache.clear()
 
         app = FastAPI()
         app.include_router(signals_module.backtest_router)
@@ -155,7 +157,7 @@ class TestPortfolioEndpointErrorHandling:
             "backend.infrastructure.adapters.crypto_price_adapter.CryptoPriceAdapter.fetch_ohlcv",
             _mock_fetch_fail,
         )
-        signals_module._portfolio_cache.clear()  # type: ignore[attr-defined]
+        signals_module._portfolio_cache.clear()
 
         app = FastAPI()
         app.include_router(signals_module.backtest_router)
@@ -182,7 +184,7 @@ class TestPortfolioEndpointCache:
             "backend.infrastructure.adapters.crypto_price_adapter.CryptoPriceAdapter.fetch_ohlcv",
             _mock_fetch,
         )
-        signals_module._portfolio_cache.clear()  # type: ignore[attr-defined]
+        signals_module._portfolio_cache.clear()
 
         app = FastAPI()
         app.include_router(signals_module.backtest_router)

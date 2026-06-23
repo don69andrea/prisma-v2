@@ -163,7 +163,7 @@ def run_robustness_analysis(
                         max_dd=round(res["max_dd"], 4),
                         baseline_sharpe=round(res["baseline_sharpe"], 4),
                         baseline_calmar=round(res["baseline_calmar"], 4),
-                        beats=res["beats"],
+                        beats=bool(res["beats"]),
                     )
                 )
     return rows

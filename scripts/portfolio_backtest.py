@@ -17,7 +17,7 @@ from __future__ import annotations
 import argparse
 import sys
 from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
@@ -86,7 +86,7 @@ def _fmt_f(v: float, decimals: int = 2) -> str:
 
 def print_comparison_table(
     report: PortfolioBacktestReport,
-    details: dict,
+    details: dict[str, Any],
 ) -> None:
     """Table 1 — Portfolio vs EW-Buy&Hold vs Exposure-Matched."""
 
@@ -176,7 +176,7 @@ def print_per_coin_table(
     per_coin_weighted_returns: dict[str, pd.Series],
 ) -> None:
     """Table 3 — Per-coin Sharpe contribution (w_i × r_i)."""
-    from backend.application.backtest.walkforward import _sharpe  # type: ignore[attr-defined]
+    from backend.application.backtest.walkforward import _sharpe
 
     print("=" * 64)
     print("  Per-Coin Sharpe-Beitrag  (Gewichtete Rendite-Serie)")

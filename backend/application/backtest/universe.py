@@ -99,5 +99,5 @@ def _compute_eligibility(
 
 def _as_date(idx: object) -> date:
     if hasattr(idx, "date"):
-        return idx.date()  # type: ignore[return-value]
+        return idx.date()  # type: ignore[no-any-return]
     return idx  # type: ignore[return-value]

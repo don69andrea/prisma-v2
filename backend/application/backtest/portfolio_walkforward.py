@@ -18,7 +18,7 @@ PIT guard:
 from __future__ import annotations
 
 from datetime import date as _Date
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -26,11 +26,11 @@ import pandas as pd
 from backend.application.backtest.portfolio import allocate_portfolio
 from backend.application.backtest.universe import UniverseMembership
 from backend.application.backtest.walkforward import (
-    _cagr,  # type: ignore[attr-defined]
-    _calmar,  # type: ignore[attr-defined]
-    _equity_curve,  # type: ignore[attr-defined]
-    _max_drawdown,  # type: ignore[attr-defined]
-    _sharpe,  # type: ignore[attr-defined]
+    _cagr,
+    _calmar,
+    _equity_curve,
+    _max_drawdown,
+    _sharpe,
 )
 from backend.interfaces.rest.schemas.signals import (
     PortfolioBacktestReport,
@@ -337,7 +337,10 @@ def run_portfolio_walkforward(
     Returns:
         PortfolioBacktestReport (Pydantic).
     """
-    return _walkforward_core(price_data, universe, costs, min_train, ma_window)["report"]
+    return cast(
+        PortfolioBacktestReport,
+        _walkforward_core(price_data, universe, costs, min_train, ma_window)["report"],
+    )
 
 
 def run_portfolio_walkforward_with_details(

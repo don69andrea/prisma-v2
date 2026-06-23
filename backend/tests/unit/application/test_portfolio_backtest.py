@@ -17,11 +17,15 @@ from __future__ import annotations
 import io
 from contextlib import redirect_stdout
 from datetime import date
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pytest
+
+from backend.application.backtest.universe import UniverseMembership
+from backend.interfaces.rest.schemas.signals import PortfolioBacktestReport
 
 pytestmark = pytest.mark.unit
 
@@ -72,9 +76,7 @@ def _make_prices(coins: list[str], n: int = _N) -> dict[str, pd.DataFrame]:
     return {coin: _make_price_df(n=n, seed=i) for i, coin in enumerate(coins)}
 
 
-def _make_universe(price_data: dict[str, pd.DataFrame]):
-    from backend.application.backtest.universe import UniverseMembership
-
+def _make_universe(price_data: dict[str, pd.DataFrame]) -> UniverseMembership:
     return UniverseMembership(price_data)
 
 
@@ -261,7 +263,7 @@ class TestDDBrake:
 
 
 class TestPrintFunctions:
-    def _get_report_and_details(self):
+    def _get_report_and_details(self) -> tuple[PortfolioBacktestReport, dict[str, Any]]:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )

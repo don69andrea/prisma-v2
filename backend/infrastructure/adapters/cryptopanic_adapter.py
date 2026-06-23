@@ -141,9 +141,7 @@ def _parse_response(raw_json: dict) -> list[RawCryptoPanicArticle]:  # type: ign
 
             # Currencies: extrahiere .code aus jedem Eintrag
             currencies_raw = entry.get("currencies") or []
-            currencies = [
-                c["code"] for c in currencies_raw if isinstance(c, dict) and "code" in c
-            ]
+            currencies = [c["code"] for c in currencies_raw if isinstance(c, dict) and "code" in c]
 
             # published_at: parse ISO-8601 zu UTC-aware datetime
             published_at = _parse_datetime(entry.get("published_at"))

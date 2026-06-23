@@ -11,9 +11,7 @@ Status: Vollstaendig implementiert (plan 04-07).
 
 from __future__ import annotations
 
-import asyncio
 from datetime import date
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
@@ -29,7 +27,6 @@ from backend.domain.schemas.agent_schemas import (
     RiskVerdict,
     SentimentView,
     TechnicalView,
-    TradeSignal,
 )
 
 pytestmark = pytest.mark.integration
@@ -83,12 +80,6 @@ def _make_sentiment_view(
 
 def _make_director(coin: str, senti_view: SentimentView) -> tuple[SignalDirector, MagicMock]:
     """Build a SignalDirector with mocked deps for a given coin and sentiment view."""
-    from backend.domain.schemas.agent_schemas import (
-        MacroRegime,
-        OnChainView,
-        RiskVerdict,
-        TechnicalView,
-    )
 
     engine_signal = _make_signal_vector(coin)
 
@@ -253,15 +244,12 @@ class TestBacktestSentimentComparison:
         assert hasattr(mod, "compare_sentiment_backtest"), (
             "compare_sentiment_backtest function must be importable"
         )
-        assert hasattr(mod, "ComparisonResult"), (
-            "ComparisonResult dataclass must be importable"
-        )
+        assert hasattr(mod, "ComparisonResult"), "ComparisonResult dataclass must be importable"
 
     def test_comparison_produces_all_four_metrics(self) -> None:
         """compare_sentiment_backtest produces Sharpe/Calmar/MaxDD/Hit-Rate + vetoed count."""
         from scripts.compare_sentiment_backtest import (
             ComparisonResult,
-            SentimentVetoRecord,
             compare_sentiment_backtest,
         )
 
@@ -369,9 +357,7 @@ class TestBacktestSentimentComparison:
                 "enabled_max_dd",
                 "enabled_hit_rate",
             ]:
-                assert isinstance(getattr(result, attr), float), (
-                    f"{coin}: {attr} muss float sein"
-                )
+                assert isinstance(getattr(result, attr), float), f"{coin}: {attr} muss float sein"
 
     def test_disabled_equals_enabled_without_veto_records(self) -> None:
         """Ohne Veto-Records: DISABLED == ENABLED (identische Metriken)."""
@@ -448,13 +434,8 @@ class TestBacktestSentimentComparison:
                 settings.sentiment_enabled = False
                 mock_settings.return_value = settings
 
-                signal = await director.run(coin)
-
-            # When SENTIMENT_ENABLED=false, veto is ignored
-            if senti_view.veto:
-                assert signal.action != "HOLD" or True, (
-                    f"{coin}: sentiment disabled -- veto must not be the reason for HOLD"
-                )
+                await director.run(coin)
+            # When SENTIMENT_ENABLED=false, veto is ignored — director runs without raising
 
     @pytest.mark.asyncio
     async def test_downside_size_scaling_applies_to_all_fear_coins(
@@ -564,14 +545,11 @@ class TestVetoedTradeCount:
                 vetoed_count += 1
 
         # BNB and XRP are both vetoed in the fixture -> at least 2 vetoes
-        assert vetoed_count >= 2, (
-            f"Expected >= 2 vetoed trades (BNB + XRP), got {vetoed_count}"
-        )
+        assert vetoed_count >= 2, f"Expected >= 2 vetoed trades (BNB + XRP), got {vetoed_count}"
 
     def test_compare_function_veto_count_field_present(self) -> None:
         """ComparisonResult muss vetoed_trade_count Feld haben (REQ-4-10)."""
         from scripts.compare_sentiment_backtest import (
-            ComparisonResult,
             compare_sentiment_backtest,
         )
 
@@ -591,8 +569,6 @@ class TestVetoedTradeCount:
         assert hasattr(result, "vetoed_trade_count"), (
             "ComparisonResult muss vetoed_trade_count haben"
         )
-        assert hasattr(result, "total_trade_count"), (
-            "ComparisonResult muss total_trade_count haben"
-        )
+        assert hasattr(result, "total_trade_count"), "ComparisonResult muss total_trade_count haben"
         assert result.vetoed_trade_count >= 0
         assert result.total_trade_count >= 0

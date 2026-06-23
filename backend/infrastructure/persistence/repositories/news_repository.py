@@ -88,7 +88,11 @@ class SQLANewsRepository(NewsRepository):
         ticker_filter = "AND :ticker = ANY(nd.tickers)" if ticker else ""
         # Optional 7-day soft-TTL filter: only return articles published within max_age_days
         # Uses a bound parameter — NEVER string-concat the interval value (AGENTS.md §7/§8).
-        age_filter = "AND nd.published_at > NOW() - INTERVAL '1 day' * :max_age_days" if max_age_days is not None else ""
+        age_filter = (
+            "AND nd.published_at > NOW() - INTERVAL '1 day' * :max_age_days"
+            if max_age_days is not None
+            else ""
+        )
         # K-6: Validate embedding values — NaN/Inf would cause a PostgreSQL parsing error.
         validated = [float(v) for v in query_embedding]
         if any(not math.isfinite(v) for v in validated):

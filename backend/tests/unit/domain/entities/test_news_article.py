@@ -9,7 +9,6 @@ to _VALID_SOURCES (plan 04-01).
 
 from __future__ import annotations
 
-import hashlib
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4

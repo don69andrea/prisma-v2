@@ -39,12 +39,12 @@ from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoade
 _logger = logging.getLogger(__name__)
 
 # Regime-Schwellenwerte — deterministisch, nie vom LLM
-_FEAR_THRESHOLD = -0.2   # score < -0.2  → FEAR
-_GREED_THRESHOLD = 0.2   # score > +0.2  → GREED
+_FEAR_THRESHOLD = -0.2  # score < -0.2  → FEAR
+_GREED_THRESHOLD = 0.2  # score > +0.2  → GREED
 
 # V4-4 Veto + Score-Blend-Schwellen
-_VETO_SCORE_THRESHOLD = -0.3        # score < -0.3 UND FEAR UND news_surprise → veto
-_MIN_ARTICLES_FOR_VOTE_RATIO = 5    # Mindestanzahl Chunks für D-03-Blend-Formel
+_VETO_SCORE_THRESHOLD = -0.3  # score < -0.3 UND FEAR UND news_surprise → veto
+_MIN_ARTICLES_FOR_VOTE_RATIO = 5  # Mindestanzahl Chunks für D-03-Blend-Formel
 
 # LLM-Modell (Haiku — schnell, günstig, Projekt-Konvention)
 _MODEL = "claude-haiku-4-5-20251001"
@@ -211,17 +211,11 @@ class SentimentAnalystAgent:
             # D-09 LLM-Fallback: news_surprise=None, Score bleibt deterministisch, veto=False
             _logger.warning("LLM-Aufruf für %s fehlgeschlagen: %s — news_surprise=None", coin, exc)
             news_surprise = None
-            reasoning = (
-                f"Fear&Greed index {fg_value} ({fg_classification}). LLM nicht verfügbar."
-            )
+            reasoning = f"Fear&Greed index {fg_value} ({fg_classification}). LLM nicht verfügbar."
 
         # 5) D-05 Veto-Regel (deterministisch, exakt 8 Kombinationen)
         # veto = True NUR wenn: regime=="FEAR" AND news_surprise is True AND score < -0.3
-        veto: bool = (
-            regime == "FEAR"
-            and news_surprise is True
-            and score < _VETO_SCORE_THRESHOLD
-        )
+        veto: bool = regime == "FEAR" and news_surprise is True and score < _VETO_SCORE_THRESHOLD
 
         # 6) Sources = URLs der abgerufenen Chunks (D-07 RAG-Nachweis)
         sources: list[str] = [r.url for r in results]

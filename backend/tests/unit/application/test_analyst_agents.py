@@ -353,7 +353,9 @@ class TestSentimentAnalystAgent:
 
         # LLM mock that raises if called — ensures fallback path skips LLM
         mock_llm = AsyncMock()
-        mock_llm.messages_create = AsyncMock(side_effect=AssertionError("LLM must not be called for empty corpus"))
+        mock_llm.messages_create = AsyncMock(
+            side_effect=AssertionError("LLM must not be called for empty corpus")
+        )
         mock_prompts = MagicMock()
 
         agent = SentimentAnalystAgent(

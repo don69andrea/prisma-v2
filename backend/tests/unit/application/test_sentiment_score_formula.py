@@ -82,9 +82,7 @@ def _build_agent(
     mock_llm = AsyncMock()
     mock_content = MagicMock()
     mock_content.text = '{"news_surprise": false, "reasoning": "No significant new events."}'
-    mock_llm.messages_create = AsyncMock(
-        return_value=MagicMock(content=[mock_content])
-    )
+    mock_llm.messages_create = AsyncMock(return_value=MagicMock(content=[mock_content]))
 
     # Mock prompt loader
     mock_prompts = MagicMock()
@@ -108,10 +106,25 @@ def _build_agent(
     [
         # score_news = (pos-neg)/max(1,pos+neg); score = 0.7*score_news + 0.3*fg_norm
         # fg_norm = (fg-50)/50
-        (10, 0, 50, 0.7 * (10 - 0) / max(1, 10) + 0.3 * (50 - 50) / 50),  # all positive votes, neutral F&G
-        (0, 10, 50, 0.7 * (0 - 10) / max(1, 10) + 0.3 * (50 - 50) / 50),  # all negative votes, neutral F&G
+        (
+            10,
+            0,
+            50,
+            0.7 * (10 - 0) / max(1, 10) + 0.3 * (50 - 50) / 50,
+        ),  # all positive votes, neutral F&G
+        (
+            0,
+            10,
+            50,
+            0.7 * (0 - 10) / max(1, 10) + 0.3 * (50 - 50) / 50,
+        ),  # all negative votes, neutral F&G
         (7, 3, 75, 0.7 * (7 - 3) / max(1, 7 + 3) + 0.3 * (75 - 50) / 50),  # mixed votes, greed F&G
-        (3, 7, 25, 0.7 * (3 - 7) / max(1, 3 + 7) + 0.3 * (25 - 50) / 50),  # mixed negative, fear F&G
+        (
+            3,
+            7,
+            25,
+            0.7 * (3 - 7) / max(1, 3 + 7) + 0.3 * (25 - 50) / 50,
+        ),  # mixed negative, fear F&G
         (5, 5, 50, 0.7 * (5 - 5) / max(1, 5 + 5) + 0.3 * (50 - 50) / 50),  # balanced votes, neutral
     ],
 )
@@ -147,11 +160,11 @@ async def test_d03_blend_formula_with_sufficient_articles(
 @pytest.mark.parametrize(
     "fg_value,expected_score",
     [
-        (0, (0 - 50) / 50),     # extreme fear → -1.0
-        (50, (50 - 50) / 50),   # neutral → 0.0
-        (100, (100 - 50) / 50), # extreme greed → 1.0
-        (25, (25 - 50) / 50),   # fear → -0.5
-        (75, (75 - 50) / 50),   # greed → 0.5
+        (0, (0 - 50) / 50),  # extreme fear → -1.0
+        (50, (50 - 50) / 50),  # neutral → 0.0
+        (100, (100 - 50) / 50),  # extreme greed → 1.0
+        (25, (25 - 50) / 50),  # fear → -0.5
+        (75, (75 - 50) / 50),  # greed → 0.5
     ],
 )
 @pytest.mark.asyncio
@@ -182,11 +195,11 @@ async def test_d03_fallback_fg_only_when_insufficient_articles(
     "fg_value,expected_regime",
     [
         # _FEAR_THRESHOLD = -0.2: score < -0.2 → FEAR
-        (40, "FEAR"),    # score = (40-50)/50 = -0.2 → boundary (FEAR or NEUTRAL? test boundary)
-        (30, "FEAR"),    # score = (30-50)/50 = -0.4 → clearly FEAR
-        (60, "GREED"),   # score = (60-50)/50 = 0.2 → boundary (GREED or NEUTRAL?)
-        (70, "GREED"),   # score = (70-50)/50 = 0.4 → clearly GREED
-        (50, "NEUTRAL"), # score = 0.0 → NEUTRAL
+        (40, "FEAR"),  # score = (40-50)/50 = -0.2 → boundary (FEAR or NEUTRAL? test boundary)
+        (30, "FEAR"),  # score = (30-50)/50 = -0.4 → clearly FEAR
+        (60, "GREED"),  # score = (60-50)/50 = 0.2 → boundary (GREED or NEUTRAL?)
+        (70, "GREED"),  # score = (70-50)/50 = 0.4 → clearly GREED
+        (50, "NEUTRAL"),  # score = 0.0 → NEUTRAL
     ],
 )
 @pytest.mark.asyncio
@@ -215,13 +228,13 @@ async def test_regime_boundaries(fg_value: int, expected_regime: str) -> None:
     "is_fear_regime,news_surprise,score_below_threshold,expected_veto",
     [
         # All 8 combinations of (regime=FEAR, news_surprise=True, score<-0.3)
-        (True,  True,  True,  True),   # ALL conditions met → veto=True
-        (True,  True,  False, False),  # score >= -0.3 → no veto
-        (True,  False, True,  False),  # news_surprise=False → no veto
-        (True,  False, False, False),  # fear + no surprise + good score → no veto
-        (False, True,  True,  False),  # not fear regime → no veto
-        (False, True,  False, False),  # not fear, not below threshold → no veto
-        (False, False, True,  False),  # not fear, no surprise → no veto
+        (True, True, True, True),  # ALL conditions met → veto=True
+        (True, True, False, False),  # score >= -0.3 → no veto
+        (True, False, True, False),  # news_surprise=False → no veto
+        (True, False, False, False),  # fear + no surprise + good score → no veto
+        (False, True, True, False),  # not fear regime → no veto
+        (False, True, False, False),  # not fear, not below threshold → no veto
+        (False, False, True, False),  # not fear, no surprise → no veto
         (False, False, False, False),  # no conditions met → no veto
     ],
 )
@@ -238,11 +251,7 @@ async def test_d05_veto_truth_table(
     """
     # Determine fg_value to produce the desired regime
     # FEAR: fg < 40 (score < -0.2), not FEAR: fg >= 40
-    if is_fear_regime:
-        # score = (fg-50)/50 < -0.2  → fg < 40
-        fg_value = 30  # score = -0.4, regime = FEAR
-    else:
-        fg_value = 60  # score = 0.2, regime = NEUTRAL/GREED
+    fg_value = 30 if is_fear_regime else 60  # FEAR: score=-0.4, not-FEAR: score=0.2
 
     # Determine votes to push score below/above _VETO_SCORE_THRESHOLD=-0.3
     # Use >=5 articles to activate blend formula
@@ -294,9 +303,7 @@ async def test_d05_veto_truth_table(
     mock_content = MagicMock()
     ns_str = "true" if news_surprise else "false"
     mock_content.text = f'{{"news_surprise": {ns_str}, "reasoning": "Test reasoning."}}'
-    mock_llm.messages_create = AsyncMock(
-        return_value=MagicMock(content=[mock_content])
-    )
+    mock_llm.messages_create = AsyncMock(return_value=MagicMock(content=[mock_content]))
 
     mock_prompts = MagicMock()
     mock_prompts.render = MagicMock(return_value="rendered prompt")

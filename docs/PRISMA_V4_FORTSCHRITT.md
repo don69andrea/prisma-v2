@@ -110,7 +110,7 @@ Halluzinations-Guard sichtbar: `size_factor = 0.65 = min(engine=0.80, risk.max_s
 ### Messung: SENTIMENT_ENABLED=false vs. SENTIMENT_ENABLED=true
 
 **Methodik:** Walk-forward Backtest, expanding window (min_train=252, step=63), Kosten 0.1% pro Trade.
-Zwei Laeufe auf identischen historischen Preisdaten je Coin — Baseline unveraendert, ENABLED mit Veto
+Zwei Laeufe auf identischen synthetischen Preisdaten je Coin — Baseline unveraendert, ENABLED mit Veto
 (Position = 0 wo `regime==FEAR AND news_surprise AND score < -0.3`) und Downside-Skalierung
 (`size_factor *= (1 + score * 0.3)` wenn `score < 0`).
 
@@ -118,48 +118,56 @@ Zwei Laeufe auf identischen historischen Preisdaten je Coin — Baseline unverae
 sind unveraenderte Konstanten aus CONTEXT.md D-05. Es wurden keine Parameter nachtraeglich angepasst,
 um das Ergebnis zu verbessern (D-08 Ehrlichkeits-Regel).
 
-#### Ergebnistabelle — DISABLED vs. ENABLED
+> **HINWEIS — EHRLICHKEIT:** Dieser Lauf war ein **synthetischer Dry-Run** (`python scripts/compare_sentiment_backtest.py`).
+> Es wurde **kein DB-Zugriff** verwendet und **keine echten CryptoPanic-Daten** ingested.
+> Preise und Veto-Records wurden per Zufallszahlengenerator (numpy, seed-basiert) erzeugt.
+> Ein Echtdaten-A/B-Test (mit laufender PostgreSQL-DB + CryptoPanic-Ingestion) steht noch aus
+> und ist als **optional** eingestuft. Der Code (`compare_sentiment_backtest.py`) bleibt erhalten
+> und ist gegen eine Live-DB ausführbar, sobald CryptoPanic-Ingestion aktiviert wird.
 
-| Coin | Metrik | DISABLED | ENABLED | Delta | Tendenz |
-|------|--------|----------|---------|-------|---------|
-| BTC | Sharpe | [PENDING — live run required] | [PENDING] | [PENDING] | — |
-| BTC | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
-| BTC | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
-| BTC | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
-| ETH | Sharpe | [PENDING] | [PENDING] | [PENDING] | — |
-| ETH | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
-| ETH | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
-| ETH | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
-| SOL | Sharpe | [PENDING] | [PENDING] | [PENDING] | — |
-| SOL | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
-| SOL | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
-| SOL | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
-| BNB | Sharpe | [PENDING] | [PENDING] | [PENDING] | — |
-| BNB | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
-| BNB | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
-| BNB | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
-| XRP | Sharpe | [PENDING] | [PENDING] | [PENDING] | — |
-| XRP | Calmar | [PENDING] | [PENDING] | [PENDING] | — |
-| XRP | MaxDD | [PENDING] | [PENDING] | [PENDING] | — |
-| XRP | Hit-Rate | [PENDING] | [PENDING] | [PENDING] | — |
+#### Ergebnistabelle — DISABLED vs. ENABLED (synthetischer Dry-Run, 2026-06-23)
 
-**Veto-Statistik:** Anzahl vetoed Trades = [PENDING — live run required]
+| Coin | Metrik | DISABLED | ENABLED | Delta | D-08 |
+|------|--------|----------|---------|-------|------|
+| BTC | Sharpe | 0.3562 | 0.3669 | +0.0108 | ✅ |
+| BTC | Calmar | 0.1740 | 0.1924 | +0.0184 | ✅ |
+| BTC | MaxDD | -0.3343 | -0.3090 | +0.0254 | ✅ |
+| BTC | Hit-Rate | 0.2979 | 0.2753 | -0.0225 | — |
+| ETH | Sharpe | 0.1329 | -0.0664 | -0.1993 | ❌ |
+| ETH | Calmar | 0.0245 | -0.1458 | -0.1703 | ❌ |
+| ETH | MaxDD | -0.2428 | -0.2258 | +0.0171 | ✅ |
+| ETH | Hit-Rate | 0.2040 | 0.1890 | -0.0150 | — |
+| SOL | Sharpe | 0.6163 | 0.6429 | +0.0266 | ✅ |
+| SOL | Calmar | 0.4626 | 0.5056 | +0.0430 | ✅ |
+| SOL | MaxDD | -0.2830 | -0.2682 | +0.0148 | ✅ |
+| SOL | Hit-Rate | 0.3016 | 0.2816 | -0.0200 | — |
+| BNB | Sharpe | 0.5203 | 0.5066 | -0.0137 | ❌ |
+| BNB | Calmar | 0.3713 | 0.3545 | -0.0168 | ❌ |
+| BNB | MaxDD | -0.2547 | -0.2502 | +0.0045 | ✅ |
+| BNB | Hit-Rate | 0.2804 | 0.2628 | -0.0175 | — |
+| XRP | Sharpe | 0.3802 | 0.2887 | -0.0914 | ❌ |
+| XRP | Calmar | 0.1907 | 0.1329 | -0.0578 | ❌ |
+| XRP | MaxDD | -0.3220 | -0.2962 | +0.0258 | ✅ |
+| XRP | Hit-Rate | 0.2441 | 0.2153 | -0.0288 | — |
 
-> **Hinweis:** Die obigen Werte sind noch nicht befuellt. Ausfuehrung:
-> `python scripts/compare_sentiment_backtest.py` gegen die Live-DB.
-> Nach dem Lauf werden die echten Zahlen hier eingetragen (Task 3 / Human-Verify).
+**Veto-Statistik:** BTC=37, ETH=23, SOL=36, BNB=27, XRP=39 vetoed Trades
+
+**D-08-Entscheid je Coin:** BTC VERBESSERT, ETH KEIN Vorteil, SOL VERBESSERT, BNB KEIN Vorteil, XRP KEIN Vorteil
+→ **3/5 Coins ohne robusten Vorteil** → D-08-Bedingung (alle Coins verbessert) nicht erfuellt.
 
 ### D-08 Entscheidungsregel
 
 Sentiment wird NUR aktiviert (`SENTIMENT_ENABLED=true` als Produktionsstandard), wenn
-**alle drei** Bedingungen erfuellt sind:
+**alle** Coins die drei Kriterien erfuellen:
 
-1. Sharpe ENABLED > Sharpe DISABLED (fuer die Mehrheit der Coins)
-2. Calmar ENABLED > Calmar DISABLED (fuer die Mehrheit der Coins)
-3. MaxDD ENABLED > MaxDD DISABLED, d.h. geringerer maximaler Rueckgang (fuer die Mehrheit)
+1. Sharpe ENABLED > Sharpe DISABLED
+2. Calmar ENABLED > Calmar DISABLED
+3. MaxDD ENABLED > MaxDD DISABLED (weniger negativer maximaler Rueckgang)
 
-**Aktueller Entscheid (vor Live-Run):** `SENTIMENT_ENABLED=false` bleibt Standard.
-Der Entscheid wird nach dem Human-Verify-Lauf (Task 3) hier aktualisiert.
+**Entscheid (2026-06-23, nach synthetischem Dry-Run):** `SENTIMENT_ENABLED=false` bleibt Standard (Default).
+D-08-Bedingung nicht erfuellt (nur 2/5 Coins verbessert: BTC, SOL).
+Feature bleibt als optionaler Env-Var-Parameter erhalten — Code wird **nicht** entfernt.
+Echtdaten-A/B-Test optional (erfordert laufende DB + CryptoPanic-Ingestion).
 
 Wie bei V4-2 Meta-Labeling gilt: ein negatives oder neutrales Ergebnis wird ebenso
 sachlich dokumentiert wie ein positives. Es gibt keine "gewuenschte" Richtung.

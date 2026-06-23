@@ -12,15 +12,15 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 pytestmark = pytest.mark.unit
 
 _NOW = datetime(2026, 6, 22, 10, 0, 0, tzinfo=UTC)
-_RECENT = _NOW - timedelta(days=3)   # within 7-day TTL
-_OLD = _NOW - timedelta(days=8)      # outside 7-day TTL
+_RECENT = _NOW - timedelta(days=3)  # within 7-day TTL
+_OLD = _NOW - timedelta(days=8)  # outside 7-day TTL
 
 
 # ---------------------------------------------------------------------------
@@ -56,7 +56,6 @@ class _FakeRawArticle:
 def _build_service(articles: list[Any]) -> Any:
     """Build NewsIngestionService with mocked dependencies returning given articles."""
     from backend.application.services.news_ingestion_service import NewsIngestionService
-    from backend.infrastructure.adapters.cryptopanic_adapter import CryptoPanicAdapter
 
     mock_repo = AsyncMock()
     mock_repo.exists_by_url_hash = AsyncMock(return_value=False)

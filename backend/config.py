@@ -47,16 +47,13 @@ class Settings(BaseSettings):
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 
-    # Sentiment-Veto + Size-Scaling (D-06 / C-04): default false = identisch zu V4-3
+    # V4-4 Sentiment feature flag (SENTIMENT_ENABLED env var). Default false per D-08
+    # (synthetischer Dry-Run 2026-06-23: 3/5 Coins kein Vorteil — kein Echtdaten-Nachweis).
+    # Feature bleibt erhalten; aktivierbar per SENTIMENT_ENABLED=true wenn Echtdaten-A/B gruen.
     sentiment_enabled: bool = False
 
     max_concurrent_batch_workers: int = 3
     stale_batch_timeout_seconds: int = 600
-
-    # V4-4 Sentiment feature flag (reads SENTIMENT_ENABLED env var automatically)
-    # Default false: behavior identical to V4-3 until backtest confirms value (D-06/D-08)
-    # When false: no veto override, no size scaling (C-04)
-    sentiment_enabled: bool = False
 
     # Signal-Aggregation: Gewichtung der drei Signal-Quellen (Summe muss 1.0 ergeben)
     # Konfigurierbar via ENV: SIGNAL_QUANT_WEIGHT, SIGNAL_ML_WEIGHT, SIGNAL_MACRO_WEIGHT

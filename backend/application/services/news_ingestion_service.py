@@ -246,9 +246,7 @@ class NewsIngestionService:
         return stats
 
 
-def _chunk_text_with_metadata(
-    article: NewsArticle, metadata: dict
-) -> list[NewsChunk]:
+def _chunk_text_with_metadata(article: NewsArticle, metadata: dict) -> list[NewsChunk]:
     """Chunk article text using the provided metadata dict for each chunk.
 
     Used by ingest_cryptopanic() to inject votes_positive/votes_negative (C-02).

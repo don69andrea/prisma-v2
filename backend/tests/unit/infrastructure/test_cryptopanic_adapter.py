@@ -222,8 +222,8 @@ class TestCryptoPanicAdapterSafetyRules:
     async def test_results_capped_at_max_articles(self) -> None:
         """D-02: adapter returns at most _MAX_ARTICLES=50 articles per call."""
         from backend.infrastructure.adapters.cryptopanic_adapter import (
-            CryptoPanicAdapter,
             _MAX_ARTICLES,
+            CryptoPanicAdapter,
         )
 
         oversized_results = [

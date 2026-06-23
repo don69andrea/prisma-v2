@@ -246,9 +246,7 @@ async def get_portfolio_backtest() -> PortfolioBacktestReport:
 
     try:
         universe = UniverseMembership(price_data)
-        report = await asyncio.to_thread(
-            run_portfolio_walkforward, price_data, universe
-        )
+        report = await asyncio.to_thread(run_portfolio_walkforward, price_data, universe)
     except Exception as exc:  # noqa: BLE001
         _logger.error("Portfolio-Walkforward fehlgeschlagen: %s", exc)
         raise HTTPException(
@@ -551,4 +549,3 @@ async def get_meta_label(coin: str) -> MetaLabelReport:
         ) from exc
 
     return report
-

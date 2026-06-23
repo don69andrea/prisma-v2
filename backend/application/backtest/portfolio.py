@@ -18,8 +18,8 @@ from dataclasses import dataclass
 __all__ = ["PortfolioWeights", "allocate_portfolio"]
 
 # Fixed constants — do NOT optimise for better backtest numbers
-_TARGET_VOL: float = 0.20   # 20 % annual portfolio vol target
-_MAX_WEIGHT: float = 0.40   # max 40 % per coin
+_TARGET_VOL: float = 0.20  # 20 % annual portfolio vol target
+_MAX_WEIGHT: float = 0.40  # max 40 % per coin
 _MAX_EXPOSURE: float = 0.80  # max 80 % total invested
 _DD_BRAKE_THRESHOLD: float = -0.15  # halve exposure at -15 % portfolio drawdown
 _DD_BRAKE_FACTOR: float = 0.50
@@ -90,9 +90,7 @@ def allocate_portfolio(
         return PortfolioWeights(weights={}, total_exposure=0.0)
 
     # Step 2: cap per-coin
-    capped: dict[str, float] = {
-        coin: min(w, max_weight) for coin, w in raw_weights.items()
-    }
+    capped: dict[str, float] = {coin: min(w, max_weight) for coin, w in raw_weights.items()}
 
     # Step 3: scale so total ≤ max_exposure
     total_raw = sum(capped.values())

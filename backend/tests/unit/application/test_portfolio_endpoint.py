@@ -74,7 +74,9 @@ class TestPortfolioEndpointReturns200:
         from backend.interfaces.rest.schemas.signals import PortfolioBacktestReport
 
         # Patch CryptoPriceAdapter.fetch_ohlcv to return stub data
-        async def _mock_fetch(self_: object, symbol: str, start: str = "2017-01-01") -> pd.DataFrame:
+        async def _mock_fetch(
+            self_: object, symbol: str, start: str = "2017-01-01"
+        ) -> pd.DataFrame:
             return _make_stub_ohlcv(symbol)
 
         monkeypatch.setattr(
@@ -101,7 +103,9 @@ class TestPortfolioEndpointReturns200:
         """All required PortfolioBacktestReport fields present in response."""
         from backend.interfaces.rest.routers import signals as signals_module
 
-        async def _mock_fetch(self_: object, symbol: str, start: str = "2017-01-01") -> pd.DataFrame:
+        async def _mock_fetch(
+            self_: object, symbol: str, start: str = "2017-01-01"
+        ) -> pd.DataFrame:
             return _make_stub_ohlcv(symbol)
 
         monkeypatch.setattr(
@@ -119,10 +123,19 @@ class TestPortfolioEndpointReturns200:
         body = resp.json()
 
         required_fields = {
-            "coins", "sharpe", "calmar", "max_dd", "cagr",
-            "avg_exposure", "n_rebalances", "beats_equal_weight_bh",
-            "beats_exposure_matched", "equity_curve", "per_coin_stats",
-            "pit_universe", "costs",
+            "coins",
+            "sharpe",
+            "calmar",
+            "max_dd",
+            "cagr",
+            "avg_exposure",
+            "n_rebalances",
+            "beats_equal_weight_bh",
+            "beats_exposure_matched",
+            "equity_curve",
+            "per_coin_stats",
+            "pit_universe",
+            "costs",
         }
         for field in required_fields:
             assert field in body, f"Missing field: {field}"
@@ -133,7 +146,9 @@ class TestPortfolioEndpointErrorHandling:
         """If CryptoPriceAdapter raises, endpoint must return 503."""
         from backend.interfaces.rest.routers import signals as signals_module
 
-        async def _mock_fetch_fail(self_: object, symbol: str, start: str = "2017-01-01") -> pd.DataFrame:
+        async def _mock_fetch_fail(
+            self_: object, symbol: str, start: str = "2017-01-01"
+        ) -> pd.DataFrame:
             raise RuntimeError("yfinance timeout")
 
         monkeypatch.setattr(
@@ -157,7 +172,9 @@ class TestPortfolioEndpointCache:
 
         call_count = {"n": 0}
 
-        async def _mock_fetch(self_: object, symbol: str, start: str = "2017-01-01") -> pd.DataFrame:
+        async def _mock_fetch(
+            self_: object, symbol: str, start: str = "2017-01-01"
+        ) -> pd.DataFrame:
             call_count["n"] += 1
             return _make_stub_ohlcv(symbol)
 
@@ -179,9 +196,7 @@ class TestPortfolioEndpointCache:
         # Second call — should be cached
         resp2 = client.get("/api/v1/backtest/portfolio")
         assert resp2.status_code == 200
-        assert call_count["n"] == count_after_first, (
-            "Second call should use cache and not re-fetch"
-        )
+        assert call_count["n"] == count_after_first, "Second call should use cache and not re-fetch"
 
         # Both responses should be identical
         assert resp1.json()["sharpe"] == resp2.json()["sharpe"]

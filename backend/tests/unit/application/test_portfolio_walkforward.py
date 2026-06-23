@@ -50,8 +50,10 @@ def _make_price_df(
 
 
 def _make_portfolio_prices(coins: list[str], n: int = _N_DAYS) -> dict[str, pd.DataFrame]:
-    return {coin: _make_price_df(n=n, seed=i, close_start=1000.0 + i * 100)
-            for i, coin in enumerate(coins)}
+    return {
+        coin: _make_price_df(n=n, seed=i, close_start=1000.0 + i * 100)
+        for i, coin in enumerate(coins)
+    }
 
 
 def _make_universe(price_data: dict[str, pd.DataFrame]) -> UniverseMembership:
@@ -65,6 +67,7 @@ class TestPortfolioBacktestReportType:
     def test_returns_portfolio_backtest_report_type(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
         from backend.interfaces.rest.schemas.signals import PortfolioBacktestReport
+
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -72,6 +75,7 @@ class TestPortfolioBacktestReportType:
 
     def test_report_has_required_scalar_fields(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -85,6 +89,7 @@ class TestPortfolioBacktestReportType:
 
     def test_costs_recorded(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um, costs=0.002)
@@ -95,6 +100,7 @@ class TestExposureConstraint:
     def test_avg_exposure_within_max(self) -> None:
         """Average portfolio exposure must be ≤ 0.80 (max_exposure constant)."""
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(_ALL_COINS)
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -102,6 +108,7 @@ class TestExposureConstraint:
 
     def test_avg_exposure_non_negative(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -130,6 +137,7 @@ class TestPITGuard:
 
     def test_pit_universe_keys_match_price_data(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -138,6 +146,7 @@ class TestPITGuard:
 
     def test_pit_universe_dates_are_iso_strings(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -151,6 +160,7 @@ class TestLookAheadGuard:
     def test_equity_curve_first_entry_is_one(self) -> None:
         """Equity curve starts at 1.0 — no phantom gains before positions."""
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -159,6 +169,7 @@ class TestLookAheadGuard:
 
     def test_equity_curve_is_list_of_date_float_tuples(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(["BTC-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -171,6 +182,7 @@ class TestLookAheadGuard:
 class TestBeatsBooleans:
     def test_beats_fields_are_booleans(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -182,6 +194,7 @@ class TestSingleCoin:
     def test_single_btc_coin_runs(self) -> None:
         """Single always-in coin should run without error."""
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = {"BTC-USD": _make_price_df(n=_N_DAYS, seed=0)}
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -191,6 +204,7 @@ class TestSingleCoin:
     def test_btc_always_in_pit_universe(self) -> None:
         """BTC-USD must appear in pit_universe with the earliest date."""
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = {"BTC-USD": _make_price_df(n=_N_DAYS, seed=0)}
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -201,6 +215,7 @@ class TestPerCoinStats:
     def test_per_coin_stats_present_for_active_coins(self) -> None:
         """Coins that were ever eligible must appear in per_coin_stats."""
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         prices = _make_portfolio_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -210,6 +225,7 @@ class TestPerCoinStats:
     def test_per_coin_stats_schema(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
         from backend.interfaces.rest.schemas.signals import PortfolioCoinStats
+
         prices = _make_portfolio_prices(["BTC-USD"])
         um = _make_universe(prices)
         report = run_portfolio_walkforward(prices, um)
@@ -222,6 +238,7 @@ class TestPerCoinStats:
 class TestCoinsField:
     def test_coins_field_matches_input_keys(self) -> None:
         from backend.application.backtest.portfolio_walkforward import run_portfolio_walkforward
+
         coins = ["BTC-USD", "ETH-USD", "SOL-USD"]
         prices = _make_portfolio_prices(coins)
         um = _make_universe(prices)

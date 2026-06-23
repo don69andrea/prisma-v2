@@ -28,12 +28,14 @@ def _make_df(n: int, close: float, volume: float, start: str = "2019-01-01") -> 
 class TestUniverseAlwaysIn:
     def test_btc_eligible_from_first_day(self) -> None:
         from backend.application.backtest.universe import ALWAYS_IN
+
         assert "BTC-USD" in ALWAYS_IN
         assert "ETH-USD" in ALWAYS_IN
 
     def test_btc_eligible_even_with_zero_volume(self) -> None:
         """BTC/ETH always eligible regardless of dollar volume."""
         from backend.application.backtest.universe import UniverseMembership
+
         prices = {"BTC-USD": _make_df(400, close=1.0, volume=0.0)}
         um = UniverseMembership(prices)
         d = date(2019, 2, 1)
@@ -42,6 +44,7 @@ class TestUniverseAlwaysIn:
 
     def test_eth_eligible_even_with_low_volume(self) -> None:
         from backend.application.backtest.universe import UniverseMembership
+
         prices = {"ETH-USD": _make_df(400, close=1.0, volume=1.0)}
         um = UniverseMembership(prices)
         assert um.eligible("ETH-USD", date(2019, 6, 1))
@@ -51,6 +54,7 @@ class TestUniversePITMembership:
     def test_coin_ineligible_before_threshold_met(self) -> None:
         """A coin should NOT be eligible before its 30d avg dollar-vol crosses $100M."""
         from backend.application.backtest.universe import UniverseMembership
+
         # volume=0 → dollar_vol=0, never meets $100M
         prices = {"SOL-USD": _make_df(400, close=100.0, volume=0.0)}
         um = UniverseMembership(prices)
@@ -59,6 +63,7 @@ class TestUniversePITMembership:
     def test_coin_eligible_after_threshold_met(self) -> None:
         """Coin becomes eligible from the first day trailing-30d avg ≥ $100M."""
         from backend.application.backtest.universe import UniverseMembership
+
         n = 200
         idx = pd.date_range("2019-01-01", periods=n, freq="D")
         # First 100 days: low volume (below threshold)
@@ -76,6 +81,7 @@ class TestUniversePITMembership:
 
     def test_eligible_coins_returns_frozenset(self) -> None:
         from backend.application.backtest.universe import UniverseMembership
+
         prices = {
             "BTC-USD": _make_df(400, close=50000.0, volume=1e6),
             "ETH-USD": _make_df(400, close=3000.0, volume=1e6),
@@ -89,6 +95,7 @@ class TestUniversePITMembership:
     def test_unknown_coin_not_eligible(self) -> None:
         """A coin absent from price_data is never eligible."""
         from backend.application.backtest.universe import UniverseMembership
+
         prices = {"BTC-USD": _make_df(400, close=50000.0, volume=1e6)}
         um = UniverseMembership(prices)
         assert not um.eligible("UNKNOWN-USD", date(2022, 1, 1))
@@ -97,6 +104,7 @@ class TestUniversePITMembership:
     def test_first_eligible_date_is_exposed(self) -> None:
         """first_eligible_date dict maps eligible coins to their first date."""
         from backend.application.backtest.universe import UniverseMembership
+
         prices = {"BTC-USD": _make_df(400, close=50000.0, volume=1e6)}
         um = UniverseMembership(prices)
         dates = um.first_eligible_dates
@@ -108,6 +116,7 @@ class TestUniverseCustomThreshold:
     def test_custom_threshold_respected(self) -> None:
         """A lower threshold makes coins eligible sooner."""
         from backend.application.backtest.universe import UniverseMembership
+
         # dollar_vol = 100 * 500k = $50M — below default $100M, above $10M custom
         prices = {"ADA-USD": _make_df(400, close=100.0, volume=500_000.0)}
         um_default = UniverseMembership(prices)
@@ -122,6 +131,7 @@ class TestUniverseMultiCoin:
     def test_multiple_coins_varying_eligibility(self) -> None:
         """eligible_coins(date) returns only coins that are eligible at that date."""
         from backend.application.backtest.universe import UniverseMembership
+
         n = 400
         idx = pd.date_range("2019-01-01", periods=n, freq="D")
 

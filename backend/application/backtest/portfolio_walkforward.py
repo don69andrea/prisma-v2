@@ -116,8 +116,14 @@ def _walkforward_core(
             "bh_ew_returns": pd.Series(dtype=float),
             "exposure_matched_returns": pd.Series(dtype=float),
             "net_oos_returns": pd.Series(dtype=float),
-            "bh_sharpe": 0.0, "bh_calmar": 0.0, "bh_max_dd": 0.0, "bh_cagr": 0.0,
-            "em_sharpe": 0.0, "em_calmar": 0.0, "em_max_dd": 0.0, "em_cagr": 0.0,
+            "bh_sharpe": 0.0,
+            "bh_calmar": 0.0,
+            "bh_max_dd": 0.0,
+            "bh_cagr": 0.0,
+            "em_sharpe": 0.0,
+            "em_calmar": 0.0,
+            "em_max_dd": 0.0,
+            "em_cagr": 0.0,
         }
 
     common_idx = all_indices[0]
@@ -208,8 +214,7 @@ def _walkforward_core(
 
     # Per-coin weighted return contributions (OOS)
     per_coin_weighted_returns: dict[str, pd.Series] = {
-        coin: (weight_df[coin] * ret_df[coin]).iloc[oos_start:]
-        for coin in coins
+        coin: (weight_df[coin] * ret_df[coin]).iloc[oos_start:] for coin in coins
     }
 
     # ── 6. Equal-weight BH baseline ───────────────────────────────────────────

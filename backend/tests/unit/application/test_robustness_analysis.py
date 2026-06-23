@@ -17,9 +17,9 @@ import pytest
 pytestmark = pytest.mark.unit
 
 # Make scripts/ importable
-_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__)
-))))
+_REPO_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
@@ -28,6 +28,7 @@ class TestRobustnessAnalysis:
     def test_runs_and_returns_rows(self) -> None:
         """run_robustness_analysis returns non-empty list of RobustnessRow."""
         from scripts.robustness_analysis import run_robustness_analysis
+
         rows = run_robustness_analysis(
             coins=["BTC-USD", "ETH-USD"],
             ma_windows=[100],
@@ -38,6 +39,7 @@ class TestRobustnessAnalysis:
     def test_row_fields_present(self) -> None:
         """Each row has all required fields."""
         from scripts.robustness_analysis import run_robustness_analysis
+
         rows = run_robustness_analysis(
             coins=["BTC-USD"],
             ma_windows=[100],
@@ -55,6 +57,7 @@ class TestRobustnessAnalysis:
     def test_max_dd_is_non_positive(self) -> None:
         """Maximum drawdown must be ≤ 0 (loss, not gain)."""
         from scripts.robustness_analysis import run_robustness_analysis
+
         rows = run_robustness_analysis(
             coins=["BTC-USD", "ETH-USD"],
             ma_windows=[100],
@@ -66,8 +69,13 @@ class TestRobustnessAnalysis:
     def test_trending_data_beats_baseline_at_low_cost(self) -> None:
         """On synthetic trending data, at least 1 coin beats baseline at 0.1% cost."""
         from scripts.robustness_analysis import run_robustness_analysis
+
         rows = run_robustness_analysis(
-            coins=list(__import__("scripts.robustness_analysis", fromlist=["_COIN_SPECS"])._COIN_SPECS.keys()),
+            coins=list(
+                __import__(
+                    "scripts.robustness_analysis", fromlist=["_COIN_SPECS"]
+                )._COIN_SPECS.keys()
+            ),
             ma_windows=[100],
             cost_levels=[0.001],
         )
@@ -77,6 +85,7 @@ class TestRobustnessAnalysis:
     def test_higher_costs_reduce_beats(self) -> None:
         """Increasing cost levels should not INCREASE beats count."""
         from scripts.robustness_analysis import run_robustness_analysis
+
         rows_low = run_robustness_analysis(
             coins=["BTC-USD", "ETH-USD", "SOL-USD"],
             ma_windows=[100],
@@ -96,6 +105,7 @@ class TestRobustnessAnalysis:
     def test_all_ten_coins_run(self) -> None:
         """All 10 coins in the universe can be analyzed."""
         from scripts.robustness_analysis import _COIN_SPECS, run_robustness_analysis
+
         rows = run_robustness_analysis(
             coins=list(_COIN_SPECS.keys()),
             ma_windows=[100],

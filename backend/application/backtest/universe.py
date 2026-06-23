@@ -58,16 +58,13 @@ class UniverseMembership:
 
     def eligible_coins(self, as_of: date) -> frozenset[str]:
         """Return all coins eligible on *as_of*."""
-        return frozenset(
-            coin
-            for coin, first in self._first_eligible.items()
-            if first <= as_of
-        )
+        return frozenset(coin for coin, first in self._first_eligible.items() if first <= as_of)
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _compute_eligibility(
     price_data: dict[str, pd.DataFrame],

@@ -55,9 +55,9 @@ def _make_brake_trigger_prices(n: int = _N) -> dict[str, pd.DataFrame]:
     """
     rng = np.random.default_rng(42)
     # Smooth bull with very low vol so vol-target sizing gives max weights (0.40/coin)
-    returns_bull = rng.normal(0.001, 0.003, 252)   # 252 training bars
+    returns_bull = rng.normal(0.001, 0.003, 252)  # 252 training bars
     returns_one_normal = rng.normal(0.001, 0.003, 1)  # OOS day 1 (index 252) — still OK
-    crash = np.array([-0.35])                          # OOS day 2 (index 253)
+    crash = np.array([-0.35])  # OOS day 2 (index 253)
     returns_after = rng.normal(-0.001, 0.025, n - 254)
     returns = np.concatenate([returns_bull, returns_one_normal, crash, returns_after])
     close = 1000.0 * np.cumprod(1 + returns)
@@ -74,6 +74,7 @@ def _make_prices(coins: list[str], n: int = _N) -> dict[str, pd.DataFrame]:
 
 def _make_universe(price_data: dict[str, pd.DataFrame]):
     from backend.application.backtest.universe import UniverseMembership
+
     return UniverseMembership(price_data)
 
 
@@ -81,11 +82,13 @@ def _make_universe(price_data: dict[str, pd.DataFrame]):
 # Tests for run_portfolio_walkforward_with_details
 # ---------------------------------------------------------------------------
 
+
 class TestWithDetailsReturnType:
     def test_returns_tuple(self) -> None:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         prices = _make_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         result = run_portfolio_walkforward_with_details(prices, um)
@@ -97,6 +100,7 @@ class TestWithDetailsReturnType:
             run_portfolio_walkforward_with_details,
         )
         from backend.interfaces.rest.schemas.signals import PortfolioBacktestReport
+
         prices = _make_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         report, _ = run_portfolio_walkforward_with_details(prices, um)
@@ -106,6 +110,7 @@ class TestWithDetailsReturnType:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         prices = _make_prices(["BTC-USD"])
         um = _make_universe(prices)
         _, details = run_portfolio_walkforward_with_details(prices, um)
@@ -119,14 +124,21 @@ class TestDetailsKeys:
         "bh_ew_returns",
         "exposure_matched_returns",
         "net_oos_returns",
-        "bh_sharpe", "bh_calmar", "bh_max_dd", "bh_cagr",
-        "em_sharpe", "em_calmar", "em_max_dd", "em_cagr",
+        "bh_sharpe",
+        "bh_calmar",
+        "bh_max_dd",
+        "bh_cagr",
+        "em_sharpe",
+        "em_calmar",
+        "em_max_dd",
+        "em_cagr",
     }
 
     def test_all_required_keys_present(self) -> None:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         prices = _make_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         _, details = run_portfolio_walkforward_with_details(prices, um)
@@ -137,6 +149,7 @@ class TestDetailsKeys:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         prices = _make_prices(["BTC-USD"])
         um = _make_universe(prices)
         _, details = run_portfolio_walkforward_with_details(prices, um)
@@ -146,6 +159,7 @@ class TestDetailsKeys:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         # Use crash data to guarantee the brake fires and the list is non-empty
         prices = _make_brake_trigger_prices()
         um = _make_universe(prices)
@@ -157,6 +171,7 @@ class TestDetailsKeys:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         coins = ["BTC-USD", "ETH-USD", "SOL-USD"]
         prices = _make_prices(coins)
         um = _make_universe(prices)
@@ -167,6 +182,7 @@ class TestDetailsKeys:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         prices = _make_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         _, details = run_portfolio_walkforward_with_details(prices, um)
@@ -177,17 +193,27 @@ class TestDetailsKeys:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         prices = _make_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         _, details = run_portfolio_walkforward_with_details(prices, um)
-        for key in ["bh_sharpe", "bh_calmar", "bh_max_dd", "bh_cagr",
-                    "em_sharpe", "em_calmar", "em_max_dd", "em_cagr"]:
+        for key in [
+            "bh_sharpe",
+            "bh_calmar",
+            "bh_max_dd",
+            "bh_cagr",
+            "em_sharpe",
+            "em_calmar",
+            "em_max_dd",
+            "em_cagr",
+        ]:
             assert isinstance(details[key], float), f"{key} is not float"
 
     def test_net_oos_returns_non_empty(self) -> None:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         prices = _make_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         _, details = run_portfolio_walkforward_with_details(prices, um)
@@ -200,6 +226,7 @@ class TestDDBrake:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         prices = _make_brake_trigger_prices(n=800)
         um = _make_universe(prices)
         _, details = run_portfolio_walkforward_with_details(prices, um)
@@ -213,6 +240,7 @@ class TestDDBrake:
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         # Very smooth bull: drift 0.1% daily, tiny vol 0.5% — no -15% DD possible
         rng = np.random.default_rng(0)
         n = 800
@@ -231,17 +259,20 @@ class TestDDBrake:
 # Smoke tests for print functions
 # ---------------------------------------------------------------------------
 
+
 class TestPrintFunctions:
     def _get_report_and_details(self):
         from backend.application.backtest.portfolio_walkforward import (
             run_portfolio_walkforward_with_details,
         )
+
         prices = _make_prices(["BTC-USD", "ETH-USD"])
         um = _make_universe(prices)
         return run_portfolio_walkforward_with_details(prices, um)
 
     def test_print_comparison_table_runs(self) -> None:
         from scripts.portfolio_backtest import print_comparison_table
+
         report, details = self._get_report_and_details()
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -253,6 +284,7 @@ class TestPrintFunctions:
 
     def test_print_dd_brake_table_runs(self) -> None:
         from scripts.portfolio_backtest import print_dd_brake_table
+
         buf = io.StringIO()
         with redirect_stdout(buf):
             print_dd_brake_table([])
@@ -261,6 +293,7 @@ class TestPrintFunctions:
 
     def test_print_dd_brake_table_with_2022_dates(self) -> None:
         from scripts.portfolio_backtest import print_dd_brake_table
+
         dates = [date(2022, 5, 12), date(2022, 6, 1), date(2022, 6, 2)]
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -271,6 +304,7 @@ class TestPrintFunctions:
 
     def test_print_per_coin_table_runs(self) -> None:
         from scripts.portfolio_backtest import print_per_coin_table
+
         report, details = self._get_report_and_details()
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -284,6 +318,7 @@ class TestPrintFunctions:
 # fetch_prices tests (mocked yfinance)
 # ---------------------------------------------------------------------------
 
+
 class TestFetchPrices:
     def _make_yf_df(self, n: int = 100, sym: str = "BTC-USD") -> pd.DataFrame:
         """Returns a yfinance-style DataFrame with capitalised columns."""
@@ -291,11 +326,20 @@ class TestFetchPrices:
         close = 1000.0 * np.cumprod(1 + rng.normal(0.001, 0.02, n))
         volume = np.ones(n) * 1e6
         idx = pd.date_range("2020-01-01", periods=n, freq="D")
-        return pd.DataFrame({"Close": close, "Volume": volume, "Open": close,
-                             "High": close * 1.01, "Low": close * 0.99}, index=idx)
+        return pd.DataFrame(
+            {
+                "Close": close,
+                "Volume": volume,
+                "Open": close,
+                "High": close * 1.01,
+                "Low": close * 0.99,
+            },
+            index=idx,
+        )
 
     def test_fetch_normalises_column_names(self) -> None:
         from scripts.portfolio_backtest import fetch_prices
+
         mock_df = self._make_yf_df()
         with patch("yfinance.download", return_value=mock_df):
             result = fetch_prices(["BTC-USD"], "2020-01-01")
@@ -306,6 +350,7 @@ class TestFetchPrices:
 
     def test_fetch_skips_empty_result(self) -> None:
         from scripts.portfolio_backtest import fetch_prices
+
         with patch("yfinance.download", return_value=pd.DataFrame()):
             result = fetch_prices(["UNKNOWN-USD"], "2020-01-01")
         assert "UNKNOWN-USD" not in result
@@ -313,6 +358,7 @@ class TestFetchPrices:
     def test_fetch_handles_multiindex_columns(self) -> None:
         """yfinance may return MultiIndex columns for some versions."""
         from scripts.portfolio_backtest import fetch_prices
+
         rng = np.random.default_rng(0)
         n = 50
         close = 1000.0 * np.cumprod(1 + rng.normal(0.001, 0.02, n))
@@ -335,6 +381,7 @@ class TestFetchPrices:
 # main() integration smoke test
 # ---------------------------------------------------------------------------
 
+
 class TestMainSmoke:
     def _make_yf_response(self, sym: str, n: int = 700) -> pd.DataFrame:
         seed = hash(sym) % 2**31
@@ -342,14 +389,21 @@ class TestMainSmoke:
         close = 1000.0 * np.cumprod(1 + rng.normal(0.0008, 0.022, n))
         volume = _100M * 2.0 / close
         idx = pd.date_range("2019-01-01", periods=n, freq="D")
-        return pd.DataFrame({
-            "Close": close, "Volume": volume,
-            "Open": close, "High": close * 1.01, "Low": close * 0.99,
-        }, index=idx)
+        return pd.DataFrame(
+            {
+                "Close": close,
+                "Volume": volume,
+                "Open": close,
+                "High": close * 1.01,
+                "Low": close * 0.99,
+            },
+            index=idx,
+        )
 
     def test_main_runs_with_two_coins(self) -> None:
         """main() should complete without error for a small 2-coin universe."""
         from scripts.portfolio_backtest import main
+
         responses = {}
         for sym in ["BTC-USD", "ETH-USD"]:
             responses[sym] = self._make_yf_response(sym)

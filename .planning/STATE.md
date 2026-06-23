@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 06
-status: "Phase 06 (V4-4b Portfolio-Layer) in progress"
-stopped_at: executing phase 06 (2026-06-23)
-last_updated: "2026-06-23T14:00:00.000Z"
+current_phase: 04
+status: Phase 06 (V4-4b Portfolio-Layer) in progress
+stopped_at: context exhaustion at 77% (2026-06-23)
+last_updated: "2026-06-23T17:32:33.021Z"
 progress:
-  total_phases: 8
+  total_phases: 6
   completed_phases: 4
-  total_plans: 30
+  total_plans: 24
   completed_plans: 24
-  percent: 55
+  percent: 67
 ---
 
 # PRISMA — Project State
@@ -61,6 +61,6 @@ Phase 02 Wave E → integration tests / remaining plans
 
 ## Session
 
-**Last session:** 2026-06-22T19:58:11.156Z
-**Stopped at:** context exhaustion at 75% (2026-06-22)
+**Last session:** 2026-06-23T17:32:33.014Z
+**Stopped at:** context exhaustion at 77% (2026-06-23)
 **Resume file:** None

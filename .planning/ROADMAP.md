@@ -127,12 +127,12 @@ Plans:
 **Goal:** Ehrliche Robustheitsprüfung des V4-1-Edge. KEINE neuen Features. Harness-Skript + Report in docs/PRISMA_V4_FORTSCHRITT.md. 4 Stress-Dimensionen: Kosten-Sensitivität, Regime-Splits, Volles Universum, Parameter-Stabilität.
 **Branch:** `feat/v4-4c-robustness`
 **Status:** planned
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1** *(standalone harness — no dependencies)*
 
-- [ ] 05-01-PLAN.md — scripts/robustness_check.py: 4 stress dimensions + Rich console tables
+- [x] 05-01-PLAN.md — scripts/robustness_check.py: 4 stress dimensions + Rich console tables
 
 **Wave 2** *(blocked on Wave 1)*
 

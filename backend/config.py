@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 
+    # V4-4 Sentiment feature flag (SENTIMENT_ENABLED env var). Default false per D-08
+    # (synthetischer Dry-Run 2026-06-23: 3/5 Coins kein Vorteil — kein Echtdaten-Nachweis).
+    # Feature bleibt erhalten; aktivierbar per SENTIMENT_ENABLED=true wenn Echtdaten-A/B gruen.
+    sentiment_enabled: bool = False
+
     max_concurrent_batch_workers: int = 3
     stale_batch_timeout_seconds: int = 600
 

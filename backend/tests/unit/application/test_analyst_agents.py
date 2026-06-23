@@ -243,16 +243,18 @@ class TestOnChainAnalystAgent:
 
 
 class TestSentimentAnalystAgent:
-    """Tests for SentimentAnalystAgent (D-04 — Fear&Greed stub)."""
+    """Tests for SentimentAnalystAgent (V4-4: RAG + deterministic score + LLM news_surprise)."""
 
     def _build_agent(self, fg_value: int, fg_classification: str = "Neutral") -> Any:
-        """Build agent with mocked async DB session returning given fg_value."""
+        """Build V4-4 agent with all 4 injected dependencies.
+
+        Retrieval returns [] (empty) so the F&G fallback path is taken for
+        formula/regime/stub-field tests — same observable behaviour as V4-3.
+        """
         from backend.application.agents.sentiment_analyst_agent import SentimentAnalystAgent
 
         # Mock async SQLAlchemy session
         mock_session = AsyncMock()
-
-        # Mock the scalar result for market_sentiment query
         mock_result = MagicMock()
         mock_row = MagicMock()
         mock_row.fear_greed = fg_value
@@ -260,7 +262,19 @@ class TestSentimentAnalystAgent:
         mock_result.first.return_value = mock_row
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        return SentimentAnalystAgent(db_session=mock_session)
+        # Empty retrieval → F&G fallback (news_surprise=None, veto=False, sources=[])
+        mock_retrieval = AsyncMock()
+        mock_retrieval.retrieve = AsyncMock(return_value=[])
+
+        mock_llm = AsyncMock()  # not reached in fallback path
+        mock_prompts = MagicMock()
+
+        return SentimentAnalystAgent(
+            db_session=mock_session,
+            news_retrieval_service=mock_retrieval,
+            llm_client=mock_llm,
+            prompt_loader=mock_prompts,
+        )
 
     async def test_fg50_gives_score_zero(self) -> None:
         """fg_value=50 → score == 0.0 exactly."""
@@ -322,8 +336,8 @@ class TestSentimentAnalystAgent:
         result = await agent.analyze("ETH")
         assert result.coin == "ETH"
 
-    async def test_no_llm_call(self) -> None:
-        """SentimentAnalystAgent is a DB stub — no LLM client needed."""
+    async def test_no_llm_call_on_empty_corpus(self) -> None:
+        """When retrieval returns [] (empty corpus), the F&G fallback is used — no LLM call made."""
         from backend.application.agents.sentiment_analyst_agent import SentimentAnalystAgent
 
         mock_session = AsyncMock()
@@ -334,10 +348,25 @@ class TestSentimentAnalystAgent:
         mock_result.first.return_value = mock_row
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        # No LLM client injected → if agent tries to call LLM, it would fail
-        agent = SentimentAnalystAgent(db_session=mock_session)
+        mock_retrieval = AsyncMock()
+        mock_retrieval.retrieve = AsyncMock(return_value=[])
+
+        # LLM mock that raises if called — ensures fallback path skips LLM
+        mock_llm = AsyncMock()
+        mock_llm.messages_create = AsyncMock(
+            side_effect=AssertionError("LLM must not be called for empty corpus")
+        )
+        mock_prompts = MagicMock()
+
+        agent = SentimentAnalystAgent(
+            db_session=mock_session,
+            news_retrieval_service=mock_retrieval,
+            llm_client=mock_llm,
+            prompt_loader=mock_prompts,
+        )
         result = await agent.analyze("BTC")
         assert result.coin == "BTC"
+        assert result.news_surprise is None  # fallback, no LLM call
 
     async def test_valid_schema(self) -> None:
         """Output validates against SentimentView schema."""

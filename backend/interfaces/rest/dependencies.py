@@ -572,9 +572,13 @@ async def get_signal_director(
     from backend.application.agents.sentiment_analyst_agent import SentimentAnalystAgent
     from backend.application.agents.signal_director import SignalDirector
     from backend.application.agents.technical_analyst_agent import TechnicalAnalystAgent
+    from backend.application.services.news_retrieval_service import NewsRetrievalService
     from backend.application.signals import signal_service as _signal_service_module
     from backend.infrastructure.persistence.repositories.agent_audit_trail_repository import (
         AgentAuditTrailRepository,
+    )
+    from backend.infrastructure.persistence.repositories.news_repository import (
+        SQLANewsRepository,
     )
 
     # Stub prices_df (200 bars, same as signals router _make_stub_prices)
@@ -603,7 +607,15 @@ async def get_signal_director(
         signal_service=_signal_service_module,
         tech_agent=TechnicalAnalystAgent(llm_client=llm_client, prompt_loader=prompt_loader),
         onchain_agent=OnChainAnalystAgent(llm_client=llm_client, prompt_loader=prompt_loader),
-        senti_agent=SentimentAnalystAgent(db_session=session),
+        senti_agent=SentimentAnalystAgent(
+            db_session=session,
+            news_retrieval_service=NewsRetrievalService(
+                news_repo=SQLANewsRepository(session_factory=get_session_factory()),
+                llm_client=llm_client,
+            ),
+            llm_client=llm_client,
+            prompt_loader=prompt_loader,
+        ),
         macro_agent=MacroRegimeAgent(llm_client=llm_client, prompt_loader=prompt_loader),
         bull_agent=BullResearchAgent(llm_client=llm_client, prompt_loader=prompt_loader),
         bear_agent=BearResearchAgent(llm_client=llm_client, prompt_loader=prompt_loader),

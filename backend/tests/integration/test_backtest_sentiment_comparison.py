@@ -12,6 +12,7 @@ Status: Vollstaendig implementiert (plan 04-07).
 from __future__ import annotations
 
 from datetime import date
+from typing import Any, Literal
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
@@ -63,7 +64,7 @@ def _make_signal_vector(
 def _make_sentiment_view(
     coin: str,
     score: float = 0.3,
-    regime: str = "GREED",
+    regime: Literal["FEAR", "NEUTRAL", "GREED"] = "GREED",
     veto: bool = False,
     news_surprise: bool | None = None,
 ) -> SentimentView:
@@ -443,7 +444,7 @@ class TestBacktestSentimentComparison:
         multi_coin_sentiment_views: dict[str, SentimentView],
     ) -> None:
         """SENTIMENT_ENABLED=true + negative score -> size_factor scaled down for all fear coins."""
-        results = {}
+        results: dict[str, dict[str, Any]] = {}
 
         for coin in TOP_COINS:
             senti_view = multi_coin_sentiment_views[coin]

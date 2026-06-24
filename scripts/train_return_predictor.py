@@ -41,82 +41,219 @@ MODELS_DIR = ROOT / "models"
 # SMI-Univers (SMI-20 Blue Chips + SMIM Mid Caps)
 DEFAULT_TICKERS = [
     # SMI-20 Blue Chips
-    "NESN", "NOVN", "ROG", "ABBN", "ZURN", "UHR", "GIVN", "SIKA",
-    "LONN", "BAER", "SLHN", "SCMN", "GEBN", "UBSG", "CFR", "KNIN",
-    "PGHN", "HOLN", "SREN", "SGKN",
+    "NESN",
+    "NOVN",
+    "ROG",
+    "ABBN",
+    "ZURN",
+    "UHR",
+    "GIVN",
+    "SIKA",
+    "LONN",
+    "BAER",
+    "SLHN",
+    "SCMN",
+    "GEBN",
+    "UBSG",
+    "CFR",
+    "KNIN",
+    "PGHN",
+    "HOLN",
+    "SREN",
+    "SGKN",
     # SMIM Mid Caps (HELN/DUFN/SOFN/CSGN/MBTN delisted — entfernt 2026-06-12)
-    "VACN", "TEMN", "COTN", "STMN", "DKSH", "EMMN", "BARN",
-    "CLTN", "LISP", "BUCN", "AMS", "CMBN",
-    "BCVN", "ORON", "SPSN",
+    "VACN",
+    "TEMN",
+    "COTN",
+    "STMN",
+    "DKSH",
+    "EMMN",
+    "BARN",
+    "CLTN",
+    "LISP",
+    "BUCN",
+    "AMS",
+    "CMBN",
+    "BCVN",
+    "ORON",
+    "SPSN",
 ]
 
 # DAX-40 Hauptwerte (Xetra, yfinance-Format mit .DE Suffix)
 EU_TICKERS_DE = [
-    "SAP.DE", "SIE.DE", "ALV.DE", "MUV2.DE", "DTE.DE",
-    "BAYN.DE", "IFX.DE", "BMW.DE", "MBG.DE", "DB1.DE",
-    "BAS.DE", "EOAN.DE", "RWE.DE", "ADS.DE", "HNR1.DE",
-    "BEI.DE", "HEN3.DE", "MRK.DE", "SHL.DE", "VOW3.DE",
+    "SAP.DE",
+    "SIE.DE",
+    "ALV.DE",
+    "MUV2.DE",
+    "DTE.DE",
+    "BAYN.DE",
+    "IFX.DE",
+    "BMW.DE",
+    "MBG.DE",
+    "DB1.DE",
+    "BAS.DE",
+    "EOAN.DE",
+    "RWE.DE",
+    "ADS.DE",
+    "HNR1.DE",
+    "BEI.DE",
+    "HEN3.DE",
+    "MRK.DE",
+    "SHL.DE",
+    "VOW3.DE",
 ]
 
 # CAC-40 Hauptwerte (Euronext Paris, .PA Suffix)
 EU_TICKERS_FR = [
-    "OR.PA", "MC.PA", "TTE.PA", "SAN.PA", "BNP.PA",
-    "AI.PA", "AIR.PA", "DG.PA", "SU.PA", "CS.PA",
-    "ACA.PA", "GLE.PA", "KER.PA", "RI.PA", "CAP.PA",
+    "OR.PA",
+    "MC.PA",
+    "TTE.PA",
+    "SAN.PA",
+    "BNP.PA",
+    "AI.PA",
+    "AIR.PA",
+    "DG.PA",
+    "SU.PA",
+    "CS.PA",
+    "ACA.PA",
+    "GLE.PA",
+    "KER.PA",
+    "RI.PA",
+    "CAP.PA",
 ]
 
 # AEX Hauptwerte (Amsterdam, .AS Suffix) — ING.AS/DSM.AS keine yfinance-Daten
 EU_TICKERS_NL = [
-    "ASML.AS", "HEIA.AS", "PHIA.AS", "AD.AS",
-    "NN.AS", "RAND.AS",
+    "ASML.AS",
+    "HEIA.AS",
+    "PHIA.AS",
+    "AD.AS",
+    "NN.AS",
+    "RAND.AS",
 ]
 
 # FTSE-100 Hauptwerte (London, .L Suffix, GBP-denominiert)
 EU_TICKERS_UK = [
-    "AZN.L", "SHEL.L", "HSBA.L", "ULVR.L", "RIO.L",
-    "BP.L", "GSK.L", "LSEG.L", "DGE.L", "BHP.L",
-    "NWG.L", "LLOY.L", "VOD.L", "REL.L", "IMB.L",
+    "AZN.L",
+    "SHEL.L",
+    "HSBA.L",
+    "ULVR.L",
+    "RIO.L",
+    "BP.L",
+    "GSK.L",
+    "LSEG.L",
+    "DGE.L",
+    "BHP.L",
+    "NWG.L",
+    "LLOY.L",
+    "VOD.L",
+    "REL.L",
+    "IMB.L",
 ]
 
 # IBEX-35 Hauptwerte (Madrid, .MC Suffix)
 EU_TICKERS_ES = [
-    "SAN.MC", "ITX.MC", "IBE.MC", "REP.MC", "BBVA.MC",
-    "TEF.MC", "ACS.MC", "AENA.MC", "FER.MC", "AMS.MC",
+    "SAN.MC",
+    "ITX.MC",
+    "IBE.MC",
+    "REP.MC",
+    "BBVA.MC",
+    "TEF.MC",
+    "ACS.MC",
+    "AENA.MC",
+    "FER.MC",
+    "AMS.MC",
 ]
 
 # FTSE MIB Hauptwerte (Mailand, .MI Suffix) — STM.MI rate-limited/unzuverlässig
 EU_TICKERS_IT = [
-    "ENI.MI", "ENEL.MI", "ISP.MI", "UCG.MI",
-    "TIT.MI", "PRY.MI", "LDO.MI", "RACE.MI", "G.MI",
+    "ENI.MI",
+    "ENEL.MI",
+    "ISP.MI",
+    "UCG.MI",
+    "TIT.MI",
+    "PRY.MI",
+    "LDO.MI",
+    "RACE.MI",
+    "G.MI",
 ]
 
 # OMX Stockholm Hauptwerte (Stockholm, .ST Suffix, SEK-denominiert)
 EU_TICKERS_SE = [
-    "ERIC-B.ST", "VOLV-B.ST", "SEB-A.ST", "SWED-A.ST",
-    "INVE-B.ST", "SAND.ST", "SKF-B.ST", "HM-B.ST",
+    "ERIC-B.ST",
+    "VOLV-B.ST",
+    "SEB-A.ST",
+    "SWED-A.ST",
+    "INVE-B.ST",
+    "SAND.ST",
+    "SKF-B.ST",
+    "HM-B.ST",
 ]
 
 # Alle EU-Ticker zusammen
 EU_TICKERS_ALL = (
-    EU_TICKERS_DE + EU_TICKERS_FR + EU_TICKERS_NL
-    + EU_TICKERS_UK + EU_TICKERS_ES + EU_TICKERS_IT + EU_TICKERS_SE
+    EU_TICKERS_DE
+    + EU_TICKERS_FR
+    + EU_TICKERS_NL
+    + EU_TICKERS_UK
+    + EU_TICKERS_ES
+    + EU_TICKERS_IT
+    + EU_TICKERS_SE
 )
 
 # S&P 500 Mega/Large Caps (kein Börsen-Suffix für yfinance)
 US_TICKERS = [
     # Technology
-    "AAPL", "MSFT", "NVDA", "GOOGL", "META", "AMZN", "TSLA",
-    "AVGO", "ORCL", "AMD", "QCOM", "TXN", "AMAT", "MU",
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "GOOGL",
+    "META",
+    "AMZN",
+    "TSLA",
+    "AVGO",
+    "ORCL",
+    "AMD",
+    "QCOM",
+    "TXN",
+    "AMAT",
+    "MU",
     # Finance
-    "JPM", "BAC", "WFC", "GS", "MS", "BLK", "V", "MA", "AXP",
+    "JPM",
+    "BAC",
+    "WFC",
+    "GS",
+    "MS",
+    "BLK",
+    "V",
+    "MA",
+    "AXP",
     # Healthcare
-    "LLY", "UNH", "ABBV", "MRK", "PFE", "TMO", "JNJ",
+    "LLY",
+    "UNH",
+    "ABBV",
+    "MRK",
+    "PFE",
+    "TMO",
+    "JNJ",
     # Consumer
-    "HD", "MCD", "KO", "PEP", "WMT", "COST", "NKE",
+    "HD",
+    "MCD",
+    "KO",
+    "PEP",
+    "WMT",
+    "COST",
+    "NKE",
     # Industrial / Energy
-    "XOM", "CVX", "CAT", "HON", "GE", "RTX",
+    "XOM",
+    "CVX",
+    "CAT",
+    "HON",
+    "GE",
+    "RTX",
     # Other
-    "BRK-B", "VZ",
+    "BRK-B",
+    "VZ",
 ]
 
 FEATURE_NAMES = list(MLFeatureVector.FEATURE_NAMES)
@@ -344,11 +481,7 @@ def main() -> None:
         eu = EU_TICKERS_ALL if args.market in ("eu", "all") else []
         us = US_TICKERS if args.market in ("us", "all") else []
         tickers = ch + eu + us
-        ticker_markets = (
-            {t: "ch" for t in ch}
-            | {t: "eu" for t in eu}
-            | {t: "us" for t in us}
-        )
+        ticker_markets = {t: "ch" for t in ch} | {t: "eu" for t in eu} | {t: "us" for t in us}
 
     years: int = args.years
 
@@ -366,6 +499,7 @@ def main() -> None:
     if args.simfin_key:
         try:
             from backend.infrastructure.adapters.simfin_adapter import SimFinAdapter
+
             simfin_adapter = SimFinAdapter(api_key=args.simfin_key)
             _logger.info("SimFin aktiviert — historische Fundamentaldaten werden genutzt.")
         except ImportError:
@@ -450,7 +584,9 @@ def main() -> None:
             tuned_pred = tuned_model.predict(x_val)
             tuned_acc = accuracy(y_val, tuned_pred)
             tuned_top = top_quartile_accuracy(y_val, tuned_pred)
-            _logger.info("Tuned LightGBM — Accuracy: %.3f | Top-Quartil-Recall: %.3f", tuned_acc, tuned_top)
+            _logger.info(
+                "Tuned LightGBM — Accuracy: %.3f | Top-Quartil-Recall: %.3f", tuned_acc, tuned_top
+            )
             if tuned_top > lgb_top:
                 best_model = tuned_model
                 best_name = "lightgbm"

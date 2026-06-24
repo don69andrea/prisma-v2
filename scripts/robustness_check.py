@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 import sys
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np  # noqa: F401  (used via np.sqrt implicitly via indicators)
 import pandas as pd
@@ -79,7 +80,7 @@ _CRYPTO_UNIVERSE: list[str] = [
 _COST_COINS: list[str] = ["BTC-USD", "ETH-USD"]
 _PARAM_COINS: list[str] = ["BTC-USD", "ETH-USD"]
 
-_REGIMES: list[dict] = [
+_REGIMES: list[dict[str, Any]] = [
     {"name": "Bear 2018", "start": "2018-01-01", "end": "2018-12-31"},
     {"name": "Bull 2021", "start": "2021-01-01", "end": "2021-12-31"},
     {"name": "Bear 2022", "start": "2022-01-01", "end": "2022-12-31"},
@@ -218,9 +219,7 @@ def build_signals(close: pd.Series, ma_window: int = 100) -> pd.Series:
     rsi_s = (rsi_14 > 50).astype(float).shift(1).fillna(0.0)
     macd_s = (macd_hist > 0).astype(float).shift(1).fillna(0.0)
 
-    signals_df = pd.DataFrame(
-        {"ma_signal": ma_s, "rsi_signal": rsi_s, "macd_signal": macd_s}
-    )
+    signals_df = pd.DataFrame({"ma_signal": ma_s, "rsi_signal": rsi_s, "macd_signal": macd_s})
 
     # consensus_vote() is the REAL implementation from backend (not inline logic)
     consensus = consensus_vote(signals_df)
@@ -242,7 +241,7 @@ def run_cost_sensitivity(
     coins: list[str] | None = None,
     cost_levels: list[float] | None = None,
     ma_window: int = _DEFAULT_MA,
-) -> list[CostResult | dict]:
+) -> list[CostResult | dict[str, Any]]:
     """Run cost-sensitivity stress test (D-03).
 
     Args:
@@ -258,7 +257,7 @@ def run_cost_sensitivity(
     if cost_levels is None:
         cost_levels = _COST_LEVELS
 
-    results: list[CostResult | dict] = []
+    results: list[CostResult | dict[str, Any]] = []
 
     for coin in coins:
         close = _download(coin, start=_DATA_START)
@@ -310,10 +309,10 @@ def run_cost_sensitivity(
 
 def run_regime_splits(
     coins: list[str] | None = None,
-    regimes: list[dict] | None = None,
+    regimes: list[dict[str, Any]] | None = None,
     costs: float = _DEFAULT_COST,
     ma_window: int = _DEFAULT_MA,
-) -> list[RegimeResult | dict]:
+) -> list[RegimeResult | dict[str, Any]]:
     """Run regime-split stress test (D-04).
 
     Downloads from _DATA_START to regime end (NOT just the regime window) so
@@ -333,7 +332,7 @@ def run_regime_splits(
     if regimes is None:
         regimes = _REGIMES
 
-    results: list[RegimeResult | dict] = []
+    results: list[RegimeResult | dict[str, Any]] = []
 
     for coin in coins:
         for regime in regimes:
@@ -444,7 +443,7 @@ def run_regime_splits(
 def run_universe(
     ma_window: int = _DEFAULT_MA,
     costs: float = _DEFAULT_COST,
-) -> list[UniverseResult | dict]:
+) -> list[UniverseResult | dict[str, Any]]:
     """Run full-universe stress test (D-05).
 
     Tests all 10 coins in _CRYPTO_UNIVERSE. Coins with <_MIN_ROWS data are
@@ -457,7 +456,7 @@ def run_universe(
     Returns:
         list of UniverseResult (success) or dict with status field.
     """
-    results: list[UniverseResult | dict] = []
+    results: list[UniverseResult | dict[str, Any]] = []
 
     for coin in _CRYPTO_UNIVERSE:
         note = ""
@@ -517,7 +516,7 @@ def run_parameter_stability(
     coins: list[str] | None = None,
     ma_windows: list[int] | None = None,
     costs: float = _DEFAULT_COST,
-) -> list[ParamResult | dict]:
+) -> list[ParamResult | dict[str, Any]]:
     """Run parameter-stability stress test (D-06).
 
     Sweeps SMA windows [50, 75, 100, 150, 200]. Downloads data once per coin
@@ -536,7 +535,7 @@ def run_parameter_stability(
     if ma_windows is None:
         ma_windows = _MA_WINDOWS
 
-    results: list[ParamResult | dict] = []
+    results: list[ParamResult | dict[str, Any]] = []
 
     for coin in coins:
         # Download once per coin — avoid repeated downloads across window loop
@@ -593,7 +592,7 @@ def run_parameter_stability(
 console = Console()
 
 
-def print_cost_table(results: list[CostResult | dict]) -> None:
+def print_cost_table(results: list[CostResult | dict[str, Any]]) -> None:
     """Print Dimension 1 (cost sensitivity) as a Rich table."""
     table = Table(title="Dim 1: Kosten-Sensitivitaet", show_lines=True)
     table.add_column("Coin", style="cyan")
@@ -629,7 +628,7 @@ def print_cost_table(results: list[CostResult | dict]) -> None:
     console.print(table)
 
 
-def print_regime_table(results: list[RegimeResult | dict]) -> None:
+def print_regime_table(results: list[RegimeResult | dict[str, Any]]) -> None:
     """Print Dimension 2 (regime splits) as a Rich table.
 
     Columns: Coin / Regime / Sharpe(Strat) / Calmar(Strat) / MaxDD(Strat) / MaxDD(B&H) / OOS-Rows / Status
@@ -672,7 +671,7 @@ def print_regime_table(results: list[RegimeResult | dict]) -> None:
     console.print(table)
 
 
-def print_universe_table(results: list[UniverseResult | dict]) -> None:
+def print_universe_table(results: list[UniverseResult | dict[str, Any]]) -> None:
     """Print Dimension 3 (full universe) as a Rich table."""
     table = Table(title="Dim 3: Universum (10 Coins)", show_lines=True)
     table.add_column("Coin", style="cyan")
@@ -708,7 +707,7 @@ def print_universe_table(results: list[UniverseResult | dict]) -> None:
     console.print(table)
 
 
-def print_param_table(results: list[ParamResult | dict]) -> None:
+def print_param_table(results: list[ParamResult | dict[str, Any]]) -> None:
     """Print Dimension 4 (parameter stability) as a Rich table."""
     table = Table(title="Dim 4: Parameter-Stabilitaet (SMA-Fenster)", show_lines=True)
     table.add_column("Coin", style="cyan")
@@ -749,7 +748,7 @@ def print_param_table(results: list[ParamResult | dict]) -> None:
 # ---------------------------------------------------------------------------
 
 
-def main() -> dict:
+def main() -> dict[str, Any]:
     """Run all 4 stress-test dimensions and print Rich tables.
 
     Returns:

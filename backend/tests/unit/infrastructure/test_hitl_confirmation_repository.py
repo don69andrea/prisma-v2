@@ -32,7 +32,7 @@ async def session() -> AsyncGenerator[AsyncSession, None]:
 
     async with engine.begin() as conn:
         await conn.run_sync(
-            lambda sync_conn: HitlConfirmationORM.__table__.create(sync_conn, checkfirst=True)
+            lambda sync_conn: HitlConfirmationORM.__table__.create(sync_conn, checkfirst=True)  # type: ignore[attr-defined]
         )
 
     factory: async_sessionmaker[AsyncSession] = async_sessionmaker(

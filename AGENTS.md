@@ -27,6 +27,17 @@ Dependency Rule: innere Schichten dürfen äussere nie importieren.
 5. **Kein `API_KEY` im Code oder in Logs.** Immer via Environment Variables.
 6. **Test-First für Domain-Code.** Domain-Entities und Services: erst Test, dann Implementierung.
 
+## Goldene Regel: Wissenschaftliche Ehrlichkeit & Feature-Gating
+
+1. Jedes signal-/performance-relevante Feature (ML-Score, Meta-Label, Sentiment) ist standardmäßig
+   AUS (Flag/Env-Var), bis es im STRIKTEN Walk-Forward, netto nach Kosten, gegen die exposure-matched
+   Baseline einen Vorteil zeigt (Sharpe UND Calmar, oder Kosten-/Trade-Senkung ohne Performance-Verlust).
+2. Befunde ehrlich in docs/PRISMA_V4_FORTSCHRITT.md — auch Negativbefunde. Kein Überoptimieren.
+3. Modell-Updates nur per Champion/Challenger (neue Version nur bei echtem OOS-Vorteil aktiv).
+4. Im UI/Output kein Alpha/Edge behaupten, der nicht OOS belegt ist. Decision-Support, Disclaimer-Pflicht.
+5. Standard für jede "hilft das?"-Aussage: strikter Walk-Forward + Baselines (Buy&Hold, exposure-matched)
+   + Netto-Kosten + ausgewiesene N/Konfidenz.
+
 ---
 
 ## 2 · Workflow
@@ -169,7 +180,8 @@ Swiss Market Stocks: immer aus validierter Whitelist (SIX Exchange API), nie aus
 - Sprache: Deutsche Chunks bevorzugen für Swiss-specific Content
 
 ### 6.5 Decision Intelligence Dashboard
-- Signale: BUY / HOLD / WATCH (nie SELL — kein Shorting-Signal)
+- Signale SMI/3a-Universum: BUY / HOLD / WATCH (nie SELL — kein Shorting-Signal)
+- Signale Krypto-Universum: BUY / HOLD / SELL, wobei SELL = raus/cash (KEIN Shorting)
 - Jede Entscheidung hat einen Audit Trail (Welche Faktoren? Welcher Agent? Timestamp)
 - Konfidenz-Score sichtbar: "Diese Einschätzung basiert auf X Datenpunkten"
 

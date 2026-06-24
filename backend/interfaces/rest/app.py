@@ -43,6 +43,7 @@ from backend.interfaces.rest.routers import (
     stocks,
     universes,
 )
+from backend.interfaces.rest.routers.crypto_dashboard import router as crypto_dashboard_router
 
 _logger = logging.getLogger(__name__)
 
@@ -165,5 +166,6 @@ def create_app() -> FastAPI:
     app.include_router(signals.router, dependencies=_auth)
     app.include_router(signals.backtest_router, dependencies=_auth)
     app.include_router(signals.agent_router, dependencies=_auth)
+    app.include_router(crypto_dashboard_router, dependencies=_auth)
 
     return app

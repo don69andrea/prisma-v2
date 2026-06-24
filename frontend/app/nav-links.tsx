@@ -49,6 +49,13 @@ const NAV_GROUPS_SIMPLE: NavGroup[] = [
     ],
   },
   {
+    label: 'KRYPTO',
+    color: '#f97316',
+    links: [
+      { href: '/crypto', label: 'Krypto-Signale' },
+    ],
+  },
+  {
     label: 'WATCHLIST',
     color: '#10b981',
     links: [
@@ -89,6 +96,13 @@ const NAV_GROUPS_PRO: NavGroup[] = [
       { href: '/decision', label: 'Signale' },
       { href: '/alerts',   label: 'Alerts' },
       { href: '/news',     label: 'News' },
+    ],
+  },
+  {
+    label: 'KRYPTO',
+    color: '#f97316',
+    links: [
+      { href: '/crypto', label: 'Krypto-Signale' },
     ],
   },
   {

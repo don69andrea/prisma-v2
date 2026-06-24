@@ -387,15 +387,13 @@ async def test_d06_3_minority_protection() -> None:
     # agent_run dict is the third positional argument (coin, asof, agent_run)
     agent_run: dict[str, Any] = call_args[0][2]
 
-    # bear_case key must always be in the agent_run (minority protection)
-    assert "bear_case" in agent_run, (
-        "bear_case missing from agent_run — minority protection violated"
-    )
+    # bear key must always be in the agent_run (minority protection)
+    assert "bear" in agent_run, "bear missing from agent_run — minority protection violated"
 
-    # The stored bear_case must contain the actual bear thesis
-    stored_bear = agent_run["bear_case"]
+    # The stored bear must contain the actual bear thesis
+    stored_bear = agent_run["bear"]
     assert "Regulatory crackdown" in stored_bear["thesis"], (
-        "bear_case thesis not preserved in audit trail"
+        "bear thesis not preserved in audit trail"
     )
 
     # Risk overrule: verify Risk can reduce size_factor independently of majority opinion

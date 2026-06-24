@@ -10,7 +10,7 @@
 **Goal:** Deterministic, tested Signal Engine for Top-10 crypto universe that reproduces the PoC finding (strategy beats exposure-matched baseline on Sharpe AND Calmar in walk-forward, net costs).  
 **Branch:** `feat/v4-1-signal-engine`  
 **Spec:** `docs/PRISMA_V4-1_PHASENPLAN_Signal-Engine.md`  
-**Status:** in-progress  
+**Status:** complete  
 **Plans:** 7 plans
 
 Plans:
@@ -122,10 +122,45 @@ Plans:
 
 - [ ] 04-07-PLAN.md — compare_sentiment_backtest.py 2× walk-forward + honest FORTSCHRITT reporting (human-verify)
 
-### Phase 5: V4-5 UI (planned)
+### Phase 5: V4-4c Robustness (complete)
 
-Signal dashboard, explainability panel, indicator charts, backtest view.
+Walk-Forward robustness + stress-test of V4-1 engine.
 
-### Phase 6: V4-6 Begleitdoku (planned)
+### Phase 6: V4-4b Portfolio-Layer (complete)
+
+Portfolio-level Vol-Targeting + Drawdown-Bremse + Walk-Forward Backtest.
+
+### Phase 7: V4-5 UI Dashboard
+
+**Goal:** Read-only crypto signal dashboard: BUY/HOLD/SELL overview, Explainability Panel (3 layers + Agent-Reasoning-Kette), CandlestickChart with indicator overlays, Backtest Panel with honest caveats, Portfolio view, HITL-Gate dialog.
+**Branch:** `feat/v4-5-dashboard`
+**Status:** complete
+**Plans:** 8 plans
+
+Plans:
+**Wave 1**
+
+- [x] 07-01-PLAN.md — Backend: agent-audit + OHLCV + HITL-confirm endpoints + migration 0043
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [x] 07-02-PLAN.md — Frontend TypeScript API clients (crypto-signals.ts, agent-audit.ts, ohlcv.ts)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [x] 07-03-PLAN.md — Components A: CryptoSignalBadge + MiniSparkline + ExplainabilityPanel
+- [x] 07-04-PLAN.md — Components B: CryptoEquityChart + CandlestickChart + HitlDialog
+
+**Wave 4** *(blocked on Wave 3)*
+
+- [x] 07-05-PLAN.md — /crypto overview page + navigation update
+- [x] 07-06-PLAN.md — /crypto/[coin] detail + chart tabs
+- [x] 07-07-PLAN.md — /crypto/backtest + /crypto/portfolio pages
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [x] 07-08-PLAN.md — Playwright smoke test + Vitest component tests
+
+### Phase 8: V4-6 Begleitdoku (planned)
 
 Negative + positive findings document for the professor.

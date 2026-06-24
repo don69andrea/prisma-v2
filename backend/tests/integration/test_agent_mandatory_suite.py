@@ -388,9 +388,7 @@ async def test_d06_3_minority_protection() -> None:
     agent_run: dict[str, Any] = call_args[0][2]
 
     # bear key must always be in the agent_run (minority protection)
-    assert "bear" in agent_run, (
-        "bear missing from agent_run — minority protection violated"
-    )
+    assert "bear" in agent_run, "bear missing from agent_run — minority protection violated"
 
     # The stored bear must contain the actual bear thesis
     stored_bear = agent_run["bear"]

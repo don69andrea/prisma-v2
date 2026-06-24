@@ -61,7 +61,7 @@ export function CryptoOverviewClient() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             Krypto-Signale
-            <InfoPopover>
+            <InfoPopover ariaLabel="Info: Krypto-Signale">
               Signale basieren auf der V4-1 Signal-Engine (Trend-Following + Vol-Targeting).
               Alle Zahlen sind Out-of-Sample Walk-Forward Backtests, netto 0.1% Kosten.
               Kein Versprechen zukünftiger Renditen.

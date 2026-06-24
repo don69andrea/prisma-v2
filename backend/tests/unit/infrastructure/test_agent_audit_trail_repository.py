@@ -187,3 +187,47 @@ def test_repository_exposes_insert_method() -> None:
     assert hasattr(AgentAuditTrailRepository, "insert"), (
         "AgentAuditTrailRepository must expose insert() method"
     )
+
+
+# ---------------------------------------------------------------------------
+# find_latest_by_coin() tests (Task 4 — Plan 07-01)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_find_latest_by_coin_returns_most_recent(session: AsyncSession) -> None:
+    """Two inserts for the same coin → find_latest_by_coin returns the most-recent one."""
+    import asyncio
+    from datetime import UTC, datetime
+
+    repo = AgentAuditTrailRepository(session=session)
+
+    # Insert first (older)
+    id_older = await repo.insert(
+        coin="BTC",
+        asof=date(2026, 6, 1),
+        agent_run=_SAMPLE_AGENT_RUN,
+    )
+
+    # Small delay to ensure created_at ordering is deterministic in SQLite
+    await asyncio.sleep(0.01)
+
+    # Insert second (newer)
+    id_newer = await repo.insert(
+        coin="BTC",
+        asof=date(2026, 6, 2),
+        agent_run=_SAMPLE_AGENT_RUN,
+    )
+
+    result = await repo.find_latest_by_coin("BTC")
+    assert result is not None
+    assert result.id == id_newer
+
+
+@pytest.mark.asyncio
+async def test_find_latest_by_coin_returns_none_when_empty(session: AsyncSession) -> None:
+    """find_latest_by_coin returns None when no entries exist for the coin."""
+    repo = AgentAuditTrailRepository(session=session)
+
+    result = await repo.find_latest_by_coin("XRP")
+    assert result is None

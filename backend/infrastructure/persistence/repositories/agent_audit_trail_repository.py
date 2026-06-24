@@ -12,6 +12,7 @@ import uuid
 from datetime import date
 from typing import Any
 
+import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.infrastructure.persistence.models.agent_audit_trail import AgentAuditTrailORM
@@ -54,3 +55,20 @@ class AgentAuditTrailRepository:
         self._session.add(orm)
         await self._session.flush()
         return orm.id
+
+    async def find_latest_by_coin(self, coin: str) -> AgentAuditTrailORM | None:
+        """Returns the most recent audit trail entry for a coin (by created_at DESC).
+
+        Args:
+            coin: Crypto ticker symbol (e.g. "BTC", "ETH"). Uppercased internally.
+
+        Returns:
+            The most recent AgentAuditTrailORM row for the coin, or None if absent.
+        """
+        result = await self._session.execute(
+            sa.select(AgentAuditTrailORM)
+            .where(AgentAuditTrailORM.coin == coin.upper())
+            .order_by(AgentAuditTrailORM.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()

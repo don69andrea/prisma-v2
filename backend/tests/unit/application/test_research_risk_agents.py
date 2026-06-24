@@ -204,8 +204,8 @@ class TestBullResearchAgent:
         assert tool_def["input_schema"] == BullCase.model_json_schema()
 
     @pytest.mark.asyncio
-    async def test_build_case_uses_sonnet_model(self) -> None:
-        """BullResearchAgent must use claude-sonnet-4-6 (not Haiku)."""
+    async def test_build_case_uses_haiku_model(self) -> None:
+        """BullResearchAgent uses Haiku (switched from Sonnet: Sonnet at 1024 tokens truncated tool-use JSON)."""
         tool_data = {
             "thesis": "Thesis.",
             "strongest_points": ["P"],
@@ -230,7 +230,7 @@ class TestBullResearchAgent:
         )
 
         call_kwargs = mock_llm.messages_create.call_args.kwargs
-        assert call_kwargs["model"] == "claude-sonnet-4-6"
+        assert call_kwargs["model"] == "claude-haiku-4-5-20251001"
 
     @pytest.mark.asyncio
     async def test_build_case_no_tool_use_block_returns_fallback(self) -> None:
@@ -373,8 +373,8 @@ class TestBearResearchAgent:
         assert tool_def["input_schema"] == BearCase.model_json_schema()
 
     @pytest.mark.asyncio
-    async def test_build_case_uses_sonnet_model(self) -> None:
-        """BearResearchAgent must use claude-sonnet-4-6 (not Haiku)."""
+    async def test_build_case_uses_haiku_model(self) -> None:
+        """BearResearchAgent uses Haiku (switched from Sonnet: Sonnet at 1024 tokens truncated tool-use JSON)."""
         tool_data = {
             "thesis": "Thesis.",
             "strongest_points": ["P"],
@@ -399,7 +399,7 @@ class TestBearResearchAgent:
         )
 
         call_kwargs = mock_llm.messages_create.call_args.kwargs
-        assert call_kwargs["model"] == "claude-sonnet-4-6"
+        assert call_kwargs["model"] == "claude-haiku-4-5-20251001"
 
     @pytest.mark.asyncio
     async def test_build_case_no_tool_use_block_returns_fallback(self) -> None:

@@ -155,7 +155,7 @@ def _make_director(
         audit_uuid = AUDIT_UUID
 
     signal_service = MagicMock()
-    signal_service.evaluate = MagicMock(return_value=engine_signal)
+    signal_service.evaluate = AsyncMock(return_value=engine_signal)
 
     tech_agent = MagicMock()
     tech_agent.analyze = AsyncMock(return_value=tech_view)
@@ -167,7 +167,7 @@ def _make_director(
     senti_agent.analyze = AsyncMock(return_value=senti_view)
 
     macro_agent = MagicMock()
-    macro_agent.analyze = AsyncMock(return_value=macro_regime)
+    macro_agent.get_regime = AsyncMock(return_value=macro_regime)
 
     bull_agent = MagicMock()
     bull_agent.build_case = AsyncMock(return_value=bull_case)
@@ -264,7 +264,7 @@ async def test_fallback_analyst_exception_still_returns_trade_signal():
 
     engine_signal = _make_signal_vector(confidence=0.75)
     signal_service = MagicMock()
-    signal_service.evaluate = MagicMock(return_value=engine_signal)
+    signal_service.evaluate = AsyncMock(return_value=engine_signal)
 
     # tech_agent raises Exception
     tech_agent = MagicMock()
@@ -277,7 +277,7 @@ async def test_fallback_analyst_exception_still_returns_trade_signal():
     senti_agent.analyze = AsyncMock(return_value=_make_sentiment_view())
 
     macro_agent = MagicMock()
-    macro_agent.analyze = AsyncMock(return_value=_make_macro_regime())
+    macro_agent.get_regime = AsyncMock(return_value=_make_macro_regime())
 
     bull_agent = MagicMock()
     bull_agent.build_case = AsyncMock(return_value=_make_bull_case())

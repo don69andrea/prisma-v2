@@ -236,12 +236,17 @@ class SignalDirector:
         """
         asof: date = date.today()
 
-        # Step 1: deterministic engine signal (sync call wrapped in to_thread)
-        engine_signal = await asyncio.to_thread(
-            self._signal_service.evaluate,
-            coin,
+        # Step 1: deterministic engine signal
+        # Normalize coin: strip "-USD" suffix (e.g. "BTC-USD" → "BTC") for signal engine
+        base_coin = coin.split("-")[0]
+        prices_for_eval = self._prices_df
+        if base_coin not in prices_for_eval.columns and len(prices_for_eval.columns) > 0:
+            # Stub df has a single placeholder column — rename to match requested coin
+            prices_for_eval = prices_for_eval.rename(columns={prices_for_eval.columns[0]: base_coin})
+        engine_signal = await self._signal_service.evaluate(
+            base_coin,
             asof,
-            self._prices_df,
+            prices_for_eval,
             self._onchain_df,
             self._vol_model_info,
         )
@@ -249,9 +254,9 @@ class SignalDirector:
         # Step 2: 4 analysts in parallel, failures produce Exception objects
         _gather = await asyncio.gather(
             self._tech_agent.analyze(coin, getattr(engine_signal, "sub_scores", {})),
-            self._onchain_agent.analyze(coin, {}),
+            self._onchain_agent.analyze(coin),
             self._senti_agent.analyze(coin, {}),
-            self._macro_agent.analyze(coin, {}),
+            self._macro_agent.get_regime(),
             return_exceptions=True,
         )
         tech_raw: TechnicalView | BaseException = _gather[0]
@@ -297,8 +302,8 @@ class SignalDirector:
             macro = macro_raw
 
         # Step 3: Bull, Bear, Risk sequentially
-        bull: BullCase = await self._bull_agent.build_case(coin, engine_signal)
-        bear: BearCase = await self._bear_agent.build_case(coin, engine_signal)
+        bull: BullCase = await self._bull_agent.build_case(tech, onchain, senti, macro, engine_signal, coin)
+        bear: BearCase = await self._bear_agent.build_case(tech, onchain, senti, macro, engine_signal, coin)
         risk: RiskVerdict = await self._risk_agent.assess(coin, engine_signal)
 
         # Step 4: Python synthesis (pure deterministic, no LLM)
@@ -330,17 +335,17 @@ class SignalDirector:
         # Step 6: Persist ALL 8 outputs to audit trail (minority protection: bear always stored)
         # Keys MUST match AgentRunDetail schema (crypto_dashboard.py) and frontend AgentRunDetail
         agent_run: dict[str, Any] = {
-            "technical": tech.model_dump(),
-            "onchain": onchain.model_dump(),
-            "sentiment": senti.model_dump(),
-            "macro": macro.model_dump(),
-            "bull": bull.model_dump(),
-            "bear": bear.model_dump(),  # minority protection: always included
-            "risk": risk.model_dump(),
-            "trade_signal": signal.model_dump(),
+            "technical": tech.model_dump(mode="json"),
+            "onchain": onchain.model_dump(mode="json"),
+            "sentiment": senti.model_dump(mode="json"),
+            "macro": macro.model_dump(mode="json"),
+            "bull": bull.model_dump(mode="json"),
+            "bear": bear.model_dump(mode="json"),  # minority protection: always included
+            "risk": risk.model_dump(mode="json"),
+            "trade_signal": signal.model_dump(mode="json"),
         }
 
-        audit_id: uuid.UUID = await self._audit_repo.insert(coin, asof, agent_run)
+        audit_id: uuid.UUID = await self._audit_repo.insert(base_coin, asof, agent_run)
 
         # Embed the REAL UUID returned by the repo (not the placeholder)
         final_signal = signal.model_copy(update={"audit_trail_id": audit_id})

@@ -38,6 +38,7 @@ _logger = logging.getLogger(__name__)
 _BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
 _DEMO_ONLY = os.environ.get("SEED_DEMO_ONLY", "") == "1"
 _DEFAULT_DB_URL = "postgresql+asyncpg://prisma:prisma@localhost:5432/prisma"
+_API_KEY = os.environ.get("API_KEY", "")
 
 _ALL_COINS = ["BTC", "ETH", "BNB", "SOL", "XRP", "ADA", "AVAX", "MATIC", "DOT", "LINK"]
 
@@ -59,6 +60,7 @@ async def _seed_via_api(coins: list[str]) -> list[str]:
         return []
 
     seeded: list[str] = []
+    headers = {"X-API-Key": _API_KEY} if _API_KEY else {}
 
     async with httpx.AsyncClient(timeout=120.0) as client:
         # Gesundheitscheck
@@ -75,7 +77,7 @@ async def _seed_via_api(coins: list[str]) -> list[str]:
             url = f"{_BACKEND_URL}/api/v1/agent-signal/{coin}-USD"
             _logger.info("▶ %s — %s", coin, url)
             try:
-                resp = await client.get(url)
+                resp = await client.get(url, headers=headers)
                 if resp.status_code == 200:
                     data = resp.json()
                     _logger.info(

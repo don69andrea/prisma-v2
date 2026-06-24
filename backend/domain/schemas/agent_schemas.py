@@ -103,16 +103,16 @@ class BullCase(BaseModel):
     """Output of BullResearchAgent — deliberately one-sided bullish thesis."""
 
     thesis: str
-    strongest_points: list[str]
-    risks_acknowledged: list[str]
+    strongest_points: list[str] = Field(default_factory=list)
+    risks_acknowledged: list[str] = Field(default_factory=list)
 
 
 class BearCase(BaseModel):
     """Output of BearResearchAgent — deliberately one-sided bearish thesis."""
 
     thesis: str
-    strongest_points: list[str]
-    counter_to_bull: list[str]
+    strongest_points: list[str] = Field(default_factory=list)
+    counter_to_bull: list[str] = Field(default_factory=list)
 
 
 class RiskVerdict(BaseModel):

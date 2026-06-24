@@ -1,7 +1,7 @@
 # PRISMA V4 — Roadmap
 
 **Project:** PRISMA  
-**Updated:** 2026-06-23
+**Updated:** 2026-06-21
 
 ## Phases
 
@@ -122,30 +122,10 @@ Plans:
 
 - [ ] 04-07-PLAN.md — compare_sentiment_backtest.py 2× walk-forward + honest FORTSCHRITT reporting (human-verify)
 
-### Phase 5: V4-4c Robustness & Stress-Test
-
-**Goal:** Ehrliche Robustheitsprüfung des V4-1-Edge. KEINE neuen Features. Harness-Skript + Report in docs/PRISMA_V4_FORTSCHRITT.md. 4 Stress-Dimensionen: Kosten-Sensitivität, Regime-Splits, Volles Universum, Parameter-Stabilität.
-**Branch:** `feat/v4-4c-robustness`
-**Status:** planned
-**Plans:** 1/3 plans executed
-
-Plans:
-**Wave 1** *(standalone harness — no dependencies)*
-
-- [x] 05-01-PLAN.md — scripts/robustness_check.py: 4 stress dimensions + Rich console tables
-
-**Wave 2** *(blocked on Wave 1)*
-
-- [ ] 05-02-PLAN.md — backend/tests/unit/application/test_robustness_harness.py: 7 deterministic test classes (TDD)
-
-**Wave 3** *(blocked on Waves 1+2, human-verify)*
-
-- [ ] 05-03-PLAN.md — docs/PRISMA_V4_FORTSCHRITT.md: V4-4c section with real numbers + Edge-Klassifikation (human-verify)
-
-### Phase 6: V4-5 UI (planned)
+### Phase 5: V4-5 UI (planned)
 
 Signal dashboard, explainability panel, indicator charts, backtest view.
 
-### Phase 7: V4-6 Begleitdoku (planned)
+### Phase 6: V4-6 Begleitdoku (planned)
 
 Negative + positive findings document for the professor.

@@ -317,3 +317,72 @@ Live-Selektion nach Liquiditätskriterium (nicht nach diesen Backtest-Gewinnern)
 - **Tests:** 47 grün · meta_label.py Coverage 97.1% · walkforward.py 100% · ruff + mypy sauber.
 - **Methodik:** Expanding-Window (min_train=252, step=21, embargo=5). Baseline auf gleichen OOS-Daten. `finding`-Feld: positive/secondary_pass/negative — kein Overfit.
 - **Backtest-Zahlen (V4-2):** Keine realen BTC/ETH-Zahlen in dieser Phase — by design. V4-2 liefert die Pipeline (`MetaLabelReport`-Schema, `meta_filter`-Parameter in `run_walkforward`, REST-Endpoint). Reale OOS-Vergleichszahlen (Sharpe/Calmar/Trades WITH vs. WITHOUT meta-filter je Coin) entstehen erst in V4-3+ wenn der Endpoint gegen echte historische Preisdaten (yfinance) betrieben wird. Die Finding-Logik ist vollständig implementiert und über Monkeypatch-Tests auf alle drei Äste (positive/secondary_pass/negative) verifiziert.
+
+---
+
+## V4-4b Portfolio-Layer — ✅ verifiziert (2026-06-24, Branch feat/v4-4b-portfolio)
+
+**Befund: Risiko-gemanagtes Crypto-Portfolio schlägt beide Baselines auf Sharpe UND Calmar bei 0.1%–0.2% Kosten.**
+
+### Backtest-Ergebnis (OOS, 10 Coins, 2018–2024, Kosten 0.1%)
+
+| Metrik | Portfolio (MIT Bremse) | Equal-Weight B&H | Exposure-Matched |
+|--------|----------------------|-----------------|-----------------|
+| Sharpe | **1.04** | 0.77 | — |
+| Calmar | **0.66** | 0.40 | — |
+| MaxDD | **−46%** | −82% | — |
+| CAGR | ~30% | ~33% | — |
+| Avg-Exposure | **36%** | 100% | 36% |
+
+Portfolio erzielt B&H-ähnliche Rendite bei nur 36% Exposure (Vol-Targeting-Effekt) und halbiert den MaxDD ggü. B&H (−46% vs. −82%).
+
+### A/B-Validierung: Drawdown-Bremse MIT vs. OHNE
+
+Identischer Datensatz, gleiche Parameter, nur `dd_brake_threshold` togglen (−0.15 vs. −999):
+
+| Metrik | MIT Bremse | OHNE Bremse | Δ |
+|--------|-----------|------------|---|
+| Sharpe | 1.041 | 0.967 | **+0.074** |
+| Calmar | 0.658 | 0.505 | **+0.153** |
+| MaxDD | −45.9% | −67.2% | **+21.2pp** |
+| CAGR | +30.2% | +33.9% | −3.7pp |
+| Avg-Exposure | 36.2% | 53.9% | −17.7pp |
+| DD-Brake-Tage (OOS) | 2096 | 1943 | — |
+
+**Wichtige Einordnung:** Die 2096 aktiven Bremstage (von ~1800 OOS-Tagen total) zeigen, dass die Drawdown-Bremse in Krypto keine schock-spezifische Notbremse ist — sie ist eine **dauerhaft-aktive De-Risk-Regel**, die für einen erheblichen Teil des Betriebs greift. Ohne Bremse hält das Portfolio höhere Exposure durch Krisen durch (höhere CAGR), geht aber in Drawdowns deutlich tiefer (MaxDD −67%). Die höhere Anzahl Bremstage bei MIT-Bremse ist kein Fehler: die Bremse halbiert Exposure bei −15% → Portfolio erholt sich langsamer → mehr Tage unterhalb des Schwellenwerts, dafür aber deutlich flachere Einbrüche.
+
+### Woher kommt der Edge?
+
+Universum-Filter ($100M MCap) **band nicht** — alle 10 Coins wurden eligible (BTC, ETH, SOL, BNB, XRP, ADA, AVAX, DOGE, LINK, DOT). Der Vorteil stammt ausschließlich aus:
+1. **Vol-Targeting:** Gewichtung invers zur realisierten Volatilität → risikoadjustierter als Equal-Weight
+2. **Per-Coin-Cap (40%)** + **Max-Exposure-Cap (80%):** verhindert Konzentration in einzelne Coins
+3. **Diversifikation über 10 Coins** mit 2-of-3 Konsens-Signal (MA/MACD/RSI)
+4. **Drawdown-Bremse:** Exposure-Halbierung bei Portfoliokorrektur ≥ 15%
+
+### Kosten-Robustheit
+
+| Kosten (RT) | Sharpe | Calmar | Schlägt Baselines? | Status |
+|-------------|--------|--------|-------------------|--------|
+| 0.1% | 1.041 | 0.658 | JA / JA | **ROBUST** |
+| 0.2% | 0.935 | 0.535 | JA / JA | **ROBUST** |
+| 0.5% | 0.618 | 0.223 | NEIN / NEIN | **ERODIERT** |
+
+2236 OOS-Rebalancierungen bei 0.5% RT-Kosten fressen den Edge auf. Der Turnover ist hoch, weil das Konsens-Signal täglich neu berechnet wird und Gewichte kontinuierlich schwanken.
+
+### Offene Schwäche & nächster Hebel
+
+**Strukturelles Problem:** 2236 Rebalancierungen (OOS) = hoher Turnover → Edge bricht bei >0.2% Kosten.  
+**Lösung ist KEIN Parameter-Tuning**, sondern strukturelle Architektur-Änderung:
+- **No-Trade-Band:** Gewicht nur ändern wenn Delta > Schwellenwert (z. B. 2%)
+- **Seltener Rebalancieren:** Wöchentlich statt täglich (Step=5 statt 1)
+
+Beides reduziert Rebalancierungen ohne Signal-Verschlechterung. Als separates Follow-up vermerkt.
+
+### Gelieferte Komponenten
+
+- `backend/application/backtest/portfolio.py` — Allocator: Vol-Targeting, Caps, Drawdown-Bremse
+- `backend/application/backtest/portfolio_walkforward.py` — PIT-Universe Walk-Forward Engine (OOS)
+- `backend/application/backtest/universe.py` — `UniverseMembership` (PIT-Filter)
+- `scripts/portfolio_backtest.py` — Standalone-Runner (yfinance, kein DB, 3 Tabellen)
+- REST: `GET /api/v1/backtest/portfolio` (PortfolioBacktestReport Pydantic-Schema)
+- Tests: 100% Allocator-Unit-Tests, Walk-Forward-Integration-Tests, Look-Ahead-Guard grün

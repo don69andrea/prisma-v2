@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from backend.domain.entities.news_article import NewsArticle
 from backend.domain.entities.news_chunk import NewsChunk
@@ -76,6 +76,8 @@ class NewsIngestionService:
         Returns:
             dict mit Schlüsseln "ingested", "skipped_duplicate", "errors".
         """
+        if self._cryptopanic is None:
+            return {"ingested": 0, "skipped_duplicate": 0, "errors": 0}
         stats: dict[str, int] = {"ingested": 0, "skipped_duplicate": 0, "errors": 0}
         now = datetime.now(UTC)
         cutoff = now - timedelta(days=_CRYPTOPANIC_TTL_DAYS)
@@ -106,7 +108,7 @@ class NewsIngestionService:
                         continue
 
                     # D-07: use currencies as tickers, no TickerNer
-                    tickers = list(raw.currencies)
+                    tickers: tuple[str, ...] = tuple(raw.currencies)
                     article = NewsArticle(
                         id=uuid.uuid4(),
                         url=raw.url,
@@ -246,7 +248,7 @@ class NewsIngestionService:
         return stats
 
 
-def _chunk_text_with_metadata(article: NewsArticle, metadata: dict) -> list[NewsChunk]:
+def _chunk_text_with_metadata(article: NewsArticle, metadata: dict[str, Any]) -> list[NewsChunk]:
     """Chunk article text using the provided metadata dict for each chunk.
 
     Used by ingest_cryptopanic() to inject votes_positive/votes_negative (C-02).

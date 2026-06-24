@@ -305,6 +305,64 @@ Agenten + UI. Übergabe an GSD/Sub-Agenten gemäss `PRISMA_V4_AGENTS.md`.
 
 ---
 
+## 11 · Plan-Review & Erweiterung (Stand nach V4-1…V4-4)
+
+> Hinzugefügt 2026-06-22, nachdem V4-1/2/3 fertig und V4-4 abgeschlossen sind. Dieser Abschnitt **hinterfragt**
+> den Plan anhand der echten Ergebnisse und **revidiert die Restphasen** entsprechend.
+
+### 11.1 · Was die Daten bisher sagen (die ehrliche Bilanz)
+| Phase | Ergebnis | Lehre |
+|---|---|---|
+| V4-1 Engine (Trend + Vol-Targeting) | **POSITIV, OOS belegt** (schlägt exposure-matched Baseline) | **Der einzige echte Edge des Projekts.** |
+| V4-2 Meta-Labeling | kein robuster Vorteil → aus | prädiktiver Aufsatz generalisiert nicht |
+| V4-4 Sentiment (RAG) | kein Vorteil (synthetisch) → aus | dito |
+
+**Das Muster ist eindeutig:** Jede prädiktive Zusatzschicht nach V4-1 hat **keinen** robusten Mehrwert gebracht.
+Der Edge sitzt in der simplen, robusten **Trend+Vol-Engine** — nicht in zusätzlichem ML. Das ist ein *starkes,
+ehrliches* Ergebnis (Occam: das einfachste robuste System gewinnt), kein Mangel.
+
+**Konsequenz:** **Keine weiteren prädiktiven ML-Gadgets** mehr dranschrauben (das wäre genau der In-Sample-
+Optimismus-Fehler in neuer Form). Stattdessen den vorhandenen Edge **robust, risiko-sauber, sichtbar** machen
+und **ehrlich über die Zeit belegen**. Das schärft auch die Produkt-These (§11.3).
+
+### 11.2 · Revidierte/erweiterte Restphasen (ersetzt die offenen Phasen aus §8)
+> Neue Arbeit ist nach *Wert* sortiert — sie stärkt Robustheit, Risiko und Sichtbarkeit, nicht Vorhersage.
+
+- **NEU · V4-4b Portfolio-Layer** *(hoher Wert).* Die Engine ist bisher *pro Coin*. Krypto ist hoch korreliert →
+  naives Gleichgewicht über 10 Coins = faktisch gehebeltes Beta. Bauen: **Allokation über das Top-10-Universum**
+  (Vol-Targeting auf Portfolio-Ebene, korrelations-aware Caps, Gesamt-Exposure-Limit, Drawdown-Bremse), plus
+  **portfolio-level Walk-Forward-Backtest** gegen Buy&Hold-Korb + exposure-matched. Realistischer und näher an
+  „echtem Geld" als jede weitere Feature-Schicht.
+- **NEU · V4-4c Robustheits-/Stresstest der V4-1-Engine** *(hoher Wert, Pflicht vor „echtem Geld").* Hält der
+  Edge bei **höheren Kosten/Slippage** (0.1/0.2/0.5 %)? In **Bär- vs. Bull-Regimen** (Subperioden)? Über das
+  **volle Top-10-Universum** (nicht nur BTC/ETH)? Bei **Parameter-Variation** (Trend/Vol-Fenster)? Ergebnis
+  ehrlich in `FORTSCHRITT.md` — sagt uns, ob der Edge robust oder fragil ist.
+- **V4-5 UI/Dashboard** *(bleibt, hoch priorisiert).* Inkl. **echtem HITL-Gate** (das aus V4-3 als non-blocking
+  Log zurückgestellt wurde) + Explainability-Panel + Chart-Indikatoren + Portfolio-/Backtest-View.
+- **V4-6 verschlankt.** Das schwere **Champion/Challenger-Retraining** war für ein überwiegend *regelbasiertes*
+  System over-engineered. Behalten: **SignalEvaluationJob** (Outcome-Tracking), **DriftMonitor**, und ein
+  **periodisches Vol-Modell-Refit** (nur dort lernt wirklich ein Modell). Den schweren MLOps-Apparat für die
+  regelbasierten Teile streichen.
+- **NEU · V4-6b Forward-Paper-Trading-Log** *(hochgezogen — billigster, glaubwürdigster Hebel).* Ab sofort
+  **täglich Live-Signale + realisierte Outcomes mitschreiben** = echter Out-of-Sample-Beweis über die Zeit
+  (Live ≠ Backtest). Liefert die ehrlichste Evidenz fürs Modul **und** für späteres echtes Trading.
+- **V4-7 Begleitdoku / V4-8 Release → main** *(bleiben).*
+
+### 11.3 · Geschärfte Produkt-These
+**PRISMA = transparentes, regelbasiertes Trend-Following + Vol-Targeting auf Krypto, mit erklärender
+Agentic-Schicht und ehrlicher, fortlaufender Evaluation.** Die ML-Komponenten sind **dokumentierte Forschung**
+(positiv: Volatilität ist prognostizierbar → Sizing; negativ: Returns/Meta-Label/Sentiment generalisieren nicht).
+Das ist eine **stärkere, ehrlichere Geschichte** als „magisches ML-Signal" — und genau das, was das BI-Modul
+(Methodik, Erklärbarkeit, AI-in-the-Loop) belohnt.
+
+### 11.4 · Empfohlene Reihenfolge ab jetzt
+V4-4 abschließen (ehrlich „aus") → **V4-4c Robustheits-Test** (klärt, wie belastbar der Edge ist) →
+**V4-4b Portfolio-Layer** → **V4-5 UI** (macht alles sichtbar) → **V4-6 (schlank) + V4-6b Paper-Log** parallel
+mitlaufen lassen → V4-7 Doku → V4-8 Release. *Optional jederzeit:* echter CryptoPanic-Daten-A/B (ändert die
+Entscheidung „aus" voraussichtlich nicht, liefert aber echten statt synthetischen Beleg).
+
+---
+
 ### Quellen
 - TradingAgents (Multi-Agent-LLM-Trading): https://arxiv.org/abs/2412.20138 · https://github.com/TauricResearch/TradingAgents
 - LLM-Agent-Grenzen/Halluzination: https://arxiv.org/html/2605.19337v1 · https://arxiv.org/pdf/2512.02261

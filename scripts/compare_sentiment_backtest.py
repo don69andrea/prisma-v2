@@ -340,14 +340,10 @@ def _print_comparison_table(results: list[ComparisonResult]) -> None:
         print("EMPFEHLUNG: SENTIMENT_ENABLED=true (alle Coins verbessert, D-08 erfuellt)")
     elif any_improves:
         print(
-            "EMPFEHLUNG: SENTIMENT_ENABLED=false "
-            "(nicht alle Coins verbessert; D-08 nicht erfuellt)"
+            "EMPFEHLUNG: SENTIMENT_ENABLED=false (nicht alle Coins verbessert; D-08 nicht erfuellt)"
         )
     else:
-        print(
-            "EMPFEHLUNG: SENTIMENT_ENABLED=false bleibt Standard "
-            "(kein Coin verbessert, D-08)"
-        )
+        print("EMPFEHLUNG: SENTIMENT_ENABLED=false bleibt Standard (kein Coin verbessert, D-08)")
     print()
 
 

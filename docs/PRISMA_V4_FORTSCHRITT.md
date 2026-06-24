@@ -181,6 +181,133 @@ sachlich dokumentiert wie ein positives. Es gibt keine "gewuenschte" Richtung.
 
 ---
 
+## V4-4c Robustheits-Harness — Ergebnis (2026-06-23)
+
+> **Methodik-Hinweis [engine-approximativ]:** consensus_vote() ECHT (backend.application.signals.consensus),
+> Vol-Sizing = rolling(21)-Näherung statt fit_walkforward (standalone ohne DB).
+> Alle Zahlen netto, strikter Walk-Forward (min_train=252, step=63), exposure-matched + Buy&Hold Baseline.
+
+### Gesamtklassifikation
+
+**Edge partiell robust:** Kosten und Parameter-Stabilität bestanden. Universum fragil (5/10 Altcoins kein Edge).
+Regime-abhängig: Downside-Schutz in graduellen Bärmärkten (2018) stark, in Schock-Bärmärkten (2022) minimal.
+Kein Overfitting-Befund, aber kein universeller Edge.
+
+> **Ehrliche Einordnung:**
+> (a) Das Live-Universum wird nach **prinzipiellem Liquiditätskriterium** gewählt (Market-Cap-Rang, Handelsvolumen),
+>     NICHT nach Backtest-Gewinnern — Cross-Sectional-Overfitting würde entstehen, wenn die 5 "guten" Coins
+>     nachträglich selektiert würden.
+> (b) Die Schock-Bär-Schwäche (Bear 2022: MaxDD Strat −65.8% ≈ B&H −66.9%) ist **strukturell erwartet**:
+>     Trend-Following funktioniert nicht bei panikartigen Schocks. Adressierung in V4-4b via Vol-Targeting +
+>     Drawdown-Bremse — nicht durch Vorhersage des Schocks.
+
+### Dim 1 — Kosten-Sensitivität (BTC/ETH, SMA(100), WF)
+
+| Coin | Kosten (RT) | Sharpe(Strat) | Sharpe(Base) | Calmar(Strat) | MaxDD | Edge? |
+|------|------------|--------------|-------------|--------------|-------|-------|
+| BTC-USD | 0.1% | 1.154 | 0.853 | 0.714 | −72.9% | ✅ |
+| BTC-USD | 0.2% | 1.089 | 0.853 | 0.630 | −75.7% | ✅ |
+| BTC-USD | 0.5% | 0.894 | 0.853 | 0.429 | −82.5% | ✅ |
+| ETH-USD | 0.1% | 0.770 | 0.543 | 0.494 | −59.3% | ✅ |
+| ETH-USD | 0.2% | 0.714 | 0.543 | 0.422 | −61.2% | ✅ |
+| ETH-USD | 0.5% | 0.544 | 0.543 | 0.240 | −66.4% | ✅ (hauchdünn) |
+
+**Befund:** Edge überlebt alle Kostenstufen. BTC komfortabel, ETH bei 0.5% am Limit.
+
+### Dim 2 — Regime-Splits (BTC/ETH + verfügbare Altcoins, SMA(100), Kosten 0.1%)
+
+Schlüsselbefund Downside-Schutz (MaxDD Strategie vs. Buy&Hold):
+
+| Coin | Regime | MaxDD(Strat) | MaxDD(B&H) | Downside-Schutz |
+|------|--------|-------------|-----------|----------------|
+| BTC-USD | Bear 2018 | −38.4% | −81.5% | ✅ stark |
+| BTC-USD | Bear 2022 | −65.8% | −66.9% | ❌ minimal (Schock) |
+| ETH-USD | Bear 2018 | −49.4% | −94.0% | ✅ stark |
+| ETH-USD | Bear 2022 | −43.2% | −74.1% | ✅ partiell |
+
+Vollständige Regime-Tabelle (alle 10 Coins, alle 4 Regime):
+
+| Coin | Regime | Sharpe(Strat) | Calmar(Strat) | MaxDD(Strat) | MaxDD(B&H) | OOS-Rows | Status |
+|------|--------|--------------|--------------|-------------|-----------|----------|--------|
+| BTC-USD | Bear 2018 | −0.817 | −0.622 | −38.4% | −81.5% | 364 | OK |
+| BTC-USD | Bull 2021 | 0.834 | 1.031 | −32.6% | −53.1% | 364 | OK |
+| BTC-USD | Bear 2022 | −1.897 | −0.747 | −65.8% | −66.9% | 364 | OK |
+| BTC-USD | Bull 2023-24 | 1.326 | 1.559 | −42.2% | −26.2% | 730 | OK |
+| ETH-USD | Bear 2018 | −0.467 | −0.405 | −49.4% | −94.0% | 364 | OK |
+| ETH-USD | Bull 2021 | 1.729 | 3.947 | −32.2% | −57.1% | 364 | OK |
+| ETH-USD | Bear 2022 | −0.511 | −0.632 | −43.2% | −74.1% | 364 | OK |
+| ETH-USD | Bull 2023-24 | 0.801 | 0.560 | −55.5% | −45.3% | 730 | OK |
+| BNB-USD | Bear 2018 | 0.076 | −0.115 | −42.4% | −80.1% | 364 | OK |
+| BNB-USD | Bull 2021 | 2.812 | 16.715 | −20.1% | −61.3% | 364 | OK |
+| BNB-USD | Bear 2022 | −0.313 | −0.536 | −38.9% | −62.9% | 364 | OK |
+| BNB-USD | Bull 2023-24 | 0.962 | 1.160 | −35.3% | −41.1% | 730 | OK |
+| SOL-USD | Bear 2018 | — | — | — | — | — | insufficient |
+| SOL-USD | Bull 2021 | 2.725 | 10.761 | −31.4% | −58.0% | 364 | OK |
+| SOL-USD | Bear 2022 | −1.644 | −0.671 | −67.6% | −94.6% | 364 | OK |
+| SOL-USD | Bull 2023-24 | 1.241 | 1.337 | −48.5% | −44.7% | 730 | OK |
+| XRP-USD | Bear 2018 | 0.139 | −0.066 | −29.3% | −92.2% | 364 | OK |
+| XRP-USD | Bull 2021 | 1.201 | 2.482 | −26.5% | −71.2% | 364 | OK |
+| XRP-USD | Bear 2022 | −1.163 | −0.745 | −58.7% | −64.9% | 364 | OK |
+| XRP-USD | Bull 2023-24 | 0.791 | 0.529 | −62.7% | −48.8% | 730 | OK |
+| ADA-USD | Bear 2018 | −0.760 | −0.478 | −51.3% | −97.5% | 364 | OK |
+| ADA-USD | Bull 2021 | 2.026 | 4.722 | −34.7% | −59.2% | 364 | OK |
+| ADA-USD | Bear 2022 | −1.509 | −0.774 | −56.4% | −84.7% | 364 | OK |
+| ADA-USD | Bull 2023-24 | 1.320 | 1.494 | −48.9% | −59.6% | 730 | OK |
+| AVAX-USD | Bear 2018 | — | — | — | — | — | insufficient |
+| AVAX-USD | Bull 2021 | 2.801 | 12.685 | −32.7% | −82.5% | 364 | OK |
+| AVAX-USD | Bear 2022 | −1.480 | −0.775 | −57.7% | −90.5% | 364 | OK |
+| AVAX-USD | Bull 2023-24 | 1.324 | 1.821 | −41.4% | −67.8% | 730 | OK |
+| MATIC-USD | Bear 2018 | — | — | — | — | — | insufficient |
+| MATIC-USD | Bull 2021 | 2.668 | 19.586 | −16.4% | −71.9% | 364 | OK |
+| MATIC-USD | Bear 2022 | −0.204 | −0.466 | −40.7% | −86.5% | 364 | OK |
+| MATIC-USD | Bull 2023-24 | 0.177 | −0.030 | −55.9% | −80.9% | 730 | OK |
+| DOT-USD | Bear 2018 | — | — | — | — | — | insufficient |
+| DOT-USD | Bull 2021 | 1.322 | 2.236 | −33.0% | −77.1% | 364 | OK |
+| DOT-USD | Bear 2022 | −1.474 | −0.747 | −51.7% | −85.8% | 364 | OK |
+| DOT-USD | Bull 2023-24 | 0.990 | 0.704 | −62.9% | −67.5% | 730 | OK |
+| LINK-USD | Bear 2018 | −0.086 | −0.283 | −40.6% | −87.9% | 364 | OK |
+| LINK-USD | Bull 2021 | 1.146 | 2.513 | −22.5% | −73.6% | 364 | OK |
+| LINK-USD | Bear 2022 | −0.890 | −0.613 | −61.1% | −80.4% | 364 | OK |
+| LINK-USD | Bull 2023-24 | 0.646 | 0.441 | −51.0% | −56.4% | 730 | OK |
+
+**Befund:** Trend-Following schützt in graduellen Bärmärkten (2018). Schock-Bärmärkte (2022/FTX) werden nicht abgefedert — strukturell erwartet (s. Einordnung oben).
+SOL/AVAX/MATIC/DOT: keine Daten für Bear 2018 (Listing nach 2018).
+
+### Dim 3 — Volles Universum (alle 10 Coins, SMA(100), Kosten 0.1%)
+
+| Coin | Sharpe(Strat) | Sharpe(Base) | Calmar | MaxDD | Beats? |
+|------|--------------|-------------|--------|-------|--------|
+| BTC-USD | 1.154 | 0.853 | 0.714 | −72.9% | ✅ |
+| ETH-USD | 0.770 | 0.543 | 0.494 | −59.3% | ✅ |
+| BNB-USD | 1.072 | 0.952 | 0.957 | −50.7% | ✅ |
+| SOL-USD | 0.789 | 0.971 | 0.415 | −71.8% | ❌ |
+| XRP-USD | 0.473 | 0.571 | 0.169 | −74.3% | ❌ |
+| ADA-USD | 0.678 | 0.569 | 0.304 | −74.8% | ✅ |
+| AVAX-USD | 0.836 | 0.496 | 0.511 | −65.5% | ✅ |
+| MATIC-USD | 0.662 | 0.945 | 0.399 | −57.4% | ❌ (→POL, Daten bis 2025-03-24) |
+| DOT-USD | 0.215 | 0.254 | −0.004 | −89.3% | ❌ |
+| LINK-USD | 0.605 | 0.768 | 0.278 | −69.4% | ❌ |
+
+**Befund:** 5/10 Coins schlagen Baseline (BTC, ETH, BNB, ADA, AVAX). Edge nicht universell.
+Live-Selektion nach Liquiditätskriterium (nicht nach diesen Backtest-Gewinnern).
+
+### Dim 4 — Parameter-Stabilität (BTC/ETH, SMA-Fenster [50,75,100,150,200])
+
+| Coin | SMA(50) | SMA(75) | SMA(100) ★ | SMA(150) | SMA(200) | Stabil? |
+|------|---------|---------|-----------|---------|---------|---------|
+| BTC Sharpe | 1.164 | 1.095 | 1.154 | 1.171 | 1.146 | ✅ alle >baseline |
+| ETH Sharpe | 0.838 | 0.794 | 0.770 | 0.867 | 0.831 | ✅ alle >baseline |
+
+★ = Default-Wert (V4-1, kein Cherry-Pick)
+
+**Befund:** SMA(100) war kein Cherry-Pick. Edge über alle 5 Fenster stabil. Kein Overfitting-Indiz.
+
+---
+*Harness: scripts/robustness_check.py · Tests: backend/tests/unit/application/test_robustness_harness.py (42 Tests grün)*
+*User-approved: 2026-06-23*
+
+---
+
 ## V4-2 Meta-Labeling — ✅ verifiziert (2026-06-21, Branch feat/v4-2-meta-labeling)
 
 - **Implementiert:** `meta_label.py` — Triple-Barrier-Labels, Trend-Scan-Labels, `build_meta_features` (10 Features, shift(1)), `fit_meta_classifier` (LogReg/LightGBM), `_walkforward_meta_cv` (embargo=5), `predict_meta_label`.

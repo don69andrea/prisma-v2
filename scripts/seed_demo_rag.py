@@ -35,6 +35,7 @@ _logger = logging.getLogger(__name__)
 # Deterministisches Fake-Embedding (kein Voyage AI nötig)
 # ---------------------------------------------------------------------------
 
+
 def _fake_embedding(text_content: str) -> list[float]:
     """Deterministischer 2048-dim Vektor aus Text-Hash. Nur für Demo."""
     seed = int(hashlib.sha256(text_content.encode()).hexdigest()[:8], 16)
@@ -277,6 +278,7 @@ DEMO_CHUNKS: list[dict[str, Any]] = [
 # Seed-Funktion
 # ---------------------------------------------------------------------------
 
+
 async def seed(session: AsyncSession) -> None:
     _logger.info("Seeding %d Demo-RAG-Chunks in swiss_rag_chunks …", len(DEMO_CHUNKS))
 
@@ -335,6 +337,7 @@ async def seed(session: AsyncSession) -> None:
 # ---------------------------------------------------------------------------
 # Entry Point
 # ---------------------------------------------------------------------------
+
 
 async def main() -> None:
     database_url = os.environ.get("DATABASE_URL")

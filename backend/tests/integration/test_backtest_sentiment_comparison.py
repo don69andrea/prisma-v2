@@ -444,7 +444,7 @@ class TestBacktestSentimentComparison:
         multi_coin_sentiment_views: dict[str, SentimentView],
     ) -> None:
         """SENTIMENT_ENABLED=true + negative score -> size_factor scaled down for all fear coins."""
-        results: dict[str, Any] = {}
+        results: dict[str, dict[str, Any]] = {}
 
         for coin in TOP_COINS:
             senti_view = multi_coin_sentiment_views[coin]

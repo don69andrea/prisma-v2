@@ -183,7 +183,6 @@ class TestNoLookAhead:
         """
         from scripts.robustness_check import build_signals
 
-        rng = np.random.default_rng(42)
         n = 800
         # Strictly monotone increasing — MA signal should always be 1 after warmup
         close = pd.Series(
@@ -207,7 +206,6 @@ class TestNoLookAhead:
 
         # A series where close[0] would trivially be > SMA[0] if no shift applied
         # (all values = 1000, SMA(50) would be 1000 immediately)
-        rng = np.random.default_rng(42)
         n = 800
         close = pd.Series(
             [1000.0] * n,
@@ -249,7 +247,6 @@ class TestNoLookAhead:
         """
         from scripts.robustness_check import build_signals
 
-        rng = np.random.default_rng(42)
         n = 800
         close = pd.Series(
             range(1, n + 1),
@@ -364,7 +361,6 @@ class TestCostSensitivity:
         import scripts.robustness_check as rc
         from scripts.robustness_check import _MIN_ROWS, run_cost_sensitivity
 
-        rng = np.random.default_rng(42)
         short_close = pd.Series(
             range(100),
             dtype=float,

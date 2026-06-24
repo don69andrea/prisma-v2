@@ -339,7 +339,7 @@ async def test_checkpoint_low_confidence_triggers_exactly_one_warning():
 
 @pytest.mark.asyncio
 async def test_minority_protection_bear_case_always_in_agent_run():
-    """D-06 test 3: bear_case key must be in agent_run dict passed to repo.insert."""
+    """D-06 test 3: bear key must be in agent_run dict passed to repo.insert."""
     director, audit_repo = _make_director()
 
     await director.run(COIN)
@@ -349,7 +349,7 @@ async def test_minority_protection_bear_case_always_in_agent_run():
     # positional: (coin, asof, agent_run)
     agent_run_dict = call_args[0][2]
 
-    assert "bear_case" in agent_run_dict, "bear_case must always be persisted (minority protection)"
+    assert "bear" in agent_run_dict, "bear must always be persisted (minority protection)"
 
 
 @pytest.mark.asyncio
@@ -363,13 +363,13 @@ async def test_all_8_outputs_in_agent_run():
     agent_run_dict = call_args[0][2]
 
     expected_keys = {
-        "tech_view",
-        "onchain_view",
-        "senti_view",
-        "macro_regime",
-        "bull_case",
-        "bear_case",
-        "risk_verdict",
+        "technical",
+        "onchain",
+        "sentiment",
+        "macro",
+        "bull",
+        "bear",
+        "risk",
         "trade_signal",
     }
     assert expected_keys == set(agent_run_dict.keys()), (

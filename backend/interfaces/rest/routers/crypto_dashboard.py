@@ -155,6 +155,10 @@ async def get_ohlcv(
             detail=f"OHLCV data temporarily unavailable for {coin_upper}.",
         ) from exc
 
+    # yfinance returns date as DatetimeIndex — promote to column so row["date"] works
+    df = df.reset_index()
+    df = df.rename(columns={"Date": "date", "Datetime": "date"})
+
     bars = [
         OHLCVBar(
             date=row["date"],

@@ -328,14 +328,15 @@ class SignalDirector:
             )
 
         # Step 6: Persist ALL 8 outputs to audit trail (minority protection: bear always stored)
+        # Keys MUST match AgentRunDetail schema (crypto_dashboard.py) and frontend AgentRunDetail
         agent_run: dict[str, Any] = {
-            "tech_view": tech.model_dump(),
-            "onchain_view": onchain.model_dump(),
-            "senti_view": senti.model_dump(),
-            "macro_regime": macro.model_dump(),
-            "bull_case": bull.model_dump(),
-            "bear_case": bear.model_dump(),  # minority protection: always included
-            "risk_verdict": risk.model_dump(),
+            "technical": tech.model_dump(),
+            "onchain": onchain.model_dump(),
+            "sentiment": senti.model_dump(),
+            "macro": macro.model_dump(),
+            "bull": bull.model_dump(),
+            "bear": bear.model_dump(),  # minority protection: always included
+            "risk": risk.model_dump(),
             "trade_signal": signal.model_dump(),
         }
 

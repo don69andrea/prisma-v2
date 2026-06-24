@@ -198,12 +198,11 @@ def test_repository_exposes_insert_method() -> None:
 async def test_find_latest_by_coin_returns_most_recent(session: AsyncSession) -> None:
     """Two inserts for the same coin → find_latest_by_coin returns the most-recent one."""
     import asyncio
-    from datetime import UTC, datetime
 
     repo = AgentAuditTrailRepository(session=session)
 
     # Insert first (older)
-    id_older = await repo.insert(
+    await repo.insert(
         coin="BTC",
         asof=date(2026, 6, 1),
         agent_run=_SAMPLE_AGENT_RUN,

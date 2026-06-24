@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CryptoEquityChart } from '@/components/crypto/CryptoEquityChart';
 import { getBacktest } from '@/lib/api/crypto-signals';
@@ -20,14 +19,13 @@ export function BacktestClient() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Select value={coin} onValueChange={setCoin}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {COINS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <select
+          value={coin}
+          onChange={e => setCoin(e.target.value)}
+          className="w-36 rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          {COINS.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
         <span className="text-sm text-muted-foreground">Coin auswählen</span>
       </div>
       {isLoading && <Skeleton className="h-80 w-full" />}

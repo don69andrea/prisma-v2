@@ -86,7 +86,6 @@ async def test_get_agent_audit_returns_200(
     audit_trail_id: uuid.UUID,
 ) -> None:
     """GET /{coin}/agent-audit returns 200 with parsed AgentAuditResponse."""
-    from backend.interfaces.rest.dependencies import get_session
     from backend.interfaces.rest.routers.crypto_dashboard import get_audit_trail_repo
 
     app = _build_test_app()
@@ -132,7 +131,6 @@ async def test_get_agent_audit_returns_404_when_empty() -> None:
 @pytest.mark.asyncio
 async def test_get_ohlcv_returns_bars() -> None:
     """GET /{coin}/ohlcv returns 200 with list of OHLCV bars for known coin."""
-    import asyncio
     from backend.interfaces.rest.routers.crypto_dashboard import get_crypto_price_adapter
 
     app = _build_test_app()

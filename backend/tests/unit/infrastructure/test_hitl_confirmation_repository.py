@@ -16,7 +16,6 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 pytestmark = pytest.mark.unit
@@ -72,10 +71,10 @@ async def test_insert_persists_decision(session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_insert_aborts(session: AsyncSession) -> None:
     """insert() stores an 'abort' decision and returns a UUID."""
+    from backend.infrastructure.persistence.models.hitl_confirmation import HitlConfirmationORM
     from backend.infrastructure.persistence.repositories.hitl_confirmation_repository import (
         HitlConfirmationRepository,
     )
-    from backend.infrastructure.persistence.models.hitl_confirmation import HitlConfirmationORM
 
     repo = HitlConfirmationRepository(session=session)
     audit_id = uuid.uuid4()

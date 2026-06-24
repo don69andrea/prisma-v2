@@ -15,6 +15,7 @@ Rules:
 - All fixtures use np.random.default_rng(seed=42) — no unseeded random (D-09)
 - Synthetic data only — no yfinance calls in tests
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -294,7 +295,9 @@ class TestCostSensitivity:
 
         monkeypatch.setattr(rc, "_download", lambda coin, start, end=None: trending_close)
 
-        results = run_cost_sensitivity(coins=["BTC-USD", "ETH-USD"], cost_levels=[0.001, 0.002, 0.005])
+        results = run_cost_sensitivity(
+            coins=["BTC-USD", "ETH-USD"], cost_levels=[0.001, 0.002, 0.005]
+        )
 
         assert len(results) == 6
 
@@ -354,9 +357,7 @@ class TestCostSensitivity:
         assert isinstance(r, CostResult)
         assert r.coin == "BTC-USD"
 
-    def test_insufficient_data_returns_dict(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_insufficient_data_returns_dict(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Coins with < _MIN_ROWS return dict with status='insufficient'."""
         import scripts.robustness_check as rc
         from scripts.robustness_check import _MIN_ROWS, run_cost_sensitivity
@@ -395,7 +396,9 @@ class TestRegimeSplit:
         monkeypatch.setattr(
             rc,
             "_download",
-            lambda coin, start, end=None: long_close[long_close.index <= end] if end else long_close,
+            lambda coin, start, end=None: (
+                long_close[long_close.index <= end] if end else long_close
+            ),
         )
 
         regimes = [{"name": "Bull 2021", "start": "2021-01-01", "end": "2021-12-31"}]
@@ -417,7 +420,9 @@ class TestRegimeSplit:
         monkeypatch.setattr(
             rc,
             "_download",
-            lambda coin, start, end=None: long_close[long_close.index <= end] if end else long_close,
+            lambda coin, start, end=None: (
+                long_close[long_close.index <= end] if end else long_close
+            ),
         )
 
         regimes = [{"name": "Bull 2021", "start": "2021-01-01", "end": "2021-12-31"}]
@@ -437,7 +442,9 @@ class TestRegimeSplit:
         monkeypatch.setattr(
             rc,
             "_download",
-            lambda coin, start, end=None: long_close[long_close.index <= end] if end else long_close,
+            lambda coin, start, end=None: (
+                long_close[long_close.index <= end] if end else long_close
+            ),
         )
 
         regimes = [{"name": "Bull 2021", "start": "2021-01-01", "end": "2021-12-31"}]
@@ -457,7 +464,9 @@ class TestRegimeSplit:
         monkeypatch.setattr(
             rc,
             "_download",
-            lambda coin, start, end=None: long_close[long_close.index <= end] if end else long_close,
+            lambda coin, start, end=None: (
+                long_close[long_close.index <= end] if end else long_close
+            ),
         )
 
         regimes = [{"name": "Bear 2018", "start": "2018-01-01", "end": "2018-12-31"}]
@@ -500,7 +509,9 @@ class TestRegimeSplit:
         monkeypatch.setattr(
             rc,
             "_download",
-            lambda coin, start, end=None: long_close[long_close.index <= end] if end else long_close,
+            lambda coin, start, end=None: (
+                long_close[long_close.index <= end] if end else long_close
+            ),
         )
 
         regimes = [{"name": "Bull 2021", "start": "2021-01-01", "end": "2021-12-31"}]
@@ -641,9 +652,7 @@ class TestBuyAndHold:
         _, _, bah_max_dd = _bah_metrics(trending_close)
         assert bah_max_dd <= 0.0, f"bah_max_dd must be <= 0, got {bah_max_dd}"
 
-    def test_avg_exposure_near_one_for_all_ones_signal(
-        self, trending_close: pd.Series
-    ) -> None:
+    def test_avg_exposure_near_one_for_all_ones_signal(self, trending_close: pd.Series) -> None:
         """All-ones signal → avg_exposure ~1.0 in walkforward details."""
         from backend.application.backtest.walkforward import run_walkforward_with_details
 

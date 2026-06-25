@@ -85,7 +85,7 @@ def _make_director(coin: str, senti_view: SentimentView) -> tuple[SignalDirector
     engine_signal = _make_signal_vector(coin)
 
     signal_service = MagicMock()
-    signal_service.evaluate = MagicMock(return_value=engine_signal)
+    signal_service.evaluate = AsyncMock(return_value=engine_signal)
 
     tech_agent = MagicMock()
     tech_agent.analyze = AsyncMock(
@@ -114,7 +114,7 @@ def _make_director(coin: str, senti_view: SentimentView) -> tuple[SignalDirector
     senti_agent.analyze = AsyncMock(return_value=senti_view)
 
     macro_agent = MagicMock()
-    macro_agent.analyze = AsyncMock(
+    macro_agent.get_regime = AsyncMock(
         return_value=MacroRegime(
             regime="RISK_ON",
             drivers=["Low rates"],

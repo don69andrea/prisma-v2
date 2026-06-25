@@ -26,7 +26,7 @@ from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoade
 
 _logger = logging.getLogger(__name__)
 
-_MODEL = "claude-sonnet-4-6"
+_MODEL = "claude-haiku-4-5-20251001"
 _MAX_TOKENS = 1024
 
 _TOOL_NAME = "submit_bear_case"

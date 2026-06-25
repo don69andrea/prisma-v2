@@ -164,7 +164,7 @@ def _make_director(
         audit_uuid = AUDIT_UUID
 
     signal_service = MagicMock()
-    signal_service.evaluate = MagicMock(return_value=engine_signal)
+    signal_service.evaluate = AsyncMock(return_value=engine_signal)
 
     tech_agent = MagicMock()
     if tech_raises:
@@ -186,9 +186,9 @@ def _make_director(
 
     macro_agent = MagicMock()
     if macro_raises:
-        macro_agent.analyze = AsyncMock(side_effect=macro_raises)
+        macro_agent.get_regime = AsyncMock(side_effect=macro_raises)
     else:
-        macro_agent.analyze = AsyncMock(return_value=macro_regime)
+        macro_agent.get_regime = AsyncMock(return_value=macro_regime)
 
     bull_agent = MagicMock()
     bull_agent.build_case = AsyncMock(return_value=bull_case)

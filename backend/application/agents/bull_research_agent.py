@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 _logger = logging.getLogger(__name__)
 
-_MODEL = "claude-sonnet-4-6"
+_MODEL = "claude-haiku-4-5-20251001"
 _MAX_TOKENS = 1024
 
 _TOOL_NAME = "submit_bull_case"
@@ -138,7 +138,13 @@ class BullResearchAgent:
                 try:
                     return BullCase.model_validate(block.input)
                 except ValidationError as exc:
-                    _logger.warning("BullCase schema violation: %s", exc)
+                    _logger.warning(
+                        "BullCase schema violation: %s | input keys: %s",
+                        exc,
+                        list(block.input.keys())
+                        if isinstance(block.input, dict)
+                        else type(block.input),
+                    )
                     raise
         # No tool_use block found — raise so build_case() uses fallback
         raise ValueError("Keine tool_use-Antwort vom LLM erhalten (BullResearchAgent).")

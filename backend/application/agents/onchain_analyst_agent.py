@@ -111,6 +111,8 @@ class OnChainAnalystAgent:
                 system=system_prompt,
             )
             raw_text: str = response.content[0].text
+            if raw_text.startswith("```"):
+                raw_text = raw_text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
             data = json.loads(raw_text)
             data["coin"] = coin  # enforce coin from caller
             return OnChainView.model_validate(data)

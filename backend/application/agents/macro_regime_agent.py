@@ -164,6 +164,8 @@ class MacroRegimeAgent:
                 system=system_prompt,
             )
             raw_text: str = response.content[0].text
+            if raw_text.startswith("```"):
+                raw_text = raw_text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
             data = json.loads(raw_text)
             return MacroRegime.model_validate(data)
         except Exception as exc:

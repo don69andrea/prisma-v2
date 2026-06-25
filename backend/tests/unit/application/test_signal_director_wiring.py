@@ -42,9 +42,7 @@ def _make_stub_prices_df(coin: str = "BTC") -> pd.DataFrame:
     rng = np.random.default_rng(seed=42)
     returns = rng.normal(0.001, 0.03, size=200)
     prices = 100.0 * np.cumprod(1 + returns)
-    idx = pd.date_range(
-        end=datetime.now(UTC), periods=200, freq="D", tz="UTC"
-    )
+    idx = pd.date_range(end=datetime.now(UTC), periods=200, freq="D", tz="UTC")
     return pd.DataFrame({coin: prices}, index=idx)
 
 

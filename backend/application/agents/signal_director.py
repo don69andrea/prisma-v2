@@ -242,7 +242,9 @@ class SignalDirector:
         prices_for_eval = self._prices_df
         if base_coin not in prices_for_eval.columns and len(prices_for_eval.columns) > 0:
             # Stub df has a single placeholder column — rename to match requested coin
-            prices_for_eval = prices_for_eval.rename(columns={prices_for_eval.columns[0]: base_coin})
+            prices_for_eval = prices_for_eval.rename(
+                columns={prices_for_eval.columns[0]: base_coin}
+            )
         engine_signal = await self._signal_service.evaluate(
             base_coin,
             asof,
@@ -302,8 +304,12 @@ class SignalDirector:
             macro = macro_raw
 
         # Step 3: Bull, Bear, Risk sequentially
-        bull: BullCase = await self._bull_agent.build_case(tech, onchain, senti, macro, engine_signal, coin)
-        bear: BearCase = await self._bear_agent.build_case(tech, onchain, senti, macro, engine_signal, coin)
+        bull: BullCase = await self._bull_agent.build_case(
+            tech, onchain, senti, macro, engine_signal, coin
+        )
+        bear: BearCase = await self._bear_agent.build_case(
+            tech, onchain, senti, macro, engine_signal, coin
+        )
         risk: RiskVerdict = await self._risk_agent.assess(coin, engine_signal)
 
         # Step 4: Python synthesis (pure deterministic, no LLM)

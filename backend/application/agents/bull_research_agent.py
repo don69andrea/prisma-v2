@@ -138,7 +138,13 @@ class BullResearchAgent:
                 try:
                     return BullCase.model_validate(block.input)
                 except ValidationError as exc:
-                    _logger.warning("BullCase schema violation: %s | input keys: %s", exc, list(block.input.keys()) if isinstance(block.input, dict) else type(block.input))
+                    _logger.warning(
+                        "BullCase schema violation: %s | input keys: %s",
+                        exc,
+                        list(block.input.keys())
+                        if isinstance(block.input, dict)
+                        else type(block.input),
+                    )
                     raise
         # No tool_use block found — raise so build_case() uses fallback
         raise ValueError("Keine tool_use-Antwort vom LLM erhalten (BullResearchAgent).")

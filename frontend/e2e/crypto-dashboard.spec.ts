@@ -2,13 +2,19 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Crypto Dashboard', () => {
   test('overview page loads with disclaimer', async ({ page }) => {
+    await page.route('**/api/v1/crypto/signals', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    });
+    await page.route('**/api/v1/crypto/fear-greed', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ value: 50, label: 'Neutral', timestamp: '1700000000' }) });
+    });
     await page.goto('/crypto');
-    await expect(page.getByText(/kein Anlagerat/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/keine Anlageberatung/i)).toBeVisible({ timeout: 15000 });
   });
 
-  test('navigation has Krypto-Signale link', async ({ page }) => {
+  test('navigation has Krypto link', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Krypto-Signale' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Krypto' })).toBeVisible();
   });
 
   test('coin detail page has tabs', async ({ page }) => {

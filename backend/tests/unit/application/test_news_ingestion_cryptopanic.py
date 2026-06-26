@@ -18,7 +18,7 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-_NOW = datetime(2026, 6, 22, 10, 0, 0, tzinfo=UTC)
+_NOW = datetime.now(UTC)
 _RECENT = _NOW - timedelta(days=3)  # within 7-day TTL
 _OLD = _NOW - timedelta(days=8)  # outside 7-day TTL
 

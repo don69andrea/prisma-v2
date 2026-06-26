@@ -40,9 +40,9 @@ SMI_TICKERS = [
 
 CURRENT_ISINS = {
     "NESN": "CH0038863350",
-    "NOVN": "CH0012005267",   # korrigiert: CH0012221716 war ABB, nicht Novartis
+    "NOVN": "CH0012005267",  # korrigiert: CH0012221716 war ABB, nicht Novartis
     "ROG": "CH0012032048",
-    "ABBN": "CH0012221716",   # bestätigt via SIX Exchange
+    "ABBN": "CH0012221716",  # bestätigt via SIX Exchange
     "ZURN": "CH0011075394",
     "UBSG": "CH0244767585",
     "UHR": "CH0012255151",
@@ -53,12 +53,12 @@ CURRENT_ISINS = {
     "SGKN": "CH0002497458",
     "SLHN": "CH0014852781",
     "SCMN": "CH0008742519",
-    "SIKA": "CH0418792922",   # ersetzt BALN (delisted nach Fusion mit Helvetia 2025)
+    "SIKA": "CH0418792922",  # ersetzt BALN (delisted nach Fusion mit Helvetia 2025)
     "HOLN": "CH0012214059",
     "PGHN": "CH0024608827",
-    "KNIN": "CH0025238863",   # korrigiert: KRIN→KNIN (Issue #26)
+    "KNIN": "CH0025238863",  # korrigiert: KRIN→KNIN (Issue #26)
     "CFR": "CH0210483332",
-    "STMN": "CH0012280076",   # korrigiert: CH0012050267 hatte Luhn-Fehler
+    "STMN": "CH0012280076",  # korrigiert: CH0012050267 hatte Luhn-Fehler
 }
 
 

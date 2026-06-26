@@ -35,7 +35,12 @@ SMI_20 = [
     # Luhn-Validator: validate_ch_isin() in backend/domain/validators/isin.py
     # Stand Issue #26: 3 Duplikate und 2 Luhn-Fehler identifiziert und behoben.
     ("NESN", "CH0038863350", "Nestlé SA", "Consumer Staples"),  # Luhn OK ✓
-    ("NOVN", "CH0012005267", "Novartis AG", "Healthcare"),  # Luhn OK ✓ verifiziert via SIX/ad-hoc-news
+    (
+        "NOVN",
+        "CH0012005267",
+        "Novartis AG",
+        "Healthcare",
+    ),  # Luhn OK ✓ verifiziert via SIX/ad-hoc-news
     ("ROG", "CH0012032048", "Roche Holding AG", "Healthcare"),  # Luhn OK ✓
     (
         "ABBN",

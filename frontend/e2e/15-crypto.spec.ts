@@ -414,7 +414,7 @@ test.describe('Pro Mode — Vollständige Tabelle', () => {
   });
 
   test('zeigt CHF-Preis für BTC', async ({ page }) => {
-    await expect(page.getByText(/CHF/)).toBeVisible();
+    await expect(page.getByText(/CHF/).first()).toBeVisible();
   });
 
   test('kein Simple-Abschnitt sichtbar', async ({ page }) => {

@@ -16,6 +16,7 @@ class NewsRetrievalResult:
     content: str
     similarity: float
     title: str
+    url: str  # article URL — populated from nd.url in find_nearest() (B-02)
     source: str
     tickers: tuple[str, ...]
     published_at: datetime | None

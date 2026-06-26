@@ -551,6 +551,84 @@ async def get_swiss_filing_retrieval_service(
 
 
 # ---------------------------------------------------------------------------
+# SignalDirector DI-Chain (V4-3 Agentic Layer)
+# ---------------------------------------------------------------------------
+
+
+async def get_signal_director(
+    session: AsyncSession = Depends(get_session),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    """Construct SignalDirector with all agent dependencies injected."""
+    from datetime import UTC, datetime
+
+    import numpy as np
+    import pandas as pd
+
+    from backend.application.agents.bear_research_agent import BearResearchAgent
+    from backend.application.agents.bull_research_agent import BullResearchAgent
+    from backend.application.agents.macro_regime_agent import MacroRegimeAgent
+    from backend.application.agents.onchain_analyst_agent import OnChainAnalystAgent
+    from backend.application.agents.risk_agent import RiskAgent
+    from backend.application.agents.sentiment_analyst_agent import SentimentAnalystAgent
+    from backend.application.agents.signal_director import SignalDirector
+    from backend.application.agents.technical_analyst_agent import TechnicalAnalystAgent
+    from backend.application.services.news_retrieval_service import NewsRetrievalService
+    from backend.application.signals import signal_service as _signal_service_module
+    from backend.infrastructure.persistence.repositories.agent_audit_trail_repository import (
+        AgentAuditTrailRepository,
+    )
+    from backend.infrastructure.persistence.repositories.news_repository import (
+        SQLANewsRepository,
+    )
+
+    rng = np.random.default_rng(seed=42)
+    returns = rng.normal(0.001, 0.03, size=200)
+    prices = 100.0 * np.cumprod(1 + returns)
+    idx = pd.date_range(end=datetime.now(UTC), periods=200, freq="D", tz="UTC")
+    prices_df = pd.DataFrame({"BTC": prices}, index=idx)
+
+    llm_client = await get_llm_client(
+        cost_tracker=await get_cost_tracker(
+            repository=await get_cost_log_repository(),
+            settings=settings,
+        )
+    )
+
+    prompt_loader = get_prompt_loader()
+    audit_repo = AgentAuditTrailRepository(session=session)
+
+    class _StubExposureStore:
+        async def get_exposure(self, coin: str) -> float:  # noqa: ARG002
+            return 0.0
+
+    return SignalDirector(
+        signal_service=_signal_service_module,
+        tech_agent=TechnicalAnalystAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        onchain_agent=OnChainAnalystAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        senti_agent=SentimentAnalystAgent(
+            db_session=session,
+            news_retrieval_service=NewsRetrievalService(
+                news_repo=SQLANewsRepository(session_factory=get_session_factory()),
+                llm_client=llm_client,
+            ),
+            llm_client=llm_client,
+            prompt_loader=prompt_loader,
+        ),
+        macro_agent=MacroRegimeAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        bull_agent=BullResearchAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        bear_agent=BearResearchAgent(llm_client=llm_client, prompt_loader=prompt_loader),
+        risk_agent=RiskAgent(
+            llm_client=llm_client,
+            prompt_loader=prompt_loader,
+            exposure_store=_StubExposureStore(),
+        ),
+        audit_repo=audit_repo,
+        prices_df=prices_df,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Crypto Module DI-Chain
 # ---------------------------------------------------------------------------
 
@@ -625,12 +703,7 @@ async def get_crypto_scoring_service() -> CryptoScoringService:
 
 
 async def require_crypto_enabled(settings: Settings = Depends(get_settings)) -> None:
-    """Gattet das Crypto-Modul über CRYPTO_FEATURE_ENABLED (W-12 / F-BTCR-2).
-
-    Liefert 404 statt z.B. 503, damit das Modul bei deaktiviertem Flag so
-    aussieht, als gäbe es die Routen gar nicht — kein Hinweis auf ein
-    existierendes, aber gesperrtes Feature.
-    """
+    """Gattet das Crypto-Modul über CRYPTO_FEATURE_ENABLED (W-12 / F-BTCR-2)."""
     if not settings.crypto_feature_enabled:
         raise HTTPException(status_code=404, detail="Crypto-Feature ist deaktiviert.")
 
@@ -643,12 +716,6 @@ async def require_crypto_enabled(settings: Settings = Depends(get_settings)) -> 
 async def get_chat_service(
     llm_client: LLMClient = Depends(get_llm_client),
 ) -> Any:
-    """Erstellt den ChatService mit injiziertem LLMClient (FIX-01).
-
-    LLMClient enthält den prozess-weiten Connection-Pool, timeout=30s,
-    max_retries=3 und den CostTracker für Audit-Logging.
-    ChatService greift via llm_client.raw_client auf den Anthropic-SDK zu.
-    """
     from backend.application.services.chat_service import ChatService
 
     return ChatService(llm_client=llm_client)
@@ -732,12 +799,7 @@ _director_instance: Any = None
 
 
 def get_investment_director() -> Any:
-    """Lazy Singleton für InvestmentDirector.
-
-    Wird synchron aufgerufen (kein Depends), weil der Director einen
-    prozesslangen Checkpoint-State hält.  Die Abhängigkeiten werden beim
-    ersten Aufruf einmalig aufgebaut.
-    """
+    """Lazy Singleton für InvestmentDirector."""
     global _director_instance  # noqa: PLW0603
     if _director_instance is None:
         from decimal import Decimal  # noqa: PLC0415

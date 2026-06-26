@@ -126,6 +126,7 @@ async def ingest_ticker(
 
             # Voyage AI embedding — 8 Chunks/Batch, Delay für Rate-Limit (3 RPM Free Tier)
             import time
+
             _BATCH = 8
             embedded: list[SwissFilingChunk] = []
             for batch_start in range(0, len(new_chunks), _BATCH):
@@ -161,7 +162,9 @@ async def ingest_ticker(
     return stats
 
 
-async def main(tickers: list[str], dry_run: bool, limit_chunks: int | None = None, batch_delay: float = 0.0) -> None:
+async def main(
+    tickers: list[str], dry_run: bool, limit_chunks: int | None = None, batch_delay: float = 0.0
+) -> None:
     import voyageai
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -187,7 +190,16 @@ async def main(tickers: list[str], dry_run: bool, limit_chunks: int | None = Non
         adapter = SixFilingsAdapter(http_client=http_client)
         total_ingested = total_skipped = total_errors = 0
         for ticker in tickers:
-            stats = await ingest_ticker(ticker, adapter, parser, repo, voyage, dry_run, limit_chunks=limit_chunks, batch_delay=batch_delay)
+            stats = await ingest_ticker(
+                ticker,
+                adapter,
+                parser,
+                repo,
+                voyage,
+                dry_run,
+                limit_chunks=limit_chunks,
+                batch_delay=batch_delay,
+            )
             total_ingested += stats["ingested"]
             total_skipped += stats["skipped_duplicate"]
             total_errors += stats["errors"]
@@ -233,9 +245,11 @@ def _parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = _parse_args()
-    asyncio.run(main(
-        tickers=args.tickers,
-        dry_run=args.dry_run,
-        limit_chunks=args.limit_chunks,
-        batch_delay=args.batch_delay,
-    ))
+    asyncio.run(
+        main(
+            tickers=args.tickers,
+            dry_run=args.dry_run,
+            limit_chunks=args.limit_chunks,
+            batch_delay=args.batch_delay,
+        )
+    )

@@ -40,12 +40,15 @@ from backend.interfaces.rest.routers import (
     rebalancing,
     reports,
     runs,
+    signals,
     steuer,
     stocks,
     universes,
     users,
 )
 from backend.interfaces.rest.routers.analyze import router as analyze_router
+from backend.interfaces.rest.routers.crypto_dashboard import router as crypto_dashboard_router
+from backend.interfaces.rest.routers.operations import router as operations_router
 
 _logger = logging.getLogger(__name__)
 
@@ -53,6 +56,7 @@ _logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from backend.infrastructure.workers.alert_worker import create_alert_scheduler
+    from backend.infrastructure.workers.operations_worker import create_operations_scheduler
 
     try:
         scheduler = create_alert_scheduler()
@@ -61,9 +65,21 @@ async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception:
         _logger.exception("Alert-Scheduler konnte nicht gestartet werden — Alerts deaktiviert")
         scheduler = None
+
+    try:
+        ops_scheduler = create_operations_scheduler()
+        ops_scheduler.start()
+        _logger.info("Operations-Scheduler started — V4-6 jobs registered")
+    except Exception:
+        _logger.exception("Operations-Scheduler konnte nicht gestartet werden")
+        ops_scheduler = None
+
     yield
+
     if scheduler is not None:
         scheduler.shutdown(wait=False)
+    if ops_scheduler is not None:
+        ops_scheduler.shutdown(wait=False)
     # On shutdown: mark any jobs that are still "running" or "pending" as failed
     # so the next restart can safely ignore them instead of treating them as active.
     try:
@@ -168,7 +184,12 @@ def create_app() -> FastAPI:
     app.include_router(fonds_vergleich.router, dependencies=_auth)
     app.include_router(rebalancing.router, dependencies=_auth)
     app.include_router(alerts.router, dependencies=_auth)
+    app.include_router(signals.router, dependencies=_auth)
+    app.include_router(signals.backtest_router, dependencies=_auth)
+    app.include_router(signals.agent_router, dependencies=_auth)
     app.include_router(crypto.router, dependencies=_auth)
+    app.include_router(crypto_dashboard_router, dependencies=_auth)
+    app.include_router(operations_router, dependencies=_auth)
     app.include_router(analyze_router, prefix="/api/v1", dependencies=_auth)
 
     return app

@@ -74,3 +74,33 @@ class TestNewsArticle:
     def test_none_published_at_is_valid(self) -> None:
         a = _article(published_at=None)
         assert a.published_at is None
+
+    # -----------------------------------------------------------------------
+    # Phase 04-01: CRYPTOPANIC source support (D-07 / B-01)
+    # -----------------------------------------------------------------------
+
+    def test_cryptopanic_source_creates_ok(self) -> None:
+        """NewsArticle with source='CRYPTOPANIC' must not raise ValueError (D-07)."""
+        url = "https://cryptopanic.com/news/1/btc-hits-ath"
+        a = _article(
+            url=url,
+            url_hash=NewsArticle.hash_url(url),
+            source="CRYPTOPANIC",
+            tickers=("BTC",),
+        )
+        assert a.source == "CRYPTOPANIC"
+
+    def test_unknown_source_still_raises(self) -> None:
+        """Non-whitelisted source must still raise ValueError mentioning allowed set."""
+        with pytest.raises(ValueError, match="source must be one of"):
+            _article(source="UNKNOWN")
+
+    def test_nzz_still_valid_after_cryptopanic_added(self) -> None:
+        """Regression: existing NZZ source must still construct successfully."""
+        a = _article(source="NZZ")
+        assert a.source == "NZZ"
+
+    def test_srf_still_valid_after_cryptopanic_added(self) -> None:
+        """Regression: existing SRF source must still construct successfully."""
+        a = _article(source="SRF")
+        assert a.source == "SRF"

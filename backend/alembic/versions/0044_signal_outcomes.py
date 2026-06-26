@@ -18,7 +18,7 @@ depends_on: Sequence[str] | None = None
 
 def upgrade() -> None:
     op.create_table(
-        "signal_outcomes",
+        "crypto_signal_outcomes",
         sa.Column("coin_id", sa.Integer(), nullable=False),
         sa.Column("signal_date", sa.Date(), nullable=False),
         sa.Column(
@@ -57,21 +57,21 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["coin_id"],
             ["crypto_universe.coin_id"],
-            name="fk_signal_outcomes_coin_id",
+            name="fk_crypto_signal_outcomes_coin_id",
             ondelete="CASCADE",
         ),
-        sa.PrimaryKeyConstraint("coin_id", "signal_date", "horizon", name="pk_signal_outcomes"),
+        sa.PrimaryKeyConstraint("coin_id", "signal_date", "horizon", name="pk_crypto_signal_outcomes"),
     )
-    op.create_index("ix_signal_outcomes_signal_date", "signal_outcomes", ["signal_date"])
+    op.create_index("ix_crypto_signal_outcomes_signal_date", "crypto_signal_outcomes", ["signal_date"])
     op.create_index(
-        "ix_signal_outcomes_pending",
-        "signal_outcomes",
+        "ix_crypto_signal_outcomes_pending",
+        "crypto_signal_outcomes",
         ["realized_fwd_return"],
         postgresql_where=sa.text("realized_fwd_return IS NULL"),
     )
 
 
 def downgrade() -> None:
-    op.drop_index("ix_signal_outcomes_pending", table_name="signal_outcomes")
-    op.drop_index("ix_signal_outcomes_signal_date", table_name="signal_outcomes")
-    op.drop_table("signal_outcomes")
+    op.drop_index("ix_crypto_signal_outcomes_pending", table_name="crypto_signal_outcomes")
+    op.drop_index("ix_crypto_signal_outcomes_signal_date", table_name="crypto_signal_outcomes")
+    op.drop_table("crypto_signal_outcomes")

@@ -11,7 +11,7 @@ from backend.infrastructure.persistence.base import Base
 
 
 class SignalOutcomeORM(Base):
-    __tablename__ = "signal_outcomes"
+    __tablename__ = "crypto_signal_outcomes"
 
     coin_id: Mapped[int] = mapped_column(sa.Integer(), primary_key=True)
     signal_date: Mapped[date] = mapped_column(sa.Date(), primary_key=True)

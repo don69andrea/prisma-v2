@@ -1,12 +1,16 @@
 """Operations Worker: registriert V4-6-Jobs via APScheduler.
 
 Jobs:
-  - SignalEvaluationJob: täglich 06:00 Europe/Zurich
-  - DriftMonitor: täglich 06:30 Europe/Zurich
-  - RetrainingJob: monatlich, 1. des Monats 02:00 Europe/Zurich
+  - SignalEvaluationJob:  täglich 06:00 Europe/Zurich
+  - PaperLog fill_outcomes: täglich 06:15 Europe/Zurich
+  - DriftMonitor:         täglich 06:30 Europe/Zurich
+  - RetrainingJob:        monatlich, 1. des Monats 02:00 Europe/Zurich
 
-Hinweis: _StubPriceProvider ist bewusst als Stub belassen. Der User muss ihn
-durch den echten CryptoPriceAdapter ersetzen, sobald eine PG-Instanz läuft.
+Manueller Einmal-Lauf (ohne Scheduler, nützlich nach `alembic upgrade head`):
+  python -m backend.infrastructure.workers.operations_worker --once
+
+Dieser Befehl führt SignalEvaluationJob + PaperLog.fill_outcomes sofort aus und beendet sich.
+Anschliessend kann der Scheduler-Worker live getestet werden (uvicorn ... --factory).
 """
 
 from __future__ import annotations
@@ -15,17 +19,33 @@ import logging
 from datetime import date, timedelta
 from typing import Any
 
-import pandas as pd
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
+from backend.infrastructure.adapters.crypto_price_adapter import CryptoPriceAdapter
 from backend.infrastructure.adapters.notification_adapter import send_email
+from backend.infrastructure.adapters.operations_price_adapter import (
+    EvalPriceAdapter,
+    SymbolPriceAdapter,
+)
 from backend.infrastructure.persistence.session import get_session_factory
 
 _logger = logging.getLogger(__name__)
 
 _COINS = ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD"]
 _ALERT_TO = "andrea.petretta@students.fhnw.ch"
+
+
+async def _load_coin_map() -> dict[int, str]:
+    """Lädt coin_id → symbol aus crypto_universe (nur aktive Coins)."""
+    from sqlalchemy import text
+
+    session_factory = get_session_factory()
+    async with session_factory() as session:
+        result = await session.execute(
+            text("SELECT coin_id, symbol FROM crypto_universe WHERE active = true")
+        )
+        return {row.coin_id: row.symbol for row in result}
 
 
 class _EmailAlertSender:
@@ -45,16 +65,6 @@ class _EmailAlertSender:
             body=body,
         )
         _logger.info("Drift-Alert gesendet: %d Flags", len(flags))
-
-
-class _StubPriceProvider:
-    """Stub-Preisabruf — in Produktion durch echten CryptoPriceAdapter ersetzen."""
-
-    async def get_close(self, coin_id: int, asof: date) -> float | None:
-        return None
-
-    async def get_history(self, coins: list[str], asof: date) -> pd.DataFrame:
-        return pd.DataFrame()
 
 
 class _MetricsProviderFromDB:
@@ -107,16 +117,36 @@ async def _run_signal_evaluation() -> None:
         SQLASignalOutcomeRepository,
     )
 
+    coin_map = await _load_coin_map()
+    eval_price = EvalPriceAdapter(CryptoPriceAdapter(), coin_map)
     asof = date.today() - timedelta(days=1)
     session_factory = get_session_factory()
     async with session_factory() as session, session.begin():
         job = SignalEvaluationJob(
             outcome_repo=SQLASignalOutcomeRepository(session),
             metrics_repo=SQLALiveMetricsRepository(session),
-            price_provider=_StubPriceProvider(),
+            price_provider=eval_price,
         )
         result = await job.run(asof)
         _logger.info("SignalEvaluationJob abgeschlossen: %s", result)
+
+
+async def _run_paper_log_outcomes() -> None:
+    from backend.application.jobs.paper_trading_log import PaperTradingLogWriter
+    from backend.infrastructure.persistence.repositories.paper_trading_log_repository import (
+        SQLAPaperTradingLogRepository,
+    )
+
+    symbol_price = SymbolPriceAdapter(CryptoPriceAdapter())
+    asof = date.today() - timedelta(days=1)
+    session_factory = get_session_factory()
+    async with session_factory() as session, session.begin():
+        writer = PaperTradingLogWriter(
+            repo=SQLAPaperTradingLogRepository(session),
+            price_provider=symbol_price,
+        )
+        filled = await writer.fill_outcomes(asof)
+        _logger.info("PaperLog.fill_outcomes abgeschlossen: filled=%d asof=%s", filled, asof)
 
 
 async def _run_drift_monitor() -> None:
@@ -143,12 +173,13 @@ async def _run_retraining() -> None:
         SQLAModelRegistryRepository,
     )
 
+    symbol_price = SymbolPriceAdapter(CryptoPriceAdapter())
     asof = date.today()
     session_factory = get_session_factory()
     async with session_factory() as session, session.begin():
         job = RetrainingJob(
             model_registry=SQLAModelRegistryRepository(session),
-            price_provider=_StubPriceProvider(),
+            price_provider=symbol_price,
             coins=_COINS,
         )
         result = await job.run(asof)
@@ -166,6 +197,12 @@ def create_operations_scheduler() -> AsyncIOScheduler:
         replace_existing=True,
     )
     scheduler.add_job(
+        _run_paper_log_outcomes,
+        trigger=CronTrigger(hour=6, minute=15),
+        id="paper_log_outcomes_daily",
+        replace_existing=True,
+    )
+    scheduler.add_job(
         _run_drift_monitor,
         trigger=CronTrigger(hour=6, minute=30),
         id="drift_monitor_daily",
@@ -179,3 +216,32 @@ def create_operations_scheduler() -> AsyncIOScheduler:
     )
 
     return scheduler
+
+
+if __name__ == "__main__":
+    import argparse
+    import asyncio
+
+    parser = argparse.ArgumentParser(
+        description="Operations Worker — Einmal-Trigger für manuelle Verifikation"
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="SignalEvaluationJob + PaperLog.fill_outcomes sofort ausführen und beenden",
+    )
+    args = parser.parse_args()
+
+    if args.once:
+
+        async def _run_once() -> None:
+            _logger.info("--once: starte SignalEvaluationJob ...")
+            await _run_signal_evaluation()
+            _logger.info("--once: starte PaperLog.fill_outcomes ...")
+            await _run_paper_log_outcomes()
+            _logger.info("--once: fertig.")
+
+        logging.basicConfig(level=logging.INFO)
+        asyncio.run(_run_once())
+    else:
+        parser.print_help()

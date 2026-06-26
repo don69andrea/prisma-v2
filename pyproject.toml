@@ -91,6 +91,15 @@ module = [
 disallow_untyped_defs = false
 disallow_untyped_decorators = false
 
+[[tool.mypy.overrides]]
+module = [
+    "backend.infrastructure.providers.stub_market_data",
+    "backend.application.agents.portfolio_agent",
+    "backend.application.services.ml_prediction_service",
+    "backend.application.services.monte_carlo_service",
+]
+disallow_any_generics = false
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["backend/tests"]

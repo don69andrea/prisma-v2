@@ -5,12 +5,17 @@ const PUBLIC_PATHS = ['/login', '/_next', '/api', '/favicon.ico'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const token = request.cookies.get('prisma_token')?.value;
+
+  // Authenticated users have no business on /login — send them home
+  if (pathname === '/login' && token) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
 
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get('prisma_token')?.value;
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }

@@ -60,7 +60,7 @@ class SignalOutcomeRepository(Protocol):
 
 
 class LiveMetricsRepository(Protocol):
-    async def insert(self, record: MetricsRecord, computed_at: object) -> None: ...
+    async def insert(self, record: MetricsRecord, computed_at: datetime) -> None: ...
 
 
 class PriceProvider(Protocol):

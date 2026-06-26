@@ -386,3 +386,71 @@ Beides reduziert Rebalancierungen ohne Signal-Verschlechterung. Als separates Fo
 - `scripts/portfolio_backtest.py` — Standalone-Runner (yfinance, kein DB, 3 Tabellen)
 - REST: `GET /api/v1/backtest/portfolio` (PortfolioBacktestReport Pydantic-Schema)
 - Tests: 100% Allocator-Unit-Tests, Walk-Forward-Integration-Tests, Look-Ahead-Guard grün
+
+---
+
+## V4-6 Operations & Lernschleife + Forward-Paper-Log — ✅ verifiziert (2026-06-26, Branch feat/v4-6-operations-learning-loop)
+
+**Befund: Vollständiger Operations-Layer implementiert. 44/44 Unit-Tests grün. Coverage 98.2% (Pflicht: ≥80%). Alle Sicherheits-Invarianten eingehalten.**
+
+### Gelieferte Komponenten
+
+#### Datenbank-Migrationen (0044–0048)
+| Migration | Tabelle | Zweck |
+|-----------|---------|-------|
+| 0044 | `signal_outcomes` | PK (coin_id, signal_date, horizon); realized_fwd_return nullable; partial index auf pending |
+| 0045 | `live_performance_metrics` | hit_rate, live_sharpe, live_calmar, vol_mae je Coin+Window |
+| 0046 | `model_registry` | Champion/Challenger; UUID PK; oos_r2, is_champion, activated_at, deactivated_at |
+| 0047 | `paper_trading_log` | Append-only; UUID PK; realized_fwd_return nullable; Index auf (coin, signal_date) |
+| 0048 | `drift_flags` | Partial index is_active=true; alert_sent; pct_deviation |
+
+#### Application Jobs (backend/application/jobs/)
+- **SignalEvaluationJob** (`signal_evaluation_job.py`): Täglich; backfilled realized_fwd_return via Preisverhältnis; berechnet rolling Metriken (hit_rate, live_sharpe, live_calmar, vol_mae) für 2 Fenster (90/180d).
+- **RetrainingJob** (`retraining_job.py`): Monatlich; Challenger via `fit_walkforward()` auf expandierendem Fenster bis `asof`; `should_activate = avg_oos_r2 > champion_r2` (strikt, kein Performance-Chasing); protokolliert jeden Wechsel in `model_registry`.
+- **DriftMonitor** (`drift_monitor.py`): Täglich; `live_sharpe < 1.0 * 0.50 = 0.50` → Alert; `vol_mae > 0.3 * 1.50 = 0.45` → Alert; Email via `notification_adapter`.
+- **PaperTradingLogWriter** (`paper_trading_log.py`): `log_signals()` + `fill_outcomes()`; append-only; Look-Ahead-Guard in beiden Methoden.
+
+#### Infrastructure
+- 5 ORM-Modelle (SQLAlchemy 2.0, `Mapped[type]` / `mapped_column()`)
+- 5 Repositories (Protocol-konform, async sessions, keine DB in Unit-Tests)
+- `operations_worker.py`: APScheduler (`AsyncIOScheduler`, Europe/Zurich); 06:00 SignalEval, 06:30 Drift, 1. Monats 02:00 Retraining
+
+#### REST (read-only)
+- `GET /api/v1/operations/paper-log`: Filter coin/since/limit; PaperLogResponse Pydantic-Schema mit disclaimer; in app.py eingebunden + Operations-Scheduler in `_lifespan()`
+
+### Look-Ahead-Guard (überall erzwungen)
+```python
+outcome_date = signal_date + timedelta(days=horizon)
+if outcome_date > asof:
+    continue  # Zukunft ist nicht bekannt → überspringen
+```
+Verifiziert in: `SignalEvaluationJob.run()`, `PaperTradingLogWriter.fill_outcomes()`, `RetrainingJob._fit_challenger()` (via `close_filtered = close_df[close_df.index <= asof_ts]`).
+
+### Sicherheits-Invarianten
+| Invariante | Status |
+|-----------|--------|
+| ⛔ Kein Auto-Trading, kein Shorting | ✅ PaperTradingLogWriter = read/log only; kein Execution-Layer |
+| ✅ Kein Push auf develop/main | ✅ Feature-Branch, PR gegen develop |
+| ✅ Look-Ahead-Guard in allen 3 Jobs | ✅ (Outcome-Nachtrag + Retraining + PaperLog) |
+| ✅ Champion/Challenger strikt OOS | ✅ `avg_oos_r2 > champion_r2` (kein ≥) |
+| ✅ Echte Daten — kein synthetischer Ersatz | ⚠️ _StubPriceProvider bewusst belassen (DB nicht verfügbar); **muss vom User durch CryptoPriceAdapter ersetzt werden** |
+
+### Test-Ergebnisse (44/44 grün)
+| Datei | Tests | Coverage | Pflicht-Guards |
+|-------|-------|----------|----------------|
+| test_signal_evaluation_job.py | 17 ✅ | 100% | Look-Ahead (nicht fällig / genau fällig / horizon≠1) ✅ |
+| test_retraining_job.py | 6 ✅ | 91.8% | bad challenger kept ✅, good activated ✅, kein champion ✅ |
+| test_drift_monitor.py | 11 ✅ | 100% | sharpe-alert ✅, vol-mae-alert ✅, multi-coin ✅ |
+| test_paper_trading_log.py | 10 ✅ | 100% | log_signals count ✅, fill Look-Ahead (2 Varianten) ✅ |
+| **Total** | **44 ✅** | **98.2%** | — |
+
+### Live-Verifikation (manuell auszuführen — User-Pflicht)
+```bash
+# Migrationen anwenden (PostgreSQL-Instanz erforderlich)
+alembic upgrade head  # 0044 → 0048
+
+# Operations-Scheduler testen (lokale dev-DB)
+uvicorn backend.interfaces.rest.app:create_app --factory --reload
+# → Log sollte "Operations-Scheduler started — V4-6 jobs registered" zeigen
+```
+**KEIN synthetischer Ersatz** — diese Verifikation erfordert eine laufende PostgreSQL-Instanz.

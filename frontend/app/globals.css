@@ -89,7 +89,22 @@
 }
 
 /* ── PRISMA Design Tokens ─────────────────────────────── */
+/* Light mode: neutral surfaces with strong contrast */
 :root {
+  --prisma-bg:        #f6f8fa;
+  --prisma-surface:   #ffffff;
+  --prisma-border:    #d0d7de;
+  --prisma-text:      #1f2328;
+  --prisma-muted:     #57606a;
+  --prisma-blue:      #0969da;
+  --prisma-green:     #1a7f37;
+  --prisma-orange:    #bc4c00;
+  --prisma-red:       #cf222e;
+  --prisma-purple:    #6639ba;
+}
+
+/* Dark mode: original Glassmorphism palette */
+.dark {
   --prisma-bg:        #0d1117;
   --prisma-surface:   #161b22;
   --prisma-border:    #21262d;
@@ -131,11 +146,19 @@
 
 /* ── Glassmorphism Card ───────────────────────────────── */
 .glass-card {
-  background: rgba(22, 27, 34, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(88, 166, 255, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 16px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.dark .glass-card {
+  background: rgba(22, 27, 34, 0.8);
+  border: 1px solid rgba(88, 166, 255, 0.15);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);

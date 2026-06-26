@@ -8,10 +8,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 import httpx
-import yfinance as yf
 from pydantic import BaseModel, Field, ValidationError
 
 from backend.domain.value_objects.macro_context import MacroContext
+from backend.infrastructure.adapters.ecb_fx_adapter import fetch_chf_eur as _ecb_chf_eur
+from backend.infrastructure.adapters.fred_adapter import fetch_swiss_cpi_fred
 from backend.infrastructure.adapters.snb_adapter import fetch_current_snb_rate
 
 _logger = logging.getLogger(__name__)
@@ -31,47 +32,35 @@ class _NarrativeOutput(BaseModel):
 
 
 async def _fetch_chf_eur() -> float:
-    """Lädt CHF/EUR-Kurs asynchron via asyncio.to_thread, um den Event-Loop nicht zu blockieren."""
+    """CHF/EUR-Kurs via ECB Statistical Data Warehouse (kein API-Key, kein Render-Block).
 
-    def _sync_fetch() -> float:
-        try:
-            ticker = yf.Ticker("EURCHF=X")
-            hist = ticker.history(period="5d")
-            if not hist.empty:
-                return round(1.0 / float(hist["Close"].iloc[-1]), 4)
-        except Exception:
-            pass
-        return 0.93
-
-    import asyncio
-
-    try:
-        result = await asyncio.to_thread(_sync_fetch)
-        return result
-    except Exception as exc:
-        _logger.warning("CHF/EUR-Abruf fehlgeschlagen (%s) — Fallback 0.93", exc)
-        return 0.93
+    Fallback: 0.93 (historischer Mittelwert 2025/2026).
+    """
+    return await _ecb_chf_eur()
 
 
 async def _fetch_swiss_inflation() -> float:
-    """Holt die aktuelle Schweizer CPI-Inflationsrate (YoY) von der SNB-API.
+    """Schweizer CPI-Inflationsrate YoY (%) — primär FRED, Fallback SNB-API.
 
-    Endpunkt: https://data.snb.ch/api/cube/cpichmon/data/json/de
-    Fällt bei Netzwerk- oder Parse-Fehlern auf den Fallback-Wert zurück
-    (_FALLBACK_INFLATION_CH = 0.3 %, realistisch für 2025/2026).
+    FRED (CHECPIALLMINMEI) ist zuverlässiger und hat keine Parse-Komplexität.
+    SNB-API dient als zweite Quelle falls FRED nicht erreichbar ist.
     """
+    # Primär: FRED (zuverlässig, kein Key nötig)
+    try:
+        cpi = await fetch_swiss_cpi_fred()
+        if -2.0 <= cpi <= 10.0:
+            _logger.info("Schweizer Inflation (FRED): %.2f%%", cpi)
+            return round(cpi, 2)
+    except Exception:
+        pass
+
+    # Fallback: SNB-API (komplexeres JSON-Format)
     url = "https://data.snb.ch/api/cube/cpichmon/data/json/de"
     try:
         async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT) as client:
             resp = await client.get(url)
             resp.raise_for_status()
             payload = resp.json()
-
-            # SNB JSON-Struktur: payload["data"]["dataSets"][0]["series"]
-            # Jede Serie enthält "observations" {index: [value]}; wir brauchen
-            # die Jahresveränderungsrate (Typ "YoY" / Code "YZ" in der Dimension).
-            # Einfachere, robuste Strategie: alle Serien durchsuchen, letzte Beobachtung
-            # nehmen und die mit dem kleinsten absoluten Wert (nahe 0–3 %) wählen.
             data_sets = payload.get("data", {}).get("dataSets", [])
             if not data_sets:
                 raise ValueError("Keine dataSets in SNB-Antwort")
@@ -87,15 +76,11 @@ async def _fetch_swiss_inflation() -> float:
                 if value is not None:
                     candidates.append(float(value))
 
-            # Filtere auf plausible Inflationswerte (−2 % … +10 %)
             plausible = [v for v in candidates if -2.0 <= v <= 10.0]
             if plausible:
-                # Nimm den Wert, der am nächsten an einem typischen CH-Inflationsbereich liegt
                 result = min(plausible, key=lambda v: abs(v - 1.0))
-                _logger.info("Schweizer Inflation (SNB API): %.2f%%", result)
+                _logger.info("Schweizer Inflation (SNB API Fallback): %.2f%%", result)
                 return round(result, 2)
-
-            raise ValueError(f"Keine plausiblen Inflationswerte gefunden: {candidates}")
 
     except Exception:
         _logger.warning(

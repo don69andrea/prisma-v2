@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, X, Bell, BellOff, Search, BookMarked, Loader2 } from 'lucide-react';
+import { Plus, X, Bell, BellOff, Search, BookMarked } from 'lucide-react';
 import { usePrismaMode } from '@/hooks/usePrismaMode';
 import { liveDecisions, type DecisionSignal } from '@/lib/api/decisions';
 import { listAlerts, type Alert } from '@/lib/api/alerts';
+import { PrismaBar } from '@/components/ui/PrismaBar';
 
 const WATCHLIST_KEY = 'prisma_watchlist';
 
@@ -22,7 +23,7 @@ const SMI_STOCKS = [
   { ticker: 'SLHN', name: 'Swiss Life Holding AG' },
   { ticker: 'SGKN', name: 'Sika AG' },
   { ticker: 'SCMN', name: 'Swisscom AG' },
-  { ticker: 'CSGN', name: 'Credit Suisse (inaktiv)' },
+  { ticker: 'KNIN', name: 'Kühne + Nagel International AG' },
   { ticker: 'BAER', name: 'Julius Baer Group AG' },
   { ticker: 'ADEN', name: 'Adecco Group AG' },
   { ticker: 'GEBN', name: 'Geberit AG' },
@@ -61,12 +62,12 @@ function SimpleRow({ ticker, signal, hasAlert, onRemove }: SimpleRowProps) {
   const name = STOCK_NAME[ticker] ?? ticker;
   const signalLabel = signal?.signal ?? null;
   const score = signal ? Math.round(signal.weighted_score) : null;
-  const barColor = signalLabel ? (SIGNAL_BAR_COLOR[signalLabel] ?? 'bg-[#8b949e]') : 'bg-[#30363d]';
+  const barColor = signalLabel ? (SIGNAL_BAR_COLOR[signalLabel] ?? 'bg-[var(--prisma-muted)]') : 'bg-[var(--prisma-muted)]';
 
   return (
     <div
       className="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
-      style={{ background: '#161b22', border: '1px solid #21262d' }}
+      style={{ background: 'var(--prisma-surface)', border: '1px solid var(--prisma-border)' }}
     >
       {/* Ticker + Name */}
       <Link
@@ -74,12 +75,12 @@ function SimpleRow({ ticker, signal, hasAlert, onRemove }: SimpleRowProps) {
         className="flex-1 min-w-0 hover:opacity-80 transition-opacity"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-semibold text-[#e6edf3] text-sm shrink-0">{name}</span>
-          <span className="text-xs text-[#8b949e] shrink-0">{ticker}</span>
+          <span className="font-semibold text-[var(--prisma-text)] text-sm shrink-0">{name}</span>
+          <span className="text-xs text-[var(--prisma-muted)] shrink-0">{ticker}</span>
           {/* Score bar */}
           {score !== null && signalLabel ? (
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
-              <div className="h-1 flex-1 rounded-full bg-[#30363d] overflow-hidden max-w-[80px]">
+              <div className="h-1 flex-1 rounded-full bg-[var(--prisma-border)] overflow-hidden max-w-[80px]">
                 <div
                   className={`h-full rounded-full ${barColor}`}
                   style={{ width: `${Math.min(score, 100)}%` }}
@@ -87,7 +88,7 @@ function SimpleRow({ ticker, signal, hasAlert, onRemove }: SimpleRowProps) {
               </div>
             </div>
           ) : (
-            <span className="text-[#30363d] text-xs">─</span>
+            <span className="text-[var(--prisma-muted)] text-xs opacity-40">─</span>
           )}
         </div>
       </Link>
@@ -100,7 +101,7 @@ function SimpleRow({ ticker, signal, hasAlert, onRemove }: SimpleRowProps) {
             {score !== null && ` ${score}`}
           </span>
         ) : (
-          <span className="text-xs text-[#8b949e] tabular-nums">—</span>
+          <span className="text-xs text-[var(--prisma-muted)] tabular-nums">—</span>
         )}
 
         {/* Alert status */}
@@ -115,7 +116,7 @@ function SimpleRow({ ticker, signal, hasAlert, onRemove }: SimpleRowProps) {
               <span className="hidden sm:inline text-[10px] font-medium">aktiv</span>
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-[#8b949e] hover:text-[#58a6ff]">
+            <span className="flex items-center gap-1 text-[var(--prisma-muted)] hover:text-[var(--prisma-blue)]">
               <BellOff className="h-3.5 w-3.5" />
               <span className="hidden sm:inline text-[10px]">setzen</span>
             </span>
@@ -125,7 +126,7 @@ function SimpleRow({ ticker, signal, hasAlert, onRemove }: SimpleRowProps) {
         {/* Remove */}
         <button
           onClick={() => onRemove(ticker)}
-          className="text-[#8b949e] hover:text-[#f85149] transition-colors p-0.5 rounded"
+          className="text-[var(--prisma-muted)] hover:text-[var(--prisma-red)] transition-colors p-0.5 rounded"
           aria-label={`${ticker} entfernen`}
         >
           <X className="h-3.5 w-3.5" />
@@ -146,15 +147,15 @@ interface ProTableProps {
 
 function ProTable({ tickers, signals, alertTickers, onRemove }: ProTableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid #21262d' }}>
+    <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid var(--prisma-border)' }}>
       <table className="w-full text-sm">
         <thead>
-          <tr style={{ background: '#0d1117', borderBottom: '1px solid #21262d' }}>
-            <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#8b949e] uppercase tracking-wide">Ticker</th>
-            <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#8b949e] uppercase tracking-wide">Name</th>
-            <th className="text-left px-4 py-2.5 text-xs font-semibold text-[#8b949e] uppercase tracking-wide">Signal</th>
-            <th className="text-right px-4 py-2.5 text-xs font-semibold text-[#8b949e] uppercase tracking-wide">Score</th>
-            <th className="text-center px-4 py-2.5 text-xs font-semibold text-[#8b949e] uppercase tracking-wide">Alert</th>
+          <tr style={{ background: 'var(--prisma-bg)', borderBottom: '1px solid var(--prisma-border)' }}>
+            <th className="text-left px-4 py-2.5 text-xs font-semibold text-[var(--prisma-muted)] uppercase tracking-wide">Ticker</th>
+            <th className="text-left px-4 py-2.5 text-xs font-semibold text-[var(--prisma-muted)] uppercase tracking-wide">Name</th>
+            <th className="text-left px-4 py-2.5 text-xs font-semibold text-[var(--prisma-muted)] uppercase tracking-wide">Signal</th>
+            <th className="text-right px-4 py-2.5 text-xs font-semibold text-[var(--prisma-muted)] uppercase tracking-wide">Score</th>
+            <th className="text-center px-4 py-2.5 text-xs font-semibold text-[var(--prisma-muted)] uppercase tracking-wide">Alert</th>
             <th className="px-4 py-2.5" />
           </tr>
         </thead>
@@ -170,17 +171,17 @@ function ProTable({ tickers, signals, alertTickers, onRemove }: ProTableProps) {
               <tr
                 key={ticker}
                 style={{
-                  background: i % 2 === 0 ? '#161b22' : '#0d1117',
-                  borderBottom: isLast ? undefined : '1px solid #21262d',
+                  background: i % 2 === 0 ? 'var(--prisma-surface)' : 'var(--prisma-bg)',
+                  borderBottom: isLast ? undefined : '1px solid var(--prisma-border)',
                 }}
-                className="hover:bg-[#1c2128] transition-colors"
+                className="hover:opacity-90 transition-opacity"
               >
                 <td className="px-4 py-3">
-                  <Link href={`/stocks/${ticker}`} className="font-mono text-xs text-[#58a6ff] hover:underline">
+                  <Link href={`/stocks/${ticker}`} className="font-mono text-xs text-[var(--prisma-blue)] hover:underline">
                     {ticker}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-[#e6edf3] text-xs">
+                <td className="px-4 py-3 text-[var(--prisma-text)] text-xs">
                   {STOCK_NAME[ticker] ?? ticker}
                 </td>
                 <td className="px-4 py-3">
@@ -189,14 +190,14 @@ function ProTable({ tickers, signals, alertTickers, onRemove }: ProTableProps) {
                       {signalLabel}
                     </span>
                   ) : (
-                    <span className="text-xs text-[#8b949e]">—</span>
+                    <span className="text-xs text-[var(--prisma-muted)]">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
                   {score !== null ? (
-                    <span className="text-xs text-[#e6edf3] tabular-nums font-medium">{score}</span>
+                    <span className="text-xs text-[var(--prisma-text)] tabular-nums font-medium">{score}</span>
                   ) : (
-                    <span className="text-xs text-[#8b949e]">—</span>
+                    <span className="text-xs text-[var(--prisma-muted)]">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-center">
@@ -208,14 +209,14 @@ function ProTable({ tickers, signals, alertTickers, onRemove }: ProTableProps) {
                     {hasAlert ? (
                       <Bell className="h-3.5 w-3.5 text-emerald-400" />
                     ) : (
-                      <BellOff className="h-3.5 w-3.5 text-[#8b949e] hover:text-[#58a6ff] transition-colors" />
+                      <BellOff className="h-3.5 w-3.5 text-[var(--prisma-muted)] hover:text-[var(--prisma-blue)] transition-colors" />
                     )}
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <button
                     onClick={() => onRemove(ticker)}
-                    className="text-[#8b949e] hover:text-[#f85149] transition-colors p-0.5 rounded"
+                    className="text-[var(--prisma-muted)] hover:text-[var(--prisma-red)] transition-colors p-0.5 rounded"
                     aria-label={`${ticker} entfernen`}
                   >
                     <X className="h-3.5 w-3.5" />
@@ -236,23 +237,23 @@ function TaxOverview() {
   return (
     <div
       className="rounded-xl p-4 space-y-3"
-      style={{ background: '#161b22', border: '1px solid #21262d' }}
+      style={{ background: 'var(--prisma-surface)', border: '1px solid var(--prisma-border)' }}
     >
-      <h2 className="text-sm font-semibold text-[#e6edf3]">Steuer-Überblick</h2>
+      <h2 className="text-sm font-semibold text-[var(--prisma-text)]">Steuer-Überblick</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div
           className="rounded-lg p-3 space-y-1"
-          style={{ background: '#0d1117', border: '1px solid #30363d' }}
+          style={{ background: 'var(--prisma-bg)', border: '1px solid var(--prisma-border)' }}
         >
-          <div className="text-[10px] text-[#8b949e] uppercase tracking-wide font-medium">Nächste Dividenden</div>
-          <div className="text-xs text-[#8b949e] italic">Wird ergänzt</div>
+          <div className="text-[10px] text-[var(--prisma-muted)] uppercase tracking-wide font-medium">Nächste Dividenden</div>
+          <div className="text-xs text-[var(--prisma-muted)] italic">Wird ergänzt</div>
         </div>
         <div
           className="rounded-lg p-3 space-y-1"
-          style={{ background: '#0d1117', border: '1px solid #30363d' }}
+          style={{ background: 'var(--prisma-bg)', border: '1px solid var(--prisma-border)' }}
         >
-          <div className="text-[10px] text-[#8b949e] uppercase tracking-wide font-medium">Verrechnungssteuer rückforderbar</div>
-          <div className="text-xs text-[#8b949e] italic">Wird berechnet</div>
+          <div className="text-[10px] text-[var(--prisma-muted)] uppercase tracking-wide font-medium">Verrechnungssteuer rückforderbar</div>
+          <div className="text-xs text-[var(--prisma-muted)] italic">Wird berechnet</div>
         </div>
       </div>
     </div>
@@ -273,24 +274,24 @@ function AddStockPanel({ query, onQueryChange, results, onAdd, onClose }: AddSto
   return (
     <div
       className="rounded-xl p-4 space-y-3"
-      style={{ background: '#161b22', border: '1px solid #21262d' }}
+      style={{ background: 'var(--prisma-surface)', border: '1px solid var(--prisma-border)' }}
     >
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8b949e]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--prisma-muted)]" />
           <input
             autoFocus
             type="text"
             placeholder="Firma oder Ticker eingeben..."
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            className="w-full pl-8 pr-3 py-2 text-sm rounded-lg bg-[#0d1117] text-[#e6edf3] placeholder-[#8b949e] outline-none focus:ring-1 focus:ring-[#58a6ff]/50"
-            style={{ border: '1px solid #30363d' }}
+            className="w-full pl-8 pr-3 py-2 text-sm rounded-lg bg-[var(--prisma-bg)] text-[var(--prisma-text)] placeholder-[var(--prisma-muted)] outline-none focus:ring-1 focus:ring-[var(--prisma-blue)]/50"
+            style={{ border: '1px solid var(--prisma-border)' }}
           />
         </div>
         <button
           onClick={onClose}
-          className="text-[#8b949e] hover:text-[#e6edf3] transition-colors p-1.5 rounded"
+          className="text-[var(--prisma-muted)] hover:text-[var(--prisma-text)] transition-colors p-1.5 rounded"
           aria-label="Suche schliessen"
         >
           <X className="h-4 w-4" />
@@ -303,10 +304,10 @@ function AddStockPanel({ query, onQueryChange, results, onAdd, onClose }: AddSto
             <li key={s.ticker}>
               <button
                 onClick={() => onAdd(s.ticker)}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors hover:bg-[#1c2128]"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left transition-colors hover:bg-[var(--prisma-surface)]"
               >
-                <span className="text-sm text-[#e6edf3]">{s.name}</span>
-                <span className="text-xs text-[#8b949e] font-mono ml-2 shrink-0">{s.ticker}.SW</span>
+                <span className="text-sm text-[var(--prisma-text)]">{s.name}</span>
+                <span className="text-xs text-[var(--prisma-muted)] font-mono ml-2 shrink-0">{s.ticker}.SW</span>
               </button>
             </li>
           ))}
@@ -314,7 +315,7 @@ function AddStockPanel({ query, onQueryChange, results, onAdd, onClose }: AddSto
       )}
 
       {query.length >= 1 && results.length === 0 && (
-        <p className="text-xs text-[#8b949e] px-1">Keine Treffer für &ldquo;{query}&rdquo;</p>
+        <p className="text-xs text-[var(--prisma-muted)] px-1">Keine Treffer für &ldquo;{query}&rdquo;</p>
       )}
     </div>
   );
@@ -329,12 +330,12 @@ interface EmptyStateProps {
 function EmptyState({ onAdd }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-      <BookMarked className="h-12 w-12 text-[#8b949e]/40" />
+      <BookMarked className="h-12 w-12 text-[var(--prisma-muted)]/40" />
       <div className="space-y-1 max-w-xs">
-        <p className="text-sm font-medium text-[#e6edf3]">
+        <p className="text-sm font-medium text-[var(--prisma-text)]">
           Füge Aktien hinzu die dich interessieren —
         </p>
-        <p className="text-xs text-[#8b949e]">
+        <p className="text-xs text-[var(--prisma-muted)]">
           PRISMA zeigt dir live wie sich die Signale entwickeln.
         </p>
       </div>
@@ -460,15 +461,15 @@ export function WatchlistClient() {
       {/* Header */}
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#e6edf3]">{title}</h1>
-          <p className="text-sm text-[#8b949e] mt-1">{subtitle}</p>
+          <h1 className="text-2xl font-bold text-[var(--prisma-text)]">{title}</h1>
+          <p className="text-sm text-[var(--prisma-muted)] mt-1">{subtitle}</p>
         </div>
 
         {!isEmpty && (
           <button
             onClick={() => setShowSearch((v) => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#1c2128]"
-            style={{ border: '1px solid #30363d' }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors text-[var(--prisma-muted)] hover:text-[var(--prisma-text)] hover:bg-[var(--prisma-surface)]"
+            style={{ border: '1px solid var(--prisma-border)' }}
           >
             <Plus className="h-4 w-4" />
             Aktie hinzufügen
@@ -497,9 +498,9 @@ export function WatchlistClient() {
         <>
           {/* Signals loading indicator */}
           {loadingSignals && (
-            <div className="flex items-center gap-2 text-xs text-[#8b949e]">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Signale werden geladen...
+            <div className="space-y-1">
+              <PrismaBar />
+              <p className="text-xs text-muted-foreground">Signale werden geladen…</p>
             </div>
           )}
 

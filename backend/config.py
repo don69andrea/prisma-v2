@@ -44,6 +44,52 @@ class Settings(BaseSettings):
     # Leer = opt-in disabled, kein Auth-Enforcement.
     tool_api_key: str = ""
 
+    # FinancialModelingPrep API-Key (kostenloser Tier, 250 Calls/Tag).
+    # Leer oder bekannte Platzhalter ("your-fmp-key") = FMP-Adapter
+    # deaktiviert; kein Fehler, kein HTTP-Call. Kein Boot-Fehler in
+    # Entwicklung/CI ohne echten Key.
+    fmp_api_key: str = ""
+
+    # SendGrid API-Key für Alert-E-Mails.
+    # Leer oder bekannte Platzhalter = E-Mail-Versand graceful deaktiviert.
+    sendgrid_api_key: str = ""
+
+    # CoinGecko API Key (optional — Free Tier: 30 Req/min, 10.000/Monat)
+    coingecko_api_key: str = ""
+
+    # Glassnode API Key (optional — Free Tier: kostenlos, https://glassnode.com)
+    glassnode_api_key: str = ""
+
+    # Krypto-Feature aktivieren (default: true)
+    crypto_feature_enabled: bool = True
+
+    # SimFin API Key (simfin.com) — US-Fundamentaldaten, Free Tier.
+    # Leer = SimFinAdapter deaktiviert. Free-Tier-Key: https://simfin.com/api/v2/
+    simfin_api_key: str = ""
+
+    # EODHD (eodhd.com) — Fundamentals + EOD, echte SIX-Coverage.
+    # Free-Tier knapp (20 Calls/Tag); Seed braucht ggf. 1 Monat Paid.
+    # Leer = EODHD-Adapter deaktiviert, kein HTTP-Call.
+    eodhd_api_key: str = ""
+
+    # Steuert, welche Fundamentals-Quelle der Feature-/Seed-Pfad nutzt.
+    # yf_derived = yfinance .info (aktueller Snapshot, nur Quant-Scorer + Dashboard)
+    # simfin_us  = optionales US-Experiment (NICHT im Hauptpfad, laut TEIL F)
+    # eodhd | fmp  = kostenpflichtig, kein Key vorhanden
+    dataset_source_fundamentals: str = "yf_derived"
+    dataset_source_prices: str = "yfinance"
+    dataset_source_crypto: str = "cryptodatadownload"
+
+    # Trainings-/Seed-Tiefe (überschreibbar per ENV für Tests).
+    seed_stocks_from: str = "2015-01-01"
+    seed_crypto_daily_from: str = "2017-01-01"
+    seed_crypto_hourly_from: str = "2020-01-01"
+
+    jwt_secret: str = ""
+    jwt_expire_hours: int = 8
+    admin_email: str = ""
+    admin_password: str = ""
+
     budget_cap_usd: Decimal = Decimal("20.00")
     budget_cap_threshold: Decimal = Decimal("0.95")
 
@@ -110,6 +156,12 @@ class Settings(BaseSettings):
                 raise ValueError("API_KEY muss in der Production-Umgebung gesetzt sein")
             if not self.anthropic_api_key:
                 raise ValueError("ANTHROPIC_API_KEY muss in der Production-Umgebung gesetzt sein")
+        return self
+
+    @model_validator(mode="after")
+    def _jwt_secret_required_in_production(self) -> "Settings":
+        if self.environment == "production" and not self.jwt_secret:
+            raise ValueError("JWT_SECRET muss in der Production-Umgebung gesetzt sein")
         return self
 
 

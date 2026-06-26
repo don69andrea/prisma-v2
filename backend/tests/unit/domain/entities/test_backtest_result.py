@@ -50,6 +50,8 @@ def _make_result(**overrides: object) -> BacktestResult:
         "model_run_id": uuid4(),
         "start_date": date(2024, 1, 1),
         "end_date": date(2024, 12, 31),
+        "actual_start_date": date(2024, 1, 1),
+        "actual_end_date": date(2024, 12, 31),
         "top_n": 3,
         "benchmark_ticker": "^SSMI",
         "prisma_metrics": metrics,

@@ -52,13 +52,18 @@ def _load_model() -> tuple[Any, str]:
 
     import joblib
 
-    if not _LATEST_MODEL.exists():
+    from backend.application.services.model_registry import ModelRegistry
+
+    registry = ModelRegistry()
+    model_path = registry.get_active_model_path() or _LATEST_MODEL
+
+    if not model_path.exists():
         raise FileNotFoundError(
-            f"Kein trainiertes Modell gefunden unter {_LATEST_MODEL}. "
+            f"Kein trainiertes Modell gefunden unter {model_path}. "
             "Bitte zuerst `python scripts/train_return_predictor.py` ausführen."
         )
 
-    _model_cache = joblib.load(_LATEST_MODEL)
+    _model_cache = joblib.load(model_path)
     _model_type_cache = "unknown"
 
     import json

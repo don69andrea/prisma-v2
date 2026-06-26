@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 const API_BASE = process.env.PLAYWRIGHT_API_URL ?? 'http://localhost:8000';
 

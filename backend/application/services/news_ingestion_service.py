@@ -291,7 +291,7 @@ def _chunk_text(article: NewsArticle) -> list[NewsChunk]:
                     news_document_id=article.id,
                     chunk_idx=idx,
                     content=content,
-                    embedding=[0.0] * 2048,  # placeholder — replaced after embed()
+                    embedding=[0.0] * 1024,  # placeholder — replaced after embed()
                     metadata={"source": article.source, "tickers": list(article.tickers)},
                 )
             )

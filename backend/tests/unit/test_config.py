@@ -30,12 +30,13 @@ class TestApiKeyProductionValidator:
         assert "API_KEY" in str(exc_info.value)
 
     def test_passes_when_api_key_set_in_production(self) -> None:
-        settings = Settings(
+        settings = Settings(  # type: ignore[call-arg]
             environment="production",
             api_key="secret",
             anthropic_api_key="sk-ant-test",
+            jwt_secret="test-jwt-secret",
             _env_file=None,
-        )  # type: ignore[call-arg]
+        )
         assert settings.api_key == "secret"
 
     def test_passes_in_development_without_api_key(self) -> None:

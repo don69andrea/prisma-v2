@@ -36,6 +36,21 @@ function formatStand(): string {
   });
 }
 
+// Greeting and "Stand" timestamp depend on the current time and the local
+// timezone, both of which differ between server render and client hydration.
+// Render a stable placeholder first, then fill in the real value client-side.
+function useDashboardClock() {
+  const [greeting, setGreeting] = useState('');
+  const [stand, setStand] = useState('');
+
+  useEffect(() => {
+    setGreeting(getGreeting());
+    setStand(formatStand());
+  }, []);
+
+  return { greeting, stand };
+}
+
 function getDiscoverTickers(): string[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -157,7 +172,7 @@ function useSignals() {
   // Discover tickers count for the universe size display.
   // We read localStorage once on mount and re-read whenever the storage key
   // changes (e.g. after Discovery-Completion in another component/tab).
-  const [discoverTickers, setDiscoverTickers] = useState<string[]>(() => getDiscoverTickers());
+  const [discoverTickers, setDiscoverTickers] = useState<string[]>([]);
 
   useEffect(() => {
     // Re-read on storage events so the value stays fresh after discovery runs.
@@ -184,7 +199,7 @@ function useSignals() {
 
 function SimpleDashboard() {
   const { buy, hold, sell, loading, universeSize } = useSignals();
-  const stand = formatStand();
+  const { greeting, stand } = useDashboardClock();
 
   // Top 1 of each type for the hero row
   const heroSignals: DecisionSignal[] = [
@@ -197,7 +212,7 @@ function SimpleDashboard() {
     <div className="space-y-8 max-w-2xl">
       {/* Greeting */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">{getGreeting()}.</h1>
+        <h1 className="text-2xl font-bold text-foreground">{greeting}.</h1>
         <p className="mt-1 text-xs text-muted-foreground">Stand: {stand}</p>
       </div>
 
@@ -263,7 +278,7 @@ function SimpleDashboard() {
 
 function ProDashboard() {
   const { buy, hold, sell, loading, universeSize } = useSignals();
-  const stand = formatStand();
+  const { stand } = useDashboardClock();
 
   const macroQuery = useQuery({
     queryKey: ['macro-context'],
@@ -451,36 +466,6 @@ function ProDashboard() {
 }
 
 // ---------------------------------------------------------------------------
-// PRISMA mode switcher (Simple ↔ Pro) — separate from the global Dark/Light
-// ModeToggle in layout.tsx
-// ---------------------------------------------------------------------------
-
-function PrismaModeSwitcher() {
-  const { mode, toggle } = usePrismaMode();
-  return (
-    <div className="mb-6 flex justify-end">
-      <button
-        onClick={toggle}
-        className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        aria-label={mode === 'simple' ? 'Zu Pro-Modus wechseln' : 'Zu Einfach-Modus wechseln'}
-      >
-        {mode === 'simple' ? (
-          <>
-            <BarChart2 className="h-3.5 w-3.5" />
-            Pro-Modus
-          </>
-        ) : (
-          <>
-            <Layers className="h-3.5 w-3.5" />
-            Einfach-Modus
-          </>
-        )}
-      </button>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
 
@@ -489,7 +474,6 @@ export function DashboardClient() {
 
   return (
     <div>
-      <PrismaModeSwitcher />
       {isSimple ? <SimpleDashboard /> : <ProDashboard />}
     </div>
   );

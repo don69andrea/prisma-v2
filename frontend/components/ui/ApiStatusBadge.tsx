@@ -2,22 +2,18 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+import { apiFetch } from '@/lib/api/client';
 
 export function ApiStatusBadge() {
-  const { data, isError } = useQuery({
-    queryKey: ['health'],
-    queryFn: async () => {
-      const res = await fetch(`${API_BASE_URL}/health`, { cache: 'no-store' });
-      if (!res.ok) throw new Error('unhealthy');
-      return res.json();
-    },
+  const { isSuccess } = useQuery({
+    queryKey: ['api-status'],
+    queryFn: () => apiFetch('/health/ready'),
     refetchInterval: 30_000,
     retry: 1,
     staleTime: 20_000,
   });
 
-  const online = !!data && !isError;
+  const online = isSuccess;
 
   return (
     <span

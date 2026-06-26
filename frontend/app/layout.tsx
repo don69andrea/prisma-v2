@@ -4,11 +4,11 @@ import Link from 'next/link';
 
 import { Providers } from '@/app/providers';
 import { NavLinks } from '@/app/nav-links';
-import { ApiStatusBadge } from '@/components/ui/ApiStatusBadge';
-import { ModeToggle } from '@/components/ui/ModeToggle';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { PrismaLogo } from '@/components/ui/PrismaLogo';
 import { NavigationProgressBar } from '@/components/ui/PrismaBar';
+import { ChatDrawer } from '@/components/chat/ChatDrawer';
+import { AccountMenu } from '@/components/ui/AccountMenu';
 import '@/app/globals.css';
 
 export const metadata: Metadata = {
@@ -41,28 +41,21 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <span className="text-lg font-black uppercase tracking-widest">PRISMA</span>
               </Link>
               <NavLinks />
-              <div className="ml-auto flex items-center gap-2 pl-4">
-                <ModeToggle />
-                <ApiStatusBadge />
+              <div className="ml-auto flex items-center gap-2 pl-4 border-l border-border/40">
+                <AccountMenu />
                 <ThemeToggle />
               </div>
             </div>
-            {/* PRISMA-Spektrum: zerlegt weisses Licht in 5 quantitative Dimensionen */}
-            <div className="relative" aria-hidden="true">
-              {/* Glow-Bloom darunter */}
-              <div
-                className="absolute inset-x-0 top-0 h-[8px] blur-[6px] opacity-60"
-                style={{ background: SPECTRUM_GRADIENT }}
-              />
-              {/* Hauptbalken */}
-              <div
-                className="relative h-[4px] w-full overflow-hidden spectrum-shimmer"
-                style={{ background: SPECTRUM_GRADIENT }}
-              />
-            </div>
+            {/* PRISMA-Spektrum: 5 quantitative Dimensionen */}
+            <div
+              className="h-[3px] w-full opacity-60"
+              style={{ background: SPECTRUM_GRADIENT }}
+              aria-hidden="true"
+            />
           </header>
           <NavigationProgressBar />
           <main className="container py-8">{children}</main>
+          <ChatDrawer />
         </Providers>
       </body>
     </html>

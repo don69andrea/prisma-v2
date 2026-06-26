@@ -65,6 +65,7 @@ class ResearchMemoORM(Base):
         nullable=False,
         server_default=sa.text("false"),
     )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
 
     __table_args__ = (
         UniqueConstraint(

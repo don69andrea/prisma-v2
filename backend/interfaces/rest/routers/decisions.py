@@ -12,9 +12,14 @@ from backend.application.agents.macro_agent import MacroIntelligenceAgent
 from backend.application.services.macro_service import MacroService
 from backend.application.services.signal_aggregation_service import SignalAggregationService
 from backend.application.services.universe_service import UniverseNotFound, UniverseService
+from backend.config import Settings, get_settings
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
+from backend.infrastructure.persistence.repositories.stock_signal_repository import (
+    SQLAStockSignalRepository,
+)
 from backend.interfaces.rest.dependencies import (
     get_llm_client,
+    get_session,
     get_swiss_stock_repository,
     get_universe_service,
 )
@@ -48,7 +53,7 @@ def _signal_reason(signal: str, weighted_score: float, quant_score: float) -> st
     )
 
 
-_MAX_LIVE_TICKERS = 12
+_MAX_LIVE_TICKERS = 25
 
 
 def get_signal_aggregation_service(
@@ -79,6 +84,7 @@ def _build_response(
             ml_score=s.ml_score,
             macro_score=s.macro_score,
             is_3a_eligible=s.is_3a_eligible,
+            ml_is_fallback=s.ml_is_fallback,
             signal_reason=_signal_reason(s.signal, s.weighted_score, s.quant_score),
         )
         for s in signals
@@ -139,6 +145,7 @@ _EXPLAIN_HAIKU = "claude-haiku-4-5-20251001"
 async def explain_decision(
     body: ExplainRequest,
     llm_client: object = Depends(get_llm_client),
+    settings: Settings = Depends(get_settings),
 ) -> ExplainResponse:
     """Generiert eine Haiku-basierte Erklärung warum TICKER dieses Signal erhalten hat.
 
@@ -173,15 +180,15 @@ Signal: {body.signal} ({round(body.confidence * 100)}% Konfidenz)
 Gewichteter Gesamtscore: {body.weighted_score:.1f}/100 → {body.signal} (BUY ≥65 / HOLD 40–64 / SELL <40)
 
 METRIKEN:
-1. Quant-Score: {body.quant_score:.0f}/100 × 0.45 = {body.quant_score * 0.45:.1f} Punkte
+1. Quant-Score: {body.quant_score:.0f}/100 × {settings.signal_quant_weight} = {body.quant_score * settings.signal_quant_weight:.1f} Punkte
    Einordnung: {quant_band} (Skala: <45=schwach, 45–69=moderat, ≥70=stark)
    Misst: Fundamentalqualität (Bewertung, Dividende, Cashflow, Kapitalrendite) relativ zu SMI-Bändern.
 
-2. ML-Score: {body.ml_score:.0f}/100 × 0.35 = {body.ml_score * 0.35:.1f} Punkte
+2. ML-Score: {body.ml_score:.0f}/100 × {settings.signal_ml_weight} = {body.ml_score * settings.signal_ml_weight:.1f} Punkte
    Modell-Output: {ml_label} (OUTPERFORM=85 / NEUTRAL=50 / UNDERPERFORM=15)
    Misst: LightGBM-Vorhersage auf historischen Preis- und Fundamental-Features.
 
-3. Makro-Score: {body.macro_score:.0f}/100 × 0.20 = {body.macro_score * 0.20:.1f} Punkte
+3. Makro-Score: {body.macro_score:.0f}/100 × {settings.signal_macro_weight} = {body.macro_score * settings.signal_macro_weight:.1f} Punkte
    Einordnung: {macro_band} (Skala: SNB ≤0%=80 / ≤0.5%=65 / ≤1%=50 / ≤1.5%=35 / >1.5%=20)
    Misst: Geldpolitisches Umfeld (SNB-Leitzins, CHF/EUR, Inflation).
 
@@ -202,6 +209,12 @@ AUFGABE — erkläre in je 2 präzisen Sätzen pro Feld:
             messages=[{"role": "user", "content": user_msg}],
         )
         raw = response.content[0].text.strip()
+        # Strip markdown fences if Haiku wraps JSON in ```json ... ```
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+            raw = raw.strip()
         data = json.loads(raw)
         return ExplainResponse(
             ticker=ticker,
@@ -235,6 +248,7 @@ async def list_decisions(
     eligible_only: bool = Query(default=False, description="Nur 3a-eligible Titel zurückgeben"),
     universe_service: UniverseService = Depends(get_universe_service),
     aggregation_service: SignalAggregationService = Depends(get_signal_aggregation_service),
+    session: Any = Depends(get_session),
 ) -> DecisionListResponse:
     try:
         universe = await universe_service.get_universe(universe_id)
@@ -244,9 +258,7 @@ async def list_decisions(
             detail=str(exc),
         ) from exc
 
-    tickers = list(universe.tickers)
-    signals = await aggregation_service.get_signals(tickers)
-
+    # Validate signal filter early (before snapshot/live branch)
     if signal is not None:
         signal_upper = signal.upper()
         if signal_upper not in {"BUY", "HOLD", "SELL"}:
@@ -254,6 +266,25 @@ async def list_decisions(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="signal muss BUY, HOLD oder SELL sein.",
             )
+    else:
+        signal_upper = None
+
+    # Tagesschnitt vorhanden → direkt aus DB (kein yFinance-Call)
+    # Threshold: 80% des Universums müssen vorhanden sein (mind. 1)
+    stock_signal_repo = SQLAStockSignalRepository(session)
+    snapshots = await stock_signal_repo.get_today_all()
+    universe_size = max(len(universe.tickers), 1)
+    snapshot_threshold = max(1, int(universe_size * 0.8))
+    if len(snapshots) >= snapshot_threshold:
+        _logger.info("list_decisions: Tagesschnitt mit %d Einträgen gefunden", len(snapshots))
+        return _build_response(snapshots, signal, eligible_only)
+
+    # Kein Snapshot → live berechnen (Fallback)
+    _logger.info("list_decisions: Kein Tagesschnitt — live Berechnung via yFinance")
+    tickers = list(universe.tickers)
+    signals = await aggregation_service.get_signals(tickers)
+
+    if signal_upper is not None:
         signals = [s for s in signals if s.signal == signal_upper]
 
     if eligible_only:
@@ -270,6 +301,7 @@ async def list_decisions(
             ml_score=s.ml_score,
             macro_score=s.macro_score,
             is_3a_eligible=s.is_3a_eligible,
+            ml_is_fallback=s.ml_is_fallback,
             signal_reason=_signal_reason(s.signal, s.weighted_score, s.quant_score),
         )
         for s in signals

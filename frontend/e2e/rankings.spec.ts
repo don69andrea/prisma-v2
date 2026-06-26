@@ -8,9 +8,9 @@ test.describe('PRISMA E2E', () => {
     await expect(page).toHaveTitle(/PRISMA|Dashboard/);
     // Navigation includes both existing and new links
     await expect(page.getByRole('link', { name: /Rankings/i })).toBeVisible();
-    // /discover ("Mein Universum") and /start ("Start") were added to nav
-    await expect(page.getByRole('link', { name: /Mein Universum/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Start', exact: true })).toBeVisible();
+    // /discover ("Universum") and /start ("Profil") were added to nav; renamed in UX repolish
+    await expect(page.getByRole('link', { name: 'Universum', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Profil', exact: true })).toBeVisible();
   });
 
   test('2. Universe-Flow: neues Universum anlegen', async ({ page }) => {

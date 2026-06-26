@@ -1,319 +1,197 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { Terminal, Send, ChevronRight, ExternalLink, Download, Check } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Terminal, Send, RotateCcw, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { streamChat, type ChatHistoryMessage, type SSEEvent } from '@/lib/api/chat';
+import { getMacroContext } from '@/lib/api/macro';
+import { retrieveSwissFilings, type SwissChunkResult } from '@/lib/api/rag';
+import { parseMessageWithTickers } from '@/components/chat/TickerChip';
 import { usePrismaMode } from '@/hooks/usePrismaMode';
-import {
-  retrieveSecFilings,
-  retrieveSwissFilings,
-  type SecChunkResult,
-  type SwissChunkResult,
-} from '@/lib/api/rag';
-import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const LS_RESEARCH_KEY = 'prisma_research_last_search';
 const CYAN = '#00d4ff';
 
 const EXAMPLE_QUERIES = [
-  'Wie sieht Novartis fundamental aus?',
-  'Welche SMI-Aktie hat die beste Dividende?',
-  'Was bedeutet der SNB-Entscheid für mich?',
-  'Vergleiche Roche und Novartis',
-  'Zeige mir Aktien mit niedrigem KGV',
+  'Soll ich Novartis kaufen?',
+  'Welche SMI-Aktie hat das beste BUY-Signal?',
+  'Was bedeutet der SNB-Entscheid für mein Portfolio?',
+  'Vergleiche Roche und Nestlé',
+  'Wie vermeide ich Klumpenrisiko?',
 ];
 
-const AGENT_STEPS = [
-  { agent: 'MacroAgent', action: 'lädt Marktdaten...' },
-  { agent: 'FilingRAG', action: 'durchsucht Berichte...' },
-  { agent: 'QuantAgent', action: 'berechnet Signale...' },
-];
-
-const MOCK_SOURCES = [
-  { label: 'Novartis GB 2025', url: '#' },
-  { label: 'SNB Q1 2026', url: '#' },
-];
-
-const MOCK_MACRO = {
-  rate: '1.0%',
-  fx: '0.938',
-  sentiment: 'Leicht risiko-positiv',
+const TOOL_LABELS: Record<string, string> = {
+  search_stocks: 'Aktiensuche',
+  filter_stocks: 'Aktienfilter',
+  get_factsheet: 'Factsheet',
+  get_macro_context: 'Makro-Kontext',
+  compare_stocks: 'Vergleich',
+  get_ranking: 'Ranking',
 };
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Types
 // ---------------------------------------------------------------------------
 
-function loadStoredResearch() {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(LS_RESEARCH_KEY);
-    if (raw) return JSON.parse(raw) as { query: string; ticker: string };
-  } catch {}
-  return null;
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
 }
 
-function exportResearchCsv(results: (SwissChunkResult | SecChunkResult)[], filename: string) {
-  const rows = [
-    ['Ticker', 'Typ', 'Datum', 'Ähnlichkeit%', 'Quelle', 'Inhalt'],
-    ...results.map((r) => {
-      const swiss = r as SwissChunkResult;
-      const sec = r as SecChunkResult;
-      return [
-        swiss.ticker ?? sec.ticker ?? '',
-        r.doc_type ?? '',
-        swiss.filing_date ?? '',
-        Math.round(r.similarity * 100).toString(),
-        swiss.source ?? '',
-        (r.content ?? '').slice(0, 200),
-      ];
-    }),
-  ];
-  const csv = rows
-    .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
-    .join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+interface ToolEntry {
+  tool: string;
+  startMs: number;
+  doneMs?: number;
+}
+
+interface SessionMetrics {
+  startMs: number;
+  endMs?: number;
+  charCount: number;
 }
 
 // ---------------------------------------------------------------------------
-// TypewriterText
+// MacroPanel — live macro data with fallback
 // ---------------------------------------------------------------------------
 
-function TypewriterText({ text, speed = 20 }: { text: string; speed?: number }) {
-  const [displayed, setDisplayed] = useState('');
+function MacroPanel() {
+  const { data, isError } = useQuery({
+    queryKey: ['macro-context'],
+    queryFn: getMacroContext,
+    staleTime: 30 * 60 * 1000,
+    retry: 1,
+  });
 
-  useEffect(() => {
-    setDisplayed('');
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < text.length) {
-        setDisplayed(text.slice(0, i + 1));
-        i++;
-      } else {
-        clearInterval(interval);
-      }
-    }, speed);
-    return () => clearInterval(interval);
-  }, [text, speed]);
+  const rate = data ? `${data.leitzins.toFixed(2)}%` : '—';
+  const fx = data ? data.chf_eur.toFixed(3) : '—';
+  const sentiment = data?.narrative_de ?? null;
+  const isLive = !!data && !isError;
 
   return (
-    <span>
-      {displayed}
-      <span className="animate-pulse">▊</span>
-    </span>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// AgentLog (Pro Mode)
-// ---------------------------------------------------------------------------
-
-type AgentLogEntry =
-  | { type: 'step'; agent: string; action: string; done: boolean; duration?: number }
-  | { type: 'ready' };
-
-function useAgentLog(active: boolean) {
-  const [log, setLog] = useState<AgentLogEntry[]>([]);
-  const startRef = useRef<number[]>([]);
-
-  useEffect(() => {
-    if (!active) {
-      setLog([]);
-      startRef.current = [];
-      return;
-    }
-
-    setLog([]);
-    startRef.current = [];
-
-    const delays = [0, 500, 1300];
-    const durations = [800, 1200, 400];
-
-    const timers: ReturnType<typeof setTimeout>[] = [];
-
-    AGENT_STEPS.forEach((step, i) => {
-      const t1 = setTimeout(() => {
-        startRef.current[i] = Date.now();
-        setLog((prev) => [
-          ...prev,
-          { type: 'step', agent: step.agent, action: step.action, done: false },
-        ]);
-      }, delays[i]);
-
-      const t2 = setTimeout(() => {
-        const elapsed = startRef.current[i]
-          ? ((Date.now() - startRef.current[i]) / 1000).toFixed(1)
-          : durations[i] / 1000;
-        setLog((prev) =>
-          prev.map((entry, idx) =>
-            idx === i && entry.type === 'step'
-              ? { ...entry, done: true, duration: parseFloat(String(elapsed)) }
-              : entry,
-          ),
-        );
-      }, delays[i] + durations[i]);
-
-      timers.push(t1, t2);
-    });
-
-    const readyDelay = delays[AGENT_STEPS.length - 1] + durations[AGENT_STEPS.length - 1] + 100;
-    const t3 = setTimeout(() => {
-      setLog((prev) => [...prev, { type: 'ready' }]);
-    }, readyDelay);
-    timers.push(t3);
-
-    return () => timers.forEach(clearTimeout);
-  }, [active]);
-
-  return log;
-}
-
-// ---------------------------------------------------------------------------
-// ResultSummary — builds a one-liner from RAG results
-// ---------------------------------------------------------------------------
-
-function buildSummary(
-  swissResults: SwissChunkResult[] | null,
-  secResults: SecChunkResult[] | null,
-  query: string,
-): string {
-  const allResults = [...(swissResults ?? []), ...(secResults ?? [])];
-  if (allResults.length === 0) {
-    return `Keine Ergebnisse für «${query}» gefunden. Versuche eine andere Formulierung oder einen spezifischeren Ticker.`;
-  }
-
-  const topSwiss = swissResults?.[0];
-  const topSec = secResults?.[0];
-  const top = topSwiss ?? topSec;
-
-  const ticker = top
-    ? (top as SwissChunkResult).ticker ?? (top as SecChunkResult).ticker
-    : null;
-
-  const score = top ? Math.round(top.similarity * 100) : null;
-  const snippet = top ? top.content.slice(0, 180).replace(/\s+/g, ' ').trim() : '';
-
-  const tickerStr = ticker ? `[${ticker}] ` : '';
-  const scoreStr = score !== null ? ` · Relevanz ${score}%` : '';
-
-  return (
-    `${tickerStr}${snippet}…${scoreStr} — ` +
-    `${allResults.length} Dokument${allResults.length !== 1 ? 'e' : ''} analysiert. ` +
-    `Quellen: ${[topSwiss ? 'SIX Jahresberichte' : null, topSec ? 'SEC Filings' : null]
-      .filter(Boolean)
-      .join(' & ')}.`
-  );
-}
-
-// ---------------------------------------------------------------------------
-// SimpleModeView
-// ---------------------------------------------------------------------------
-
-function SimpleModeView({
-  query,
-  setQuery,
-  onSubmit,
-  isPending,
-  summary,
-}: {
-  query: string;
-  setQuery: (q: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  isPending: boolean;
-  summary: string | null;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  return (
-    <div className="flex flex-col gap-8 max-w-2xl mx-auto">
-      {/* Hero */}
-      <div className="space-y-3">
-        <p
-          className="text-xs font-mono tracking-widest uppercase"
-          style={{ color: CYAN }}
-        >
-          Research ist dein PRISMA-Assistent. Stelle Fragen auf Deutsch oder Englisch.
-        </p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Frag PRISMA. Basierend auf Schweizer Geschäftsberichten,
-          Makrodaten und deinem Universum.
-        </p>
-      </div>
-
-      {/* Example chips */}
-      <div className="flex flex-wrap gap-2">
-        {EXAMPLE_QUERIES.map((q) => (
-          <button
-            key={q}
-            type="button"
-            onClick={() => {
-              setQuery(q);
-              inputRef.current?.focus();
-            }}
-            className="inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-mono transition-colors hover:border-[#00d4ff] hover:text-[#00d4ff]"
-            style={{ borderColor: 'rgba(0,212,255,0.25)', color: '#94a3b8' }}
+    <div
+      className="rounded-md border p-4 space-y-2"
+      style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] tracking-widest uppercase text-muted-foreground">Makro-Kontext</p>
+        {!isLive && (
+          <Badge
+            variant="warning"
+            className="text-[9px] py-0 px-1.5 normal-case font-mono"
+            data-testid="research-macro-demo-badge"
           >
-            <ChevronRight className="h-3 w-3" />
-            {q}
-          </button>
-        ))}
+            Beispieldaten
+          </Badge>
+        )}
       </div>
-
-      {/* Input */}
-      <form onSubmit={onSubmit} className="flex gap-2">
-        <input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Frag PRISMA..."
-          className="flex-1 rounded-md border px-4 py-2.5 text-sm font-mono bg-transparent outline-none focus:ring-1 transition-colors"
-          style={{
-            borderColor: query ? CYAN : 'rgba(255,255,255,0.12)',
-            color: '#e2e8f0',
-            caretColor: CYAN,
-          }}
-          data-testid="research-query-input"
-        />
-        <button
-          type="submit"
-          disabled={isPending || !query.trim()}
-          className="inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-mono font-medium disabled:opacity-40 transition-all"
-          style={{ background: CYAN, color: '#090d12' }}
-          data-testid="research-search-btn"
+      <div className="flex items-center justify-between text-muted-foreground">
+        <span>SNB</span>
+        <span style={{ color: CYAN }}>{rate}</span>
+      </div>
+      <div className="flex items-center justify-between text-muted-foreground">
+        <span>CHF/EUR</span>
+        <span style={{ color: CYAN }}>{fx}</span>
+      </div>
+      {sentiment && (
+        <p
+          className="text-muted-foreground text-[10px] pt-1 border-t leading-relaxed"
+          style={{ borderColor: 'rgba(255,255,255,0.06)' }}
         >
-          {isPending ? (
-            <span className="animate-pulse">...</span>
-          ) : (
-            <>
-              <Send className="h-4 w-4" />
-              Senden
-            </>
+          &ldquo;{sentiment}&rdquo;
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AgentPanel — real tool-call log from SSE stream
+// ---------------------------------------------------------------------------
+
+function AgentPanel({ toolLog, streaming }: { toolLog: ToolEntry[]; streaming: boolean }) {
+  return (
+    <div
+      className="rounded-md border p-4 space-y-2"
+      style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
+    >
+      <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">
+        Agent-Aktivität
+      </p>
+      {toolLog.length === 0 ? (
+        <p className="text-[11px] text-muted-foreground">Warte auf Anfrage…</p>
+      ) : (
+        toolLog.map((t, i) => {
+          const duration = t.doneMs ? ((t.doneMs - t.startMs) / 1000).toFixed(1) : null;
+          const label = TOOL_LABELS[t.tool] ?? t.tool;
+          return (
+            <div key={i} className="flex items-center justify-between text-[11px] font-mono">
+              <span style={{ color: t.doneMs ? '#7ee787' : CYAN }}>
+                {t.doneMs ? '✓' : streaming ? '⟳' : '·'} {label}
+              </span>
+              {duration ? (
+                <span className="text-muted-foreground">{duration}s</span>
+              ) : (
+                !t.doneMs && streaming && (
+                  <span className="text-muted-foreground animate-pulse">…</span>
+                )
+              )}
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MetricsPanel — antwortzeit, tokens, geschätzte kosten
+// ---------------------------------------------------------------------------
+
+function MetricsPanel({
+  metrics,
+  toolLog,
+}: {
+  metrics: SessionMetrics | null;
+  toolLog: ToolEntry[];
+}) {
+  return (
+    <div
+      className="rounded-md border p-4 space-y-2"
+      style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
+    >
+      <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">Metriken</p>
+      {!metrics ? (
+        <p className="text-[11px] text-muted-foreground">Noch keine Anfrage.</p>
+      ) : (
+        <div className="space-y-1.5 font-mono text-[11px]">
+          {metrics.endMs && (
+            <div className="flex justify-between text-muted-foreground">
+              <span>Antwortzeit</span>
+              <span style={{ color: CYAN }}>
+                {((metrics.endMs - metrics.startMs) / 1000).toFixed(1)}s
+              </span>
+            </div>
           )}
-        </button>
-      </form>
-
-      {/* Response */}
-      {summary !== null && (
-        <div
-          className="rounded-md border p-5 font-mono text-sm leading-relaxed"
-          style={{ borderColor: 'rgba(0,212,255,0.2)', background: 'rgba(0,212,255,0.03)' }}
-        >
-          <span className="text-xs font-mono mb-3 block" style={{ color: CYAN }}>
-            PRISMA
-          </span>
-          <TypewriterText text={summary} speed={18} />
+          <div className="flex justify-between text-muted-foreground">
+            <span>Tools genutzt</span>
+            <span style={{ color: CYAN }}>{toolLog.length}</span>
+          </div>
+          <div className="flex justify-between text-muted-foreground">
+            <span>Tokens (est.)</span>
+            <span style={{ color: CYAN }}>
+              ~{Math.round(metrics.charCount / 3.5).toLocaleString('de-CH')}
+            </span>
+          </div>
+          <div className="flex justify-between text-muted-foreground">
+            <span>Kosten (est.)</span>
+            <span style={{ color: CYAN }}>
+              ~CHF {(Math.round(metrics.charCount / 3.5) * 0.000015).toFixed(4)}
+            </span>
+          </div>
         </div>
       )}
     </div>
@@ -321,344 +199,367 @@ function SimpleModeView({
 }
 
 // ---------------------------------------------------------------------------
-// ProModeView
+// RagPanel — collapsible, ready for future document indexing
 // ---------------------------------------------------------------------------
 
-function ProModeView({
-  query,
-  setQuery,
-  onSubmit,
-  isPending,
-  swissResults,
-  secResults,
-  agentLog,
-  summary,
-}: {
-  query: string;
-  setQuery: (q: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  isPending: boolean;
-  swissResults: SwissChunkResult[] | null;
-  secResults: SecChunkResult[] | null;
-  agentLog: AgentLogEntry[];
-  summary: string | null;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const logEndRef = useRef<HTMLDivElement>(null);
+function RagPanel() {
+  const [open, setOpen] = useState(false);
+  const [ragQuery, setRagQuery] = useState('');
 
-  useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [agentLog]);
+  const ragMutation = useMutation({
+    mutationFn: () => retrieveSwissFilings({ query: ragQuery, k: 5 }),
+  });
 
-  const allSources: { label: string; url: string }[] = [
-    ...(swissResults ?? []).slice(0, 4).map((r) => ({
-      label: `${r.ticker} · ${r.doc_type} ${r.filing_date?.slice(0, 4) ?? ''}`,
-      url: r.url ?? '#',
-    })),
-    ...(secResults ?? []).slice(0, 2).map((r) => ({
-      label: `${r.ticker} · ${r.doc_type}`,
-      url: '#',
-    })),
-  ];
-
-  const completedSteps = agentLog.filter(
-    (e): e is Extract<AgentLogEntry, { type: 'step' }> =>
-      e.type === 'step' && e.done,
-  );
+  const results: SwissChunkResult[] = ragMutation.isSuccess ? ragMutation.data.results : [];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-      {/* ---- Left: Terminal chat ---- */}
-      <div className="flex flex-col gap-4">
-        {/* Agent log + response area */}
+    <div
+      className="rounded-md border overflow-hidden"
+      style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
+    >
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 text-[10px] tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <span>Dokument-Suche (RAG)</span>
+        {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </button>
+
+      {open && (
         <div
-          className="rounded-md border min-h-[280px] p-5 font-mono text-sm flex flex-col gap-2 overflow-y-auto"
-          style={{
-            borderColor: 'rgba(0,212,255,0.15)',
-            background: 'rgba(0,0,0,0.35)',
-          }}
+          className="px-4 pb-4 space-y-3 border-t"
+          style={{ borderColor: 'rgba(0,212,255,0.08)' }}
         >
-          {agentLog.length === 0 && summary === null && (
-            <span className="text-muted-foreground flex items-center gap-1">
-              <span style={{ color: CYAN }}>{'>'}</span>{' '}
-              <span className="animate-pulse">_</span>
-            </span>
-          )}
-
-          {agentLog.map((entry, i) => {
-            if (entry.type === 'ready') {
-              return (
-                <span key={i} className="text-muted-foreground">
-                  <span style={{ color: CYAN }}>{'>'}</span> Antwort bereit.
-                </span>
-              );
-            }
-            return (
-              <span
-                key={i}
-                className={cn(
-                  'flex items-center gap-2',
-                  entry.done ? 'text-muted-foreground' : 'text-muted-foreground',
-                )}
-              >
-                <span style={{ color: CYAN }}>{'>'}</span>
-                <span className="w-28 shrink-0" style={{ color: entry.done ? '#94a3b8' : CYAN }}>
-                  {entry.agent}
-                </span>
-                <span>{entry.done ? `✓ ${entry.duration}s` : entry.action}</span>
-              </span>
-            );
-          })}
-
-          {summary !== null && (
-            <div className="mt-3 pt-3 border-t" style={{ borderColor: 'rgba(0,212,255,0.12)' }}>
-              <span className="text-xs mb-1 block" style={{ color: CYAN }}>
-                PRISMA
-              </span>
-              <TypewriterText text={summary} speed={18} />
-            </div>
-          )}
-
-          <div ref={logEndRef} />
-        </div>
-
-        {/* Example chips */}
-        <div className="flex flex-wrap gap-2">
-          {EXAMPLE_QUERIES.map((q) => (
+          <p className="text-[10px] text-muted-foreground pt-3 leading-relaxed">
+            Vektor-Suche in Geschäftsberichten und Filings. Indexiere Berichte via CLI um diese
+            Funktion zu aktivieren.
+          </p>
+          <div className="flex gap-2">
+            <input
+              value={ragQuery}
+              onChange={(e) => setRagQuery(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === 'Enter' && ragQuery.length >= 3 && ragMutation.mutate()
+              }
+              placeholder="Suche in Berichten…"
+              className="flex-1 bg-transparent text-[11px] border rounded px-2 py-1.5 text-muted-foreground placeholder-slate-700 outline-none focus:border-cyan-500/40"
+              style={{ borderColor: 'rgba(0,212,255,0.15)' }}
+            />
             <button
-              key={q}
-              type="button"
-              onClick={() => {
-                setQuery(q);
-                inputRef.current?.focus();
-              }}
-              className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-mono transition-colors hover:border-[#00d4ff] hover:text-[#00d4ff]"
-              style={{ borderColor: 'rgba(0,212,255,0.2)', color: '#64748b' }}
+              onClick={() => ragMutation.mutate()}
+              disabled={ragQuery.length < 3 || ragMutation.isPending}
+              className="text-[10px] px-3 py-1.5 rounded border disabled:opacity-30 transition-colors hover:border-cyan-500/40"
+              style={{ borderColor: 'rgba(0,212,255,0.2)', color: CYAN }}
             >
-              <ChevronRight className="h-3 w-3" />
-              {q}
+              {ragMutation.isPending ? '…' : 'Suchen'}
             </button>
-          ))}
-        </div>
+          </div>
 
-        {/* Input row */}
-        <form onSubmit={onSubmit} className="flex gap-2">
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Frag PRISMA..."
-            className="flex-1 rounded-md border px-4 py-2.5 text-sm font-mono bg-transparent outline-none focus:ring-1 transition-colors"
-            style={{
-              borderColor: query ? CYAN : 'rgba(255,255,255,0.1)',
-              color: '#e2e8f0',
-              caretColor: CYAN,
-            }}
-            data-testid="research-query-input"
-          />
-          <button
-            type="submit"
-            disabled={isPending || !query.trim()}
-            className="inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-mono font-medium disabled:opacity-40 transition-all"
-            style={{ background: CYAN, color: '#090d12' }}
-            data-testid="research-search-btn"
-          >
-            {isPending ? (
-              <span className="animate-pulse">...</span>
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </button>
-        </form>
-      </div>
+          {ragMutation.isSuccess && results.length === 0 && (
+            <p className="text-[10px] text-amber-400/70">
+              Keine Dokumente gefunden. Indexiere zuerst Berichte via{' '}
+              <code className="font-mono">python -m backend.scripts.ingest</code>.
+            </p>
+          )}
 
-      {/* ---- Right: panels ---- */}
-      <div className="flex flex-col gap-4 text-xs font-mono">
-        {/* Sources */}
-        <div
-          className="rounded-md border p-4 space-y-2"
-          style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
-        >
-          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">Quellen</p>
-          {(allSources.length > 0 ? allSources : MOCK_SOURCES).map((s) => (
+          {results.map((r, i) => (
             <a
-              key={s.label}
-              href={s.url}
+              key={i}
+              href={r.url ?? '#'}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between gap-2 rounded px-2.5 py-1.5 border transition-colors hover:border-[#00d4ff] group"
+              className="flex items-center justify-between gap-2 rounded px-2.5 py-1.5 border transition-colors hover:border-cyan-500/40 group"
               style={{ borderColor: 'rgba(255,255,255,0.07)', color: '#94a3b8' }}
             >
-              <span className="truncate group-hover:text-[#00d4ff] transition-colors">
-                {s.label}
+              <span className="truncate text-[10px] group-hover:text-cyan-400 transition-colors">
+                {r.ticker} · {r.doc_type} {r.filing_date?.slice(0, 4) ?? ''}
               </span>
               <ExternalLink className="h-3 w-3 shrink-0" />
             </a>
           ))}
-          {allSources.length > 0 && (
-            <button
-              onClick={() =>
-                exportResearchCsv(
-                  [...(swissResults ?? []), ...(secResults ?? [])],
-                  `research-${new Date().toISOString().slice(0, 10)}.csv`,
-                )
-              }
-              className="inline-flex items-center gap-1.5 mt-1 rounded px-2 py-1 border text-[10px] hover:text-[#00d4ff] hover:border-[#00d4ff] transition-colors w-full justify-center"
-              style={{ borderColor: 'rgba(255,255,255,0.07)', color: '#64748b' }}
-              data-testid="research-csv-export-btn"
-            >
-              <Download className="h-3 w-3" />
-              CSV Export
-            </button>
-          )}
         </div>
-
-        {/* Agent activity */}
-        <div
-          className="rounded-md border p-4 space-y-2"
-          style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
-        >
-          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">
-            Agent-Aktivitat
-          </p>
-          {AGENT_STEPS.map((step, i) => {
-            const completed = completedSteps.find((e) => e.agent === step.agent);
-            const running =
-              agentLog.find(
-                (e): e is Extract<AgentLogEntry, { type: 'step' }> =>
-                  e.type === 'step' && e.agent === step.agent && !e.done,
-              ) !== undefined;
-            return (
-              <div key={step.agent} className="flex items-center justify-between">
-                <span style={{ color: completed ? '#94a3b8' : running ? CYAN : '#475569' }}>
-                  {step.agent}
-                </span>
-                <span style={{ color: completed ? '#22c55e' : running ? CYAN : '#334155' }}>
-                  {completed ? (
-                    <span className="flex items-center gap-1">
-                      <Check className="h-3 w-3" />
-                      {completed.duration}s
-                    </span>
-                  ) : running ? (
-                    <span className="animate-pulse">...</span>
-                  ) : (
-                    '—'
-                  )}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Macro context */}
-        <div
-          className="rounded-md border p-4 space-y-2"
-          style={{ borderColor: 'rgba(0,212,255,0.12)', background: 'rgba(0,0,0,0.2)' }}
-        >
-          <p className="text-[10px] tracking-widest uppercase text-muted-foreground mb-3">Makro-Kontext</p>
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span>SNB</span>
-            <span style={{ color: CYAN }}>{MOCK_MACRO.rate}</span>
-          </div>
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span>CHF/EUR</span>
-            <span style={{ color: CYAN }}>{MOCK_MACRO.fx}</span>
-          </div>
-          <p className="text-muted-foreground pt-1 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-            &ldquo;{MOCK_MACRO.sentiment}&rdquo;
-          </p>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// ResearchClient (main export)
+// ChatArea — streaming messages + input
+// ---------------------------------------------------------------------------
+
+function ChatArea({
+  messages,
+  streaming,
+  toolHint,
+  onSend,
+  input,
+  setInput,
+  onReset,
+}: {
+  messages: Message[];
+  streaming: boolean;
+  toolHint: string | null;
+  onSend: (text: string) => void;
+  input: string;
+  setInput: (v: string) => void;
+  onReset: () => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, toolHint]);
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Terminal className="h-4 w-4" style={{ color: CYAN }} />
+          <span className="text-xs tracking-widest uppercase text-muted-foreground">
+            PRISMA · Research
+          </span>
+        </div>
+        {messages.length > 0 && (
+          <button
+            onClick={onReset}
+            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Neu
+          </button>
+        )}
+      </div>
+
+      {/* Messages */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pr-1 mb-4" style={{ minHeight: 0 }}>
+        {messages.length === 0 ? (
+          <div className="space-y-6 pt-2">
+            <div>
+              <h1
+                className="text-4xl font-bold tracking-tight mb-2"
+                style={{ fontFamily: "'JetBrains Mono', monospace" }}
+              >
+                Research<span style={{ color: CYAN }}>.</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                KI-Assistent mit echten PRISMA-Daten. Frag auf Deutsch oder Englisch.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              {EXAMPLE_QUERIES.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => onSend(q)}
+                  className="flex items-center gap-2 text-left text-xs px-3 py-2.5 rounded-lg border transition-all text-muted-foreground hover:text-foreground"
+                  style={{
+                    borderColor: 'rgba(0,212,255,0.15)',
+                    background: 'rgba(0,212,255,0.02)',
+                  }}
+                >
+                  <span style={{ color: CYAN }}>&gt;</span>
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          messages.map((msg, i) => {
+            const isLast = i === messages.length - 1;
+            const isUser = msg.role === 'user';
+            return (
+              <div key={i} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className="max-w-[90%] rounded-xl px-4 py-3 text-sm leading-relaxed"
+                  style={
+                    isUser
+                      ? {
+                          background: 'rgba(0,212,255,0.1)',
+                          border: '1px solid rgba(0,212,255,0.2)',
+                          color: '#e6edf3',
+                        }
+                      : {
+                          background: 'rgba(255,255,255,0.04)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          color: '#c9d1d9',
+                        }
+                  }
+                >
+                  {!isUser && isLast && streaming && toolHint && (
+                    <p className="text-[10px] italic mb-2 font-mono" style={{ color: CYAN + 'aa' }}>
+                      {toolHint}
+                    </p>
+                  )}
+                  <p className="whitespace-pre-wrap">
+                    {isUser ? msg.content : parseMessageWithTickers(msg.content)}
+                    {!isUser && isLast && streaming && (
+                      <span
+                        className="inline-block w-1.5 h-4 ml-0.5 align-middle animate-pulse"
+                        style={{ background: CYAN }}
+                      />
+                    )}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Input */}
+      <div
+        className="rounded-xl border px-4 py-3 flex items-center gap-3 transition-colors focus-within:border-cyan-500/40"
+        style={{ borderColor: 'rgba(0,212,255,0.2)', background: 'rgba(0,0,0,0.3)' }}
+      >
+        <input
+          data-testid="research-query-input"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) =>
+            e.key === 'Enter' && !e.shiftKey && !streaming && onSend(input)
+          }
+          placeholder="Stelle eine Frage zu Aktien, Makro oder Rankings…"
+          disabled={streaming}
+          className="flex-1 bg-transparent text-sm text-white placeholder-slate-600 outline-none"
+        />
+        <button
+          data-testid="research-search-btn"
+          onClick={() => onSend(input)}
+          disabled={!input.trim() || streaming}
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg disabled:opacity-30 transition-all font-mono"
+          style={{
+            background: 'rgba(0,212,255,0.12)',
+            color: CYAN,
+            border: '1px solid rgba(0,212,255,0.25)',
+          }}
+        >
+          <Send className="h-3.5 w-3.5" />
+          {streaming ? 'Lädt…' : 'Senden'}
+        </button>
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-2 text-center">
+        Keine Anlageberatung — PRISMA-Signale sind modellbasiert.
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ResearchClient — main export
 // ---------------------------------------------------------------------------
 
 export function ResearchClient() {
-  const searchParams = useSearchParams();
-  const { mode, toggle } = usePrismaMode();
+  const { mode } = usePrismaMode();
 
-  const [query, setQuery] = useState(
-    () => searchParams.get('q') ?? loadStoredResearch()?.query ?? '',
-  );
-  const [ticker] = useState(
-    () => searchParams.get('ticker')?.toUpperCase() ?? loadStoredResearch()?.ticker ?? '',
-  );
-  const [swissLang] = useState<'' | 'de' | 'en' | 'fr'>(() => {
-    const lang = searchParams.get('lang');
-    return lang === 'de' || lang === 'en' || lang === 'fr' ? lang : '';
-  });
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [streaming, setStreaming] = useState(false);
+  const [toolHint, setToolHint] = useState<string | null>(null);
+  const [toolLog, setToolLog] = useState<ToolEntry[]>([]);
+  const [metrics, setMetrics] = useState<SessionMetrics | null>(null);
+  const abortRef = useRef<(() => void) | null>(null);
 
-  const [swissResults, setSwissResults] = useState<SwissChunkResult[] | null>(null);
-  const [secResults, setSecResults] = useState<SecChunkResult[] | null>(null);
-  const [summary, setSummary] = useState<string | null>(null);
-  const [agentActive, setAgentActive] = useState(false);
+  const sendMessage = useCallback(
+    (text: string) => {
+      if (!text.trim() || streaming) return;
 
-  const agentLog = useAgentLog(agentActive);
+      const history: ChatHistoryMessage[] = messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
 
-  const swissMutation = useMutation({
-    mutationFn: () =>
-      retrieveSwissFilings({
-        query,
-        k: 10,
-        ticker: ticker.trim() || undefined,
-        language: swissLang || undefined,
-      }),
-    onSuccess: (data) => {
-      setSwissResults(data.results);
-      try {
-        localStorage.setItem(LS_RESEARCH_KEY, JSON.stringify({ query, ticker }));
-      } catch {}
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', content: text },
+        { role: 'assistant', content: '' },
+      ]);
+      setStreaming(true);
+      setInput('');
+      setToolHint(null);
+      setToolLog([]);
+
+      const startMs = Date.now();
+      setMetrics({ startMs, charCount: 0 });
+
+      abortRef.current = streamChat(
+        text,
+        history,
+        (evt: SSEEvent) => {
+          if (evt.type === 'token' && evt.content) {
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                ...updated[updated.length - 1],
+                content: updated[updated.length - 1].content + evt.content,
+              };
+              return updated;
+            });
+            setMetrics((m) =>
+              m ? { ...m, charCount: m.charCount + (evt.content?.length ?? 0) } : m,
+            );
+            setToolHint(null);
+          } else if (evt.type === 'tool_call' && evt.tool) {
+            const label = TOOL_LABELS[evt.tool] ?? evt.tool;
+            setToolHint(`${label} wird abgefragt…`);
+            setToolLog((prev) => [...prev, { tool: evt.tool!, startMs: Date.now() }]);
+          } else if (evt.type === 'tool_result' && evt.tool) {
+            setToolLog((prev) =>
+              prev.map((t) =>
+                t.tool === evt.tool && !t.doneMs ? { ...t, doneMs: Date.now() } : t,
+              ),
+            );
+          }
+        },
+        () => {
+          setStreaming(false);
+          setToolHint(null);
+          setMetrics((m) => (m ? { ...m, endMs: Date.now() } : m));
+        },
+        (msg) => {
+          setStreaming(false);
+          setToolHint(null);
+          setMetrics((m) => (m ? { ...m, endMs: Date.now() } : m));
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              ...updated[updated.length - 1],
+              content: `Fehler: ${msg}`,
+            };
+            return updated;
+          });
+        },
+      );
     },
-  });
-
-  const secMutation = useMutation({
-    mutationFn: () =>
-      retrieveSecFilings({ query, k: 10, ticker: ticker.trim() || undefined }),
-    onSuccess: (data) => {
-      setSecResults(data.results);
-      try {
-        localStorage.setItem(LS_RESEARCH_KEY, JSON.stringify({ query, ticker }));
-      } catch {}
-    },
-  });
-
-  // Derive summary whenever both mutations settle
-  useEffect(() => {
-    const swissDone = !swissMutation.isPending && swissMutation.isSuccess;
-    const secDone = !secMutation.isPending && secMutation.isSuccess;
-    if (swissDone || secDone) {
-      setSummary(buildSummary(swissResults, secResults, query));
-      setAgentActive(false);
-    }
-  }, [
-    swissMutation.isPending,
-    swissMutation.isSuccess,
-    secMutation.isPending,
-    secMutation.isSuccess,
-    swissResults,
-    secResults,
-    query,
-  ]);
-
-  const isPending = swissMutation.isPending || secMutation.isPending;
-
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!query.trim()) return;
-      setSummary(null);
-      setSwissResults(null);
-      setSecResults(null);
-      setAgentActive(true);
-      swissMutation.mutate();
-      secMutation.mutate();
-    },
-    [query, swissMutation, secMutation],
+    [messages, streaming],
   );
+
+  const reset = useCallback(() => {
+    abortRef.current?.();
+    setMessages([]);
+    setInput('');
+    setStreaming(false);
+    setToolHint(null);
+    setToolLog([]);
+    setMetrics(null);
+  }, []);
+
+  if (mode === 'simple') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8 h-[calc(100vh-120px)] flex flex-col">
+        <ChatArea
+          messages={messages}
+          streaming={streaming}
+          toolHint={toolHint}
+          onSend={sendMessage}
+          input={input}
+          setInput={setInput}
+          onReset={reset}
+        />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -669,51 +570,27 @@ export function ResearchClient() {
         fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
       }}
     >
-      {/* Top bar */}
-      <div className="max-w-5xl mx-auto px-6 pt-10 pb-6">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-2">
-            <Terminal className="h-5 w-5" style={{ color: CYAN }} />
-            <span className="text-xs tracking-widest uppercase text-muted-foreground font-mono">
-              PRISMA · Research
-            </span>
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 h-[calc(100vh-120px)]">
+          {/* Left: Chat */}
+          <ChatArea
+            messages={messages}
+            streaming={streaming}
+            toolHint={toolHint}
+            onSend={sendMessage}
+            input={input}
+            setInput={setInput}
+            onReset={reset}
+          />
+
+          {/* Right: Panels */}
+          <div className="flex flex-col gap-4 overflow-y-auto text-xs font-mono">
+            <MacroPanel />
+            <AgentPanel toolLog={toolLog} streaming={streaming} />
+            <MetricsPanel metrics={metrics} toolLog={toolLog} />
+            <RagPanel />
           </div>
-          {/* Mode toggle */}
-          <button
-            type="button"
-            onClick={toggle}
-            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-mono transition-colors hover:border-[#00d4ff]"
-            style={{
-              borderColor: mode === 'pro' ? CYAN : 'rgba(255,255,255,0.12)',
-              color: mode === 'pro' ? CYAN : '#64748b',
-            }}
-          >
-            {mode === 'pro' ? 'Pro Mode' : 'Simple Mode'}
-          </button>
         </div>
-
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Research.</h1>
-
-        {mode === 'simple' ? (
-          <SimpleModeView
-            query={query}
-            setQuery={setQuery}
-            onSubmit={handleSubmit}
-            isPending={isPending}
-            summary={summary}
-          />
-        ) : (
-          <ProModeView
-            query={query}
-            setQuery={setQuery}
-            onSubmit={handleSubmit}
-            isPending={isPending}
-            swissResults={swissResults}
-            secResults={secResults}
-            agentLog={agentLog}
-            summary={summary}
-          />
-        )}
       </div>
     </div>
   );

@@ -1,14 +1,13 @@
 """EmbeddingChunk-Entity — ein Chunk eines Documents mit Voyage-Embedding.
 
-Embedding-Dimension ist fest 2048 (ADR-0004 §4 — voyage-3-large). Konfigurabel
-zu machen ist Stretch — Slice 1 verifiziert die feste Constraint hart.
+Embedding-Dimension ist 1024 (voyage-3-large default output dimension).
 """
 
 from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
-EMBEDDING_DIM = 2048
+EMBEDDING_DIM = 1024
 
 
 @dataclass(frozen=True)

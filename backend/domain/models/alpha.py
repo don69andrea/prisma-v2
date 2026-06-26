@@ -1,7 +1,7 @@
 """Alpha — Multi-Horizon Sharpe-gewichtete Outperformance vs. equal-weighted Universum.
 
 Spec: docs/specs/2026-04-28-quant-mvp-models.md §2
-      docs/specs/2026-04-21-prisma-capstone-design.md §6.3
+      docs/specs/2026-04-21-prisma-prisma-v2-design.md §6.3
       docs/specs/2026-04-27-quant-models-redesign.md (Equal-Weighted Pattern)
 
 Formel:

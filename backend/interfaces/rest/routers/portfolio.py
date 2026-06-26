@@ -12,7 +12,7 @@ from backend.application.services.monte_carlo_service import (
     HoldingWeight,
     MonteCarloInput,
     MonteCarloService,
-    _run_gbm,
+    run_gbm,
 )
 from backend.application.services.ranking_run_service import RankingRunNotFound, RankingRunService
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
@@ -49,13 +49,19 @@ def get_portfolio_agent(
 @router.post(
     "/allocate",
     response_model=PortfolioAllocationResponse,
-    summary="Portfolio-Allokation aus Ranking-Run",
+    summary="KI-Portfolio-Allokation aus Ranking-Run (run_id-basiert)",
     description=(
-        "Berechnet eine gewichtete Portfolio-Allokation aus den Top-N-Picks "
-        "eines abgeschlossenen Ranking-Runs. Methoden: score_weighted (default), "
-        "risk_parity (basierend auf 30d-Volatilität) oder mean_variance "
-        "(Markowitz Mean-Variance mit Ledoit-Wolf Shrinkage, maximiert Sharpe Ratio). "
-        "LLM-Narrative Pydantic-validiert. Keine Anlageberatung."
+        "Berechnet eine gewichtete Portfolio-Allokation als KI-Empfehlung aus den "
+        "Top-N-Picks eines bereits abgeschlossenen Ranking-Runs (`run_id`). "
+        "Methoden: score_weighted (default), risk_parity (basierend auf "
+        "30d-Volatilität) oder mean_variance (Markowitz Mean-Variance mit "
+        "Ledoit-Wolf Shrinkage, maximiert Sharpe Ratio). "
+        "LLM-Narrative Pydantic-validiert. Keine Anlageberatung.\n\n"
+        "Hinweis: Dieser Endpoint erwartet ausschliesslich einen `run_id`-Verweis "
+        "auf einen bestehenden Ranking-Run — keine direkte Eingabe eigener Ticker "
+        "oder Stückzahlen. Für die Verwaltung eines eigenen, bereits bestehenden "
+        "Portfolios (Ist-/Soll-Gewichte je Ticker) siehe stattdessen "
+        "`POST /api/v1/portfolio/rebalance`."
     ),
 )
 async def allocate_portfolio(
@@ -121,7 +127,7 @@ async def monte_carlo(req: MonteCarloRequest) -> MonteCarloResponse:
         if abs(total_weight - 1.0) > 0.01:
             raise ValueError(f"Gewichte müssen 1.0 ergeben, ist: {total_weight:.3f}")
         mu_arr, sigma_arr, corr_matrix = await svc._fetch_return_params(inp.holdings)
-        result = await asyncio.to_thread(_run_gbm, inp, mu_arr, sigma_arr, corr_matrix)
+        result = await asyncio.to_thread(run_gbm, inp, mu_arr, sigma_arr, corr_matrix)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)

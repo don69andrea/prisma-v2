@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from backend.application.services.monte_carlo_service import (
@@ -13,8 +16,9 @@ from backend.application.services.monte_carlo_service import (
     MonteCarloInput,
     MonteCarloResult,
     MonteCarloService,
-    _run_gbm,
+    _fetch_ticker_params,
     build_interpretation,
+    run_gbm,
 )
 
 pytestmark = pytest.mark.unit
@@ -99,7 +103,7 @@ def test_run_gbm_single_asset() -> None:
     mu = np.array([0.0003])
     sigma = np.array([0.01])
     corr = np.array([[1.0]])
-    result = _run_gbm(inp, mu, sigma, corr)
+    result = run_gbm(inp, mu, sigma, corr)
     assert len(result.p50) == 12
     assert all(v > 0 for v in result.p50)
 
@@ -177,3 +181,111 @@ def test_build_interpretation_zero_initial_value() -> None:
     text = build_interpretation(result, initial_value=0.0, years=10)
     assert isinstance(text, str)
     assert len(text) > 20
+
+
+def _make_price_dataframe(n: int = 30) -> pd.DataFrame:
+    closes = 100.0 + np.cumsum(np.random.default_rng(1).normal(0, 1, n))
+    return pd.DataFrame({"Close": closes})
+
+
+@pytest.mark.asyncio
+async def test_fetch_ticker_params_uses_swiss_suffix_mapping_for_rog() -> None:
+    """F-PORT-1 (K-2): ROG muss als RO.SW an yfinance gesendet werden, nicht als ROG.
+
+    Ohne Suffix-Mapping matched yfinance "ROG" auf Rogers Corporation (US,
+    NYQ) statt Roche Holding AG — komplett falsche Firma, falsche Daten.
+    """
+    captured_symbol: dict[str, str] = {}
+
+    def fake_download(ticker: str, **kwargs: Any) -> pd.DataFrame:
+        captured_symbol["symbol"] = ticker
+        return _make_price_dataframe()
+
+    with patch("yfinance.download", side_effect=fake_download) as mock_download:
+        await _fetch_ticker_params("ROG")
+
+    mock_download.assert_called_once()
+    assert captured_symbol["symbol"] == "RO.SW"
+    assert captured_symbol["symbol"] != "ROG"
+
+
+@pytest.mark.asyncio
+async def test_fetch_ticker_params_uses_swiss_suffix_mapping_for_plain_ticker() -> None:
+    """Normale SIX-Ticker (ohne Override) erhalten das .SW-Suffix, z.B. NESN -> NESN.SW."""
+    captured_symbol: dict[str, str] = {}
+
+    def fake_download(ticker: str, **kwargs: Any) -> pd.DataFrame:
+        captured_symbol["symbol"] = ticker
+        return _make_price_dataframe()
+
+    with patch("yfinance.download", side_effect=fake_download):
+        await _fetch_ticker_params("NESN")
+
+    assert captured_symbol["symbol"] == "NESN.SW"
+
+
+@pytest.mark.asyncio
+async def test_fetch_ticker_params_raises_on_nan_prices() -> None:
+    """Liefert yfinance NaN-verseuchte Kursdaten, muss eine klare ValueError fliegen
+    (statt eines generischen "cannot convert float NaN to integer")."""
+    nan_df = pd.DataFrame({"Close": [100.0, np.nan, 102.0, np.nan, 105.0]})
+
+    with (
+        patch("yfinance.download", return_value=nan_df),
+        pytest.raises(ValueError, match="NaN|nicht-endlich|finite|Inf"),
+    ):
+        await _fetch_ticker_params("ROG", allow_fallback=False)
+
+
+@pytest.mark.asyncio
+async def test_fetch_ticker_params_falls_back_on_error_by_default() -> None:
+    """Standardverhalten (allow_fallback=True, Default für simulate()) bleibt robust:
+    bei yfinance-Fehlern wird auf Default-Werte zurückgefallen statt zu crashen."""
+    with patch("yfinance.download", side_effect=RuntimeError("network down")):
+        mu, sigma, returns = await _fetch_ticker_params("ROG")
+
+    assert isinstance(mu, float)
+    assert isinstance(sigma, float)
+    assert isinstance(returns, np.ndarray)
+
+
+@pytest.mark.asyncio
+async def test_fetch_return_params_fetches_tickers_in_parallel() -> None:
+    """F-PORT-2 (W-7): Ticker-Fetches müssen parallel statt sequenziell laufen.
+
+    Mit 5 Holdings und je 200ms künstlicher Verzögerung pro Ticker-Fetch
+    dauert eine sequenzielle for-Schleife ~1s (5 * 200ms). Bei paralleler
+    Ausführung via asyncio.gather bleibt die Gesamtzeit nahe an einer
+    Einzelverzögerung (~200ms), da alle Fetches gleichzeitig starten.
+    """
+    delay = 0.2
+    n_holdings = 5
+    holdings = [HoldingWeight(f"T{i}.SW", 1.0 / n_holdings) for i in range(n_holdings)]
+    svc = MonteCarloService()
+
+    async def fake_fetch_ticker_params(ticker: str) -> tuple[float, float, np.ndarray]:
+        await asyncio.sleep(delay)
+        return 0.0005, 0.012, np.zeros(10)
+
+    async def fake_fetch_ml_mu(ticker: str) -> float:
+        return 0.0003
+
+    with (
+        patch(
+            "backend.application.services.monte_carlo_service._fetch_ticker_params",
+            side_effect=fake_fetch_ticker_params,
+        ),
+        patch.object(svc, "_fetch_ml_mu", side_effect=fake_fetch_ml_mu),
+    ):
+        start = time.monotonic()
+        mu_arr, sigma_arr, corr_matrix = await svc._fetch_return_params(holdings)
+        elapsed = time.monotonic() - start
+
+    assert len(mu_arr) == n_holdings
+    assert len(sigma_arr) == n_holdings
+    # Sequenziell wären es n_holdings * delay (~1.0s). Parallel bleibt es nahe
+    # bei einer einzigen Verzögerung. Grosszügige Schwelle für CI-Jitter.
+    assert elapsed < delay * n_holdings * 0.6, (
+        f"Erwartete parallele Ausführung (<{delay * n_holdings * 0.6:.2f}s), "
+        f"aber {elapsed:.2f}s vergangen — Ticker werden vermutlich sequenziell abgerufen."
+    )

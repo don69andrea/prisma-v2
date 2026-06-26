@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test("Backtest starten und Chart mit 3 Kurven anzeigen", async ({ page, request }) => {
   const apiBase = process.env.PLAYWRIGHT_API_URL ?? "http://localhost:8000";

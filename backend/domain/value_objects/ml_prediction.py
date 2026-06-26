@@ -52,3 +52,26 @@ class MLPrediction:
     @classmethod
     def signal_for_class(cls, predicted_class: int) -> str:
         return cls._CLASS_TO_SIGNAL.get(predicted_class, "NEUTRAL")
+
+
+@dataclass(frozen=True)
+class QuantilePrediction:
+    """C1-Contract: Quantil-Regression des 30-Tage-Excess-Return vs SMI (TEIL E §E1).
+
+    q10/q50/q90: 10%/50%/90%-Quantil des erwarteten Excess-Return (z.B. -0.04 = -4%).
+    prob_outperform: P(excess > 0), lineare CDF-Interpolation aus (q10, q50, q90).
+    expected_edge: = q50 (Convenience-Alias).
+    uncertainty: = q90 - q10 (Spread als Risiko-Proxy).
+    feature_hash: sha256[:8] der feature_cols-Liste — erkennt Feature-Mismatch.
+    """
+
+    ticker: str
+    as_of: date
+    q10: float
+    q50: float
+    q90: float
+    prob_outperform: float
+    expected_edge: float
+    uncertainty: float
+    model_version: str
+    feature_hash: str

@@ -54,8 +54,8 @@ function StockCard({ stock }: { stock: DiscoveredStock & { signal?: string; scor
     <div className="glass-card p-4 flex flex-col gap-3 hover:border-[#58a6ff]/40 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <div className="font-semibold text-[#e6edf3] text-sm leading-none">{stock.name}</div>
-          <div className="text-xs text-[#8b949e] mt-1">{stock.ticker}.SW</div>
+          <div className="font-semibold text-[var(--prisma-text)] text-sm leading-none">{stock.name}</div>
+          <div className="text-xs text-[var(--prisma-muted)] mt-1">{stock.ticker}.SW</div>
         </div>
         <div className="flex flex-col items-end gap-1">
           {label && (
@@ -80,7 +80,7 @@ function StockCard({ stock }: { stock: DiscoveredStock & { signal?: string; scor
             <div className="h-1 flex-1 rounded-full bg-green-500/20 overflow-hidden">
               <div style={{ width: `${score}%` }} className="h-full bg-green-500 rounded-full" />
             </div>
-            <span className="text-[10px] text-[#8b949e] tabular-nums w-6 text-right">{score}</span>
+            <span className="text-[10px] text-[var(--prisma-muted)] tabular-nums w-6 text-right">{score}</span>
             <InfoPopover ariaLabel="Info: PRISMA-Score">
               PRISMA-Score: Bewertung von 0–100 basierend auf technischer Analyse, KI-Prognose und Makroökonomie
             </InfoPopover>
@@ -89,12 +89,12 @@ function StockCard({ stock }: { stock: DiscoveredStock & { signal?: string; scor
       )}
 
       {stock.signal_reason && (
-        <p className="text-[11px] text-[#8b949e] italic leading-relaxed">
+        <p className="text-[11px] text-[var(--prisma-muted)] italic leading-relaxed">
           &quot;{stock.signal_reason}&quot;
         </p>
       )}
 
-      <div className="flex items-center justify-between text-xs text-[#8b949e]">
+      <div className="flex items-center justify-between text-xs text-[var(--prisma-muted)]">
         <div className="flex items-center gap-2">
           <span>{stock.exchange}</span>
           {is3a && <ThreeABadge />}
@@ -107,12 +107,12 @@ function StockCard({ stock }: { stock: DiscoveredStock & { signal?: string; scor
       </div>
 
       <div className="flex items-center justify-between">
-        <Link href={`/stocks/${stock.ticker}`} className="text-[11px] text-[#58a6ff] flex items-center gap-1">
+        <Link href={`/stocks/${stock.ticker}`} className="text-[11px] text-[var(--prisma-blue)] flex items-center gap-1">
           Durchleuchten →
         </Link>
         <Link
           href={`/alerts?ticker=${stock.ticker}`}
-          className="text-[11px] text-[#8b949e] hover:text-[#58a6ff] transition-colors flex items-center gap-1"
+          className="text-[11px] text-[var(--prisma-muted)] hover:text-[var(--prisma-blue)] transition-colors flex items-center gap-1"
           onClick={(e) => e.stopPropagation()}
         >
           <Bell className="h-3 w-3" />
@@ -202,12 +202,12 @@ export function DiscoverClient() {
       <div className="flex items-end justify-between">
         <div>
           <div className="flex items-center gap-1">
-            <h1 className="text-2xl font-bold text-[#e6edf3]">Mein Universum.</h1>
+            <h1 className="text-2xl font-bold text-[var(--prisma-text)]">Mein Universum.</h1>
             <InfoPopover ariaLabel="Info: Mein Universum">
               Hier siehst du Schweizer Aktien die zu deinem persönlichen Profil passen. PRISMA wählt sie basierend auf deinem Risikotyp, Anlageziel und deinen Präferenzen aus.
             </InfoPopover>
           </div>
-          <p className="text-sm text-[#8b949e] mt-1">
+          <p className="text-sm text-[var(--prisma-muted)] mt-1">
             {hasStocks
               ? `${stocks.length} Titel — ausgewählt für dein Profil`
               : 'Personalisierte Schweizer Titel'}
@@ -216,7 +216,7 @@ export function DiscoverClient() {
         {sessionId && (
           <Link
             href="/start"
-            className="text-xs text-[#8b949e] hover:text-[#58a6ff] transition-colors"
+            className="text-xs text-[var(--prisma-muted)] hover:text-[var(--prisma-blue)] transition-colors"
           >
             Profil neu erstellen →
           </Link>
@@ -229,10 +229,10 @@ export function DiscoverClient() {
           className="rounded-xl p-4 flex items-center justify-between gap-4"
           style={{ background: 'rgba(248,81,73,0.08)', border: '1px solid rgba(248,81,73,0.25)' }}
         >
-          <div className="text-sm text-[#f85149]">{error}</div>
+          <div className="text-sm text-[var(--prisma-red)]">{error}</div>
           <button
             onClick={load}
-            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#f85149] border border-[#f85149]/40 hover:bg-[#f85149]/10 transition-colors"
+            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-[var(--prisma-red)] border border-[#f85149]/40 hover:bg-[var(--prisma-red)]/10 transition-colors"
           >
             Erneut versuchen
           </button>
@@ -245,8 +245,7 @@ export function DiscoverClient() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="h-36 rounded-xl animate-pulse"
-              style={{ background: '#161b22', border: '1px solid #21262d' }}
+              className="h-36 rounded-xl animate-pulse bg-muted border border-border"
             />
           ))}
         </div>
@@ -262,11 +261,11 @@ export function DiscoverClient() {
 
       {hasStocks && (
         <div className="text-center pt-2">
-          <span className="text-xs text-[#8b949e]">
+          <span className="text-xs text-[var(--prisma-muted)]">
             Basierend auf: deinem Risikotyp · Anlageziel · Sektoren
           </span>
           {' · '}
-          <Link href="/start" className="text-xs text-[#58a6ff] hover:underline">
+          <Link href="/start" className="text-xs text-[var(--prisma-blue)] hover:underline">
             Profil anpassen →
           </Link>
         </div>
@@ -279,8 +278,8 @@ export function DiscoverClient() {
           style={{ background: 'rgba(88,166,255,0.07)', border: '1px solid rgba(88,166,255,0.15)' }}
         >
           <div>
-            <div className="text-sm font-medium text-[#e6edf3]">Bereit für die Signale?</div>
-            <div className="text-xs text-[#8b949e]">
+            <div className="text-sm font-medium text-[var(--prisma-text)]">Bereit für die Signale?</div>
+            <div className="text-xs text-[var(--prisma-muted)]">
               BUY / HOLD / SELL mit vollständigem Audit-Trail
             </div>
           </div>

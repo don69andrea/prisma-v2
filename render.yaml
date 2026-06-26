@@ -4,7 +4,8 @@ databases:
     user: prisma_v2
     plan: free
     postgresMajorVersion: "16"
-    # pgvector extension must be enabled after first deploy: CREATE EXTENSION vector;
+    # pgvector wird automatisch via Alembic-Migration 0008 aktiviert (CREATE EXTENSION IF NOT EXISTS vector).
+    # Kein manueller Schritt nötig — Migration läuft beim ersten Deploy über backend-start.sh.
 
 services:
   - type: web
@@ -24,6 +25,7 @@ services:
         - uv.lock
         - Dockerfile.backend
         - scripts/backend-start.sh
+        - scripts/seed_admin.py
         - render.yaml
     envVars:
       - key: DATABASE_URL
@@ -53,7 +55,19 @@ services:
         sync: false
       # App-Version — wird von /health zurückgegeben
       - key: APP_VERSION
-        value: "2.0.0"
+        value: "2.1.0"
+      # JWT auth — openssl rand -hex 32 im Render-Dashboard setzen
+      - key: JWT_SECRET
+        sync: false
+      # Admin-User wird beim Start automatisch via seed_admin.py erstellt
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Twelve Data API — Live-Kurse ohne yfinance-Block (kostenlos: 800 calls/Tag)
+      # https://twelvedata.com/register — Key im Render-Dashboard setzen
+      - key: TWELVE_DATA_API_KEY
+        sync: false
 
   - type: web
     name: prisma-v2-frontend
@@ -61,6 +75,7 @@ services:
     dockerfilePath: ./Dockerfile.frontend
     branch: main
     plan: free
+    healthCheckPath: /
     autoDeploy: true
     envVars:
       # NEXT_PUBLIC_* variables are baked into the Next.js bundle at build time.
@@ -77,20 +92,7 @@ services:
         - Dockerfile.frontend
         - render.yaml
 
-  - type: cron
-    name: prisma-news-ingestion
-    runtime: docker
-    dockerfilePath: ./Dockerfile.backend
-    branch: main
-    plan: free
-    schedule: "0 6 * * *"
-    dockerCommand: python -m backend.application.services.news_ingestion_service
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: prisma-v2-db
-          property: connectionString
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: VOYAGE_API_KEY
-        sync: false
+  # Cron Jobs laufen via GitHub Actions (.github/workflows/daily-data-seed.yml).
+  # Render Docker-Cron-Jobs sind auf dem Free-Tier nicht unterstützt und
+  # Yahoo Finance blockiert Render-IPs — GitHub Actions IPs werden nicht geblockt.
+

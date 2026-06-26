@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, Query
 
 from backend.application.services.cost_tracker import CostTracker
-from backend.interfaces.rest.dependencies import get_cost_tracker, require_admin_api_key
+from backend.interfaces.rest.dependencies import get_cost_tracker
 from backend.interfaces.rest.schemas.cost_summary import CostSummaryResponse
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
@@ -17,7 +17,6 @@ router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 )
 async def get_costs(
     last: int = Query(default=10, ge=1, le=100, description="Anzahl letzter Calls"),
-    _auth: None = Depends(require_admin_api_key),
     tracker: CostTracker = Depends(get_cost_tracker),
 ) -> CostSummaryResponse:
     summary = await tracker.summary(last_n=last)

@@ -7,7 +7,6 @@ Features: 5 Quant-Scores, 12M/6M/3M-Return, Vol(30d/90d), RSI(14),
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import date
 from typing import Any
@@ -181,12 +180,36 @@ def _is_eu_ticker(ticker: str) -> bool:
 
 
 def _snb_rate_on(target: date) -> float:
-    """Gibt den SNB Leitzins zum Stichtag zurück (stufenweise)."""
+    """SNB-Leitzins zum Stichtag — Fallback wenn macro_rates-Tabelle leer."""
     rate = _SNB_RATE_BEFORE_2022
     for effective_date, r in _SNB_RATE_HISTORY:
         if target >= effective_date:
             rate = r
     return rate
+
+
+async def _snb_rate_from_db(target: date) -> float | None:
+    """Liest SNB-Leitzins aus macro_rates-Tabelle; None wenn keine Daten."""
+    from sqlalchemy import text
+
+    from backend.infrastructure.persistence.session import get_session_factory
+
+    try:
+        factory = get_session_factory()
+        async with factory() as session:
+            result = await session.execute(
+                text(
+                    "SELECT rate_pct FROM macro_rates "
+                    "WHERE rate_type = 'snb_policy' AND effective_date <= :d "
+                    "ORDER BY effective_date DESC LIMIT 1"
+                ),
+                {"d": target},
+            )
+            row = result.fetchone()
+            return float(row[0]) if row else None
+    except Exception as exc:
+        _logger.debug("macro_rates nicht erreichbar (%s) — nutze Fallback", exc)
+        return None
 
 
 def _compute_rsi(prices: pd.Series, window: int = 14) -> float:
@@ -267,6 +290,20 @@ def _score_wachstum(f: SwissFundamentals) -> float:
     return 40.0  # Sehr teuer, Wachstum schon eingepreist
 
 
+def _empty_fundamentals() -> SwissFundamentals:
+    """Leerer Fundamentals-Stub (Null-Werte) für den Pfad ohne SimFin."""
+    from decimal import Decimal
+
+    return SwissFundamentals(
+        market_cap_chf=Decimal(0),
+        pe_ratio=None,
+        pb_ratio=None,
+        dividend_yield=None,
+        eps_chf=None,
+        revenue_growth=None,
+    )
+
+
 class MLFeatureService:
     """Berechnet Feature-Vektoren für das Swiss Quant ML-Modell."""
 
@@ -308,7 +345,11 @@ class MLFeatureService:
         today = date.today()
         close = prices["Close"].squeeze()
         volume = prices["Volume"].squeeze() if "Volume" in prices.columns else None
-        chf_eur = await asyncio.to_thread(_current_chf_eur)  # K-11: offload blocking yfinance call
+        # ECB statt yfinance — funktioniert von Render-IPs, kein Rate-Limit
+        from backend.infrastructure.adapters.ecb_fx_adapter import fetch_chf_eur as _ecb_chf_eur
+
+        chf_eur = await _ecb_chf_eur()
+        snb_rate = await _snb_rate_from_db(today) or _snb_rate_on(today)
 
         return MLFeatureVector(
             ticker=ticker_upper,
@@ -330,7 +371,7 @@ class MLFeatureService:
             bb_position=_compute_bb_position(close),
             return_1m=_return_nm_from_series(close, 21),
             drawdown_12m=_compute_drawdown_12m(close),
-            snb_rate=_snb_rate_on(today),
+            snb_rate=snb_rate,
             chf_eur=chf_eur,
             pe_ratio=fundamentals.pe_ratio or 0.0,
             pb_ratio=fundamentals.pb_ratio or 0.0,
@@ -387,10 +428,10 @@ class MLFeatureService:
                 _logger.warning("yfinance-Download für %s fehlgeschlagen: %s", ticker, exc)
                 continue
 
-            # Fundamentals: SimFin (historisch) wenn verfügbar, sonst aktueller Stub
+            # Fundamentals: SimFin (historisch) wenn verfügbar, sonst leerer Stub
             _use_simfin = simfin_adapter is not None
             if not _use_simfin:
-                fund = _stub_fundamentals(ticker, _market)
+                fund = _empty_fundamentals()
                 score = self._scorer.score(ticker.upper(), fund)
                 s_wachstum = _score_wachstum(fund)
 
@@ -432,7 +473,7 @@ class MLFeatureService:
                     _sf_fund = simfin_adapter.get_fundamentals_on_date(  # type: ignore[union-attr]
                         ticker, snap_date, _market
                     )
-                    fund = _sf_fund if _sf_fund is not None else _stub_fundamentals(ticker, _market)
+                    fund = _sf_fund if _sf_fund is not None else _empty_fundamentals()
                     score = self._scorer.score(ticker.upper(), fund)
                     s_wachstum = _score_wachstum(fund)
 
@@ -563,20 +604,6 @@ def _fx_rate_on(ticker: str, snap: pd.Timestamp, market: str) -> float:
     return 1.0  # EUR-denominierte Märkte (DE, FR, NL, ES, IT, BE, AT)
 
 
-def _current_chf_eur() -> float:
-    """Holt aktuellen CHF/EUR aus yfinance (EUR/CHF invertiert)."""
-    try:
-        import yfinance as yf
-
-        fx = yf.download("EURCHF=X", period="5d", progress=False)
-        if fx is not None and len(fx) > 0:
-            eur_chf = float(fx["Close"].iloc[-1])
-            return round(1 / eur_chf, 6) if eur_chf > 0 else 0.93
-    except Exception:
-        pass
-    return 0.93  # Fallback: ca. CHF 0.93 per EUR
-
-
 def _return_nm_from_series(close: pd.Series, n_days: int) -> float:
     """N-Tage-Return (z.B. 126 ≈ 6 Monate, 63 ≈ 3 Monate)."""
     if len(close) < n_days:
@@ -616,7 +643,7 @@ def _vol_trend_from_series(volume: pd.Series | None) -> float:
 
 def _chf_eur_on(snap_dt: pd.Timestamp) -> float:
     """Approximiert CHF/EUR für historische Snapshots (Näherungswert)."""
-    # Vereinfachung für Capstone: statischer Wert pro Quartal
+    # Vereinfachung: statischer Näherungswert pro Quartal
     year = snap_dt.year
     if year <= 2022:
         return 0.92
@@ -627,36 +654,168 @@ def _chf_eur_on(snap_dt: pd.Timestamp) -> float:
     return 0.93
 
 
-def _stub_fundamentals(ticker: str, market: str = "ch") -> SwissFundamentals:
-    """Aktuelle Fundamentals als Proxy für historische Snapshots (Point-in-Time Bias).
+# ---------------------------------------------------------------------------
+# TEIL F §F2/§F3 — Feature-Set (nur Preis/Technik + Makro, KEINE Fundamentals)
+# ---------------------------------------------------------------------------
 
-    Fallback wenn SimFin keine Daten liefert. Markt-Parameter steuert
-    das yfinance-Ticker-Format (CH: NESN.SW, EU: SAP.DE, US: AAPL).
+TEIL_F_FEATURE_COLS: tuple[str, ...] = (
+    "return_1m",
+    "return_3m",
+    "return_6m",
+    "return_12m",
+    "vol_30d",
+    "vol_90d",
+    "rsi_14",
+    "price_to_52w_high",
+    "momentum_vs_smi_3m",
+    "bb_position",
+    "macd_hist",
+    "drawdown_12m",
+    "snb_rate",
+    "chf_eur",
+    "inflation_ch",
+)
+
+
+def build_target_excess_30d(
+    close: pd.Series,
+    smi_close: pd.Series,
+    snap: pd.Timestamp,
+) -> float | None:
+    """30-Handelstage-Forward-Excess-Return des Titels vs. SMI.
+
+    PIT: nutzt ausschliesslich Daten nach snap+1.
+    Gibt None zurück wenn < 30 Handelstage Zukunft vorhanden (Datenrand).
+    Überlappung der 30d-Fenster ist dokumentiert → Purged/Embargoed CV Pflicht (Kap. 16).
     """
-    from decimal import Decimal
+    future_stock = close[close.index > snap].head(30)
+    future_smi = smi_close[smi_close.index > snap].head(30)
+    if len(future_stock) < 30 or len(future_smi) < 30:
+        return None
+    stock_ret = float(future_stock.iloc[-1] / future_stock.iloc[0]) - 1
+    smi_ret = float(future_smi.iloc[-1] / future_smi.iloc[0]) - 1
+    return stock_ret - smi_ret
 
-    try:
-        import yfinance as yf
 
-        yf_sym = ticker.upper() if market in ("eu", "us") else _ticker_to_yf(ticker.upper())
-        info = yf.Ticker(yf_sym).info
-        # W-12: Decimal("0") is falsy, so `Decimal(...) or None` incorrectly returns None
-        # for a valid zero market cap. Use explicit None-check instead.
-        _mc = info.get("marketCap")
-        return SwissFundamentals(
-            market_cap_chf=Decimal(str(_mc)) if _mc is not None else None,
-            pe_ratio=info.get("trailingPE"),
-            pb_ratio=info.get("priceToBook"),
-            dividend_yield=info.get("dividendYield"),
-            eps_chf=info.get("trailingEps"),
-            revenue_growth=info.get("revenueGrowth"),
+async def _macro_series_from_db(
+    rate_type: str,
+) -> list[tuple[date, float]]:
+    """Lädt eine Makro-Serie aus macro_rates (aufsteigend nach Datum)."""
+    from sqlalchemy import text
+
+    from backend.infrastructure.persistence.session import get_session_factory
+
+    factory = get_session_factory()
+    async with factory() as session:
+        result = await session.execute(
+            text(
+                "SELECT effective_date, rate_pct FROM macro_rates "
+                "WHERE rate_type = :rt ORDER BY effective_date ASC"
+            ),
+            {"rt": rate_type},
         )
-    except Exception:
-        return SwissFundamentals(
-            market_cap_chf=None,
-            pe_ratio=None,
-            pb_ratio=None,
-            dividend_yield=None,
-            eps_chf=None,
-            revenue_growth=None,
-        )
+        return [(row[0], float(row[1])) for row in result.fetchall()]
+
+
+def _step_value_on(series: list[tuple[date, float]], target: date, default: float) -> float:
+    """Step-Funktion: letzter Wert, dessen effective_date <= target."""
+    val = default
+    for effective_date, rate in series:
+        if target >= effective_date:
+            val = rate
+    return val
+
+
+async def build_dataset_v3(
+    tickers: list[str],
+    smi_ticker: str = "^SSMI",
+    freq_months: int = 1,
+) -> pd.DataFrame:
+    """Baut historisches Feature-Dataset nach TEIL F §F2 aus der DB.
+
+    Liest ausschliesslich aus stock_price_history + macro_rates.
+    KEINE yfinance-Live-Calls, KEINE Fundamentals.
+    Monatliche Snapshots, Target = build_target_excess_30d.
+    """
+    from sqlalchemy import text
+
+    from backend.infrastructure.persistence.session import get_session_factory
+
+    factory = get_session_factory()
+
+    async def _load_prices(ticker: str) -> pd.Series:
+        async with factory() as sess:
+            r = await sess.execute(
+                text(
+                    "SELECT date, close FROM stock_price_history "
+                    "WHERE ticker = :t ORDER BY date ASC"
+                ),
+                {"t": ticker},
+            )
+            rows = r.fetchall()
+        if not rows:
+            return pd.Series(dtype=float)
+        idx = pd.to_datetime([row[0] for row in rows])
+        return pd.Series([float(row[1]) for row in rows], index=idx, name=ticker)
+
+    # Lade Makro-Serien aus DB
+    snb_series = await _macro_series_from_db("snb_policy")
+    chf_eur_series = await _macro_series_from_db("chf_eur")
+    inflation_series = await _macro_series_from_db("inflation_ch")
+
+    smi_close = await _load_prices(smi_ticker)
+    if smi_close.empty:
+        raise RuntimeError(f"SMI-Index '{smi_ticker}' nicht in stock_price_history")
+
+    records: list[dict[str, object]] = []
+
+    for ticker in tickers:
+        close = await _load_prices(ticker)
+        if len(close) < 300:
+            _logger.warning("%s: zu wenig Daten (%d Zeilen) — übersprungen", ticker, len(close))
+            continue
+
+        start = close.index[252]  # mind. 252 Handelstage History vor erstem Snapshot
+        end = close.index[-31]  # mind. 30 Handelstage Zukunft nach letztem Snapshot
+
+        snapshot_dates = pd.date_range(start=start, end=end, freq=f"{freq_months}MS")
+
+        for snap in snapshot_dates:
+            snap_norm = snap.normalize()
+            past = close[close.index <= snap_norm].tail(400)
+            if len(past) < 252:
+                continue
+
+            target = build_target_excess_30d(close, smi_close, snap_norm)
+            if target is None:
+                continue
+
+            smi_past = smi_close[smi_close.index <= snap_norm].tail(400)
+            smi_63 = _return_nm_from_series(smi_past, 63) if len(smi_past) >= 63 else 0.0
+            mom_vs_smi_3m = _return_nm_from_series(past, 63) - smi_63
+
+            snap_date = snap_norm.date()
+            records.append(
+                {
+                    "ticker": ticker,
+                    "snapshot_date": snap_date,
+                    "return_1m": _return_nm_from_series(past, 21),
+                    "return_3m": _return_nm_from_series(past, 63),
+                    "return_6m": _return_nm_from_series(past, 126),
+                    "return_12m": _return_nm_from_series(past, 252),
+                    "vol_30d": _vol_30d_from_series(past),
+                    "vol_90d": _vol_nd_from_series(past, 90),
+                    "rsi_14": _compute_rsi(past),
+                    "price_to_52w_high": _price_to_52w_high_from_series(past),
+                    "momentum_vs_smi_3m": mom_vs_smi_3m,
+                    "bb_position": _compute_bb_position(past),
+                    "macd_hist": _compute_macd_hist(past),
+                    "drawdown_12m": _compute_drawdown_12m(past),
+                    "snb_rate": _step_value_on(snb_series, snap_date, -0.75),
+                    "chf_eur": _step_value_on(chf_eur_series, snap_date, 0.92),
+                    "inflation_ch": _step_value_on(inflation_series, snap_date, 0.0),
+                    "target_excess_30d": target,
+                }
+            )
+
+    return pd.DataFrame(records)

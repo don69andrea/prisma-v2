@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from backend.application.services.chat_service import ChatMessage, ChatService
-from backend.interfaces.rest.dependencies import require_admin_api_key
+from backend.interfaces.rest.dependencies import get_chat_service
 from backend.interfaces.rest.schemas.chat import ChatRequest
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
@@ -23,10 +23,13 @@ _logger = logging.getLogger(__name__)
         "Nutzt Claude mit PRISMA-Tools (search_stocks, filter_stocks, get_factsheet, "
         "get_macro_context, compare_stocks, get_ranking)."
     ),
-    dependencies=[Depends(require_admin_api_key)],
+    # FIX-3: Auth läuft bereits via app.include_router(router, dependencies=_auth).
+    # Kein zweiter Auth-Check im Endpoint-Decorator — würde doppelt prüfen.
 )
-async def chat(req: ChatRequest) -> StreamingResponse:
-    svc = ChatService()
+async def chat(
+    req: ChatRequest,
+    svc: ChatService = Depends(get_chat_service),
+) -> StreamingResponse:
     messages = [ChatMessage(role=m.role, content=m.content) for m in req.history]
     messages.append(ChatMessage(role="user", content=req.message))
 

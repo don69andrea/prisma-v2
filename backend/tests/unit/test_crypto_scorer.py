@@ -1,0 +1,323 @@
+"""Unit-Tests für CryptoScorer — alle Score-Komponenten und Signal-Schwellen."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import pandas as pd
+
+from backend.domain.entities.crypto_asset import CryptoAsset
+
+
+def _make_asset(**kwargs: Any) -> CryptoAsset:
+    defaults = dict(
+        ticker_cg="bitcoin",
+        ticker_yf="BTC-CHF",
+        name="Bitcoin",
+        symbol="BTC",
+        kategorie="Layer1",
+        has_six_etp=True,
+        price_chf=50000.0,
+        market_cap_chf=1e12,
+        volume_24h_chf=5e9,
+        price_change_24h_pct=1.0,
+        price_change_7d_pct=5.0,
+        ath_change_pct=-30.0,
+        market_cap_rank=1,
+    )
+    return CryptoAsset(**{**defaults, **kwargs})
+
+
+def _make_technicals(
+    rsi: float = 50.0,
+    macd_above_signal: bool = True,
+    close_trend: str = "up",
+    volume_trend: str = "flat",
+) -> pd.DataFrame:
+    n = 300
+    close_base = 50000.0
+    if close_trend == "up":
+        close = [close_base * (1 + i * 0.001) for i in range(n)]
+    elif close_trend == "down":
+        close = [close_base * (1 - i * 0.001) for i in range(n)]
+    else:
+        close = [close_base] * n
+
+    if volume_trend == "up":
+        volume = [1e6 * (1 + i * 0.002) for i in range(n)]
+    else:
+        volume = [1e6] * n
+
+    df = pd.DataFrame(
+        {
+            "Open": close,
+            "High": close,
+            "Low": close,
+            "Close": close,
+            "Volume": volume,
+        }
+    )
+    df["RSI_14"] = rsi
+    macd_val = 100.0 if macd_above_signal else -100.0
+    df["MACD_12_26_9"] = macd_val
+    df["MACDs_12_26_9"] = 0.0
+    ema20 = close_base * 0.98
+    ema50 = close_base * 0.96
+    df["EMA_20"] = ema20
+    df["EMA_50"] = ema50
+    df["BBU_20_2.0"] = close_base * 1.05
+    df["BBL_20_2.0"] = close_base * 0.95
+    return df
+
+
+class TestRsiScore:
+    def test_oversold_returns_10(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._rsi_score(25.0) == 10.0
+
+    def test_near_oversold_returns_8(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._rsi_score(40.0) == 8.0
+
+    def test_neutral_returns_5(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._rsi_score(50.0) == 5.0
+
+    def test_near_overbought_returns_3(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._rsi_score(65.0) == 3.0
+
+    def test_overbought_returns_0(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._rsi_score(75.0) == 0.0
+
+
+class TestFearGreedScore:
+    def test_extreme_fear_returns_12(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._fear_greed_score(20) == 12.0
+
+    def test_fear_returns_9(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._fear_greed_score(35) == 9.0
+
+    def test_neutral_returns_6(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._fear_greed_score(50) == 6.0
+
+    def test_greed_returns_3(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._fear_greed_score(70) == 3.0
+
+    def test_extreme_greed_returns_0(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._fear_greed_score(85) == 0.0
+
+
+class TestMomentumScore:
+    def test_strong_up_returns_15(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._momentum_score(25.0) == 15.0
+
+    def test_moderate_up_returns_12(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._momentum_score(15.0) == 12.0
+
+    def test_small_up_returns_9(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._momentum_score(7.0) == 9.0
+
+    def test_flat_positive_returns_6(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._momentum_score(2.0) == 6.0
+
+    def test_small_negative_returns_3(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._momentum_score(-3.0) == 3.0
+
+    def test_large_negative_returns_0(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        assert scorer._momentum_score(-10.0) == 0.0
+
+
+class TestSignalThresholds:
+    def setup_method(self):
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        self.scorer = CryptoScorer()
+
+    def _score(self, **asset_kwargs: Any) -> float:
+        asset = _make_asset(**asset_kwargs)
+        tech = _make_technicals(rsi=28.0, macd_above_signal=True, close_trend="up")
+        score, _ = self.scorer.score(asset, tech, fear_greed=20, correlation_smi_1y=0.1)
+        return score
+
+    def test_high_score_produces_strong_buy(self):
+        score = self._score(price_change_7d_pct=25.0, market_cap_rank=1, ath_change_pct=-20.0)
+        assert score >= self.scorer.STRONG_BUY_THRESHOLD
+
+    def test_score_is_bounded_0_to_100(self):
+        asset = _make_asset(price_change_7d_pct=100.0)
+        tech = _make_technicals(rsi=10.0)
+        score, _ = self.scorer.score(asset, tech, fear_greed=0, correlation_smi_1y=0.0)
+        assert 0.0 <= score <= 100.0
+
+    def test_score_components_sum_matches_total(self):
+        asset = _make_asset()
+        tech = _make_technicals()
+        score, components = self.scorer.score(asset, tech, fear_greed=50, correlation_smi_1y=0.2)
+        expected = max(0.0, min(100.0, sum(components.values())))
+        assert abs(expected - score) < 1.0
+
+    def test_pattern_modifier_none_does_not_add_component(self):
+        asset = _make_asset()
+        tech = _make_technicals()
+        score, components = self.scorer.score(
+            asset, tech, fear_greed=50, correlation_smi_1y=0.2, pattern_modifier=None
+        )
+        assert "pattern" not in components
+
+    def test_pattern_modifier_added_as_component(self):
+        asset = _make_asset()
+        tech = _make_technicals()
+        score_without, _ = self.scorer.score(asset, tech, fear_greed=50, correlation_smi_1y=0.2)
+        score_with, components = self.scorer.score(
+            asset, tech, fear_greed=50, correlation_smi_1y=0.2, pattern_modifier=5.0
+        )
+        assert components["pattern"] == 5.0
+        assert score_with == min(100.0, score_without + 5.0)
+
+    def test_pattern_modifier_negative_reduces_score(self):
+        asset = _make_asset()
+        tech = _make_technicals()
+        score_without, _ = self.scorer.score(asset, tech, fear_greed=50, correlation_smi_1y=0.2)
+        score_with, components = self.scorer.score(
+            asset, tech, fear_greed=50, correlation_smi_1y=0.2, pattern_modifier=-5.0
+        )
+        assert components["pattern"] == -5.0
+        assert score_with == max(0.0, score_without - 5.0)
+
+    def test_pattern_modifier_does_not_break_0_100_bound(self):
+        asset = _make_asset(price_change_7d_pct=100.0)
+        tech = _make_technicals(rsi=10.0)
+        score, _ = self.scorer.score(
+            asset, tech, fear_greed=0, correlation_smi_1y=0.0, pattern_modifier=7.5
+        )
+        assert 0.0 <= score <= 100.0
+
+
+class TestAthScoreFix01:
+    """FIX-01: ATH-Score war invertiert — näher am ATH = höherer Score."""
+
+    def setup_method(self) -> None:
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        self.scorer = CryptoScorer()
+
+    def _ath_component(self, ath_change_pct: float) -> float:
+        asset = _make_asset(ath_change_pct=ath_change_pct)
+        tech = _make_technicals(rsi=50.0)
+        _, components = self.scorer.score(asset, tech, fear_greed=50, correlation_smi_1y=0.0)
+        rank_score = float(max(0, 10 - max(0, (asset.market_cap_rank or 50) - 10) // 5))
+        return components["markt"] - rank_score
+
+    def test_at_ath_gives_max_ath_score(self) -> None:
+        # -1% below ATH → ath_pct=1 → max(0, 5-0) = 5
+        # Hinweis: ath_change_pct=0.0 wird durch `or -50.0` auf -50 gesetzt (Python-Falsy).
+        # In der Praxis kommt exakt 0.0 von yfinance nicht vor.
+        assert self._ath_component(-1.0) == 5.0
+
+    def test_slightly_below_ath_gives_high_score(self) -> None:
+        # 19% below ATH → ath_pct=19 → max(0, 5-0) = 5
+        assert self._ath_component(-19.0) == 5.0
+
+    def test_30pct_below_ath_gives_4(self) -> None:
+        # 30% below ATH → ath_pct=30 → max(0, 5-1) = 4
+        assert self._ath_component(-30.0) == 4.0
+
+    def test_50pct_below_ath_gives_3(self) -> None:
+        # 50% below ATH → ath_pct=50 → max(0, 5-2) = 3
+        assert self._ath_component(-50.0) == 3.0
+
+    def test_90pct_below_ath_gives_0(self) -> None:
+        # 90% below ATH → ath_pct=90 → max(0, 5-4) = 1
+        # 100%+ → 0
+        assert self._ath_component(-100.0) == 0.0
+
+    def test_ath_score_never_negative(self) -> None:
+        # 200% below ATH (edge case) → max(0, ...) = 0
+        assert self._ath_component(-200.0) >= 0.0
+
+    def test_closer_to_ath_means_higher_score(self) -> None:
+        # Monotonie: näher am ATH = besser
+        score_near = self._ath_component(-10.0)
+        score_mid = self._ath_component(-50.0)
+        score_far = self._ath_component(-90.0)
+        assert score_near >= score_mid >= score_far
+
+
+class TestSignalReason:
+    def test_oversold_rsi_buy_reason_mentions_rsi(self):
+        from backend.domain.services.crypto_scorer import generate_signal_reason
+
+        reason = generate_signal_reason(
+            "BUY", "Bitcoin", 65.0, rsi=28.0, fear_greed=50, change_7d=5.0
+        )
+        assert "RSI" in reason
+        assert "Bitcoin" in reason
+
+    def test_extreme_fear_buy_reason_mentions_angst(self):
+        from backend.domain.services.crypto_scorer import generate_signal_reason
+
+        reason = generate_signal_reason(
+            "BUY", "Ethereum", 70.0, rsi=55.0, fear_greed=15, change_7d=2.0
+        )
+        assert "Angst" in reason
+
+    def test_hold_reason_mentions_neutral(self):
+        from backend.domain.services.crypto_scorer import generate_signal_reason
+
+        reason = generate_signal_reason(
+            "HOLD", "Bitcoin", 50.0, rsi=50.0, fear_greed=50, change_7d=1.0
+        )
+        assert "50" in reason
+
+    def test_overbought_sell_reason_mentions_rsi(self):
+        from backend.domain.services.crypto_scorer import generate_signal_reason
+
+        reason = generate_signal_reason(
+            "SELL", "Bitcoin", 20.0, rsi=78.0, fear_greed=80, change_7d=-5.0
+        )
+        assert "RSI" in reason

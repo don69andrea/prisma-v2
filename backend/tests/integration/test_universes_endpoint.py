@@ -10,7 +10,10 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 from backend.domain.entities.universe import Universe
-from backend.domain.repositories.universe_repository import UniverseRepository
+from backend.domain.repositories.universe_repository import (
+    DuplicateUniverseNameError,
+    UniverseRepository,
+)
 from backend.interfaces.rest.app import create_app
 from backend.interfaces.rest.dependencies import get_universe_repository
 
@@ -33,6 +36,9 @@ class InMemoryUniverseRepository(UniverseRepository):
         return sorted(self._store.values(), key=lambda u: u.name)
 
     async def save(self, universe: Universe) -> None:
+        for existing in self._store.values():
+            if existing.id != universe.id and existing.name == universe.name:
+                raise DuplicateUniverseNameError(universe.name)
         self._store[universe.id] = universe
 
 
@@ -42,12 +48,41 @@ class InMemoryUniverseRepository(UniverseRepository):
 
 _SMI_ID = uuid.uuid4()
 _SP500_ID = uuid.uuid4()
+_SMI_20_ID = uuid.uuid4()
+
+# Echte SMI-20-Konstituenten (siehe scripts/seed_smi_universe.py, SMI_20).
+# Identische Tickerliste wie im produktiv geseedeten SMI-20-Universe, damit der
+# Test W-13 (F-BTCR-5) — "sync liefert synced_count: 0 für alle 20 SMI-Ticker" —
+# repräsentativ abdeckt und nicht nur die 3 Ticker der `_SMI_ID`-Fixture.
+_SMI_20_TICKERS = (
+    "NESN",
+    "NOVN",
+    "ROG",
+    "ABBN",
+    "ZURN",
+    "UBSG",
+    "UHR",
+    "GEBN",
+    "GIVN",
+    "LONN",
+    "SREN",
+    "SGKN",
+    "SLHN",
+    "SCMN",
+    "SIKA",
+    "HOLN",
+    "PGHN",
+    "KNIN",
+    "CFR",
+    "STMN",
+)
 
 
 def _make_sample_universes() -> list[Universe]:
     return [
         Universe(id=_SMI_ID, name="SMI", region="CH", tickers=("NESN", "NOVN", "ROG")),
         Universe(id=_SP500_ID, name="S&P 500 Subset", region="US", tickers=("AAPL", "MSFT")),
+        Universe(id=_SMI_20_ID, name="SMI-20", region="CH", tickers=_SMI_20_TICKERS),
     ]
 
 
@@ -86,10 +121,10 @@ async def test_list_universes_response_shape(http_client: AsyncClient) -> None:
     assert "total" in body
 
 
-async def test_list_universes_returns_two_sample_entries(http_client: AsyncClient) -> None:
+async def test_list_universes_returns_three_sample_entries(http_client: AsyncClient) -> None:
     body = (await http_client.get("/api/v1/universes")).json()
-    assert body["total"] == 2
-    assert len(body["items"]) == 2
+    assert body["total"] == 3
+    assert len(body["items"]) == 3
 
 
 async def test_list_universes_item_has_expected_fields(http_client: AsyncClient) -> None:
@@ -148,6 +183,22 @@ async def test_create_universe_missing_field_returns_422(http_client: AsyncClien
         json={"name": "Test"},
     )
     assert response.status_code == 422
+
+
+async def test_create_universe_duplicate_name_returns_409(http_client: AsyncClient) -> None:
+    """Regression K-4/F-BTCR-3: Namens-Duplikat darf nicht als 500 durchschlagen."""
+    first = await http_client.post(
+        "/api/v1/universes",
+        json={"name": "Duplicate-Name", "region": "CH", "tickers": ["NESN"]},
+    )
+    assert first.status_code == 201
+
+    second = await http_client.post(
+        "/api/v1/universes",
+        json={"name": "Duplicate-Name", "region": "US", "tickers": ["AAPL"]},
+    )
+    assert second.status_code == 409
+    assert second.json()["detail"] == "Ein Universe mit diesem Namen existiert bereits."
 
 
 # ---------------------------------------------------------------------------
@@ -221,19 +272,38 @@ async def test_sync_universe_sp500_synced_count_is_positive(http_client: AsyncCl
     assert body["synced_count"] + len(body["failed_tickers"]) == 2  # SP500 hat 2 Tickers
 
 
-async def test_sync_universe_smi_tickers_not_in_stub_land_in_failed(
+async def test_sync_universe_smi_tickers_now_in_stub_land_synced(
     http_client: AsyncClient,
 ) -> None:
-    """SMI-Tickers (NESN/NOVN/ROG) fehlen im StubFundamentalsProvider → alle failed."""
+    """SMI-Tickers (NESN/NOVN/ROG) sind im StubFundamentalsProvider — alle synced."""
     body = (await http_client.post(f"/api/v1/universes/{_SMI_ID}/sync")).json()
-    assert body["synced_count"] == 0
-    assert set(body["failed_tickers"]) == {"NESN", "NOVN", "ROG"}
+    assert body["synced_count"] == 3
+    assert body["failed_tickers"] == []
 
 
 async def test_sync_universe_ticker_count_invariant(http_client: AsyncClient) -> None:
     """synced_count + len(failed_tickers) == Anzahl Tickers im Universum (immer)."""
     body = (await http_client.post(f"/api/v1/universes/{_SMI_ID}/sync")).json()
     assert body["synced_count"] + len(body["failed_tickers"]) == 3  # SMI hat 3 Tickers
+
+
+async def test_sync_universe_full_smi20_all_tickers_synced(http_client: AsyncClient) -> None:
+    """Regression W-13 / F-BTCR-5: Produktiv geseedetes SMI-20-Universe (alle 20 echten
+    SMI-Ticker aus scripts/seed_smi_universe.py) lieferte synced_count: 0 und alle 20
+    Ticker in failed_tickers, weil StubFundamentalsProvider keine Fundamentaldaten für
+    SMI-Ticker hatte (identischer Root Cause wie K-1). Seit der Fundamentals-Erweiterung
+    (StubFundamentalsProvider._DEMO_DATA) müssen alle 20 Ticker erfolgreich synced werden.
+    """
+    body = (await http_client.post(f"/api/v1/universes/{_SMI_20_ID}/sync")).json()
+    assert body["universe_id"] == str(_SMI_20_ID)
+    assert body["synced_count"] == 20
+    assert body["failed_tickers"] == []
+
+
+async def test_sync_universe_full_smi20_ticker_count_invariant(http_client: AsyncClient) -> None:
+    """synced_count + len(failed_tickers) == 20 (Anzahl Tickers im SMI-20-Universum)."""
+    body = (await http_client.post(f"/api/v1/universes/{_SMI_20_ID}/sync")).json()
+    assert body["synced_count"] + len(body["failed_tickers"]) == 20
 
 
 # ---------------------------------------------------------------------------

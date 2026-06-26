@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 
-from backend.domain.errors import SwissDataUnavailableError
+from backend.domain.errors import SwissDataUnavailableError, YahooFinanceBlockedError
 from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.interfaces.rest.dependencies import get_yfinance_adapter
 from backend.interfaces.rest.schemas.fundamentals import FundamentalsResponse
 
 router = APIRouter(prefix="/api/v1", tags=["fundamentals"])
+
+_MARKET_DATA_UNAVAILABLE_DETAIL = (
+    "Marktdaten momentan nicht verfügbar (Yahoo Finance API eingeschränkt)."
+)
 
 
 @router.get(
@@ -28,11 +32,18 @@ async def get_fundamentals(
 ) -> FundamentalsResponse:
     try:
         data = await adapter.get_fundamentals(ticker)
+    except YahooFinanceBlockedError as exc:
+        raise HTTPException(status_code=503, detail=_MARKET_DATA_UNAVAILABLE_DETAIL) from exc
     except SwissDataUnavailableError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     raw_yield = data.dividend_yield
-    yield_pct = round(float(raw_yield) * 100, 2) if raw_yield else None
+    if raw_yield:
+        raw_float = float(raw_yield)
+        # yfinance gibt dividendYield manchmal als Dezimal (0.038), manchmal als Prozent (3.8)
+        yield_pct: float | None = round(raw_float if raw_float > 1 else raw_float * 100, 2)
+    else:
+        yield_pct = None
 
     return FundamentalsResponse(
         ticker=ticker.upper(),

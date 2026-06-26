@@ -39,7 +39,7 @@ def _build_service(
     mock_repo.find_nearest.return_value = retrieval_results or []
 
     mock_llm = AsyncMock()
-    mock_llm.embed.return_value = [embedding or [0.1] * 2048]
+    mock_llm.embed.return_value = [embedding or [0.1] * 1024]
 
     svc = NewsRetrievalService(news_repo=mock_repo, llm_client=mock_llm)
     return svc, mock_repo, mock_llm
@@ -65,7 +65,7 @@ class TestNewsRetrievalServiceRetrieve:
         assert "NESN Dividende" in texts_arg
 
     async def test_passes_embedding_to_repo(self) -> None:
-        embedding = [0.5] * 2048
+        embedding = [0.5] * 1024
         svc, mock_repo, _ = _build_service(embedding=embedding)
 
         await svc.retrieve("test query", k=5)
@@ -145,7 +145,7 @@ class TestNewsRetrievalServiceRetrieve:
         mock_repo = AsyncMock(spec=NewsRepository)
         mock_repo.find_nearest.side_effect = RuntimeError("pgvector unavailable")
         mock_llm = AsyncMock()
-        mock_llm.embed.return_value = [[0.1] * 2048]
+        mock_llm.embed.return_value = [[0.1] * 1024]
 
         svc = NewsRetrievalService(news_repo=mock_repo, llm_client=mock_llm)
 

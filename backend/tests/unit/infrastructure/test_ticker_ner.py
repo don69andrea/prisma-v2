@@ -48,3 +48,24 @@ class TestTickerNer:
     def test_ticker_rog_matches_as_word(self) -> None:
         result = _ner.extract("ROG meldet gute Zahlen")
         assert "ROG" in result
+
+    def test_finds_ticker_from_company_name_nestle(self) -> None:
+        # Realistischer NZZ/SRF-Artikeltext: erwähnt nur den Firmennamen
+        # "Nestlé", nirgends das Ticker-Symbol "NESN" selbst.
+        article = (
+            "Der Lebensmittelkonzern Nestlé hat heute seine Quartalszahlen "
+            "veröffentlicht. Der Umsatz des Vevey-Konzerns stieg im "
+            "Vergleich zum Vorjahr um 3.2 Prozent. Analysten zeigten sich "
+            "zufrieden mit der Entwicklung des Schweizer Nahrungsmittelriesen."
+        )
+        result = _ner.extract(article)
+        assert "NESN" in result
+
+    def test_finds_ticker_from_company_name_novartis(self) -> None:
+        article = (
+            "Der Pharmakonzern Novartis meldet eine Zulassung für ein neues "
+            "Medikament in den USA. Die Aktie des Basler Unternehmens "
+            "reagierte positiv auf die Nachricht."
+        )
+        result = _ner.extract(article)
+        assert "NOVN" in result

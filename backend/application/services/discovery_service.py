@@ -169,7 +169,7 @@ class DiscoveryService:
           1. ESG-Filter (sektorbasierter Proxy)
           2. Quant-Score aus db_scores → yfinance → neutral 50.0
           3. Risk-Floor-Filter
-          4. Income-Bonus (nur wenn DB-Score vorhanden; andernfalls yfinance für dividend_yield)
+          4. Income-Bonus (konsistent für alle Score-Quellen)
         """
         # 1. ESG-Filter
         if (
@@ -180,22 +180,14 @@ class DiscoveryService:
             _logger.debug("ESG-Filter: %s (Sektor '%s') ausgeschlossen", stock.ticker, stock.sector)
             return None
 
-        # 2. Quant-Score bestimmen
+        # 2. Quant-Score bestimmen (DB → yfinance → neutral)
         composite: float
-        dividend_yield: float = 0.0
-
         if stock.ticker in db_scores:
             composite = db_scores[stock.ticker]
             _logger.debug("DB-Score für %s: %.1f", stock.ticker, composite)
-            # Income-Bonus: dividend_yield aus yfinance nur wenn wirklich benötigt
-            # (Income-Präferenz gesetzt und Titel hat DB-Score)
-            if profile.income_preference in ("dividends", "growth"):
-                dividend_yield = await self._get_dividend_yield_from_yfinance(stock)
         else:
-            # yfinance-Fallback für Ticker ohne DB-Eintrag
             yf_score = await self._get_quant_score_from_yfinance(stock)
             if yf_score is None:
-                # Weder DB noch yfinance — neutraler Score, damit Titel nicht komplett fällt
                 _logger.info(
                     "%s: Kein DB- und kein yfinance-Score — neutraler Score %.1f wird verwendet",
                     stock.ticker,
@@ -205,21 +197,24 @@ class DiscoveryService:
             else:
                 composite = yf_score
                 _logger.debug("yfinance-Score für %s: %.1f", stock.ticker, composite)
-                # dividend_yield aus yfinance bereits latent via get_fundamentals geholt;
-                # wir machen einen zweiten Call nur wenn Income-Präferenz aktiv ist.
-                if profile.income_preference in ("dividends", "growth"):
-                    dividend_yield = await self._get_dividend_yield_from_yfinance(stock)
 
         # 3. Risk-Floor-Filter
         if composite < risk_floor:
             return None
 
-        # 4. Income-Bonus
+        # 4. Income-Bonus — dividend_yield immer laden wenn Präferenz aktiv
         adjusted = composite
-        if profile.income_preference == "dividends" and dividend_yield >= _DIVIDEND_YIELD_THRESHOLD:
-            adjusted = min(adjusted + 10.0, 100.0)
-        elif profile.income_preference == "growth" and dividend_yield < _DIVIDEND_YIELD_THRESHOLD:
-            adjusted = min(adjusted + 5.0, 100.0)
+        if profile.income_preference in ("dividends", "growth"):
+            dividend_yield = await self._get_dividend_yield_from_yfinance(stock)
+            if (
+                profile.income_preference == "dividends"
+                and dividend_yield >= _DIVIDEND_YIELD_THRESHOLD
+            ):
+                adjusted = min(adjusted + 10.0, 100.0)
+            elif (
+                profile.income_preference == "growth" and dividend_yield < _DIVIDEND_YIELD_THRESHOLD
+            ):
+                adjusted = min(adjusted + 5.0, 100.0)
 
         return (stock, adjusted)
 

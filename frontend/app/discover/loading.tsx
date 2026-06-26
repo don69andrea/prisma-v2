@@ -12,8 +12,7 @@ export default function DiscoverLoading() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="h-28 rounded-xl animate-pulse"
-            style={{ background: '#161b22', border: '1px solid #21262d' }}
+            className="h-28 rounded-xl animate-pulse bg-muted border border-border"
           />
         ))}
       </div>

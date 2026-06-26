@@ -11,6 +11,9 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.cost_tracker import CostTracker
+from backend.application.services.crypto_agent_service import CryptoAgentService
+from backend.application.services.crypto_pattern_service import CryptoPatternService
+from backend.application.services.crypto_scoring_service import CryptoScoringService
 from backend.application.services.factsheet_service import FactsheetService
 from backend.application.services.narrative_service import NarrativeService
 from backend.application.services.ranking_run_service import RankingRunService
@@ -20,22 +23,36 @@ from backend.application.services.swiss_market_service import SwissMarketService
 from backend.application.services.universe_service import UniverseService
 from backend.application.services.universe_suggestion_service import UniverseSuggestionService
 from backend.config import Settings, get_settings
+from backend.domain.entities.user import User, UserRole
 from backend.domain.ports.fundamentals_provider import FundamentalsProvider
 from backend.domain.ports.market_data_provider import MarketDataProvider
 from backend.domain.ports.swiss_market_data_provider import SwissMarketDataProvider
 from backend.domain.repositories.cost_log_repository import CostLogRepository
+from backend.domain.repositories.crypto_signal_repository import CryptoSignalRepository
 from backend.domain.repositories.memo_batch_job_repository import MemoBatchJobRepository
 from backend.domain.repositories.ranking_run_repository import RankingRunRepository
 from backend.domain.repositories.research_memo_repository import ResearchMemoRepository
 from backend.domain.repositories.stock_repository import StockRepository
 from backend.domain.repositories.swiss_stock_repository import SwissStockRepository
 from backend.domain.repositories.universe_repository import UniverseRepository
+from backend.domain.repositories.user_repository import UserRepository
+from backend.domain.services.crypto_scorer import CryptoScorer
+from backend.infrastructure.adapters.coingecko_adapter import CoinGeckoAdapter
+from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter
+from backend.infrastructure.adapters.yfinance_crypto import YFinanceCryptoAdapter
+from backend.infrastructure.adapters.yfinance_fundamentals_adapter import (
+    YFinanceFundamentalsAdapter,
+)
+from backend.infrastructure.adapters.yfinance_market_data_adapter import YFinanceMarketDataAdapter
 from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
 from backend.infrastructure.llm.client import LLMClient
 from backend.infrastructure.llm.pricing import PRICING  # Single-Source-of-Truth via DI an LLMClient
 from backend.infrastructure.llm.prompts.prompt_loader import PromptTemplateLoader
 from backend.infrastructure.persistence.repositories.cost_log_repository import (
     SQLACostLogRepository,
+)
+from backend.infrastructure.persistence.repositories.crypto_signal_repository import (
+    SQLACryptoSignalRepository,
 )
 from backend.infrastructure.persistence.repositories.memo_batch_job_repository import (
     SQLAMemoBatchJobRepository,
@@ -59,8 +76,6 @@ from backend.infrastructure.persistence.session import (
     get_async_session,
     get_session_factory,
 )
-from backend.infrastructure.providers.stub_fundamentals import StubFundamentalsProvider
-from backend.infrastructure.providers.stub_market_data import StubMarketDataProvider
 
 _logger = logging.getLogger(__name__)
 
@@ -85,26 +100,12 @@ async def get_stock_repository(
     return SQLAStockRepository(session=session)
 
 
-async def get_fundamentals_provider(
-    settings: Settings = Depends(get_settings),
-) -> FundamentalsProvider:
-    if settings.environment == "production":
-        _logger.warning(
-            "StubFundamentalsProvider active in production — serving synthetic data. "
-            "Wire a real FundamentalsProvider before going live (Issue #41)."
-        )
-    return StubFundamentalsProvider()
+async def get_fundamentals_provider() -> FundamentalsProvider:
+    return YFinanceFundamentalsAdapter()
 
 
-async def get_market_data_provider(
-    settings: Settings = Depends(get_settings),
-) -> MarketDataProvider:
-    if settings.environment == "production":
-        _logger.warning(
-            "StubMarketDataProvider active in production — serving synthetic data. "
-            "Wire a real MarketDataProvider before going live (Issue #41)."
-        )
-    return StubMarketDataProvider()
+async def get_market_data_provider() -> MarketDataProvider:
+    return YFinanceMarketDataAdapter()
 
 
 async def get_stock_service(
@@ -143,6 +144,12 @@ async def get_universe_repository(
     session: AsyncSession = Depends(get_session),
 ) -> UniverseRepository:
     return SQLAUniverseRepository(session=session)
+
+
+async def get_crypto_signal_repository(
+    session: AsyncSession = Depends(get_session),
+) -> CryptoSignalRepository:
+    return SQLACryptoSignalRepository(session=session)
 
 
 async def get_universe_service(
@@ -552,13 +559,7 @@ async def get_signal_director(
     session: AsyncSession = Depends(get_session),
     settings: Settings = Depends(get_settings),
 ) -> Any:
-    """Construct SignalDirector with all agent dependencies injected.
-
-    Uses stub prices_df (same as signals router) since the REST endpoint is
-    per-coin and the director needs a prices frame at construction time.
-    No live DB read — agents get mocked or lightweight stubs in tests via
-    dependency_overrides.
-    """
+    """Construct SignalDirector with all agent dependencies injected."""
     from datetime import UTC, datetime
 
     import numpy as np
@@ -581,7 +582,6 @@ async def get_signal_director(
         SQLANewsRepository,
     )
 
-    # Stub prices_df (200 bars, same as signals router _make_stub_prices)
     rng = np.random.default_rng(seed=42)
     returns = rng.normal(0.001, 0.03, size=200)
     prices = 100.0 * np.cumprod(1 + returns)
@@ -598,7 +598,6 @@ async def get_signal_director(
     prompt_loader = get_prompt_loader()
     audit_repo = AgentAuditTrailRepository(session=session)
 
-    # Stub ExposureStore: returns 0.0 exposure (safe default; wired to real store in V4-4)
     class _StubExposureStore:
         async def get_exposure(self, coin: str) -> float:  # noqa: ARG002
             return 0.0
@@ -627,3 +626,212 @@ async def get_signal_director(
         audit_repo=audit_repo,
         prices_df=prices_df,
     )
+
+
+# ---------------------------------------------------------------------------
+# Crypto Module DI-Chain
+# ---------------------------------------------------------------------------
+
+_fear_greed_adapter: FearGreedAdapter | None = None
+_coingecko_adapter: CoinGeckoAdapter | None = None
+_yfinance_crypto_adapter: YFinanceCryptoAdapter | None = None
+
+
+def _get_fear_greed_singleton() -> FearGreedAdapter:
+    global _fear_greed_adapter
+    if _fear_greed_adapter is None:
+        _fear_greed_adapter = FearGreedAdapter()
+    return _fear_greed_adapter
+
+
+def _get_coingecko_singleton() -> CoinGeckoAdapter:
+    global _coingecko_adapter
+    if _coingecko_adapter is None:
+        from backend.config import get_settings
+
+        _coingecko_adapter = CoinGeckoAdapter(api_key=get_settings().coingecko_api_key)
+    return _coingecko_adapter
+
+
+def _get_yfinance_crypto_singleton() -> YFinanceCryptoAdapter:
+    global _yfinance_crypto_adapter
+    if _yfinance_crypto_adapter is None:
+        _yfinance_crypto_adapter = YFinanceCryptoAdapter()
+    return _yfinance_crypto_adapter
+
+
+async def get_fear_greed_adapter() -> FearGreedAdapter:
+    return _get_fear_greed_singleton()
+
+
+async def get_coingecko_adapter() -> CoinGeckoAdapter:
+    return _get_coingecko_singleton()
+
+
+async def get_yfinance_crypto_adapter() -> YFinanceCryptoAdapter:
+    return _get_yfinance_crypto_singleton()
+
+
+_crypto_pattern_service: CryptoPatternService | None = None
+
+
+def _get_crypto_pattern_singleton() -> CryptoPatternService:
+    global _crypto_pattern_service
+    if _crypto_pattern_service is None:
+        _crypto_pattern_service = CryptoPatternService()
+    return _crypto_pattern_service
+
+
+async def get_crypto_pattern_service() -> CryptoPatternService:
+    return _get_crypto_pattern_singleton()
+
+
+async def get_crypto_agent_service(
+    llm_client: LLMClient = Depends(get_llm_client),
+) -> CryptoAgentService:
+    return CryptoAgentService(llm_client=llm_client)
+
+
+async def get_crypto_scoring_service() -> CryptoScoringService:
+    return CryptoScoringService(
+        cg_adapter=_get_coingecko_singleton(),
+        yf_adapter=_get_yfinance_crypto_singleton(),
+        fg_adapter=_get_fear_greed_singleton(),
+        scorer=CryptoScorer(),
+        pattern_service=_get_crypto_pattern_singleton(),
+    )
+
+
+async def require_crypto_enabled(settings: Settings = Depends(get_settings)) -> None:
+    """Gattet das Crypto-Modul über CRYPTO_FEATURE_ENABLED (W-12 / F-BTCR-2)."""
+    if not settings.crypto_feature_enabled:
+        raise HTTPException(status_code=404, detail="Crypto-Feature ist deaktiviert.")
+
+
+# ---------------------------------------------------------------------------
+# Chat DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_chat_service(
+    llm_client: LLMClient = Depends(get_llm_client),
+) -> Any:
+    from backend.application.services.chat_service import ChatService
+
+    return ChatService(llm_client=llm_client)
+
+
+# ---------------------------------------------------------------------------
+# Auth DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_user_repository(
+    session: AsyncSession = Depends(get_session),
+) -> UserRepository:
+    from backend.infrastructure.persistence.repositories.user_repository import (
+        SQLAUserRepository,
+    )
+
+    return SQLAUserRepository(session=session)
+
+
+async def get_auth_service(
+    repo: UserRepository = Depends(get_user_repository),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    from backend.application.services.auth_service import AuthService
+
+    return AuthService(
+        repo=repo,
+        jwt_secret=settings.jwt_secret,
+        jwt_expire_hours=settings.jwt_expire_hours,
+    )
+
+
+async def require_current_user(
+    authorization: str | None = Header(default=None),
+    service: Any = Depends(get_auth_service),
+) -> User:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authorization header missing or malformed")
+    token = authorization.removeprefix("Bearer ")
+    try:
+        return await service.verify_token(token)  # type: ignore[no-any-return]
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
+
+
+async def require_admin_role(
+    current_user: User = Depends(require_current_user),
+) -> User:
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    return current_user
+
+
+# ---------------------------------------------------------------------------
+# CointelligenceAgent DI-Chain
+# ---------------------------------------------------------------------------
+
+
+async def get_cointelligence_agent(
+    llm_client: LLMClient = Depends(get_llm_client),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    from backend.application.agents.cointelligence_agent import CointelligenceAgent  # noqa: PLC0415
+    from backend.application.services.macro_service import MacroService  # noqa: PLC0415
+
+    return CointelligenceAgent(
+        coingecko=_get_coingecko_singleton(),
+        fear_greed=_get_fear_greed_singleton(),
+        macro_service=MacroService(llm_client=llm_client),
+        llm_client=llm_client,
+        glassnode_api_key=getattr(settings, "glassnode_api_key", ""),
+    )
+
+
+# ---------------------------------------------------------------------------
+# InvestmentDirector DI-Chain
+# ---------------------------------------------------------------------------
+
+_director_instance: Any = None
+
+
+def get_investment_director() -> Any:
+    """Lazy Singleton für InvestmentDirector."""
+    global _director_instance  # noqa: PLW0603
+    if _director_instance is None:
+        from decimal import Decimal  # noqa: PLC0415
+
+        from backend.application.agents.investment_director import (
+            InvestmentDirector,  # noqa: PLC0415
+        )
+        from backend.application.agents.macro_agent_v2 import MacroAgentV2  # noqa: PLC0415
+        from backend.application.services.macro_service import MacroService  # noqa: PLC0415
+        from backend.infrastructure.persistence.repositories.cost_log_repository import (  # noqa: PLC0415
+            SQLACostLogRepository,
+        )
+
+        settings = get_settings()
+        cost_log_repo = SQLACostLogRepository(session_factory=get_session_factory())
+        cost_tracker = CostTracker(
+            repository=cost_log_repo,
+            pricing=PRICING,
+            cap_usd=Decimal(str(settings.budget_cap_usd)),
+        )
+        llm = LLMClient(
+            anthropic=get_anthropic_client(),
+            voyage=get_voyage_client(),
+            cost_tracker=cost_tracker,
+            pricing=PRICING,
+        )
+        _director_instance = InvestmentDirector(
+            macro_agent=MacroAgentV2(
+                macro_service=MacroService(llm_client=llm),
+                llm_client=llm,
+            ),
+            stock_service=None,
+            steuer_agent=None,
+        )
+    return _director_instance

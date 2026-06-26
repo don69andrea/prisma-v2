@@ -267,7 +267,7 @@ def _chunk_text_with_metadata(article: NewsArticle, metadata: dict[str, Any]) ->
                     news_document_id=article.id,
                     chunk_idx=idx,
                     content=content,
-                    embedding=[0.0] * 2048,  # placeholder — replaced after embed()
+                    embedding=[0.0] * 1024,  # placeholder — replaced after embed()
                     metadata=metadata,
                 )
             )

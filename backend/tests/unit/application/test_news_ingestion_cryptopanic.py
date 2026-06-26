@@ -66,7 +66,7 @@ def _build_service(articles: list[Any]) -> Any:
     mock_cryptopanic.fetch_articles = AsyncMock(return_value=articles)
 
     mock_llm = AsyncMock()
-    mock_llm.embed = AsyncMock(return_value=[[0.0] * 2048])
+    mock_llm.embed = AsyncMock(return_value=[[0.0] * 1024])
 
     return NewsIngestionService(
         news_repo=mock_repo,

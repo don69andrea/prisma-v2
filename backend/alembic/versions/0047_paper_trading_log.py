@@ -45,9 +45,7 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
         ),
     )
-    op.create_index(
-        "ix_paper_trading_log_signal_date", "paper_trading_log", ["signal_date"]
-    )
+    op.create_index("ix_paper_trading_log_signal_date", "paper_trading_log", ["signal_date"])
     op.create_index(
         "ix_paper_trading_log_coin_date",
         "paper_trading_log",

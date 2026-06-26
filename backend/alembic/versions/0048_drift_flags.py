@@ -52,12 +52,8 @@ def upgrade() -> None:
             nullable=False,
             comment="(live - expected) / abs(expected)",
         ),
-        sa.Column(
-            "is_active", sa.Boolean(), nullable=False, server_default="true"
-        ),
-        sa.Column(
-            "alert_sent", sa.Boolean(), nullable=False, server_default="false"
-        ),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
+        sa.Column("alert_sent", sa.Boolean(), nullable=False, server_default="false"),
     )
     op.create_index("ix_drift_flags_flagged_at", "drift_flags", ["flagged_at"])
     op.create_index(

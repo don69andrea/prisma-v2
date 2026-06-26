@@ -13,9 +13,7 @@ from backend.infrastructure.persistence.base import Base
 class LivePerformanceMetricORM(Base):
     __tablename__ = "live_performance_metrics"
 
-    id: Mapped[int] = mapped_column(
-        sa.Integer(), primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(sa.Integer(), primary_key=True, autoincrement=True)
     coin_id: Mapped[int] = mapped_column(sa.Integer(), nullable=False)
     computed_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),

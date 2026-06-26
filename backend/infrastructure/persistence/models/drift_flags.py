@@ -32,9 +32,5 @@ class DriftFlagORM(Base):
     live_value: Mapped[float] = mapped_column(sa.Float(), nullable=False)
     expected_value: Mapped[float] = mapped_column(sa.Float(), nullable=False)
     pct_deviation: Mapped[float] = mapped_column(sa.Float(), nullable=False)
-    is_active: Mapped[bool] = mapped_column(
-        sa.Boolean(), nullable=False, default=True
-    )
-    alert_sent: Mapped[bool] = mapped_column(
-        sa.Boolean(), nullable=False, default=False
-    )
+    is_active: Mapped[bool] = mapped_column(sa.Boolean(), nullable=False, default=True)
+    alert_sent: Mapped[bool] = mapped_column(sa.Boolean(), nullable=False, default=False)

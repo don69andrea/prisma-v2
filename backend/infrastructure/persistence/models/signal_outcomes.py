@@ -20,12 +20,8 @@ class SignalOutcomeORM(Base):
     size_factor: Mapped[float] = mapped_column(sa.Float(), nullable=False)
     confidence: Mapped[float] = mapped_column(sa.Float(), nullable=False)
     pred_vol: Mapped[float | None] = mapped_column(sa.Float(), nullable=True)
-    realized_fwd_return: Mapped[float | None] = mapped_column(
-        sa.Float(), nullable=True
-    )
-    model_version: Mapped[str] = mapped_column(
-        sa.String(64), nullable=False, default="v1"
-    )
+    realized_fwd_return: Mapped[float | None] = mapped_column(sa.Float(), nullable=True)
+    model_version: Mapped[str] = mapped_column(sa.String(64), nullable=False, default="v1")
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,

@@ -60,13 +60,9 @@ def upgrade() -> None:
             name="fk_signal_outcomes_coin_id",
             ondelete="CASCADE",
         ),
-        sa.PrimaryKeyConstraint(
-            "coin_id", "signal_date", "horizon", name="pk_signal_outcomes"
-        ),
+        sa.PrimaryKeyConstraint("coin_id", "signal_date", "horizon", name="pk_signal_outcomes"),
     )
-    op.create_index(
-        "ix_signal_outcomes_signal_date", "signal_outcomes", ["signal_date"]
-    )
+    op.create_index("ix_signal_outcomes_signal_date", "signal_outcomes", ["signal_date"])
     op.create_index(
         "ix_signal_outcomes_pending",
         "signal_outcomes",

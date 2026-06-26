@@ -21,9 +21,7 @@ def upgrade() -> None:
         "live_performance_metrics",
         sa.Column("id", sa.Integer(), autoincrement=True, primary_key=True),
         sa.Column("coin_id", sa.Integer(), nullable=False),
-        sa.Column(
-            "computed_at", sa.DateTime(timezone=True), nullable=False
-        ),
+        sa.Column("computed_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column(
             "window_days",
             sa.Integer(),
@@ -60,7 +58,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index(
-        "ix_live_perf_metrics_coin_computed", table_name="live_performance_metrics"
-    )
+    op.drop_index("ix_live_perf_metrics_coin_computed", table_name="live_performance_metrics")
     op.drop_table("live_performance_metrics")

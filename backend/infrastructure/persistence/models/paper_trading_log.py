@@ -27,9 +27,7 @@ class PaperTradingLogORM(Base):
     size_factor: Mapped[float] = mapped_column(sa.Float(), nullable=False)
     confidence: Mapped[float] = mapped_column(sa.Float(), nullable=False)
     pred_vol: Mapped[float | None] = mapped_column(sa.Float(), nullable=True)
-    realized_fwd_return: Mapped[float | None] = mapped_column(
-        sa.Float(), nullable=True
-    )
+    realized_fwd_return: Mapped[float | None] = mapped_column(sa.Float(), nullable=True)
     written_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,

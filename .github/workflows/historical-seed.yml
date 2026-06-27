@@ -107,7 +107,13 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: pip install uv -q && uv sync --no-dev -q
-      - run: uv run python scripts/crypto_intraday_snapshot.py
+      - name: Run CryptoIntraday snapshot
+        run: |
+          if [ ! -f scripts/crypto_intraday_snapshot.py ]; then
+            echo "::warning::scripts/crypto_intraday_snapshot.py not found — skipping (script not yet implemented)"
+            exit 0
+          fi
+          uv run python scripts/crypto_intraday_snapshot.py
 
   # ── SNB-Rate + SimFin-Update · 1. Montag/Monat ─────────────────────────
   macro-rate-update:

@@ -241,12 +241,28 @@ const MOCK_SIGNALS = [
 
 // ── Setup: API-Mocking ────────────────────────────────────────────────────────
 
+const MOCK_V4_SIGNALS = [
+  { coin: 'BTC-USD', asof: '2024-01-01', action: 'BUY', size_factor: 1.0, consensus: '3/3', sub_scores: {}, confidence: 0.82, disclaimer: '' },
+  { coin: 'ETH-USD', asof: '2024-01-01', action: 'BUY', size_factor: 0.9, consensus: '2/3', sub_scores: {}, confidence: 0.71, disclaimer: '' },
+  { coin: 'SOL-USD', asof: '2024-01-01', action: 'BUY', size_factor: 0.8, consensus: '2/3', sub_scores: {}, confidence: 0.65, disclaimer: '' },
+  { coin: 'BNB-USD', asof: '2024-01-01', action: 'HOLD', size_factor: 0.5, consensus: '1/3', sub_scores: {}, confidence: 0.50, disclaimer: '' },
+  { coin: 'XRP-USD', asof: '2024-01-01', action: 'HOLD', size_factor: 0.5, consensus: '1/3', sub_scores: {}, confidence: 0.48, disclaimer: '' },
+  { coin: 'ADA-USD', asof: '2024-01-01', action: 'HOLD', size_factor: 0.4, consensus: '1/3', sub_scores: {}, confidence: 0.44, disclaimer: '' },
+  { coin: 'DOT-USD', asof: '2024-01-01', action: 'SELL', size_factor: 0.0, consensus: '0/3', sub_scores: {}, confidence: 0.41, disclaimer: '' },
+  { coin: 'MATIC-USD', asof: '2024-01-01', action: 'SELL', size_factor: 0.0, consensus: '0/3', sub_scores: {}, confidence: 0.32, disclaimer: '' },
+  { coin: 'LINK-USD', asof: '2024-01-01', action: 'SELL', size_factor: 0.0, consensus: '0/3', sub_scores: {}, confidence: 0.28, disclaimer: '' },
+  { coin: 'AVAX-USD', asof: '2024-01-01', action: 'SELL', size_factor: 0.0, consensus: '0/3', sub_scores: {}, confidence: 0.18, disclaimer: '' },
+];
+
 async function mockCryptoApi(page: Page) {
   await page.route('**/api/v1/crypto/signals', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_SIGNALS) });
   });
   await page.route('**/api/v1/crypto/fear-greed', async (route) => {
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_FEAR_GREED) });
+  });
+  await page.route('**/api/v1/signals', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_V4_SIGNALS) });
   });
 }
 
@@ -270,12 +286,12 @@ test.describe('Krypto-Seite — Grundstruktur', () => {
     await page.goto('/crypto');
   });
 
-  test('zeigt Seitenheader "Krypto."', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Krypto.' })).toBeVisible();
+  test('zeigt Seitenheader "Krypto-Signale."', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: 'Krypto-Signale.' })).toBeVisible();
   });
 
   test('zeigt Untertitel mit 10-Krypto-Beschreibung', async ({ page }) => {
-    await expect(page.getByText('10 Top-Kryptowährungen')).toBeVisible();
+    await expect(page.getByText('Top-10 Krypto-Universum')).toBeVisible();
   });
 
   test('zeigt "Crypto Fear & Greed Index" Label', async ({ page }) => {
@@ -396,13 +412,14 @@ test.describe('Pro Mode — Vollständige Tabelle', () => {
     await expect(page.getByRole('columnheader', { name: 'SMI-Korr' })).toBeVisible();
   });
 
-  test('zeigt 10 Tabellenzeilen (alle Kryptos)', async ({ page }) => {
+  test('zeigt 10 Tabellenzeilen in der Pro-Tabelle (alle Kryptos)', async ({ page }) => {
+    // Seite hat zwei Tabellen: V4-Dashboard + CryptoClient (Pro) = 20 Zeilen total
     const rows = page.locator('tbody tr');
-    await expect(rows).toHaveCount(10);
+    await expect(rows).toHaveCount(20);
   });
 
   test('zeigt BTC-Ticker in Tabelle', async ({ page }) => {
-    await expect(page.getByRole('cell', { name: 'BTC' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'BTC Bitcoin' })).toBeVisible();
   });
 
   test('zeigt STRONG BUY Badge in Tabelle', async ({ page }) => {
@@ -552,7 +569,7 @@ test.describe('Navigation', () => {
     await page.goto('/');
     await page.getByRole('link', { name: 'Krypto' }).click();
     await expect(page).toHaveURL('/crypto');
-    await expect(page.getByRole('heading', { name: 'Krypto.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Krypto-Signale.' })).toBeVisible();
   });
 });
 
@@ -630,7 +647,7 @@ test.describe('Go-Live Readiness', () => {
   test('Seite ist auf Mobilgeräten (375px) korrekt dargestellt', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/crypto');
-    await expect(page.getByRole('heading', { name: 'Krypto.' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Krypto-Signale.' })).toBeVisible();
     await expect(page.getByTestId('crypto-disclaimer')).toBeVisible();
   });
 

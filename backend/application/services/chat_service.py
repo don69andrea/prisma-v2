@@ -181,6 +181,38 @@ async def _get_ranking(inputs: dict[str, Any], session: AsyncSession) -> str:
     )
 
 
+@_register("get_crypto_signals")
+async def _get_crypto_signals(inputs: dict[str, Any], session: AsyncSession) -> str:
+    from backend.application.services.crypto_scoring_service import CryptoScoringService
+    from backend.infrastructure.adapters.coingecko_adapter import CoinGeckoAdapter
+    from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter
+    from backend.application.services.crypto_pattern_service import CryptoPatternService
+
+    svc = CryptoScoringService(
+        coingecko=CoinGeckoAdapter(),
+        fear_greed=FearGreedAdapter(),
+        pattern_service=CryptoPatternService(),
+    )
+    signals = await svc.score_all()
+    return json.dumps(
+        [
+            {
+                "ticker": s.ticker,
+                "name": s.name,
+                "signal": s.signal,
+                "score": round(s.score, 1),
+                "rsi_14": round(s.rsi_14, 1),
+                "macd_signal": s.macd_signal,
+                "fear_greed_value": s.fear_greed_value,
+                "fear_greed_label": s.fear_greed_label,
+                "price_chf": s.price_chf,
+                "price_change_24h_pct": s.price_change_24h_pct,
+            }
+            for s in signals
+        ]
+    )
+
+
 # ---------------------------------------------------------------------------
 # Tool-Definitionen für Claude API
 # ---------------------------------------------------------------------------
@@ -252,6 +284,14 @@ _TOOL_DEFINITIONS: list[dict[str, Any]] = [
                 "universe": {"type": "string", "description": "SMI | SMIM | SPI | US"},
                 "top_n": {"type": "integer", "minimum": 1, "maximum": 20, "default": 5},
             },
+        },
+    },
+    {
+        "name": "get_crypto_signals",
+        "description": "Aktuelle Krypto-Signale (BUY/HOLD/SELL) für das Top-10 Krypto-Universum (BTC, ETH, SOL, BNB, XRP, ADA, AVAX, MATIC, DOT, LINK) mit Score, RSI, MACD, Fear & Greed Index und Preis in CHF. Nutze dieses Tool wenn der User nach Krypto, Bitcoin, Ethereum oder anderen Coins fragt.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
         },
     },
 ]

@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, useEffect, type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { ApiError } from '@/lib/api/client';
 
 import { LoadingScreen } from '@/components/LoadingScreen';
@@ -37,6 +38,7 @@ export function Providers({ children }: ProvidersProps) {
       })
   );
 
+  const pathname = usePathname();
   const [showLoading, setShowLoading] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
 
@@ -52,9 +54,9 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {showLoading && <LoadingScreen fadeOut={fadeOut} />}
-        <WelcomePopup />
-        <ColdStartBanner />
+        {showLoading && pathname !== '/login' && <LoadingScreen fadeOut={fadeOut} />}
+        {pathname !== '/login' && <WelcomePopup />}
+        {pathname !== '/login' && <ColdStartBanner />}
         {children}
       </AuthProvider>
     </QueryClientProvider>

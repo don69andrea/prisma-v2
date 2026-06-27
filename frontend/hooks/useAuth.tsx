@@ -62,8 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTokenCookie(res.access_token);
     const me = await apiFetch<AuthUser>('/api/v1/auth/me');
     setUser(me);
-    sessionStorage.setItem('prisma_just_logged_in', 'true');
     router.push('/');
+    setTimeout(() => sessionStorage.setItem('prisma_just_logged_in', 'true'), 200);
   }
 
   function logout(): void {

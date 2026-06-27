@@ -1,0 +1,31 @@
+name: V4 Operations Worker
+
+# V4-6 Lernschleife — täglich via GitHub Actions.
+# Render Free-Tier unterstützt keine Background Worker Services.
+# --once führt SignalEvaluationJob + PaperLog.fill_outcomes sequenziell aus.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # 06:00 UTC tägl. (nach täglichem Kursschluss-Seed)
+  workflow_dispatch:       # manuell triggerbar im GitHub UI
+
+env:
+  DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+  ENVIRONMENT: production
+  PYTHONPATH: "."
+
+jobs:
+  operations:
+    name: "⚙️ V4 Operations (--once)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install uv -q && uv sync --no-dev -q
+      - name: Run Operations Worker (--once)
+        run: uv run python -m backend.infrastructure.workers.operations_worker --once
+      - if: failure()
+        run: echo "::error::V4 Operations Worker fehlgeschlagen"

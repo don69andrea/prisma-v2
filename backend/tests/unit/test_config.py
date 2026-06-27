@@ -24,7 +24,9 @@ class TestApiKeyProductionValidator:
     # mypy kennt das pydantic-settings-Dunder-Kwarg nicht — daher gezielter
     # call-arg-Ignore pro Aufruf statt einer Class-weiten Suppression.
 
-    def test_raises_when_api_key_empty_in_production(self) -> None:
+    def test_raises_when_api_key_empty_in_production(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # CI=true würde den Validator skippen — für diesen Test explizit deaktivieren.
+        monkeypatch.delenv("CI", raising=False)
         with pytest.raises(ValidationError) as exc_info:
             Settings(environment="production", api_key="", _env_file=None)  # type: ignore[call-arg]
         assert "API_KEY" in str(exc_info.value)

@@ -56,9 +56,15 @@ def _register(name: str) -> Callable[[ToolHandler], ToolHandler]:
 # Tool-Handler (alle importieren Services am Dateianfang, nicht inline)
 # ---------------------------------------------------------------------------
 
+from backend.application.services.crypto_pattern_service import CryptoPatternService  # noqa: E402
+from backend.application.services.crypto_scoring_service import CryptoScoringService  # noqa: E402
 from backend.application.services.macro_service import MacroService  # noqa: E402
 from backend.application.services.stock_service import _normalize_ticker  # noqa: E402
 from backend.application.services.swiss_market_service import SwissMarketService  # noqa: E402
+from backend.domain.services.crypto_scorer import CryptoScorer  # noqa: E402
+from backend.infrastructure.adapters.coingecko_adapter import CoinGeckoAdapter  # noqa: E402
+from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter  # noqa: E402
+from backend.infrastructure.adapters.yfinance_crypto import YFinanceCryptoAdapter  # noqa: E402
 from backend.infrastructure.persistence.repositories.swiss_stock_repository import (  # noqa: E402
     SQLASwissStockRepository,
 )
@@ -183,14 +189,11 @@ async def _get_ranking(inputs: dict[str, Any], session: AsyncSession) -> str:
 
 @_register("get_crypto_signals")
 async def _get_crypto_signals(inputs: dict[str, Any], session: AsyncSession) -> str:
-    from backend.application.services.crypto_scoring_service import CryptoScoringService
-    from backend.infrastructure.adapters.coingecko_adapter import CoinGeckoAdapter
-    from backend.infrastructure.adapters.fear_greed_adapter import FearGreedAdapter
-    from backend.application.services.crypto_pattern_service import CryptoPatternService
-
     svc = CryptoScoringService(
-        coingecko=CoinGeckoAdapter(),
-        fear_greed=FearGreedAdapter(),
+        cg_adapter=CoinGeckoAdapter(),
+        yf_adapter=YFinanceCryptoAdapter(),
+        fg_adapter=FearGreedAdapter(),
+        scorer=CryptoScorer(),
         pattern_service=CryptoPatternService(),
     )
     signals = await svc.score_all()

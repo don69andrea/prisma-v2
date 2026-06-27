@@ -118,14 +118,16 @@ function CoinRow({ signal }: { signal: SignalVector }) {
     ? sparkData[sparkData.length - 1].close >= sparkData[0].close
     : undefined;
 
+  const shortCoin = signal.coin.replace(/-USD$/, '');
+
   return (
     <tr className="border-b last:border-0 hover:bg-muted/20 transition-colors">
       <td className="py-2.5 pr-3">
         <Link
-          href={`/crypto/${signal.coin.toLowerCase()}`}
+          href={`/crypto/${shortCoin.toLowerCase()}`}
           className="font-semibold hover:underline"
         >
-          {signal.coin}
+          {shortCoin}
         </Link>
         <div className="text-[10px] text-muted-foreground">{signal.asof}</div>
       </td>

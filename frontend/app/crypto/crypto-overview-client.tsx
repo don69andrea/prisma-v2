@@ -20,7 +20,7 @@ export function CryptoOverviewClient() {
   const [sortDesc, setSortDesc] = useState(true);
 
   const { data: signals, isLoading, error } = useQuery({
-    queryKey: ['crypto-signals'],
+    queryKey: ['v4-signals'],
     queryFn: listSignals,
     staleTime: 5 * 60_000,
   });

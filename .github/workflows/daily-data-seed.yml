@@ -351,8 +351,7 @@ jobs:
         run: |
           uv run python scripts/train_return_predictor.py \
             --market ch \
-            --years 8 \
-            --output models/return_predictor_latest.joblib
+            --years 8
         timeout-minutes: 40
       - name: Verify model file
         run: |

@@ -250,7 +250,7 @@ def test_chat_message_dataclass() -> None:
 async def test_chat_service_build_tool_definitions() -> None:
     svc = ChatService()
     tools = svc._get_tool_definitions()
-    assert len(tools) == 6
+    assert len(tools) == 7
     names = {t["name"] for t in tools}
     assert "search_stocks" in names
     assert "filter_stocks" in names
@@ -258,6 +258,7 @@ async def test_chat_service_build_tool_definitions() -> None:
     assert "get_macro_context" in names
     assert "compare_stocks" in names
     assert "get_ranking" in names
+    assert "get_crypto_signals" in names
 
 
 @pytest.mark.asyncio

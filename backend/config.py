@@ -1,5 +1,6 @@
 """Application-wide settings loaded from environment variables or a .env file."""
 
+import os
 from decimal import Decimal
 from functools import lru_cache
 from typing import Annotated
@@ -86,7 +87,7 @@ class Settings(BaseSettings):
     seed_crypto_hourly_from: str = "2020-01-01"
 
     jwt_secret: str = ""
-    jwt_expire_hours: int = 8
+    jwt_expire_hours: int = 72
     admin_email: str = ""
     admin_password: str = ""
 
@@ -150,8 +151,10 @@ class Settings(BaseSettings):
     def _api_key_required_in_production(self) -> "Settings":
         """In Production-Umgebung müssen API_KEY und ANTHROPIC_API_KEY explizit
         gesetzt sein — sonst booten wir nicht. Verhindert, dass ein leerer/
-        Default-Wert unbemerkt in Production landet."""
-        if self.environment == "production":
+        Default-Wert unbemerkt in Production landet.
+        Ausnahme: CI-Umgebung (GH Actions setzt CI=true) — Scripts wie
+        crypto_daily_snapshot nutzen api_key nie direkt."""
+        if self.environment == "production" and not os.getenv("CI"):
             if not self.api_key:
                 raise ValueError("API_KEY muss in der Production-Umgebung gesetzt sein")
             if not self.anthropic_api_key:

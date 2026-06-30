@@ -24,7 +24,7 @@ export function CoinDetailClient({ coin }: Props) {
 
   const { data: signal } = useQuery({
     queryKey: ['signal', coin],
-    queryFn: () => getSignal(coin),
+    queryFn: () => getSignal(`${coin}-USD`),
     staleTime: 5 * 60_000,
   });
 
@@ -32,6 +32,7 @@ export function CoinDetailClient({ coin }: Props) {
     queryKey: ['agent-signal', coin],
     queryFn: () => getAgentSignal(coin),
     staleTime: 5 * 60_000,
+    retry: false,
   });
 
   // Show HITL dialog on first load when confidence is low

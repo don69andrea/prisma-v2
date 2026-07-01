@@ -19,7 +19,23 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from backend.tests.synthetic_prices import make_synthetic_prices as _make_stub_prices
+
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def _mock_load_prices(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Router-Endpoints laden seit C-01 echte Marktdaten via `_load_prices`
+    (CryptoPriceAdapter → yfinance). In diesen Wiring-Tests ersetzen wir das
+    deterministisch durch synthetische Preise — kein Netzwerk, kein Flaky-CI.
+    """
+    import backend.interfaces.rest.routers.signals as _sig  # noqa: PLC0415
+
+    async def _fake_load_prices(coin: str) -> Any:
+        return _make_stub_prices(coin, n=500)
+
+    monkeypatch.setattr(_sig, "_load_prices", _fake_load_prices, raising=False)
 
 
 # ── Lazy import Wave A ───────────────────────────────────────────────────────
@@ -511,7 +527,6 @@ def test_walkforward_meta_cv_single_class_fold_skipped() -> None:
 def test_sync_meta_label_returns_meta_label_report() -> None:
     """ML-10-g: _sync_meta_label direct call returns valid MetaLabelReport."""
     from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
-        _make_stub_prices,
         _sync_meta_label,
     )
     from backend.interfaces.rest.schemas.signals import MetaLabelReport  # noqa: PLC0415
@@ -526,7 +541,6 @@ def test_sync_meta_label_returns_meta_label_report() -> None:
 def test_sync_meta_label_small_dataset_negative_finding() -> None:
     """ML-10-h: Small dataset (25 rows) → n_folds<10 → finding='negative'."""
     from backend.interfaces.rest.routers.signals import (
-        _make_stub_prices,  # noqa: PLC0415
         _sync_meta_label,  # noqa: PLC0415
     )
 
@@ -549,7 +563,6 @@ def test_sync_meta_label_positive_finding(monkeypatch: pytest.MonkeyPatch) -> No
     """
     import backend.interfaces.rest.routers.signals as _router_mod  # noqa: PLC0415
     from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
-        _make_stub_prices,
         _sync_meta_label,
     )
 
@@ -583,7 +596,6 @@ def test_sync_meta_label_secondary_pass_finding(monkeypatch: pytest.MonkeyPatch)
     """ML-10-j: Secondary-pass when n_filtered < 90% of n_always, no perf loss."""
     import backend.interfaces.rest.routers.signals as _router_mod  # noqa: PLC0415
     from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
-        _make_stub_prices,
         _sync_meta_label,
     )
 
@@ -619,7 +631,6 @@ def test_sync_meta_label_negative_finding_no_improvement(
     """ML-10-k: Negative when meta_filter doesn't improve over always-trade."""
     import backend.interfaces.rest.routers.signals as _router_mod  # noqa: PLC0415
     from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
-        _make_stub_prices,
         _sync_meta_label,
     )
 
@@ -850,7 +861,6 @@ def test_signals_router_list_signals(monkeypatch: pytest.MonkeyPatch) -> None:
 async def test_run_walkforward_async_wrapper() -> None:
     """Cover run_walkforward async wrapper (lines 188-197 in signals.py)."""
     from backend.interfaces.rest.routers.signals import (  # noqa: PLC0415
-        _make_stub_prices,
         run_walkforward,
     )
     from backend.interfaces.rest.schemas.signals import BacktestReport  # noqa: PLC0415

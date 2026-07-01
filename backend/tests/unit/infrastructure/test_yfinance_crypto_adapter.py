@@ -423,3 +423,51 @@ class TestGetOhlcv:
         result = await adapter.get_ohlcv("BTC-CHF")
         assert result is not None
         assert "Close" in result.columns
+
+
+# ─────────────────────────── USD→CHF FX-Umrechnung ───────────────────────────
+
+
+class TestChfUsdRate:
+    """Regression: USD-Krypto-Preise wurden mit CHFUSD=X (~1.12) multipliziert
+    statt mit USDCHF=X (~0.90) -> ~22% zu hoch. Richtung + Plausibilitaet."""
+
+    def test_uses_usdchf_ticker_not_chfusd(self) -> None:
+        from backend.infrastructure.adapters import yfinance_crypto as mod
+
+        # USDCHF=X = CHF pro USD (~0.90), korrekte Richtung fuer Multiplikation.
+        assert mod._CHF_USD_RATE_TICKER == "USDCHF=X"
+
+    async def test_plausible_rate_passed_through(self) -> None:
+        from unittest.mock import AsyncMock
+
+        from backend.infrastructure.adapters import yfinance_crypto as mod
+
+        adapter = mod.YFinanceCryptoAdapter()
+        adapter._download = AsyncMock(return_value=pd.DataFrame({"Close": [0.89]}))  # type: ignore[method-assign]
+        rate = await adapter._get_chf_usd_rate()
+        assert rate == pytest.approx(0.89)
+        # 100 USD -> ~89 CHF (CHF ist teurer als USD -> weniger CHF pro USD)
+        assert 100.0 * rate < 100.0
+
+    async def test_implausible_rate_falls_back(self) -> None:
+        from unittest.mock import AsyncMock
+
+        from backend.infrastructure.adapters import yfinance_crypto as mod
+
+        adapter = mod.YFinanceCryptoAdapter()
+        # 1.12 = CHFUSD (falsche Richtung) -> ausserhalb [0.5, 1.5]? nein, aber
+        # ein grober Ausreisser wie 5.0 muss auf Fallback gehen.
+        adapter._download = AsyncMock(return_value=pd.DataFrame({"Close": [5.0]}))  # type: ignore[method-assign]
+        rate = await adapter._get_chf_usd_rate()
+        assert rate == pytest.approx(mod._CHF_PER_USD_FALLBACK)
+
+    async def test_empty_download_uses_fallback(self) -> None:
+        from unittest.mock import AsyncMock
+
+        from backend.infrastructure.adapters import yfinance_crypto as mod
+
+        adapter = mod.YFinanceCryptoAdapter()
+        adapter._download = AsyncMock(return_value=pd.DataFrame())  # type: ignore[method-assign]
+        rate = await adapter._get_chf_usd_rate()
+        assert rate == pytest.approx(mod._CHF_PER_USD_FALLBACK)

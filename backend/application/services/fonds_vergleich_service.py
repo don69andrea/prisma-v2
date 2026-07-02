@@ -117,14 +117,27 @@ class FondsVergleichService:
         # Preishistorie laden
         all_returns: list[Any] = []
         all_w: list[float] = []
+        # W3-C-02: Die echte Adapter-Signatur ist get_price_history(ticker, days=...),
+        # nicht years=. Der Adapter liefert ~252 Handelstage pro Jahr.
+        lookback_days = lookback_years * 252
         for ticker, weight in weights.items():
             try:
-                prices = await self._yf.get_price_history(ticker, years=lookback_years)
+                prices = await self._yf.get_price_history(ticker, days=lookback_days)
                 if prices is None or len(prices) < 20:
                     continue
                 import pandas as pd
 
-                price_series = pd.Series(prices) if not hasattr(prices, "pct_change") else prices
+                # Der Adapter liefert einen DataFrame mit ["Close", "Volume"] —
+                # für Renditen zählt die Close-Spalte. Ein bereits vorliegendes
+                # Series-Objekt (z.B. aus Tests) wird direkt verwendet.
+                if isinstance(prices, pd.DataFrame):
+                    price_series = (
+                        prices["Close"] if "Close" in prices.columns else prices.iloc[:, 0]
+                    )
+                elif hasattr(prices, "pct_change"):
+                    price_series = prices
+                else:
+                    price_series = pd.Series(prices)
                 ret = price_series.pct_change().dropna().values
                 all_returns.append(ret)
                 all_w.append(weight)
@@ -147,7 +160,10 @@ class FondsVergleichService:
         portfolio_returns = stacked @ w_arr
 
         ann_factor = 252
-        ann_return = float(np.mean(portfolio_returns)) * ann_factor
+        # W3-H-05: Geometrische Annualisierung der Rendite (Zinseszins) statt
+        # arithmetischer Multiplikation — konsistent mit der Compound-Renditelogik.
+        mean_daily_return = float(np.mean(portfolio_returns))
+        ann_return = (1.0 + mean_daily_return) ** ann_factor - 1.0
         ann_vol = float(np.std(portfolio_returns, ddof=1)) * math.sqrt(ann_factor)
         sharpe: float | None = (
             (ann_return - self._risk_free_rate) / ann_vol if ann_vol > 1e-9 else None

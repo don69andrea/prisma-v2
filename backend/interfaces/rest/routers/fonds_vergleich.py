@@ -10,6 +10,8 @@ from backend.application.services.fonds_vergleich_service import (
     FondsNotFound,
     FondsVergleichService,
 )
+from backend.infrastructure.adapters.yfinance_swiss import YFinanceSwissAdapter
+from backend.interfaces.rest.dependencies import get_yfinance_adapter
 from backend.interfaces.rest.schemas.fonds_vergleich import (
     FondsVergleichRequest,
     FondsVergleichResponse,
@@ -21,8 +23,13 @@ router = APIRouter(prefix="/api/v1/fonds", tags=["fonds-vergleich"])
 _logger = logging.getLogger(__name__)
 
 
-def _get_service() -> FondsVergleichService:
-    return FondsVergleichService()
+def _get_service(
+    yf_adapter: YFinanceSwissAdapter = Depends(get_yfinance_adapter),
+) -> FondsVergleichService:
+    # W3-C-02: Ohne Adapter greift der Null-Metriken-Guard im Service und das
+    # Custom-Portfolio liefert konstant 0. Der prozess-weite YFinanceSwissAdapter
+    # muss injiziert werden, damit echte Preishistorie geladen wird.
+    return FondsVergleichService(yfinance_adapter=yf_adapter)
 
 
 @router.get(

@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +20,11 @@ class SQLAUserRepository(UserRepository):
         return self._to_domain(row) if row else None
 
     async def get_by_email(self, email: str) -> User | None:
-        stmt = select(UserORM).where(UserORM.email == email)
+        # Case-insensitiver Lookup: E-Mails werden als case-insensitive behandelt.
+        # Verhindert "Login schlägt fehl egal was man eingibt", wenn der Admin z.B.
+        # mit "Admin@Prisma.ch" geseedet wurde, der Nutzer aber "admin@prisma.ch" tippt.
+        normalized = email.strip().lower()
+        stmt = select(UserORM).where(func.lower(UserORM.email) == normalized)
         result = await self._session.execute(stmt)
         row = result.scalar_one_or_none()
         return self._to_domain(row) if row else None

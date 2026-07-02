@@ -23,7 +23,13 @@ _HAIKU = "claude-haiku-4-5"
 _MAX_TOKENS = 400
 _MIN_WEIGHT = 0.05
 _MAX_WEIGHT = 0.40
-_PRICE_DAYS = 40  # 30d Daten + Puffer für Wochenenden
+# Kalendertage-Fenster je Methode. yfinance interpretiert `days` als
+# Kalendertage (period="{days}d"), nicht als Handelstage (~5/7 sind Handelstage).
+_PRICE_DAYS_RISK_PARITY = 40  # ~27 Handelstage: reicht für 30d-Volatilität
+# Mean-Variance verlangt >= 30 Handelstage (siehe _mean_variance). Bei nur 40
+# Kalendertagen (~27 Handelstagen) fiele es IMMER auf Risk-Parity zurück (W3-C-03).
+# 400 Kalendertage ~= 275 Handelstage => stabile Kovarianz-/Return-Schätzung.
+_PRICE_DAYS_MEAN_VARIANCE = 400
 
 
 class _NarrativeOutput(BaseModel):
@@ -230,7 +236,10 @@ class PortfolioAgent:
         # Gewichtungsberechnung
         weights: dict[str, float]
         if method in ("risk_parity", "mean_variance") and self._yf is not None:
-            histories = await self._fetch_histories([p["ticker"] for p in picks])
+            price_days = (
+                _PRICE_DAYS_MEAN_VARIANCE if method == "mean_variance" else _PRICE_DAYS_RISK_PARITY
+            )
+            histories = await self._fetch_histories([p["ticker"] for p in picks], days=price_days)
             if method == "mean_variance":
                 weights = _mean_variance(picks, histories)
             else:
@@ -273,13 +282,15 @@ class PortfolioAgent:
             return False
         return self._eligibility.check(stock).eligible
 
-    async def _fetch_histories(self, tickers: list[str]) -> dict[str, pd.DataFrame]:
+    async def _fetch_histories(
+        self, tickers: list[str], days: int = _PRICE_DAYS_MEAN_VARIANCE
+    ) -> dict[str, pd.DataFrame]:
         histories: dict[str, pd.DataFrame] = {}
         if self._yf is None:
             return histories
         for ticker in tickers:
             try:
-                df = await self._yf.get_price_history(ticker, days=_PRICE_DAYS)
+                df = await self._yf.get_price_history(ticker, days=days)
                 histories[ticker] = df
             except Exception:
                 _logger.warning("Preishistorie nicht verfügbar für %s", ticker)

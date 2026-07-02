@@ -13,7 +13,13 @@ _logger = logging.getLogger(__name__)
 
 _TECH_CACHE: TTLCache[tuple[str, int], pd.DataFrame] = TTLCache(maxsize=50, ttl=300)
 _CHF_PAIRS = {"BTC-CHF", "ETH-CHF"}
-_CHF_USD_RATE_TICKER = "CHFUSD=X"
+# USDCHF=X = CHF pro 1 USD (~0.90). Zur Umrechnung USD->CHF wird MULTIPLIZIERT.
+# Vorher fälschlich "CHFUSD=X" (USD pro CHF, ~1.12) -> Preise ~22% zu hoch.
+_CHF_USD_RATE_TICKER = "USDCHF=X"
+# Plausibler Bereich für "CHF pro USD"; ausserhalb -> Fallback (schützt vor Inversion).
+_CHF_PER_USD_FALLBACK = 0.90
+_CHF_PER_USD_MIN = 0.5
+_CHF_PER_USD_MAX = 1.5
 
 
 def _rsi(close: pd.Series, length: int = 14) -> pd.Series:
@@ -71,7 +77,7 @@ class YFinanceCryptoAdapter:
     """Historische OHLCV + Technische Indikatoren für Kryptowährungen.
 
     Bevorzugt CHF-Pairs (BTC-CHF, ETH-CHF). Für USD-Pairs: automatische
-    CHF-Umrechnung via CHFUSD=X mit Fallback 0.90.
+    CHF-Umrechnung via USDCHF=X (CHF pro USD, ~0.90) mit Fallback 0.90.
     """
 
     async def get_technicals(self, ticker_yf: str, days: int = 365) -> pd.DataFrame:
@@ -163,9 +169,19 @@ class YFinanceCryptoAdapter:
             return None
 
     async def _get_chf_usd_rate(self) -> float:
+        """CHF pro 1 USD (~0.90). Multiplikativer Faktor für USD->CHF."""
         df = await self._download(_CHF_USD_RATE_TICKER, 2)
         if df is None or df.empty:
-            return 0.90
+            return _CHF_PER_USD_FALLBACK
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = [col[0] for col in df.columns]
-        return float(df["Close"].iloc[-1])
+        rate = float(df["Close"].iloc[-1])
+        # Guard gegen falsche Richtung/Ausreisser (z.B. versehentlich CHFUSD ~1.12).
+        if not (_CHF_PER_USD_MIN <= rate <= _CHF_PER_USD_MAX):
+            _logger.warning(
+                "CHF/USD-Kurs %.4f ausserhalb Plausibilitaetsbereich — Fallback %.2f",
+                rate,
+                _CHF_PER_USD_FALLBACK,
+            )
+            return _CHF_PER_USD_FALLBACK
+        return rate

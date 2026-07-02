@@ -50,6 +50,25 @@ class TestDiversificationFormula:
         assert ranks["A"] == 1
         assert ranks["C"] == 3
 
+    def test_negatively_correlated_ticker_ranks_first(self) -> None:
+        """Regression W3-C-05: Ein stark NEGATIV korrelierter Titel ist der beste
+        Diversifizierer und muss Rang 1 bekommen. Die alte Formel 2/(vol+avg_corr)
+        erzeugte bei avg_corr<0 einen negativen Score und rankte ihn ZULETZT.
+        """
+        rng = np.random.default_rng(101)
+        n = 252
+        index = pd.date_range("2024-01-01", periods=n, freq="B")
+        base = rng.normal(0.0005, 0.010, n)
+        # HEDGE: nahezu perfekt negativ korreliert zu BASE (bester Diversifizierer),
+        # vergleichbare Vola. UP: stark positiv korreliert zu BASE (schlechtester).
+        hedge = -base + rng.normal(0.0, 0.001, n)
+        up = 0.95 * base + rng.normal(0.0, 0.001, n)
+        returns = pd.DataFrame({"BASE": base, "HEDGE": hedge, "UP": up}, index=index)
+        prices = _make_prices(returns)
+
+        ranks = _run(prices)
+        assert ranks["HEDGE"] == 1, f"negativ korrelierter Titel muss Rang 1 sein, ranks={ranks}"
+
     def test_deterministic(self) -> None:
         rng = np.random.default_rng(7)
         index = pd.date_range("2024-01-01", periods=120, freq="B")

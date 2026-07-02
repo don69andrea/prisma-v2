@@ -8,7 +8,9 @@ Formel:
     2. Ledoit-Wolf-Kovarianzmatrix
     3. Annualisierte Volatilität (std × √252) je Ticker
     4. Mittlere Korrelation (ohne Selbstkorrelation) je Ticker
-    5. Score = 2 / (volatility + avg_correlation)        — hoch = besser
+    5. Score = 2 / (volatility + 1 + avg_correlation)    — hoch = besser
+       (avg_correlation nach [0,2] verschoben → Nenner immer positiv; negative
+        Korrelation = bester Diversifizierer = höchster Score, kein Vorzeichen-Kippen)
     6. Rang absteigend: höchster Score = Rang 1
     7. Edge-Cases: < 30 Datenpunkte → alle rank=None;
        n=1 Ticker → rank=1, confidence="low";
@@ -99,11 +101,17 @@ def _compute_scores(returns: pd.DataFrame, tickers: list[str]) -> dict[str, floa
     avg_corr = sum_corr / safe_count
 
     volatility = std_devs * np.sqrt(_TRADING_DAYS_PER_YEAR)
-    denom = volatility + avg_corr
-    safe_denom = np.where(denom == 0.0, 1.0, denom)
-    raw_scores = 2.0 / safe_denom
+    # avg_corr ∈ [-1, 1] wird nach [0, 2] verschoben (1 + avg_corr), damit der
+    # Nenner IMMER positiv ist. Vorher: 2 / (volatility + avg_corr) — bei negativer
+    # Korrelation wurde der Nenner negativ (bester Diversifizierer bekam negativen
+    # Score → Rang zuletzt) bzw. es gab einen Pol nahe avg_corr ≈ -volatility.
+    # Die additive +1-Konstante verschiebt alle Nenner uniform → die Rang-Ordnung
+    # aller bisher gültigen (positiver-Nenner-)Ticker bleibt exakt erhalten; nur
+    # zuvor negative Nenner (negative Korrelation) werden nun korrekt eingeordnet.
+    denom = volatility + 1.0 + avg_corr
+    raw_scores = 2.0 / denom
 
-    invalid = flat_mask | (std_devs == 0.0) | (count_corr == 0.0) | (denom == 0.0)
+    invalid = flat_mask | (std_devs == 0.0) | (count_corr == 0.0)
     return {
         ticker: (None if invalid[i] else float(raw_scores[i])) for i, ticker in enumerate(tickers)
     }

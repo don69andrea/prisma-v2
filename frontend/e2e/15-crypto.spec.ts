@@ -397,7 +397,12 @@ test.describe('Pro Mode — Vollständige Tabelle', () => {
   });
 
   test('zeigt Pro-Tabellen-Header "Signal"', async ({ page }) => {
-    await expect(page.getByRole('columnheader', { name: 'Signal' })).toBeVisible();
+    // Die Seite rendert zwei Tabellen (V4-Dashboard + Pro), beide mit einem
+    // "Signal"-Header → globaler Locator ist mehrdeutig (strict mode violation).
+    // Auf die Pro-Tabelle einschränken (data-testid="pro-section").
+    await expect(
+      page.getByTestId('pro-section').getByRole('columnheader', { name: 'Signal' })
+    ).toBeVisible();
   });
 
   test('zeigt Pro-Tabellen-Header "Score"', async ({ page }) => {

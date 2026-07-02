@@ -57,6 +57,34 @@ async def test_create_user_raises_if_email_exists():
 
 
 @pytest.mark.asyncio
+async def test_create_user_normalizes_email_to_lowercase():
+    repo = AsyncMock()
+    repo.get_by_email.return_value = None
+    repo.save.return_value = None
+    service = _make_service(repo)
+
+    user = await service.create_user("  Admin@Prisma.CH ", "pass123")
+
+    assert user.email == "admin@prisma.ch"
+    repo.get_by_email.assert_awaited_once_with("admin@prisma.ch")
+
+
+@pytest.mark.asyncio
+async def test_login_is_case_insensitive_for_email():
+    # Regression: Login schlug fehl, wenn der Admin mit anderer Gross-/Kleinschreibung
+    # geseedet wurde als eingegeben. Der Service muss die E-Mail normalisieren.
+    user = _make_user(email="admin@prisma.ch")
+    repo = AsyncMock()
+    repo.get_by_email.return_value = user
+    service = _make_service(repo)
+
+    token = await service.login("  Admin@Prisma.CH ", "secret")
+
+    assert isinstance(token, str) and token
+    repo.get_by_email.assert_awaited_once_with("admin@prisma.ch")
+
+
+@pytest.mark.asyncio
 async def test_login_returns_token():
     user = _make_user()
     repo = AsyncMock()

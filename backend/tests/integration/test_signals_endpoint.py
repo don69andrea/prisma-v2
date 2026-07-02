@@ -11,6 +11,7 @@ from collections.abc import AsyncGenerator
 from datetime import date
 from unittest.mock import AsyncMock, patch
 
+import pandas as pd
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
@@ -73,6 +74,18 @@ _BACKTEST_BTC = BacktestReport(
 )
 
 
+# Echter Preis-Loader (_load_prices) wird gemockt: die Endpoints laden seit C-01
+# echte Marktdaten via CryptoPriceAdapter statt synthetischer Zufallspreise. In
+# Tests ersetzen wir das durch einen bekannten Frame (kein Netzwerk).
+def _fake_load_prices() -> AsyncMock:
+    return AsyncMock(
+        return_value=pd.DataFrame(
+            {"close": [100.0, 101.0, 102.0]},
+            index=pd.date_range("2024-01-01", periods=3, tz="UTC"),
+        )
+    )
+
+
 # ── Test-Client-Fixture ───────────────────────────────────────────────────────
 
 
@@ -100,9 +113,15 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 @pytest.mark.asyncio
 async def test_signals_list_returns_list(client: AsyncClient) -> None:
     """GET /api/v1/signals → 200 mit list[SignalVector] (A7.9)."""
-    with patch(
-        "backend.interfaces.rest.routers.signals.signal_service.evaluate",
-        new=AsyncMock(side_effect=[_SIGNAL_BTC, _SIGNAL_ETH]),
+    with (
+        patch(
+            "backend.interfaces.rest.routers.signals._load_prices",
+            new=_fake_load_prices(),
+        ),
+        patch(
+            "backend.interfaces.rest.routers.signals.signal_service.evaluate",
+            new=AsyncMock(side_effect=[_SIGNAL_BTC, _SIGNAL_ETH]),
+        ),
     ):
         response = await client.get("/api/v1/signals")
 
@@ -123,9 +142,15 @@ async def test_signals_list_returns_list(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_signals_detail_returns_signalvector(client: AsyncClient) -> None:
     """GET /api/v1/signals/BTC-USD → 200, action ∈ {BUY, HOLD, SELL}, size_factor ∈ [0, 1.5] (A7.9)."""
-    with patch(
-        "backend.interfaces.rest.routers.signals.signal_service.evaluate",
-        new=AsyncMock(return_value=_SIGNAL_BTC),
+    with (
+        patch(
+            "backend.interfaces.rest.routers.signals._load_prices",
+            new=_fake_load_prices(),
+        ),
+        patch(
+            "backend.interfaces.rest.routers.signals.signal_service.evaluate",
+            new=AsyncMock(return_value=_SIGNAL_BTC),
+        ),
     ):
         response = await client.get("/api/v1/signals/BTC-USD")
 
@@ -150,9 +175,15 @@ async def test_signals_unknown_coin_404(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_backtest_returns_report(client: AsyncClient) -> None:
     """GET /api/v1/backtest/BTC-USD → 200, beats_exposure_matched ist bool (A7.9)."""
-    with patch(
-        "backend.interfaces.rest.routers.signals.run_walkforward",
-        new=AsyncMock(return_value=_BACKTEST_BTC),
+    with (
+        patch(
+            "backend.interfaces.rest.routers.signals._load_prices",
+            new=_fake_load_prices(),
+        ),
+        patch(
+            "backend.interfaces.rest.routers.signals.run_walkforward",
+            new=AsyncMock(return_value=_BACKTEST_BTC),
+        ),
     ):
         response = await client.get("/api/v1/backtest/BTC-USD")
 
@@ -171,9 +202,15 @@ async def test_backtest_returns_report(client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_signalvector_schema_complete(client: AsyncClient) -> None:
     """Alle Pflichtfelder des SignalVector-Schemas sind im Response vorhanden (A7.9)."""
-    with patch(
-        "backend.interfaces.rest.routers.signals.signal_service.evaluate",
-        new=AsyncMock(return_value=_SIGNAL_ETH),
+    with (
+        patch(
+            "backend.interfaces.rest.routers.signals._load_prices",
+            new=_fake_load_prices(),
+        ),
+        patch(
+            "backend.interfaces.rest.routers.signals.signal_service.evaluate",
+            new=AsyncMock(return_value=_SIGNAL_ETH),
+        ),
     ):
         response = await client.get("/api/v1/signals/ETH-USD")
 
@@ -211,3 +248,20 @@ async def test_backtest_unknown_coin_404(client: AsyncClient) -> None:
     assert response.status_code == 404
     body = response.json()
     assert "detail" in body
+
+
+@pytest.mark.asyncio
+async def test_signals_detail_503_when_prices_unavailable(client: AsyncClient) -> None:
+    """C-01: Fehlen echte Preise, liefert der Endpoint 503 — NIEMALS synthetische Zufallspreise."""
+    # Modul-Cache leeren, damit nicht ein vorheriger Test-Wert den Endpoint kurzschliesst.
+    from backend.interfaces.rest.routers.signals import _signal_cache
+
+    _signal_cache.clear()
+    with patch(
+        "backend.interfaces.rest.routers.signals._load_prices",
+        new=AsyncMock(side_effect=ValueError("Keine Preisdaten für BTC-USD verfügbar")),
+    ):
+        response = await client.get("/api/v1/signals/BTC-USD")
+
+    assert response.status_code == 503, response.text
+    assert "detail" in response.json()

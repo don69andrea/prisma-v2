@@ -39,6 +39,7 @@ class AuthService:
         first_name: str = "",
         last_name: str = "",
     ) -> User:
+        email = email.strip().lower()
         existing = await self._repo.get_by_email(email)
         if existing:
             raise ValueError(f"User with email {email} already exists")
@@ -53,7 +54,7 @@ class AuthService:
         return user
 
     async def login(self, email: str, password: str) -> str:
-        user = await self._repo.get_by_email(email)
+        user = await self._repo.get_by_email(email.strip().lower())
         if not user or not user.is_active:
             raise ValueError("Invalid credentials")
         if not _verify_password(password, user.hashed_password):

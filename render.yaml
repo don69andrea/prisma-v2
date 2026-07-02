@@ -83,9 +83,9 @@ services:
       # Docker services, so setting it here is sufficient.
       - key: NEXT_PUBLIC_API_URL
         value: https://prisma-v2-backend.onrender.com
-      # Muss identisch mit API_KEY im Backend sein — manuell im Dashboard setzen.
-      - key: NEXT_PUBLIC_API_KEY
-        sync: false
+      # C-03: NEXT_PUBLIC_API_KEY entfernt — NEXT_PUBLIC_* landet im ausgelieferten
+      # Browser-Bundle. Der Admin-X-API-Key darf NICHT client-seitig exponiert werden.
+      # App-Auth läuft über den JWT (Authorization: Bearer), nicht über diesen Key.
     buildFilter:
       paths:
         - frontend/**

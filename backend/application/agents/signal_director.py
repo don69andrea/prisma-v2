@@ -167,6 +167,14 @@ def _synthesize(
         size_factor = size_factor * (1 + senti.score * 0.3)
         size_factor = max(0.0, size_factor)
 
+    # W2-C-03: Risk-Veto HART durchsetzen. Vorher floss risk.approve nur in die
+    # Confidence ein (Nudge), während Action/Size unverändert blieben → eine
+    # Position wurde trotz explizitem RiskVerdict(approve=False) voll eröffnet.
+    # Ein abgelehntes Risiko-Verdict muss den Trade blockieren (HOLD, size 0).
+    if not risk.approve:
+        action = "HOLD"
+        size_factor = 0.0
+
     # All 7 layer rationale keys
     rationale_by_layer: dict[str, str] = {
         "technical": tech.reasoning,

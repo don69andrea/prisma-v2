@@ -286,6 +286,29 @@ def test_risk_approve_allows_engine_buy():
     assert signal.size_factor > 0.0
 
 
+def test_risk_veto_does_not_block_sell():
+    """Ein abgelehntes Verdict darf einen SELL (Exit/Cash-out) NICHT auf HOLD
+    zwingen — SELL reduziert Risiko. Nur BUY wird geblockt. (Regression D-06 #7)"""
+    from backend.application.agents.signal_director import _synthesize
+
+    engine = _make_signal_vector(action="SELL", size_factor=0.8)
+    signal = _synthesize(
+        coin=COIN,
+        tech=_make_technical_view(),
+        onchain=_make_onchain_view(),
+        senti=_make_sentiment_view(),
+        macro=_make_macro_regime(),
+        bull=_make_bull_case(),
+        bear=_make_bear_case(),
+        risk=_make_risk_verdict(approve=False, max_size=0.0),
+        engine_signal=engine,
+        has_fallback=False,
+    )
+
+    assert signal.action == "SELL"
+    assert signal.size_factor == 0.0
+
+
 @pytest.mark.asyncio
 async def test_audit_trail_id_is_real_uuid_from_repo():
     """repo.insert called exactly once; returned UUID embedded in TradeSignal."""

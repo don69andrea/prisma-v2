@@ -131,17 +131,38 @@ class TestSteuerAgent:
         assert ch_result.model_version == "fallback"
         assert us_result.model_version == "fallback"
 
-        # CH-Aktien: Verrechnungssteuer + Formular 103 sind korrekt.
+        # CH-Aktien: Verrechnungssteuer wird über das Wertschriftenverzeichnis
+        # zurückgefordert — NICHT via Formular 103 oder DA-1 (W3-C-04).
         assert any("Verrechnungssteuer" in s for s in ch_result.steuerarten)
-        assert any("Formular 103" in p for p in ch_result.pflichten)
+        assert any("Wertschriftenverzeichnis" in p for p in ch_result.pflichten)
 
-        # US-Aktien: KEINE Schweizer Verrechnungssteuer / Formular 103 — andere
-        # Steuerarten (US-Quellensteuer / DA-1-Anhang / W8BEN).
+        # US-Aktien: KEINE Schweizer Verrechnungssteuer — andere Steuerarten
+        # (US-Quellensteuer / DA-1-Anhang / W8BEN).
         assert not any("Verrechnungssteuer" in s for s in us_result.steuerarten)
-        assert not any("Formular 103" in p for p in us_result.pflichten)
         assert any("US-Quellensteuer" in s for s in us_result.steuerarten)
         assert any("DA-1" in p or "W8BEN" in p or "W-8BEN" in p for p in us_result.pflichten)
 
         # Die beiden Outputs müssen sich materiell unterscheiden.
         assert ch_result.steuerarten != us_result.steuerarten
         assert ch_result.pflichten != us_result.pflichten
+
+    async def test_fallback_ch_ticker_uses_wertschriftenverzeichnis_not_da1_or_103(
+        self,
+    ) -> None:
+        # W3-C-04: Für CH-Titel erfolgt die VST-Rückforderung über das
+        # Wertschriftenverzeichnis. Formular DA-1 (ausländische Quellensteuer)
+        # und Formular 103 (Deklaration der Gesellschaft) dürfen NICHT als
+        # Rückforderungsmittel des Privatanlegers auftauchen.
+        agent = _build_agent("INVALID JSON {{{")
+        result = await agent.einschaetzen("NESN", "privatperson", 5)
+
+        assert result.model_version == "fallback"
+        pflichten_text = " ".join(result.pflichten)
+
+        assert "Wertschriftenverzeichnis" in pflichten_text
+        # Die alten (falschen) Formulierungen dürfen NICHT mehr auftauchen: weder
+        # DA-1 noch Formular 103 als Rückforderungsmittel des CH-Privatanlegers.
+        assert "Formular DA-1 für Rückerstattung" not in pflichten_text
+        assert "VST-Rückerstattung via Formular 103" not in pflichten_text
+        # VST ist für CH-Ansässige voll rückerstattbar (W3-M-10).
+        assert "rückerstattbar" in pflichten_text

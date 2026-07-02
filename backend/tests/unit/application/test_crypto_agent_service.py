@@ -76,6 +76,7 @@ class TestStreamAnalysis:
         Früher: Eigener api_key-Guard → 'API Key fehlt'.
         Jetzt: Exception vom SDK → 'Analyse aktuell nicht verfügbar.'"""
         mock_llm = MagicMock()
+        mock_llm._cost_tracker = None  # kein Cap-Check-Pfad in diesem Test
         mock_llm.raw_client.messages.stream.side_effect = Exception("auth error")
 
         svc = CryptoAgentService(llm_client=mock_llm)
@@ -83,3 +84,25 @@ class TestStreamAnalysis:
 
         assert len(chunks) == 1
         assert "nicht verfügbar" in chunks[0]
+
+    async def test_stream_analysis_blocks_when_budget_exceeded(self) -> None:
+        """W3-H-10: Bei erschöpftem Budget wird der Stream VOR dem LLM-Call
+        abgebrochen — kein raw_client-Call, kein Kosten-Leck."""
+        from decimal import Decimal
+        from unittest.mock import AsyncMock
+
+        from backend.domain.errors import BudgetCapExceeded
+
+        mock_llm = MagicMock()
+        mock_llm._cost_tracker = MagicMock()
+        mock_llm._cost_tracker.check_cap = AsyncMock(
+            side_effect=BudgetCapExceeded(
+                current_usd=Decimal("20"), attempted_usd=Decimal("0.005"), cap_usd=Decimal("20")
+            )
+        )
+
+        svc = CryptoAgentService(llm_client=mock_llm)
+        chunks = [chunk async for chunk in svc.stream_analysis("BTC-CHF", {}, [])]
+
+        assert any("Budget" in c for c in chunks)
+        mock_llm.raw_client.messages.stream.assert_not_called()

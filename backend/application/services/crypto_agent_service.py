@@ -12,13 +12,18 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterator
+from decimal import Decimal
 from typing import Any
 
+from backend.domain.errors import BudgetCapExceeded
 from backend.infrastructure.llm.client import LLMClient
 
 _logger = logging.getLogger(__name__)
 
 _MODEL = "claude-haiku-4-5-20251001"
+
+# Konservative Vorab-Schätzung fürs Budget-Pre-Check (Haiku, ~150 Output-Tokens).
+_STREAM_ESTIMATED_USD = Decimal("0.005")
 
 _SYSTEM_PROMPT = """Du bist ein präziser Krypto-Analyst bei einer Schweizer Finanzplattform (PRISMA).
 Deine Aufgabe: Erkläre in 2 Sätzen auf Deutsch, WARUM dieser Titel seinen aktuellen Score hat.
@@ -85,6 +90,16 @@ class CryptoAgentService:
         """Streamt die Analyse als rohe Text-Tokens (für SSE-Endpoint, on-demand)."""
         # FIX-01: raw_client nutzt den prozess-weiten Connection-Pool (Singleton) aus get_anthropic_client().
         # Kein eigenes anthropic.AsyncAnthropic() mehr — alle Streaming-Calls laufen über LLMClient.raw_client.
+        # W3-H-10: Budget-Cap VOR dem Call erzwingen + Kosten NACH dem Call erfassen.
+        # Der Streaming-Pfad ging bisher direkt über raw_client und umging damit
+        # check_cap/record des LLMClient-Wrappers → Kosten ausserhalb des Budgets.
+        cost_tracker = getattr(self._llm, "_cost_tracker", None)
+        if cost_tracker is not None:
+            try:
+                await cost_tracker.check_cap(estimated_usd=_STREAM_ESTIMATED_USD)
+            except BudgetCapExceeded:
+                yield "Monatliches AI-Budget erschöpft — Analyse aktuell nicht verfügbar."
+                return
         try:
             client = self._llm.raw_client
             prompt = _build_prompt(ticker, signal_data, patterns)
@@ -98,6 +113,24 @@ class CryptoAgentService:
             ) as stream:
                 async for text in stream.text_stream:
                     yield text
+                final = await stream.get_final_message()
+            if cost_tracker is not None:
+                try:
+                    usage = final.usage
+                    await cost_tracker.record(
+                        provider="anthropic",
+                        model=_MODEL,
+                        feature="crypto_agent_stream",
+                        input_tokens=usage.input_tokens,
+                        output_tokens=usage.output_tokens,
+                        request_id=getattr(final, "id", None),
+                    )
+                except Exception:
+                    _logger.exception(
+                        "CRITICAL: Cost-Record crypto_agent_stream fehlgeschlagen (%s) — "
+                        "Budget-Cap wird NICHT aktualisiert!",
+                        ticker,
+                    )
         except Exception as exc:
             _logger.error("CryptoAgentService.stream_analysis fehlgeschlagen (%s): %s", ticker, exc)
             yield "Analyse aktuell nicht verfügbar."

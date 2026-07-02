@@ -237,13 +237,9 @@ class PortfolioAgent:
         weights: dict[str, float]
         if method in ("risk_parity", "mean_variance") and self._yf is not None:
             price_days = (
-                _PRICE_DAYS_MEAN_VARIANCE
-                if method == "mean_variance"
-                else _PRICE_DAYS_RISK_PARITY
+                _PRICE_DAYS_MEAN_VARIANCE if method == "mean_variance" else _PRICE_DAYS_RISK_PARITY
             )
-            histories = await self._fetch_histories(
-                [p["ticker"] for p in picks], days=price_days
-            )
+            histories = await self._fetch_histories([p["ticker"] for p in picks], days=price_days)
             if method == "mean_variance":
                 weights = _mean_variance(picks, histories)
             else:

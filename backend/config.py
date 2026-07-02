@@ -163,7 +163,13 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _jwt_secret_required_in_production(self) -> "Settings":
-        if self.environment == "production" and not self.jwt_secret:
+        """JWT_SECRET ist in Production Pflicht — ausser in CI (GH Actions setzt
+        CI=true). Scheduled Worker (v4-operations-worker, historical-seed) setzen
+        ENVIRONMENT=production, nutzen aber kein JWT; ohne diesen Bypass würde
+        bereits `Settings()` beim Boot crashen. Symmetrisch zu
+        _api_key_required_in_production. In echter Production (kein CI) bleibt
+        JWT_SECRET erzwungen."""
+        if self.environment == "production" and not os.getenv("CI") and not self.jwt_secret:
             raise ValueError("JWT_SECRET muss in der Production-Umgebung gesetzt sein")
         return self
 

@@ -44,3 +44,42 @@ class TestApiKeyProductionValidator:
     def test_passes_in_development_without_api_key(self) -> None:
         settings = Settings(environment="development", api_key="", _env_file=None)  # type: ignore[call-arg]
         assert settings.api_key == ""
+
+
+class TestJwtSecretProductionValidator:
+    """`_jwt_secret_required_in_production` — Pflicht in Prod, Bypass in CI (H-11)."""
+
+    def test_raises_when_jwt_secret_empty_in_production(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("CI", raising=False)
+        with pytest.raises(ValidationError) as exc_info:
+            # api_key/anthropic gesetzt, damit nur der JWT-Validator zuschlägt.
+            Settings(  # type: ignore[call-arg]
+                environment="production",
+                api_key="secret",
+                anthropic_api_key="sk-ant-test",
+                jwt_secret="",
+                _env_file=None,
+            )
+        assert "JWT_SECRET" in str(exc_info.value)
+
+    def test_skips_jwt_check_when_ci_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Scheduled Worker (GH Actions, CI=true) setzen ENVIRONMENT=production,
+        # nutzen aber kein JWT — Boot darf nicht crashen.
+        monkeypatch.setenv("CI", "true")
+        settings = Settings(  # type: ignore[call-arg]
+            environment="production", jwt_secret="", api_key="", _env_file=None
+        )
+        assert settings.jwt_secret == ""
+
+    def test_passes_in_production_with_jwt_secret(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("CI", raising=False)
+        settings = Settings(  # type: ignore[call-arg]
+            environment="production",
+            api_key="secret",
+            anthropic_api_key="sk-ant-test",
+            jwt_secret="a-real-secret",
+            _env_file=None,
+        )
+        assert settings.jwt_secret == "a-real-secret"

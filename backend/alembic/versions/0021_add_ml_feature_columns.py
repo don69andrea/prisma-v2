@@ -38,4 +38,3 @@ def downgrade() -> None:
     op.drop_column("ml_features", "vol_90d")
     op.drop_column("ml_features", "return_3m")
     op.drop_column("ml_features", "return_6m")
-    op.drop_column("ml_features", "return_1m")

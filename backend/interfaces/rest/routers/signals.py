@@ -17,10 +17,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import TYPE_CHECKING, Literal
 
-import numpy as np
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -37,6 +36,7 @@ from backend.application.signals.meta_label import (
     triple_barrier_labels,
 )
 from backend.domain.schemas.agent_schemas import TradeSignal
+from backend.infrastructure.adapters.crypto_price_adapter import CryptoPriceAdapter
 from backend.interfaces.rest.dependencies import get_signal_director
 from backend.interfaces.rest.schemas.signals import (
     BacktestReport,
@@ -94,20 +94,29 @@ def _set_cached_signal(coin: str, vector: SignalVector) -> None:
     _signal_cache[coin] = (time.monotonic(), vector)
 
 
-# ── Hilfsfunktion: Minimale Preisdaten synthetisieren (für Demo / Fallback) ───
+# ── Echte Preisdaten laden (C-01: NIE synthetische Zufallspreise ausliefern) ───
 
 
-def _make_stub_prices(coin: str, n: int = 200) -> pd.DataFrame:
-    """Erzeugt synthetische Preisdaten für Tests und Fallback ohne DB.
+async def _load_prices(coin: str) -> pd.DataFrame:
+    """Lädt echte tägliche Close-Preise für einen Coin.
 
-    In Produktion werden echte Preise aus der DB oder einem Market-Data-Provider
-    geladen. Hier wird ein deterministischer Random-Walk als Fallback verwendet.
+    Ersetzt die frühere synthetische Random-Walk-Fallback-Funktion: auf einer
+    Finanzplattform dürfen NIEMALS erfundene Preise in Signale/Backtests fliessen.
+    Bei fehlenden/ungenügenden Daten wird eine Exception geworfen — der aufrufende
+    Endpoint übersetzt das in HTTP 503, statt Zufallszahlen zu liefern.
+
+    Returns:
+        DataFrame mit genau einer Spalte (= `coin`, Close-Preise) und DatetimeIndex,
+        kompatibel zu signal_service.evaluate / run_walkforward / _sync_meta_label.
     """
-    rng = np.random.default_rng(seed=abs(hash(coin)) % 2**32)
-    returns = rng.normal(0.001, 0.03, size=n)
-    prices = 100.0 * np.cumprod(1 + returns)
-    idx = pd.date_range(end=datetime.now(UTC), periods=n, freq="D", tz="UTC")
-    return pd.DataFrame({coin: prices}, index=idx)
+    adapter = CryptoPriceAdapter()
+    ohlcv = await adapter.fetch_ohlcv(coin)
+    if ohlcv is None or ohlcv.empty or "close" not in ohlcv.columns:
+        raise ValueError(f"Keine Preisdaten für {coin} verfügbar")
+    close = ohlcv["close"].dropna()
+    if close.empty:
+        raise ValueError(f"Keine gültigen Close-Preise für {coin}")
+    return pd.DataFrame({coin: close})
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -137,12 +146,14 @@ async def list_signals() -> list[SignalVector]:
             results.append(cached)
             continue
         try:
-            prices_df = _make_stub_prices(coin)
+            prices_df = await _load_prices(coin)
             vector = await signal_service.evaluate(coin=coin, asof=today, prices_df=prices_df)
             _set_cached_signal(coin, vector)
             results.append(vector)
         except Exception:  # noqa: BLE001
-            _logger.warning("signal_service.evaluate fehlgeschlagen für %s — übersprungen", coin)
+            _logger.warning(
+                "Signal für %s nicht berechenbar (Daten fehlen/Fehler) — übersprungen", coin
+            )
 
     _list_cache = (time.monotonic(), results)
     return results
@@ -173,7 +184,15 @@ async def get_signal(coin: str) -> SignalVector:
         return cached
 
     today = date.today()
-    prices_df = _make_stub_prices(coin_upper)
+    try:
+        prices_df = await _load_prices(coin_upper)
+    except Exception as exc:  # noqa: BLE001
+        _logger.error("Preisdaten laden fehlgeschlagen für %s: %s", coin_upper, exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Preisdaten für {coin_upper} temporär nicht verfügbar.",
+        ) from exc
+
     try:
         vector = await signal_service.evaluate(coin=coin_upper, asof=today, prices_df=prices_df)
     except ValueError as exc:
@@ -279,11 +298,11 @@ async def get_backtest(coin: str) -> BacktestReport:
             f"Verfügbar: {_CRYPTO_UNIVERSE}",
         )
 
-    prices_df = _make_stub_prices(coin_upper, n=500)
     try:
+        prices_df = await _load_prices(coin_upper)
         report = await run_walkforward(coin=coin_upper, prices_df=prices_df)
     except Exception as exc:  # noqa: BLE001
-        _logger.error("run_walkforward fehlgeschlagen für %s: %s", coin_upper, exc)
+        _logger.error("Backtest fehlgeschlagen für %s: %s", coin_upper, exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Backtest temporär nicht verfügbar für {coin_upper}.",
@@ -538,11 +557,11 @@ async def get_meta_label(coin: str) -> MetaLabelReport:
             f"Verfügbar: {_CRYPTO_UNIVERSE}",
         )
 
-    prices_df = _make_stub_prices(coin_upper, n=500)
     try:
+        prices_df = await _load_prices(coin_upper)
         report = await run_meta_label(coin=coin_upper, prices_df=prices_df)
     except Exception as exc:  # noqa: BLE001
-        _logger.error("run_meta_label fehlgeschlagen für %s: %s", coin_upper, exc)
+        _logger.error("Meta-Label Analyse fehlgeschlagen für %s: %s", coin_upper, exc)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Meta-Label Analyse temporär nicht verfügbar für {coin_upper}.",

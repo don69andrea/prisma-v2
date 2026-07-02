@@ -10,11 +10,18 @@ import json
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.domain.errors import BudgetCapExceeded
+
 _logger = logging.getLogger(__name__)
+
+# Konservative Vorab-Schätzung fürs Budget-Pre-Check (zwei Sonnet-Calls inkl.
+# Tool-Continuation). check_cap überschätzt bewusst, damit der Cap nicht leckt.
+_CHAT_ESTIMATED_USD = Decimal("0.05")
 
 _SYSTEM_PROMPT = """Du bist PRISMA Assistant — ein präziser, datengetriebener Finanz-Assistent.
 Du hast Zugriff auf das PRISMA-Universum (SMI/SMIM/SPI + US-Aktien) via Tools.
@@ -355,6 +362,21 @@ class ChatService:
             yield _sse("error", {"message": "Chat-Service nicht korrekt initialisiert."})
             yield _sse("done", {})
             return
+
+        # Budget-Cap VOR dem LLM-Call erzwingen (C-04). Der Streaming-Pfad ging
+        # bisher direkt über raw_client und umging damit den check_cap, den der
+        # LLMClient-Wrapper sonst durchführt → Kosten liefen trotz erschöpftem
+        # Budget weiter.
+        if self._cost_tracker is not None:
+            try:
+                await self._cost_tracker.check_cap(estimated_usd=_CHAT_ESTIMATED_USD)
+            except BudgetCapExceeded:
+                yield _sse(
+                    "error",
+                    {"message": "Monatliches AI-Budget erschöpft. Bitte später erneut versuchen."},
+                )
+                yield _sse("done", {})
+                return
 
         client = self._llm.raw_client
         api_messages = [{"role": m.role, "content": m.content} for m in messages]

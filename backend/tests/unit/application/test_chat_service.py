@@ -68,6 +68,28 @@ async def test_chat_service_without_llm_client_raises_on_stream() -> None:
     assert any("error" in e for e in events)
 
 
+@pytest.mark.asyncio
+async def test_chat_stream_blocks_when_budget_exceeded() -> None:
+    """C-04: Bei erschöpftem Budget bricht stream() VOR dem LLM-Call ab —
+    kein raw_client-Aufruf, Fehler-SSE mit Budget-Hinweis."""
+    from decimal import Decimal
+
+    from backend.domain.errors import BudgetCapExceeded
+
+    mock_llm = MagicMock()
+    mock_llm._cost_tracker.check_cap = AsyncMock(
+        side_effect=BudgetCapExceeded(
+            current_usd=Decimal("20"), attempted_usd=Decimal("0.05"), cap_usd=Decimal("20")
+        )
+    )
+
+    svc = ChatService(llm_client=mock_llm)
+    events = [e async for e in svc.stream([ChatMessage(role="user", content="Test")])]
+
+    assert any('"type": "error"' in e and "Budget" in e for e in events)
+    mock_llm.raw_client.messages.stream.assert_not_called()
+
+
 # ---------------------------------------------------------------------------
 # BUG-02 Regression: Continuation-Call muss tools= enthalten
 # ---------------------------------------------------------------------------

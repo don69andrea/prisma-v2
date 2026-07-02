@@ -77,7 +77,13 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: pip install uv -q && uv sync --no-dev -q
-      - run: uv run python scripts/data_steward_run.py
+      - name: Run DataSteward
+        run: |
+          if [ ! -f scripts/data_steward_run.py ]; then
+            echo "::warning::scripts/data_steward_run.py not found — skipping (Stub/nicht implementiert)"
+            exit 0
+          fi
+          uv run python scripts/data_steward_run.py
       - if: failure()
         run: echo "::error::DataSteward fehlgeschlagen — Preisdaten evtl. veraltet"
 
@@ -93,7 +99,13 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: pip install uv -q && uv sync --no-dev -q
-      - run: uv run python scripts/signal_accuracy_run.py
+      - name: Run SignalAccuracy
+        run: |
+          if [ ! -f scripts/signal_accuracy_run.py ]; then
+            echo "::warning::scripts/signal_accuracy_run.py not found — skipping (nicht implementiert)"
+            exit 0
+          fi
+          uv run python scripts/signal_accuracy_run.py
 
   # ── CryptoIntradayAgent · alle 4h, auch Wochenende ─────────────────────
   crypto-intraday:
@@ -127,5 +139,11 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: pip install uv -q && uv sync --no-dev -q
-      - run: uv run python scripts/snb_rate_update.py
+      - name: Run SNB rate update
+        run: |
+          if [ ! -f scripts/snb_rate_update.py ]; then
+            echo "::warning::scripts/snb_rate_update.py not found — skipping (nicht implementiert)"
+            exit 0
+          fi
+          uv run python scripts/snb_rate_update.py
       - run: uv run python scripts/seed_fundamentals.py --provider auto --from 2024-01-01

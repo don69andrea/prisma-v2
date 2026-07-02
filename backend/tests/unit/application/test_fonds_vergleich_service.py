@@ -83,9 +83,7 @@ async def test_compare_with_mock_price_history() -> None:
     nesn = 100.0 * (1 + rng.normal(0.0003, 0.01, 756)).cumprod()
     novn = 100.0 * (1 + rng.normal(0.0003, 0.01, 756)).cumprod()
 
-    yf = _FakeYFAdapter(
-        {"NESN": _make_close_frame(nesn), "NOVN": _make_close_frame(novn)}
-    )
+    yf = _FakeYFAdapter({"NESN": _make_close_frame(nesn), "NOVN": _make_close_frame(novn)})
 
     service = FondsVergleichService(yfinance_adapter=yf, risk_free_rate=0.01)
     result = await service.compare(
@@ -114,9 +112,7 @@ async def test_compare_normalises_weights() -> None:
     rng = np.random.default_rng(0)
     nesn = 100.0 * (1 + rng.normal(0.0003, 0.01, 500)).cumprod()
     novn = 100.0 * (1 + rng.normal(0.0003, 0.01, 500)).cumprod()
-    yf = _FakeYFAdapter(
-        {"NESN": _make_close_frame(nesn), "NOVN": _make_close_frame(novn)}
-    )
+    yf = _FakeYFAdapter({"NESN": _make_close_frame(nesn), "NOVN": _make_close_frame(novn)})
 
     service = FondsVergleichService(yfinance_adapter=yf, risk_free_rate=0.01)
     # Weights 3+1 werden zu 0.75/0.25

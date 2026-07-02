@@ -136,11 +136,20 @@ class SteuerAgent:
                 "Vermögenssteuer",
             ]
             pflichten = [
-                f"Dividenden von {ticker} als Einkommen deklarieren (Formular DA-1 für Rückerstattung).",
-                "VST-Rückerstattung via Formular 103 (bei Schweizer Aktien) beantragen.",
+                f"Dividenden von {ticker} als Einkommen deklarieren und die Titel "
+                "im Wertschriftenverzeichnis der ordentlichen Steuererklärung aufführen.",
+                "Die 35% Verrechnungssteuer über das Wertschriftenverzeichnis "
+                "zurückfordern (nicht via Formular DA-1 oder Formular 103 — diese "
+                "gelten für ausländische Quellensteuern bzw. die deklarierende "
+                "Gesellschaft). Bei korrekter Deklaration ist die VST für in der "
+                "Schweiz Ansässige voll rückerstattbar (effektive Belastung ~0%).",
                 f"Kurswert {ticker} per 31.12. in der Vermögenserklärung angeben.",
             ]
-            quellen = ["ESTV — Verrechnungssteuer", "DBG Art. 20", f"Ticker: {ticker}"]
+            quellen = [
+                "ESTV — Verrechnungssteuer / Wertschriftenverzeichnis",
+                "DBG Art. 20",
+                f"Ticker: {ticker}",
+            ]
         else:
             # Nicht-Schweizer Aktien (z.B. US-Titel) unterliegen NICHT der CH-
             # Verrechnungssteuer, sondern der ausländischen Quellensteuer am

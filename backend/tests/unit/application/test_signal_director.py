@@ -240,6 +240,75 @@ async def test_no_shorting_max_size_zero_propagates_to_size_factor():
     assert result.size_factor == 0.0
 
 
+def test_risk_veto_forces_hold_and_zero_size():
+    """W2-C-03: RiskVerdict(approve=False) muss Action=HOLD und size_factor=0.0
+    erzwingen — auch bei Engine-BUY, positiver Size und hohem max_size. Vorher
+    floss approve nur in die Confidence ein → volle Position trotz Veto."""
+    from backend.application.agents.signal_director import _synthesize
+
+    engine = _make_signal_vector(action="BUY", size_factor=0.8)
+    signal = _synthesize(
+        coin=COIN,
+        tech=_make_technical_view(),
+        onchain=_make_onchain_view(),
+        senti=_make_sentiment_view(),
+        macro=_make_macro_regime(),
+        bull=_make_bull_case(),
+        bear=_make_bear_case(),
+        risk=_make_risk_verdict(approve=False, max_size=0.9),
+        engine_signal=engine,
+        has_fallback=False,
+    )
+
+    assert signal.action == "HOLD"
+    assert signal.size_factor == 0.0
+
+
+def test_risk_approve_allows_engine_buy():
+    """Gegenprobe: approve=True darf einen Engine-BUY NICHT blockieren."""
+    from backend.application.agents.signal_director import _synthesize
+
+    engine = _make_signal_vector(action="BUY", size_factor=0.8)
+    signal = _synthesize(
+        coin=COIN,
+        tech=_make_technical_view(),
+        onchain=_make_onchain_view(),
+        senti=_make_sentiment_view(),
+        macro=_make_macro_regime(),
+        bull=_make_bull_case(),
+        bear=_make_bear_case(),
+        risk=_make_risk_verdict(approve=True, max_size=0.9),
+        engine_signal=engine,
+        has_fallback=False,
+    )
+
+    assert signal.action == "BUY"
+    assert signal.size_factor > 0.0
+
+
+def test_risk_veto_does_not_block_sell():
+    """Ein abgelehntes Verdict darf einen SELL (Exit/Cash-out) NICHT auf HOLD
+    zwingen — SELL reduziert Risiko. Nur BUY wird geblockt. (Regression D-06 #7)"""
+    from backend.application.agents.signal_director import _synthesize
+
+    engine = _make_signal_vector(action="SELL", size_factor=0.8)
+    signal = _synthesize(
+        coin=COIN,
+        tech=_make_technical_view(),
+        onchain=_make_onchain_view(),
+        senti=_make_sentiment_view(),
+        macro=_make_macro_regime(),
+        bull=_make_bull_case(),
+        bear=_make_bear_case(),
+        risk=_make_risk_verdict(approve=False, max_size=0.0),
+        engine_signal=engine,
+        has_fallback=False,
+    )
+
+    assert signal.action == "SELL"
+    assert signal.size_factor == 0.0
+
+
 @pytest.mark.asyncio
 async def test_audit_trail_id_is_real_uuid_from_repo():
     """repo.insert called exactly once; returned UUID embedded in TradeSignal."""

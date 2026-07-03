@@ -209,3 +209,36 @@ class TestMacroRegimeAgentMarkdownStripping:
             "MacroRegimeAgent must NOT have .analyze() — "
             "SignalDirector was fixed to call .get_regime(); adding .analyze() back would be a regression."
         )
+
+    @pytest.mark.asyncio
+    async def test_fallback_regime_is_not_cached(self):
+        """W3-M-05: NEUTRAL-Fallback nach LLM-Fehler darf nicht gecacht werden —
+        nach Recovery muss sofort das echte Regime kommen (kein 1h-NEUTRAL-Stau)."""
+        from backend.application.agents.macro_regime_agent import MacroRegimeAgent
+
+        MacroRegimeAgent.clear_cache()
+        llm = AsyncMock()
+        llm.messages_create.side_effect = RuntimeError("LLM down")
+        agent = MacroRegimeAgent(llm_client=llm, prompt_loader=_make_prompts())
+
+        first = await agent.get_regime()
+        assert first.regime == "NEUTRAL"  # Fallback
+
+        # LLM erholt sich
+        llm.messages_create.side_effect = None
+        llm.messages_create.return_value = _make_text_response(VALID_MACRO_JSON)
+        second = await agent.get_regime()
+        assert second.regime == "RISK_ON"  # nicht auf gecachtem NEUTRAL hängen
+
+    @pytest.mark.asyncio
+    async def test_real_regime_is_cached(self):
+        """Echtes LLM-Ergebnis wird gecacht — der zweite Aufruf ruft die LLM nicht erneut."""
+        from backend.application.agents.macro_regime_agent import MacroRegimeAgent
+
+        MacroRegimeAgent.clear_cache()
+        agent = self._make_agent(VALID_MACRO_JSON)
+
+        first = await agent.get_regime()
+        second = await agent.get_regime()
+        assert first.regime == second.regime == "RISK_ON"
+        agent._llm.messages_create.assert_awaited_once()

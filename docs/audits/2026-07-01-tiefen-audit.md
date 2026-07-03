@@ -44,6 +44,7 @@ Workflow: GitHub Flow (main gesperrt), pro Fix ein Branch + PR, Merge via `gh pr
 | #338 | **C-06, H-12, W2-H-06, W3-H-01** | Boot-Migrations-Guard (`migration_guard`): destruktive Migrationen (TRUNCATE/DROP/DELETE) auf bestehender DB blockiert (Exit 3, `ALLOW_DESTRUCTIVE_MIGRATIONS=1`), frische DB bootstrappt; `env.py` `pg_advisory_xact_lock` (Race-Schutz); Migration 0051: Audit/Kosten-FKs `CASCADE`→`SET NULL` (alerts bleibt CASCADE) |
 | #340 | **W2-C-01** | joblib/pickle-RCE: `verified_load` prüft SHA256 gegen `models/SHA256SUMS` VOR `joblib.load` (fail closed), beide ML-Services umgestellt, `*.joblib`/`*.pkl` in `.gitignore`, Konsistenz-Test |
 | #341 | **W3-H-07** | `crypto_scorer`: `int(NaN)`-Crash bei kurzer Historie (< 31 Kerzen) → NaN-Guard mit neutralem Vol-Score (2.5) |
+| #342 | **W3-M-05, W2-M-05** | `macro_regime_agent`: NEUTRAL-Fallback wird nicht mehr 1h gecacht (nur echte LLM-Ergebnisse) → nach Recovery sofort korrektes Regime |
 
 ## 📋 NÄCHSTE SCHRITTE (priorisiert)
 
@@ -58,7 +59,7 @@ Workflow: GitHub Flow (main gesperrt), pro Fix ein Branch + PR, Merge via `gh pr
 - **W3-H-02** — 0011 `backtest_results.model_run_id` ohne FK → FK auf `ranking_runs.id` (neue Migration).
 - ~~**W3-H-07** — `crypto_scorer.py:95-97` `int(NaN)`-Crash~~ → ✅ **PR #341** (NaN-Guard, neutraler Vol-Score).
 - **W3-M-04** — `portfolio_agent.py:25,34-54` MAX_WEIGHT (0.40) bei ≤2 Positionen verletzt → infeasible-Fall behandeln.
-- **W3-M-05** — `macro_regime_agent.py:130-133` NEUTRAL-Fallback wird 1h gecacht → Fallback nicht (lang) cachen.
+- ~~**W3-M-05** — `macro_regime_agent.py` NEUTRAL-Fallback wird 1h gecacht~~ → ✅ **PR #342** (Fallback wird nicht mehr gecacht; nach LLM-Recovery sofort echtes Regime).
 - **W3-M-07 / W3-M-08** — `monte_carlo_service.py:131,206-207` 1J-Trailing als 40J-Drift + doppelte −½σ²-Itô-Korrektur.
 - **W3-M-09** — `rebalancing_service.py:107-108` Umsatzabgabe (0.075/0.15%) + Ganzzahligkeit/Mindestgebühren fehlen.
 - **W3-M-11..M-14** — Scorer: SMI-Corr-Default (crypto_scorer), QualityClassic ungleiche Metriken/Solo-z=0, Diversification dimensional.

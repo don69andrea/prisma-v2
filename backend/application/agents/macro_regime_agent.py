@@ -127,14 +127,22 @@ class MacroRegimeAgent:
                 return cached_regime
 
         # Cache miss — call LLM
-        regime = await self._fetch_regime()
+        regime, is_fallback = await self._compute_regime()
 
-        # Store in cache
-        _REGIME_CACHE[_CACHE_KEY] = (now, regime)
+        # Nur ECHTE LLM-Ergebnisse cachen — der NEUTRAL-Fallback darf nicht 1h
+        # gecacht werden, sonst bleibt das System nach LLM-Recovery fälschlich
+        # bis zu 1h NEUTRAL (W3-M-05 / W2-M-05).
+        if not is_fallback:
+            _REGIME_CACHE[_CACHE_KEY] = (now, regime)
         return regime
 
     async def _fetch_regime(self) -> MacroRegime:
-        """Fetch regime from LLM using tool data. Falls back on any Exception."""
+        """Fetch regime from LLM (Fallback bei jeder Exception). Test-Kompat-Wrapper."""
+        regime, _ = await self._compute_regime()
+        return regime
+
+    async def _compute_regime(self) -> tuple[MacroRegime, bool]:
+        """Berechnet das Regime. Rückgabe: (Regime, is_fallback)."""
         # Collect tool data
         realrate = get_us_realrate()
         dxy = get_dxy()
@@ -167,10 +175,10 @@ class MacroRegimeAgent:
             if raw_text.startswith("```"):
                 raw_text = raw_text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
             data = json.loads(raw_text)
-            return MacroRegime.model_validate(data)
+            return MacroRegime.model_validate(data), False
         except Exception as exc:
             _logger.error("MacroRegimeAgent LLM/validation failed: %s", exc)
-            return self._fallback()
+            return self._fallback(), True
 
     @staticmethod
     def _fallback() -> MacroRegime:

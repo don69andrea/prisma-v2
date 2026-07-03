@@ -22,6 +22,7 @@ class Alert:
     """
 
     id: UUID
+    user_id: UUID
     ticker: str
     trigger_type: Literal["SIGNAL_CHANGE", "PRICE_CHANGE"]
     threshold: float

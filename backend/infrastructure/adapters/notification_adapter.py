@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 
 import httpx
+
+from backend.infrastructure.security.ssrf import SSRFValidationError, validate_public_https_url
 
 _logger = logging.getLogger(__name__)
 
@@ -51,9 +54,19 @@ async def send_email(to: str, subject: str, body: str) -> bool:
 
 
 async def send_webhook(url: str, payload: dict[str, object]) -> bool:
-    """Sendet HTTP POST an Webhook-URL. Gibt True zurück wenn 2xx."""
+    """Sendet HTTP POST an Webhook-URL. Gibt True zurück wenn 2xx.
+
+    Re-validiert das Ziel unmittelbar vor dem Request (Schutz gegen DNS-Rebinding /
+    TOCTOU zwischen Alert-Erstellung und Versand). Redirects werden nicht gefolgt,
+    damit ein 30x nicht auf eine interne Adresse umlenken kann.
+    """
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+        await asyncio.to_thread(validate_public_https_url, url)
+    except SSRFValidationError as exc:
+        _logger.warning("Webhook-Ziel abgelehnt (SSRF-Guard): %s — %s", url, exc)
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT, follow_redirects=False) as client:
             resp = await client.post(url, json=payload)
             if 200 <= resp.status_code < 300:
                 return True

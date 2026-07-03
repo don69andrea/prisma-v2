@@ -35,6 +35,7 @@ class AlertService:
 
     async def create_alert(
         self,
+        user_id: UUID,
         ticker: str,
         trigger_type: str,
         threshold: float,
@@ -45,6 +46,7 @@ class AlertService:
     ) -> Alert:
         alert = Alert(
             id=uuid4(),
+            user_id=user_id,
             ticker=ticker.upper(),
             trigger_type=trigger_type,  # type: ignore[arg-type]
             threshold=threshold,
@@ -59,14 +61,24 @@ class AlertService:
         await self._repo.save(alert)
         return alert
 
-    async def list_alerts(self, target: str | None = None) -> list[Alert]:
-        if target:
-            return await self._repo.list_by_owner(target)
-        return await self._repo.list_active()
+    async def list_alerts(self, user_id: UUID, target: str | None = None) -> list[Alert]:
+        """Listet ausschließlich Alerts des angegebenen Nutzers (Mandanten-Isolation).
 
-    async def delete_alert(self, alert_id: UUID) -> bool:
+        ``target`` filtert optional zusätzlich innerhalb der eigenen Alerts.
+        """
+        alerts = await self._repo.list_by_user(user_id)
+        if target:
+            alerts = [a for a in alerts if a.target == target]
+        return alerts
+
+    async def delete_alert(self, alert_id: UUID, user_id: UUID) -> bool:
+        """Löscht einen Alert nur, wenn er dem Nutzer gehört.
+
+        Gibt False zurück (→ 404), wenn der Alert nicht existiert *oder* einem
+        anderen Nutzer gehört — die Existenz fremder Alerts wird nicht geleakt.
+        """
         alert = await self._repo.get_by_id(alert_id)
-        if alert is None:
+        if alert is None or alert.user_id != user_id:
             return False
         await self._repo.delete(alert_id)
         return True
@@ -118,6 +130,7 @@ class AlertService:
         await self._notify(alert, msg)
         updated = Alert(
             id=alert.id,
+            user_id=alert.user_id,
             ticker=alert.ticker,
             trigger_type=alert.trigger_type,
             threshold=alert.threshold,
@@ -151,6 +164,7 @@ class AlertService:
         await self._notify(alert, msg)
         updated = Alert(
             id=alert.id,
+            user_id=alert.user_id,
             ticker=alert.ticker,
             trigger_type=alert.trigger_type,
             threshold=alert.threshold,

@@ -12,14 +12,18 @@ from httpx import ASGITransport, AsyncClient
 
 from backend.application.services.alert_service import AlertService
 from backend.domain.entities.alert import Alert
+from backend.domain.entities.user import User, UserRole
 from backend.interfaces.rest.app import create_app
+from backend.interfaces.rest.dependencies import require_current_user
 from backend.interfaces.rest.routers.alerts import _get_alert_service
 
 pytestmark = pytest.mark.integration
 
 _ALERT_ID = uuid4()
+_USER_ID = uuid4()
 _ALERT = Alert(
     id=_ALERT_ID,
+    user_id=_USER_ID,
     ticker="NESN",
     trigger_type="PRICE_CHANGE",
     threshold=5.0,
@@ -41,10 +45,22 @@ def _mock_alert_service() -> AlertService:
     return svc
 
 
+def _fake_user() -> User:
+    return User(
+        id=_USER_ID,
+        email="owner@example.com",
+        hashed_password="x",
+        role=UserRole.viewer,
+        is_active=True,
+    )
+
+
 @pytest.fixture
 def app() -> Any:
     application = create_app()
     application.dependency_overrides[_get_alert_service] = _mock_alert_service
+    # Endpoints depend on require_current_user directly; override with a fixed owner.
+    application.dependency_overrides[require_current_user] = _fake_user
     return application
 
 

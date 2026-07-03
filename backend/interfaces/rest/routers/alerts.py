@@ -9,8 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.application.services.alert_service import AlertService
+from backend.domain.entities.user import User
 from backend.infrastructure.persistence.repositories.alert_repository import SQLAAlertRepository
-from backend.interfaces.rest.dependencies import get_session
+from backend.interfaces.rest.dependencies import get_session, require_current_user
 from backend.interfaces.rest.schemas.alert import (
     AlertCreateRequest,
     AlertListResponse,
@@ -53,8 +54,10 @@ def _to_response(a: object) -> AlertResponse:
 async def create_alert(
     body: AlertCreateRequest,
     service: AlertService = Depends(_get_alert_service),
+    current_user: User = Depends(require_current_user),
 ) -> AlertResponse:
     alert = await service.create_alert(
+        user_id=current_user.id,
         ticker=body.ticker,
         trigger_type=body.trigger_type,
         threshold=body.threshold,
@@ -72,8 +75,9 @@ async def create_alert(
 async def list_alerts(
     target: str | None = Query(default=None, description="Filter nach E-Mail/Webhook-Ziel"),
     service: AlertService = Depends(_get_alert_service),
+    current_user: User = Depends(require_current_user),
 ) -> AlertListResponse:
-    alerts = await service.list_alerts(target=target)
+    alerts = await service.list_alerts(user_id=current_user.id, target=target)
     return AlertListResponse(alerts=[_to_response(a) for a in alerts], total=len(alerts))
 
 
@@ -85,7 +89,8 @@ async def list_alerts(
 async def delete_alert(
     alert_id: UUID,
     service: AlertService = Depends(_get_alert_service),
+    current_user: User = Depends(require_current_user),
 ) -> None:
-    deleted = await service.delete_alert(alert_id)
+    deleted = await service.delete_alert(alert_id, user_id=current_user.id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert nicht gefunden.")

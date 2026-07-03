@@ -256,14 +256,22 @@ class CointelligenceAgent:
             start = text.find("{")
             end = text.rfind("}") + 1
             data = json.loads(text[start:end])
+
+            # Numerische FAKTEN kommen IMMER aus dem autoritativen tool_cache, NIE aus dem
+            # LLM-Output. Das LLM darf nur qualitative Einschätzungen (regime_signal,
+            # chf_usd_impact, max_allocation_pct, reasoning) liefern.
+            coin_data = cache.get("get_coin_data", {})
             sharpe = cache.get("get_sharpe_comparison", {})
+            mvrv = cache.get("get_mvrv_z_score", {})
+            fear_greed_data = cache.get("get_fear_greed_index", {})
+
             return CointelligenceReport(
                 coin=coin,
-                price_chf=float(data.get("price_chf", 0)),
-                mvrv_zone=data.get("mvrv_zone", "UNKNOWN"),
-                fear_greed=int(data.get("fear_greed", 50)),
-                sharpe_crypto=float(data.get("sharpe_crypto", sharpe.get("crypto_sharpe", 0.0))),
-                sharpe_smi=float(data.get("sharpe_smi", sharpe.get("smi_sharpe", 0.0))),
+                price_chf=float(coin_data.get("price_chf", 0.0)),
+                mvrv_zone=mvrv.get("zone", "UNKNOWN"),
+                fear_greed=int(fear_greed_data.get("value", 50)),
+                sharpe_crypto=float(sharpe.get("crypto_sharpe", 0.0)),
+                sharpe_smi=float(sharpe.get("smi_sharpe", 0.0)),
                 chf_usd_impact=data.get("chf_usd_impact", "NEUTRAL"),
                 regime_signal=data.get("regime_signal", "HOLD"),
                 max_allocation_pct=min(float(data.get("max_allocation_pct", 5.0)), 10.0),

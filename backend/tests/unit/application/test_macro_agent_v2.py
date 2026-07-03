@@ -57,6 +57,28 @@ async def test_get_macro_report_returns_macro_tool_report():
 
 
 @pytest.mark.asyncio
+async def test_get_macro_report_context_failure_no_hallucinated_numbers():
+    """W3-H-03: Bei MacroService-Ausfall dürfen KEINE erfundenen Zahlen entstehen."""
+    macro_service = AsyncMock()
+    macro_service.get_context.side_effect = RuntimeError("SNB-Service down")
+    llm = AsyncMock()
+    agent = MacroAgentV2(macro_service=macro_service, llm_client=llm)
+
+    report = await agent.get_macro_report("NESN.SW", sector="food")
+
+    assert isinstance(report, MacroToolReport)
+    # Marktdaten müssen als „nicht verfügbar" (None) markiert sein …
+    assert report.leitzins is None
+    assert report.chf_eur is None
+    # … und keinesfalls die alten Hardcodes 0.25 / 0.93 tragen.
+    assert report.leitzins != 0.25
+    assert report.chf_eur != 0.93
+    assert report.climate == "unavailable"
+    # Ohne Kontext darf gar kein LLM-Call passieren.
+    llm.messages_create.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_get_macro_report_fallback_on_llm_error():
     macro_service = AsyncMock()
     macro_service.get_context.return_value = _make_macro_context()

@@ -31,8 +31,9 @@ class DirectorEvent(BaseModel):
 class MacroToolReport(BaseModel):
     ticker: str
     score: float = Field(ge=0.0, le=100.0)
-    leitzins: float
-    chf_eur: float
+    # Autoritative Marktdaten: None = „nicht verfügbar" (nie halluzinierte Zahlen).
+    leitzins: float | None = None
+    chf_eur: float | None = None
     climate: str
     chf_impact: Literal["POSITIV", "NEUTRAL", "NEGATIV"]
     reasoning: str

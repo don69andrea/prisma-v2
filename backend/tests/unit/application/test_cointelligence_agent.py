@@ -77,6 +77,45 @@ async def test_analyze_btc_returns_report():
 
 
 @pytest.mark.asyncio
+async def test_report_uses_authoritative_cache_not_llm_numbers(monkeypatch):
+    """W2-H-04: Numerische Fakten stammen aus dem Cache, nicht aus dem LLM-JSON."""
+    # Sharpe deterministisch machen (kein Netzwerk / yfinance).
+    monkeypatch.setattr(
+        CointelligenceAgent,
+        "_calc_sharpe_sync",
+        staticmethod(lambda _yf: {"crypto_sharpe": 1.23, "smi_sharpe": 0.45}),
+    )
+
+    # LLM liefert absurde Phantasie-Zahlen für alle numerischen Felder.
+    absurd_llm_json = """{
+        "price_chf": 999999.0,
+        "mvrv_zone": "EXTREME",
+        "fear_greed": 3,
+        "sharpe_crypto": 88.0,
+        "sharpe_smi": 77.0,
+        "chf_usd_impact": "NEUTRAL",
+        "regime_signal": "HOLD",
+        "max_allocation_pct": 5.0,
+        "reasoning": "Erfundene Zahlen dürfen NICHT durchgereicht werden.",
+        "disclaimer": "Hochspekulative Anlage. Keine Anlageberatung."
+    }"""
+    agent = _make_agent(final_json=absurd_llm_json)
+
+    report = await agent.analyze("BTC")
+
+    # Autoritativer CHF-Preis aus CoinGecko-Cache (95000 * chf_usd), nicht 999999.
+    chf_usd = round(0.935 / 1.08, 4)
+    expected_price_chf = round(95000.0 * chf_usd, 2)
+    assert report.price_chf == expected_price_chf
+    assert report.price_chf != 999999.0
+    # Fear&Greed aus dem Cache (55), nicht die LLM-Fantasie (3).
+    assert report.fear_greed == 55
+    # Sharpe-Werte aus der berechneten Quelle, nicht 88/77.
+    assert report.sharpe_crypto == 1.23
+    assert report.sharpe_smi == 0.45
+
+
+@pytest.mark.asyncio
 async def test_analyze_eth_works():
     agent = _make_agent()
     report = await agent.analyze("ETH")

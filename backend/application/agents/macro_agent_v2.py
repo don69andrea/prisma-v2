@@ -71,7 +71,7 @@ class MacroAgentV2:
             ctx = await self._macro.get_context()
         except Exception as exc:
             _logger.error("MacroService.get_context() fehlgeschlagen: %s", exc)
-            return self._fallback(ticker, 0.25, 0.93)
+            return self._unavailable(ticker)
 
         _tool_data: dict[str, Any] = {
             "get_snb_rate": {"leitzins": ctx.leitzins},
@@ -155,6 +155,19 @@ class MacroAgentV2:
         except (json.JSONDecodeError, ValidationError, KeyError) as exc:
             _logger.warning("MacroAgentV2 parse-Fehler: %s", exc)
             return self._fallback(ticker, leitzins, chf_eur)
+
+    @staticmethod
+    def _unavailable(ticker: str) -> MacroToolReport:
+        """Datenquelle ausgefallen: keine Zahlen erfinden, Fakten als None kennzeichnen."""
+        return MacroToolReport(
+            ticker=ticker.upper(),
+            score=50.0,
+            leitzins=None,
+            chf_eur=None,
+            climate="unavailable",
+            chf_impact="NEUTRAL",
+            reasoning="Makrodaten nicht verfügbar — keine autoritative Quelle erreichbar.",
+        )
 
     @staticmethod
     def _fallback(ticker: str, leitzins: float, chf_eur: float) -> MacroToolReport:

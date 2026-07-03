@@ -37,19 +37,15 @@ Workflow: GitHub Flow (main gesperrt), pro Fix ein Branch + PR, Merge via `gh pr
 | #329 | **W3-M-06** | Sentiment-Agent: NULL-`fear_greed` → neutraler Fallback statt 500-Crash |
 | #330 | **W3-H-08, W3-M-21** | `start_batch` `int(None)`-Crash gefiltert; RAG-Kontext als Untrusted-Block (Prompt-Injection) |
 | #331 | **W2-C-02** | ML-Quality-Gate (`_passes_quality_gate`): schlechtes Modell wird nicht mehr Champion |
-
-## 🔄 In CI (werden gemergt, sobald grün)
-
-| PR | Befund(e) | Kurzbeschreibung |
-|----|-----------|------------------|
 | #332 | **W3-H-09** | News-Ingestion: embed-before-persist (kein dauerhaftes Dedup-Aussperren bei Embedding-Fehler) |
 | #333 | **W3-M-17** | Swiss-Filing-RAG: k-Cap (20), Empty-Guard, Embedding kostengetrackt über `LLMClient` |
 | #334 | **W2-H-04, W3-H-03** | Keine halluzinierten Zahlen: Makro-Felder Optional statt Hardcode; Cointel liest aus Cache |
+| #336 | **C-05, H-01** | Alerts-IDOR: `user_id` durch Entity→Repo→Service→Router gescoped (fremd → 404), Migration 0050 `NOT NULL`; SSRF-Guard löst Host auf + prüft ALLE IPs (IPv4/IPv6/kodiert), im Schema-Validator UND `send_webhook` (DNS-Rebinding, `follow_redirects=False`) |
 
 ## 📋 NÄCHSTE SCHRITTE (priorisiert)
 
 ### A) Große Brocken — EINZELN & bewusst (nicht im Parallel-Batch, brauchen Migration/Infra/Design)
-- **C-05 + H-01** — Alerts-IDOR + SSRF. Braucht DB-Migration: `alerts.user_id` (FK, NOT NULL), alle Queries/Deletes auf `current_user.id` scopen (404 bei Fremdzugriff); SSRF: Host auflösen + ALLE resolved IPs gegen private/Metadata/IPv6-Ranges prüfen. (`routers/alerts.py`, `schemas/alert.py`, neue Migration)
+- ~~**C-05 + H-01** — Alerts-IDOR + SSRF~~ → ✅ **PR #336** (Migration 0050 `user_id NOT NULL`; resolving SSRF-Guard in Schema + `send_webhook`).
 - **C-06 + H-12 + W3-H-01** — Destruktive Migrationen aus dem Boot-Pfad entkoppeln (`0029` TRUNCATE×8 CASCADE, `0022/0023` embedding-DELETE). `backend-start.sh` nicht mehr blind `alembic upgrade head`; Backup + `pg_advisory_lock`. W3-H-01: 0029 setzt trotz TRUNCATE nie `NOT NULL` + `CASCADE` auf Audit-Tabellen.
 - **W2-C-01** — Pickle/joblib-RCE: `models/*.joblib` aus Git → signiertes Object-Storage mit SHA256-Pinning; `*.joblib` in `.gitignore`. (`ml_prediction_service.py`, `quantile_prediction_service.py`)
 - **C-01-Folge** — SignalDirector-DI nutzt weiter synthetischen `prices_df` (`rng.normal` seed 42) + `_StubExposureStore` in `dependencies.py:585-624` → echten Preis-Adapter injizieren, per-Coin laden, echtes Exposure-Repo.

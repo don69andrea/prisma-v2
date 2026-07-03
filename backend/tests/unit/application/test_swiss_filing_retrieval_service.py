@@ -32,26 +32,49 @@ _SAMPLE_RESULT = SwissFilingRetrievalResult(
 
 def _build_service(
     retrieval_results: list[SwissFilingRetrievalResult] | None = None,
+    embeddings: list[list[float]] | None = None,
 ) -> tuple[SwissFilingRetrievalService, MagicMock, AsyncMock]:
-    mock_voyage = MagicMock()
-    mock_embed_result = MagicMock()
-    mock_embed_result.embeddings = [[0.1] * 1024]
-    mock_voyage.embed.return_value = mock_embed_result
+    mock_llm = MagicMock()
+    mock_llm.embed = AsyncMock(return_value=[[0.1] * 1024] if embeddings is None else embeddings)
 
     mock_repo = AsyncMock()
     mock_repo.find_nearest.return_value = retrieval_results or []
 
-    svc = SwissFilingRetrievalService(repository=mock_repo, voyage_client=mock_voyage)
-    return svc, mock_voyage, mock_repo
+    svc = SwissFilingRetrievalService(repository=mock_repo, llm_client=mock_llm)
+    return svc, mock_llm, mock_repo
 
 
 class TestSwissFilingRetrievalService:
     async def test_retrieve_calls_embed_and_repo(self) -> None:
-        svc, mock_voyage, mock_repo = _build_service([_SAMPLE_RESULT])
+        svc, mock_llm, mock_repo = _build_service([_SAMPLE_RESULT])
         results = await svc.retrieve("NESN Jahresumsatz 2023")
-        mock_voyage.embed.assert_called_once()
+        mock_llm.embed.assert_called_once()
         mock_repo.find_nearest.assert_called_once()
         assert len(results) == 1
+
+    async def test_retrieve_uses_cost_tracked_embed_feature(self) -> None:
+        svc, mock_llm, _ = _build_service()
+        await svc.retrieve("query")
+        call_kwargs = mock_llm.embed.call_args.kwargs
+        assert call_kwargs["feature"] == "swiss_filing_rag"
+
+    async def test_retrieve_clamps_k_to_max(self) -> None:
+        svc, _, mock_repo = _build_service()
+        await svc.retrieve("query", k=100000)
+        call_kwargs = mock_repo.find_nearest.call_args.kwargs
+        assert call_kwargs["k"] == 20
+
+    async def test_retrieve_clamps_k_to_minimum(self) -> None:
+        svc, _, mock_repo = _build_service()
+        await svc.retrieve("query", k=0)
+        call_kwargs = mock_repo.find_nearest.call_args.kwargs
+        assert call_kwargs["k"] == 1
+
+    async def test_retrieve_empty_embedding_returns_empty(self) -> None:
+        svc, _, mock_repo = _build_service(embeddings=[])
+        results = await svc.retrieve("query")
+        assert results == []
+        mock_repo.find_nearest.assert_not_called()
 
     async def test_retrieve_passes_ticker_filter(self) -> None:
         svc, _, mock_repo = _build_service()

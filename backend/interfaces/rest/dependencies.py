@@ -541,13 +541,20 @@ async def get_swiss_filing_repository() -> Any:
 
 async def get_swiss_filing_retrieval_service(
     repo: Any = Depends(get_swiss_filing_repository),
+    cost_tracker: CostTracker = Depends(get_cost_tracker),
 ) -> Any:
     from backend.application.services.swiss_filing_retrieval_service import (
         SwissFilingRetrievalService,
     )
 
     voyage = get_voyage_client()
-    return SwissFilingRetrievalService(repository=repo, voyage_client=voyage)
+    llm = LLMClient(
+        anthropic=get_anthropic_client(),
+        voyage=voyage,
+        cost_tracker=cost_tracker,
+        pricing=PRICING,
+    )
+    return SwissFilingRetrievalService(repository=repo, llm_client=llm)
 
 
 # ---------------------------------------------------------------------------

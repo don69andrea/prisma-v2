@@ -130,3 +130,11 @@ tests/fixtures/llm/*.large.json
 demo-polish-*.png
 
 .superpowers/
+
+# ML-Artefakte (W2-C-01): keine NEUEN joblib/pickle-Blobs einchecken.
+# Bereits getrackte Modelle bleiben getrackt und sind in models/SHA256SUMS
+# gepinnt (Integritätsprüfung vor dem Laden). Neue Trainings-Outputs müssen
+# bewusst via `git add -f` + Manifest-Update ins Repo — nicht versehentlich.
+models/*.joblib
+models/*.pkl
+*.pkl

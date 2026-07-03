@@ -43,7 +43,7 @@ def _load_quantile_models() -> dict[str, Any]:
     if _model_cache:
         return _model_cache
 
-    import joblib
+    from backend.infrastructure.security.model_integrity import verified_load
 
     registry_path = _MODELS_DIR / "registry.json"
     if not registry_path.exists():
@@ -73,7 +73,8 @@ def _load_quantile_models() -> dict[str, Any]:
         path = _MODELS_DIR / fname
         if not path.exists():
             raise FileNotFoundError(f"Modell-Datei fehlt: {path}")
-        models[qname] = joblib.load(path)
+        # SHA256-Pinning-Prüfung vor dem pickle-basierten Laden (W2-C-01).
+        models[qname] = verified_load(path)
 
     models["_meta"] = meta
     _model_cache = models

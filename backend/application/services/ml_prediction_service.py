@@ -50,9 +50,8 @@ def _load_model() -> tuple[Any, str]:
     if _model_cache is not None:
         return _model_cache, _model_type_cache
 
-    import joblib
-
     from backend.application.services.model_registry import ModelRegistry
+    from backend.infrastructure.security.model_integrity import verified_load
 
     registry = ModelRegistry()
     model_path = registry.get_active_model_path() or _LATEST_MODEL
@@ -63,7 +62,8 @@ def _load_model() -> tuple[Any, str]:
             "Bitte zuerst `python scripts/train_return_predictor.py` ausführen."
         )
 
-    _model_cache = joblib.load(model_path)
+    # SHA256-Pinning-Prüfung vor dem pickle-basierten Laden (W2-C-01).
+    _model_cache = verified_load(model_path)
     _model_type_cache = "unknown"
 
     import json

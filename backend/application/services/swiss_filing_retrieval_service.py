@@ -2,26 +2,26 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
-from typing import Any
 
 from backend.domain.entities.swiss_filing_retrieval_result import SwissFilingRetrievalResult
 from backend.domain.repositories.swiss_filing_repository import SwissFilingRepository
+from backend.infrastructure.llm.client import LLMClient
 
 _logger = logging.getLogger(__name__)
 
 _VOYAGE_MODEL = "voyage-3-large"
+_MAX_K = 20
 
 
 class SwissFilingRetrievalService:
     def __init__(
         self,
         repository: SwissFilingRepository,
-        voyage_client: Any,
+        llm_client: LLMClient,
     ) -> None:
         self._repo = repository
-        self._voyage = voyage_client
+        self._llm = llm_client
 
     async def retrieve(
         self,
@@ -30,10 +30,16 @@ class SwissFilingRetrievalService:
         ticker: str | None = None,
         language: str | None = None,
     ) -> list[SwissFilingRetrievalResult]:
-        result = await asyncio.to_thread(self._voyage.embed, [query], model=_VOYAGE_MODEL)
-        query_embedding: list[float] = result.embeddings[0]
+        k = max(1, min(k, _MAX_K))
+        embeddings = await self._llm.embed(
+            texts=[query],
+            model=_VOYAGE_MODEL,
+            feature="swiss_filing_rag",
+        )
+        if not embeddings:
+            return []
         return await self._repo.find_nearest(
-            query_embedding=query_embedding,
+            query_embedding=embeddings[0],
             k=k,
             ticker=ticker,
             language=language,

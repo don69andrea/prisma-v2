@@ -41,12 +41,13 @@ Workflow: GitHub Flow (main gesperrt), pro Fix ein Branch + PR, Merge via `gh pr
 | #333 | **W3-M-17** | Swiss-Filing-RAG: k-Cap (20), Empty-Guard, Embedding kostengetrackt über `LLMClient` |
 | #334 | **W2-H-04, W3-H-03** | Keine halluzinierten Zahlen: Makro-Felder Optional statt Hardcode; Cointel liest aus Cache |
 | #336 | **C-05, H-01** | Alerts-IDOR: `user_id` durch Entity→Repo→Service→Router gescoped (fremd → 404), Migration 0050 `NOT NULL`; SSRF-Guard löst Host auf + prüft ALLE IPs (IPv4/IPv6/kodiert), im Schema-Validator UND `send_webhook` (DNS-Rebinding, `follow_redirects=False`) |
+| #338 | **C-06, H-12, W2-H-06, W3-H-01** | Boot-Migrations-Guard (`migration_guard`): destruktive Migrationen (TRUNCATE/DROP/DELETE) auf bestehender DB blockiert (Exit 3, `ALLOW_DESTRUCTIVE_MIGRATIONS=1`), frische DB bootstrappt; `env.py` `pg_advisory_xact_lock` (Race-Schutz); Migration 0051: Audit/Kosten-FKs `CASCADE`→`SET NULL` (alerts bleibt CASCADE) |
 
 ## 📋 NÄCHSTE SCHRITTE (priorisiert)
 
 ### A) Große Brocken — EINZELN & bewusst (nicht im Parallel-Batch, brauchen Migration/Infra/Design)
 - ~~**C-05 + H-01** — Alerts-IDOR + SSRF~~ → ✅ **PR #336** (Migration 0050 `user_id NOT NULL`; resolving SSRF-Guard in Schema + `send_webhook`).
-- **C-06 + H-12 + W3-H-01** — Destruktive Migrationen aus dem Boot-Pfad entkoppeln (`0029` TRUNCATE×8 CASCADE, `0022/0023` embedding-DELETE). `backend-start.sh` nicht mehr blind `alembic upgrade head`; Backup + `pg_advisory_lock`. W3-H-01: 0029 setzt trotz TRUNCATE nie `NOT NULL` + `CASCADE` auf Audit-Tabellen.
+- ~~**C-06 + H-12 + W2-H-06 + W3-H-01** — Destruktive Migrationen aus dem Boot-Pfad entkoppeln~~ → ✅ **PR #338** (`migration_guard` blockt destruktive Migrationen auf bestehender DB; `pg_advisory_xact_lock`; 0051 Audit-FKs `SET NULL`). Offen bleibt: Backup-Automatik (`pg_dump` vor Freigabe) + CD-Environment-Protection.
 - **W2-C-01** — Pickle/joblib-RCE: `models/*.joblib` aus Git → signiertes Object-Storage mit SHA256-Pinning; `*.joblib` in `.gitignore`. (`ml_prediction_service.py`, `quantile_prediction_service.py`)
 - **C-01-Folge** — SignalDirector-DI nutzt weiter synthetischen `prices_df` (`rng.normal` seed 42) + `_StubExposureStore` in `dependencies.py:585-624` → echten Preis-Adapter injizieren, per-Coin laden, echtes Exposure-Repo.
 - **W2-H-01 / W2-H-02** — ML-Training-Leakage (Embargo) in `scripts/train_return_predictor.py` + `scripts/train_quantile_model.py`. Basis: aktualisiertes main (nach #331). Embargo ≥ Target-Horizont, in HANDELStagen.

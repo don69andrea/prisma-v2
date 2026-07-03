@@ -4,6 +4,7 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from backend.config import get_settings
@@ -50,6 +51,10 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+# Fester Key für den Migrations-Advisory-Lock — serialisiert parallele
+# `upgrade`-Läufe (z. B. mehrere Web-Instanzen beim Deploy). W2-H-06.
+_MIGRATION_LOCK_KEY = 728194655
+
 
 def get_url() -> str:
     """Liest die DATABASE_URL aus den Anwendungs-Settings (überschreibt alembic.ini)."""
@@ -73,6 +78,11 @@ def run_migrations_offline() -> None:
 def do_run_migrations(connection: object) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)  # type: ignore[arg-type]
     with context.begin_transaction():
+        # Transaktions-Advisory-Lock: parallele Migrationsläufe blockieren hier,
+        # bis der laufende Upgrade committet (auto-release). W2-H-06.
+        connection.execute(  # type: ignore[attr-defined]
+            text("SELECT pg_advisory_xact_lock(:key)"), {"key": _MIGRATION_LOCK_KEY}
+        )
         context.run_migrations()
 
 

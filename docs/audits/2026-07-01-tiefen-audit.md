@@ -8,6 +8,81 @@ tatsächlichen Code verifiziert — kein Raten.
 
 ---
 
+---
+
+# ⚡ FORTSCHRITT / STATUS — Stand 2026-07-03
+
+> Dieses Kapitel ist der Einstiegspunkt für die Fortsetzung in einer neuen Session.
+> Der Rest des Dokuments (ab „## 0. Executive Summary") ist der ursprüngliche Audit-Befundstand.
+
+## ✅ Erledigt & in `main` gemerged
+
+Workflow: GitHub Flow (main gesperrt), pro Fix ein Branch + PR, Merge via `gh pr merge <n> --squash --admin`
+(Solo-Repo → `REVIEW_REQUIRED` nur per Admin-Bypass auflösbar). Jeder Fix mit Regressionstests + `ruff`.
+
+| PR | Befund(e) | Kurzbeschreibung |
+|----|-----------|------------------|
+| #317 | — | Login case-insensitiv (E-Mail) — behob „kommt nicht rein, egal was man eingibt" |
+| #318 | — | Audit-Dokument nach `docs/audits/2026-07-01-tiefen-audit.md` |
+| #319 | **C-02, W3-C-05** | FX-Richtung USD→CHF (`USDCHF=X`); Diversification-Score-Vorzeichen |
+| #320 | **C-01** | Signals/Backtest/Meta-Label auf echte Marktdaten (`CryptoPriceAdapter`) + CI-Guard gegen Synthetik |
+| #321 | — | Flaky E2E-Locator (Pro-Tabelle „Signal") stabilisiert |
+| #322 | **W3-C-01, H-11, W2-H-05, W2-H-09** | 0021-Downgrade-Crash; JWT-Validator CI-Bypass (Worker-Boot); kaputte Cron-Scripts geguardet |
+| #323 | **C-04, W3-H-10** | Budget-Cap in `chat_service.stream` + `crypto_agent_service.stream_analysis` erzwungen |
+| #324 | **W2-C-03** | Risk-Agent-Veto durchgesetzt (BUY→HOLD; SELL/Exit bleibt erlaubt) |
+| #325 | **C-03** | `NEXT_PUBLIC_API_KEY` aus Frontend-Bundle entfernt; totes `MissingApiKeyBanner` gelöscht |
+| #326 | **W3-C-04, W3-M-10** | CH-Steuerformulare korrigiert (VST-Rückforderung via Wertschriftenverzeichnis, DA-1/103) |
+| #327 | **W3-C-02, W3-H-05** | Fonds-Vergleich: Adapter injiziert + `days`-Signatur → echte Metriken; geom. Annualisierung |
+| #328 | **W3-C-03** | Markowitz läuft wirklich (methodengekoppeltes History-Fenster, kein stiller Risk-Parity-Fallback) |
+| #329 | **W3-M-06** | Sentiment-Agent: NULL-`fear_greed` → neutraler Fallback statt 500-Crash |
+| #330 | **W3-H-08, W3-M-21** | `start_batch` `int(None)`-Crash gefiltert; RAG-Kontext als Untrusted-Block (Prompt-Injection) |
+| #331 | **W2-C-02** | ML-Quality-Gate (`_passes_quality_gate`): schlechtes Modell wird nicht mehr Champion |
+
+## 🔄 In CI (werden gemergt, sobald grün)
+
+| PR | Befund(e) | Kurzbeschreibung |
+|----|-----------|------------------|
+| #332 | **W3-H-09** | News-Ingestion: embed-before-persist (kein dauerhaftes Dedup-Aussperren bei Embedding-Fehler) |
+| #333 | **W3-M-17** | Swiss-Filing-RAG: k-Cap (20), Empty-Guard, Embedding kostengetrackt über `LLMClient` |
+| #334 | **W2-H-04, W3-H-03** | Keine halluzinierten Zahlen: Makro-Felder Optional statt Hardcode; Cointel liest aus Cache |
+
+## 📋 NÄCHSTE SCHRITTE (priorisiert)
+
+### A) Große Brocken — EINZELN & bewusst (nicht im Parallel-Batch, brauchen Migration/Infra/Design)
+- **C-05 + H-01** — Alerts-IDOR + SSRF. Braucht DB-Migration: `alerts.user_id` (FK, NOT NULL), alle Queries/Deletes auf `current_user.id` scopen (404 bei Fremdzugriff); SSRF: Host auflösen + ALLE resolved IPs gegen private/Metadata/IPv6-Ranges prüfen. (`routers/alerts.py`, `schemas/alert.py`, neue Migration)
+- **C-06 + H-12 + W3-H-01** — Destruktive Migrationen aus dem Boot-Pfad entkoppeln (`0029` TRUNCATE×8 CASCADE, `0022/0023` embedding-DELETE). `backend-start.sh` nicht mehr blind `alembic upgrade head`; Backup + `pg_advisory_lock`. W3-H-01: 0029 setzt trotz TRUNCATE nie `NOT NULL` + `CASCADE` auf Audit-Tabellen.
+- **W2-C-01** — Pickle/joblib-RCE: `models/*.joblib` aus Git → signiertes Object-Storage mit SHA256-Pinning; `*.joblib` in `.gitignore`. (`ml_prediction_service.py`, `quantile_prediction_service.py`)
+- **C-01-Folge** — SignalDirector-DI nutzt weiter synthetischen `prices_df` (`rng.normal` seed 42) + `_StubExposureStore` in `dependencies.py:585-624` → echten Preis-Adapter injizieren, per-Coin laden, echtes Exposure-Repo.
+- **W2-H-01 / W2-H-02** — ML-Training-Leakage (Embargo) in `scripts/train_return_predictor.py` + `scripts/train_quantile_model.py`. Basis: aktualisiertes main (nach #331). Embargo ≥ Target-Horizont, in HANDELStagen.
+
+### B) Contained & agent-parallelisierbar (nächste Batches — je frischer Clone, disjunkte Dateien)
+- **W3-H-02** — 0011 `backtest_results.model_run_id` ohne FK → FK auf `ranking_runs.id` (neue Migration).
+- **W3-H-07** — `crypto_scorer.py:95-97` `int(NaN)`-Crash bei kurzer Historie → NaN-Guard.
+- **W3-M-04** — `portfolio_agent.py:25,34-54` MAX_WEIGHT (0.40) bei ≤2 Positionen verletzt → infeasible-Fall behandeln.
+- **W3-M-05** — `macro_regime_agent.py:130-133` NEUTRAL-Fallback wird 1h gecacht → Fallback nicht (lang) cachen.
+- **W3-M-07 / W3-M-08** — `monte_carlo_service.py:131,206-207` 1J-Trailing als 40J-Drift + doppelte −½σ²-Itô-Korrektur.
+- **W3-M-09** — `rebalancing_service.py:107-108` Umsatzabgabe (0.075/0.15%) + Ganzzahligkeit/Mindestgebühren fehlen.
+- **W3-M-11..M-14** — Scorer: SMI-Corr-Default (crypto_scorer), QualityClassic ungleiche Metriken/Solo-z=0, Diversification dimensional.
+- **W3-M-15** — `profile_classifier.py:124-148` „Default gewählt" ≠ „nicht beantwortet" → Discovery nie freigeschaltet.
+- **W3-M-16** — `macro_service.py:79-83` Inflations-Fallback „nächster zu 1.0%" statt aktuellstem CPI.
+- **W3-M-18** — `crypto_scoring_service.py:68-73` gegen F&G/CoinGecko-Ausfall ungeschützt (vs. `score_one`).
+- **W3-M-19** — `discovery_service.py:205-217` per-Titel yfinance-Call → DB-Score mitladen.
+- **W3-M-20** — `ranking_run_service.py:131-141` N+1 Ticker-Lookups → Bulk.
+- **W3-H-11 / M-19(FE)** — Frontend: fehlende Stream/Fetch-Cleanups (`useAnalysisStream`, `useCryptoAgentAnalysis`, `ChatDrawer`); E2E-Tests ohne echte Verifikation.
+- Diverse **Low** (siehe Befund-Kapitel unten): 0006/0042-Downgrade-Guards, PK-Typen `String(36)` vs UUID, `_f`-0-als-Missing (fmp), DividendEntry.date-Typ, CI-Security-Scans, prisma_v3_seed/ löschen, etc.
+
+## 🛠 ARBEITSWEISE (für Kontinuität in neuer Session)
+
+- **Repo klonen:** `git clone https://github.com/don69andrea/prisma-v2.git` (Working-Copy war in `…/scratchpad/prisma-v2`).
+- **Merge:** `gh pr merge <n> --squash --admin --delete-branch` (Branch-Protection `REVIEW_REQUIRED`, Solo-Repo).
+- **CI-Jobs:** Backend Unit · Backend Integration · **Backend Lint & Typecheck** (= `ruff check` **+** `ruff format --check` **+** mypy) · Frontend Lint & Build · **Frontend E2E** (Playwright; gelegentlich flaky bei der Crypto-Tabelle).
+- **Agent-Pattern (parallel):** pro Agent ein FRISCHER Clone in `…/scratchpad/wt-<name>`, disjunkte Dateien; Agent muss ZWINGEND `ruff check` **UND** `ruff format --check` **UND** targeted `uv run pytest` laufen lassen (nur `ruff check` → CI-Format-Fail).
+- **CI-Fails immer root-causen** (kein Blind-Retry): bisherige echte Fänge — Risk-Veto zu breit (SELL), Login-Case-Sensitivity, mehrere `ruff format`-Fails.
+- **Audit-Doc im Repo:** `docs/audits/2026-07-01-tiefen-audit.md`. Memory-Pointer: `project_prisma_v2_audit.md`.
+- **Render-Caveat (C-01):** yfinance ist von Render-IPs geblockt → Signals liefern dort evtl. 503 (ehrlich) statt Fake-Daten; echte DB-Preisquelle (`crypto_price_history`, GitHub-Actions-seed) als Folge-Fix.
+
+---
+
 ## 0. Executive Summary
 
 Das Projekt ist architektonisch sauber aufgebaut (Hexagonal/Clean Architecture, gute Test-Abdeckung der

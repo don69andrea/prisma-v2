@@ -33,8 +33,8 @@ def _make_technicals(
     macd_above_signal: bool = True,
     close_trend: str = "up",
     volume_trend: str = "flat",
+    n: int = 300,
 ) -> pd.DataFrame:
-    n = 300
     close_base = 50000.0
     if close_trend == "up":
         close = [close_base * (1 + i * 0.001) for i in range(n)]
@@ -321,3 +321,21 @@ class TestSignalReason:
             "SELL", "Bitcoin", 20.0, rsi=78.0, fear_greed=80, change_7d=-5.0
         )
         assert "RSI" in reason
+
+
+class TestShortHistoryNaNGuard:
+    def test_score_does_not_crash_with_short_history(self):
+        """W3-H-07: < 31 Kerzen → rolling(30).std() = NaN darf score() nicht crashen."""
+        from backend.domain.services.crypto_scorer import CryptoScorer
+
+        scorer = CryptoScorer()
+        technicals = _make_technicals(n=10)  # zu kurz für 30er-Rolling-Std
+        score, components = scorer.score(
+            asset=_make_asset(),
+            technicals=technicals,
+            fear_greed=50,
+            correlation_smi_1y=0.0,
+        )
+        assert 0.0 <= score <= 100.0
+        # Neutraler Risiko-Score-Anteil (2.5) statt Crash; risiko = vol_score + corr_score.
+        assert components["risiko"] >= 2.5

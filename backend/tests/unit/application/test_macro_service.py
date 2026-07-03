@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -150,7 +151,7 @@ async def test_get_context_restriktiv_high_rate() -> None:
 # --- _latest_plausible_cpi (W3-M-16): aktuellster CPI statt "nächster zu 1.0%" ---
 
 
-def _series(*obs_pairs: tuple[int, float | None]) -> dict:
+def _series(*obs_pairs: tuple[int, float | None]) -> dict[str, Any]:
     return {"observations": {str(idx): [val] for idx, val in obs_pairs}}
 
 

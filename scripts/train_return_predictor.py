@@ -303,6 +303,56 @@ def accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Quality-Gate (Audit W2-C-02)
+# ---------------------------------------------------------------------------
+
+# Zufalls-Baseline für Top-Quartil-Recall bei 4 Quartilsklassen (bzw. der
+# hier verwendeten Top-Klasse) — ein rein zufälliger Klassifikator trifft die
+# Top-Klasse in ~25 % der Fälle.
+RANDOM_TOP_QUARTILE_RECALL = 0.25
+# Mindestabstand, um den ein neues Modell die Baseline schlagen muss.
+GATE_MIN_MARGIN = 0.02
+
+
+def _passes_quality_gate(
+    top_quartile_recall: float,
+    baseline_recall: float = RANDOM_TOP_QUARTILE_RECALL,
+    champion_recall: float | None = None,
+    min_margin: float = GATE_MIN_MARGIN,
+) -> bool:
+    """Hartes Quality-Gate für den Return-Predictor (Audit W2-C-02).
+
+    Ein Modell wird nur zum Champion (`return_predictor_latest.joblib`), wenn es
+      1. die Zufalls-Baseline (`baseline_recall`) um mindestens `min_margin`
+         beim Top-Quartil-Recall schlägt, UND
+      2. den aktuellen Champion (`champion_recall`, falls vorhanden) strikt
+         übertrifft.
+
+    Reine Funktion — ohne echtes Training/Modell testbar.
+    """
+    if top_quartile_recall < baseline_recall + min_margin:
+        return False
+    return not (champion_recall is not None and top_quartile_recall <= champion_recall)
+
+
+def _current_champion_recall(models_dir: Path) -> float | None:
+    """Liest den Top-Quartil-Recall des aktuellen Champions aus der latest-Meta.
+
+    Gibt None zurück, wenn keine Meta existiert oder die Metrik fehlt (dann
+    greift nur die absolute Baseline im Gate).
+    """
+    meta_path = models_dir / "return_predictor_latest.json"
+    if not meta_path.exists():
+        return None
+    try:
+        meta = json.loads(meta_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+    val = meta.get("val_top_quartile_recall")
+    return float(val) if val is not None else None
+
+
+# ---------------------------------------------------------------------------
 # Modelltraining
 # ---------------------------------------------------------------------------
 
@@ -587,7 +637,9 @@ def main() -> None:
             _logger.info(
                 "Tuned LightGBM — Accuracy: %.3f | Top-Quartil-Recall: %.3f", tuned_acc, tuned_top
             )
-            if tuned_top > lgb_top:
+            # Gegen das AKTUELL BESTE Modell vergleichen, nicht gegen das
+            # untunte LightGBM-Zwischenmodell (Audit W2-C-02).
+            if tuned_top > best_top:
                 best_model = tuned_model
                 best_name = "lightgbm"
                 best_acc = tuned_acc
@@ -600,14 +652,18 @@ def main() -> None:
         top5 = list(importance.items())[:5]
         _logger.info("Top-5 Features: %s", top5)
 
-    # Artifact speichern
+    # HARTES Quality-Gate (Audit W2-C-02): Champion nur promoten, wenn das
+    # Modell die Zufalls-Baseline UND den aktuellen Champion schlägt.
+    champion_recall = _current_champion_recall(MODELS_DIR)
+    gate_ok = _passes_quality_gate(best_top, champion_recall=champion_recall)
+
+    # Kandidaten-Artefakt wird IMMER versioniert abgelegt (Nachvollziehbarkeit).
     MODELS_DIR.mkdir(exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_path = MODELS_DIR / f"return_predictor_{best_name}_{ts}.joblib"
-    meta_path = MODELS_DIR / "return_predictor_latest.json"
 
     joblib.dump(best_model, model_path)
-    _logger.info("Modell gespeichert: %s", model_path)
+    _logger.info("Kandidaten-Modell gespeichert: %s", model_path)
 
     meta = {
         "model_path": str(model_path),
@@ -625,14 +681,34 @@ def main() -> None:
         "tuned": args.tune,
         "market": args.market,
         "simfin_used": simfin_adapter is not None,
+        "quality_gate_passed": gate_ok,
+        "champion_recall_at_train": champion_recall,
     }
+
+    if not gate_ok:
+        _logger.warning(
+            "QUALITY-GATE NICHT BESTANDEN: Top-Quartil-Recall=%.4f "
+            "(Baseline=%.2f+%.2f Marge, Champion=%s). "
+            "Modell wird NICHT als Champion (latest) promotet.",
+            best_top,
+            RANDOM_TOP_QUARTILE_RECALL,
+            GATE_MIN_MARGIN,
+            f"{champion_recall:.4f}" if champion_recall is not None else "n/a",
+        )
+        # Kandidaten-Meta separat ablegen, latest.* NICHT überschreiben.
+        candidate_meta_path = MODELS_DIR / f"return_predictor_{best_name}_{ts}.json"
+        candidate_meta_path.write_text(json.dumps(meta, indent=2))
+        _logger.info("Kandidaten-Metadaten: %s", candidate_meta_path)
+        sys.exit(2)
+
+    # Gate bestanden → als Champion (latest) promoten.
+    meta_path = MODELS_DIR / "return_predictor_latest.json"
     meta_path.write_text(json.dumps(meta, indent=2))
     _logger.info("Modell-Metadaten: %s", meta_path)
 
-    # Auch als latest-Link speichern
     latest_path = MODELS_DIR / "return_predictor_latest.joblib"
     joblib.dump(best_model, latest_path)
-    _logger.info("Latest-Link gespeichert: %s", latest_path)
+    _logger.info("Champion (latest) aktualisiert: %s", latest_path)
 
 
 if __name__ == "__main__":

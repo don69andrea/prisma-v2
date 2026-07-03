@@ -14,7 +14,7 @@ import hashlib
 import json
 import logging
 import sys
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -45,8 +45,26 @@ EMBARGO_DAYS = 30
 TARGET_COL = "target_excess_30d"
 
 SMI_20 = [
-    "NESN", "NOVN", "ROG", "UBSG", "ZURN", "ABBN", "LONN", "SIKA", "GIVN", "CFR",
-    "ALC", "HOLN", "SLHN", "GEBN", "SCMN", "SOON", "LOGN", "PGHN", "SREN", "BAER",
+    "NESN",
+    "NOVN",
+    "ROG",
+    "UBSG",
+    "ZURN",
+    "ABBN",
+    "LONN",
+    "SIKA",
+    "GIVN",
+    "CFR",
+    "ALC",
+    "HOLN",
+    "SLHN",
+    "GEBN",
+    "SCMN",
+    "SOON",
+    "LOGN",
+    "PGHN",
+    "SREN",
+    "BAER",
 ]
 SMIM_10 = ["AMSN", "BARN", "DKSH", "KNIN", "SGKN", "STMN", "TEMN", "UHR", "VACN", "WKBN"]
 DEFAULT_TICKERS = SMI_20 + SMIM_10
@@ -57,6 +75,34 @@ FEATURE_HASH = hashlib.sha256(",".join(TEIL_F_FEATURE_COLS).encode()).hexdigest(
 def _pinball_loss(y: npt.NDArray[Any], q_pred: npt.NDArray[Any], alpha: float) -> float:
     err = y - q_pred
     return float(np.mean(np.where(err >= 0, alpha * err, (alpha - 1) * err)))
+
+
+def _passes_quality_gate(
+    cv_results: dict[str, list[float]],
+    baseline_results: dict[str, list[float]],
+    min_margin: float = 0.0,
+) -> bool:
+    """Hartes Quality-Gate (Audit W2-C-02).
+
+    Gibt nur True zurück, wenn JEDES Quantil-Modell die konstante Baseline im
+    Mittel über die Folds um mindestens den relativen `min_margin` schlägt
+    (niedrigerer Pinball-Loss = besser). Ein leeres/unvollständiges Ergebnis
+    (keine Folds) fällt bewusst durch das Gate.
+
+    Reine Funktion — ohne echtes Training/Modell testbar.
+    """
+    if not cv_results or not baseline_results:
+        return False
+    for qname, losses in cv_results.items():
+        baseline_losses = baseline_results.get(qname)
+        if not losses or not baseline_losses:
+            return False
+        m_mean = float(np.mean(losses))
+        b_mean = float(np.mean(baseline_losses))
+        # Modell muss Baseline strikt (bzw. um min_margin) unterbieten.
+        if m_mean >= b_mean * (1.0 - min_margin):
+            return False
+    return True
 
 
 def _purged_embargo_folds(
@@ -174,7 +220,11 @@ def train(df: pd.DataFrame, n_folds: int = 5) -> dict[str, Any]:
             baseline_results[qname].append(bl_loss)
             log.info(
                 "  Fold %d | %s | Pinball=%.5f (Baseline=%.5f) | n_test=%d",
-                fold_i + 1, qname, loss, bl_loss, len(y_te),
+                fold_i + 1,
+                qname,
+                loss,
+                bl_loss,
+                len(y_te),
             )
 
     # Final-Training auf allen Daten
@@ -220,10 +270,34 @@ def save_models(result: dict[str, Any], run_date: str) -> dict[str, Path]:
 
     # Registry aktualisieren
     registry_path = MODELS_DIR / "registry.json"
-    reg = json.loads(registry_path.read_text()) if registry_path.exists() else {"active": None, "versions": []}
-    reg["versions"].append({"type": "quantile", "date": run_date, "feature_hash": FEATURE_HASH,
-                            "files": {q: p.name for q, p in paths.items()}})
-    reg["active_quantile"] = f"quantile_meta_{run_date}.json"
+    reg = (
+        json.loads(registry_path.read_text())
+        if registry_path.exists()
+        else {"active": None, "versions": []}
+    )
+    reg["versions"].append(
+        {
+            "type": "quantile",
+            "date": run_date,
+            "feature_hash": FEATURE_HASH,
+            "files": {q: p.name for q, p in paths.items()},
+        }
+    )
+
+    # HARTES Quality-Gate (Audit W2-C-02): active_quantile nur setzen, wenn das
+    # neue Modell nachweislich die Baseline schlägt. Der Kandidat bleibt in
+    # `versions` protokolliert, wird aber ohne bestandenes Gate NICHT aktiviert.
+    gate_ok = _passes_quality_gate(result["cv_results"], result["baseline_results"])
+    if gate_ok:
+        reg["active_quantile"] = f"quantile_meta_{run_date}.json"
+        log.info("Quality-Gate bestanden — active_quantile → %s", reg["active_quantile"])
+    else:
+        log.warning(
+            "QUALITY-GATE NICHT BESTANDEN: nicht alle Quantile schlagen die Baseline. "
+            "active_quantile bleibt unverändert (%s). Kandidat nur in versions abgelegt.",
+            reg.get("active_quantile"),
+        )
+
     registry_path.write_text(json.dumps(reg, indent=2))
     return paths
 
@@ -242,7 +316,7 @@ def write_ml_eval(result: dict[str, Any], df: pd.DataFrame, run_date: str) -> No
     lines = [
         "# ML Evaluation — Quantil-Regression (TEIL F §F2/§F3)",
         f"\n**Trainiert:** {run_date}  ",
-        f"**Modell:** LightGBM `objective=quantile`, 3 Quantile (q10/q50/q90)  ",
+        "**Modell:** LightGBM `objective=quantile`, 3 Quantile (q10/q50/q90)  ",
         f"**Feature-Hash:** `{FEATURE_HASH}`  ",
         f"**N Samples:** {result['n_train']:,}  ",
         f"**N Tickers:** {df['ticker'].nunique()}  ",
@@ -317,9 +391,13 @@ async def main() -> None:
         sys.exit(1)
 
     df = df.dropna(subset=list(TEIL_F_FEATURE_COLS) + [TARGET_COL])
-    log.info("Dataset: %d Zeilen, %d Ticker, %s → %s",
-             len(df), df["ticker"].nunique(),
-             df["snapshot_date"].min(), df["snapshot_date"].max())
+    log.info(
+        "Dataset: %d Zeilen, %d Ticker, %s → %s",
+        len(df),
+        df["ticker"].nunique(),
+        df["snapshot_date"].min(),
+        df["snapshot_date"].max(),
+    )
 
     result = train(df, n_folds=args.folds)
 

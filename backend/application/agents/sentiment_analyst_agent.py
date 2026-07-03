@@ -151,8 +151,18 @@ class SentimentAnalystAgent:
                 _logger.warning("market_sentiment leer — F&G-Fallback (fg=50)")
                 return self._fallback(coin, fg_value=50, fg_classification="Neutral (keine Daten)")
 
-            fg_value: int = row.fear_greed
-            fg_classification: str = row.fg_classification
+            # DB-NULL-Guard (W3-M-06): fear_greed/fg_classification können NULL sein.
+            # Ein NULL-fg_value würde in _compute_score → (None-50)/50 → TypeError
+            # auslösen und die zugesagte Fallback-Kette (D-09) umgehen → 500.
+            # Neutraler Default 50 → score 0.0, damit die Fallback-Semantik greift.
+            if row.fear_greed is None:
+                _logger.warning("fear_greed ist NULL — neutraler F&G-Default (fg=50, score=0.0)")
+            fg_value: int = row.fear_greed if row.fear_greed is not None else 50
+            fg_classification: str = (
+                row.fg_classification
+                if row.fg_classification is not None
+                else "Neutral (keine Daten)"
+            )
 
         except Exception as exc:
             _logger.error("DB-Lesefehler in SentimentAnalystAgent: %s", exc)

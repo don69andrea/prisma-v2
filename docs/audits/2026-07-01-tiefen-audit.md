@@ -45,6 +45,7 @@ Workflow: GitHub Flow (main gesperrt), pro Fix ein Branch + PR, Merge via `gh pr
 | #340 | **W2-C-01** | joblib/pickle-RCE: `verified_load` prüft SHA256 gegen `models/SHA256SUMS` VOR `joblib.load` (fail closed), beide ML-Services umgestellt, `*.joblib`/`*.pkl` in `.gitignore`, Konsistenz-Test |
 | #341 | **W3-H-07** | `crypto_scorer`: `int(NaN)`-Crash bei kurzer Historie (< 31 Kerzen) → NaN-Guard mit neutralem Vol-Score (2.5) |
 | #342 | **W3-M-05, W2-M-05** | `macro_regime_agent`: NEUTRAL-Fallback wird nicht mehr 1h gecacht (nur echte LLM-Ergebnisse) → nach Recovery sofort korrektes Regime |
+| #343 | **W3-M-16** | `macro_service`: Inflations-Fallback wählt aktuellsten CPI (höchster Beobachtungsindex) statt „nächster zu 1.0%" |
 
 ## 📋 NÄCHSTE SCHRITTE (priorisiert)
 
@@ -64,7 +65,7 @@ Workflow: GitHub Flow (main gesperrt), pro Fix ein Branch + PR, Merge via `gh pr
 - **W3-M-09** — `rebalancing_service.py:107-108` Umsatzabgabe (0.075/0.15%) + Ganzzahligkeit/Mindestgebühren fehlen.
 - **W3-M-11..M-14** — Scorer: SMI-Corr-Default (crypto_scorer), QualityClassic ungleiche Metriken/Solo-z=0, Diversification dimensional.
 - **W3-M-15** — `profile_classifier.py:124-148` „Default gewählt" ≠ „nicht beantwortet" → Discovery nie freigeschaltet.
-- **W3-M-16** — `macro_service.py:79-83` Inflations-Fallback „nächster zu 1.0%" statt aktuellstem CPI.
+- ~~**W3-M-16** — `macro_service.py` Inflations-Fallback „nächster zu 1.0%"~~ → ✅ **PR #343** (`_latest_plausible_cpi`: aktuellste Beobachtung statt nächster zu 1.0%).
 - **W3-M-18** — `crypto_scoring_service.py:68-73` gegen F&G/CoinGecko-Ausfall ungeschützt (vs. `score_one`).
 - **W3-M-19** — `discovery_service.py:205-217` per-Titel yfinance-Call → DB-Score mitladen.
 - **W3-M-20** — `ranking_run_service.py:131-141` N+1 Ticker-Lookups → Bulk.

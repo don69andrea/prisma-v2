@@ -46,6 +46,7 @@ Workflow: GitHub Flow (main gesperrt), pro Fix ein Branch + PR, Merge via `gh pr
 | #341 | **W3-H-07** | `crypto_scorer`: `int(NaN)`-Crash bei kurzer Historie (< 31 Kerzen) → NaN-Guard mit neutralem Vol-Score (2.5) |
 | #342 | **W3-M-05, W2-M-05** | `macro_regime_agent`: NEUTRAL-Fallback wird nicht mehr 1h gecacht (nur echte LLM-Ergebnisse) → nach Recovery sofort korrektes Regime |
 | #343 | **W3-M-16** | `macro_service`: Inflations-Fallback wählt aktuellsten CPI (höchster Beobachtungsindex) statt „nächster zu 1.0%" |
+| #344 | **W3-H-02** | Migration 0052: FK `backtest_results.model_run_id` → `ranking_runs.id` (`ON DELETE CASCADE`, `NOT VALID`) |
 
 ## 📋 NÄCHSTE SCHRITTE (priorisiert)
 
@@ -57,7 +58,7 @@ Workflow: GitHub Flow (main gesperrt), pro Fix ein Branch + PR, Merge via `gh pr
 - **W2-H-01 / W2-H-02** — ML-Training-Leakage (Embargo) in `scripts/train_return_predictor.py` + `scripts/train_quantile_model.py`. Basis: aktualisiertes main (nach #331). Embargo ≥ Target-Horizont, in HANDELStagen.
 
 ### B) Contained & agent-parallelisierbar (nächste Batches — je frischer Clone, disjunkte Dateien)
-- **W3-H-02** — 0011 `backtest_results.model_run_id` ohne FK → FK auf `ranking_runs.id` (neue Migration).
+- ~~**W3-H-02** — 0011 `backtest_results.model_run_id` ohne FK~~ → ✅ **PR #344** (Migration 0052: FK auf `ranking_runs.id` `ON DELETE CASCADE`, `NOT VALID` gegen Waisen-Fail).
 - ~~**W3-H-07** — `crypto_scorer.py:95-97` `int(NaN)`-Crash~~ → ✅ **PR #341** (NaN-Guard, neutraler Vol-Score).
 - **W3-M-04** — `portfolio_agent.py:25,34-54` MAX_WEIGHT (0.40) bei ≤2 Positionen verletzt → infeasible-Fall behandeln.
 - ~~**W3-M-05** — `macro_regime_agent.py` NEUTRAL-Fallback wird 1h gecacht~~ → ✅ **PR #342** (Fallback wird nicht mehr gecacht; nach LLM-Recovery sofort echtes Regime).

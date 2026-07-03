@@ -244,3 +244,40 @@ class TestNewsIngestionCryptoPanicTTL:
             await service.ingest_cryptopanic(["BTC"])
         except Exception as exc:
             pytest.fail(f"ingest_cryptopanic raised unexpectedly for None published_at: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Tests: W3-H-09 — embed BEFORE persist (no orphaned dedup-locked articles)
+# ---------------------------------------------------------------------------
+
+
+class TestNewsIngestionCryptoPanicEmbedBeforePersist:
+    """W3-H-09: a transient embedding failure must not persist an article.
+
+    If it did, the url_hash dedup would permanently exclude that article from
+    the News-RAG index on every subsequent run, without any repair path.
+    """
+
+    async def test_embed_failure_does_not_persist_article(self) -> None:
+        articles = [_FakeRawArticle()]
+        service = _build_service(articles)
+        service._llm.embed = AsyncMock(side_effect=RuntimeError("voyage timeout"))
+
+        stats = await service.ingest_cryptopanic(["BTC"])
+
+        assert stats["errors"] == 1
+        assert stats["ingested"] == 0
+        service._repo.save_article.assert_not_called()
+        service._repo.save_chunks.assert_not_called()
+
+    async def test_embed_count_mismatch_does_not_persist_article(self) -> None:
+        articles = [_FakeRawArticle()]
+        service = _build_service(articles)
+        service._llm.embed = AsyncMock(return_value=[])  # mismatch for >=1 chunk
+
+        stats = await service.ingest_cryptopanic(["BTC"])
+
+        assert stats["errors"] == 1
+        assert stats["ingested"] == 0
+        service._repo.save_article.assert_not_called()
+        service._repo.save_chunks.assert_not_called()

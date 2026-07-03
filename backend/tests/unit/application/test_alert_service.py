@@ -11,6 +11,8 @@ import pytest
 from backend.application.services.alert_service import AlertService
 from backend.domain.entities.alert import Alert
 
+_OWNER_ID = uuid4()
+
 
 def _make_alert(
     trigger_type: str = "PRICE_CHANGE",
@@ -18,9 +20,11 @@ def _make_alert(
     channel: str = "EMAIL",
     last_signal: str | None = None,
     baseline_price: float | None = 100.0,
+    user_id: object | None = None,
 ) -> Alert:
     return Alert(
         id=uuid4(),
+        user_id=user_id or _OWNER_ID,  # type: ignore[arg-type]
         ticker="NESN",
         trigger_type=trigger_type,  # type: ignore[arg-type]
         threshold=threshold,
@@ -42,6 +46,7 @@ async def test_create_alert_saves_and_returns() -> None:
     repo = AsyncMock()
     service = AlertService(alert_repo=repo)
     alert = await service.create_alert(
+        user_id=_OWNER_ID,
         ticker="NESN",
         trigger_type="SIGNAL_CHANGE",
         threshold=0.0,
@@ -50,6 +55,7 @@ async def test_create_alert_saves_and_returns() -> None:
     )
     assert alert.ticker == "NESN"
     assert alert.is_active is True
+    assert alert.user_id == _OWNER_ID
     repo.save.assert_called_once()
 
 
@@ -58,7 +64,12 @@ async def test_create_alert_normalises_ticker() -> None:
     repo = AsyncMock()
     service = AlertService(alert_repo=repo)
     alert = await service.create_alert(
-        ticker="nesn", trigger_type="PRICE_CHANGE", threshold=5.0, channel="EMAIL", target="x@y.com"
+        user_id=_OWNER_ID,
+        ticker="nesn",
+        trigger_type="PRICE_CHANGE",
+        threshold=5.0,
+        channel="EMAIL",
+        target="x@y.com",
     )
     assert alert.ticker == "NESN"
 
@@ -67,35 +78,39 @@ async def test_create_alert_normalises_ticker() -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_alerts_with_target_filters() -> None:
+async def test_list_alerts_is_scoped_to_user() -> None:
     repo = AsyncMock()
-    repo.list_by_owner.return_value = [_make_alert()]
+    repo.list_by_user.return_value = [_make_alert(), _make_alert()]
     service = AlertService(alert_repo=repo)
-    result = await service.list_alerts(target="test@example.com")
-    repo.list_by_owner.assert_called_once_with("test@example.com")
-    assert len(result) == 1
-
-
-@pytest.mark.asyncio
-async def test_list_alerts_without_target_returns_active() -> None:
-    repo = AsyncMock()
-    repo.list_active.return_value = [_make_alert(), _make_alert()]
-    service = AlertService(alert_repo=repo)
-    result = await service.list_alerts()
-    repo.list_active.assert_called_once()
+    result = await service.list_alerts(user_id=_OWNER_ID)
+    repo.list_by_user.assert_called_once_with(_OWNER_ID)
+    repo.list_active.assert_not_called()
     assert len(result) == 2
 
 
-# --- delete_alert ---
+@pytest.mark.asyncio
+async def test_list_alerts_with_target_filters_within_own_alerts() -> None:
+    repo = AsyncMock()
+    match = _make_alert(channel="EMAIL")
+    other = _make_alert(channel="EMAIL")
+    object.__setattr__(other, "target", "someone-else@example.com")
+    repo.list_by_user.return_value = [match, other]
+    service = AlertService(alert_repo=repo)
+    result = await service.list_alerts(user_id=_OWNER_ID, target="test@example.com")
+    repo.list_by_user.assert_called_once_with(_OWNER_ID)
+    assert result == [match]
+
+
+# --- delete_alert (ownership-scoped, IDOR-Regression C-05) ---
 
 
 @pytest.mark.asyncio
-async def test_delete_alert_returns_true_if_found() -> None:
+async def test_delete_alert_returns_true_if_owned() -> None:
     repo = AsyncMock()
-    repo.get_by_id.return_value = _make_alert()
-    service = AlertService(alert_repo=repo)
     aid = uuid4()
-    result = await service.delete_alert(aid)
+    repo.get_by_id.return_value = _make_alert(user_id=_OWNER_ID)
+    service = AlertService(alert_repo=repo)
+    result = await service.delete_alert(aid, user_id=_OWNER_ID)
     assert result is True
     repo.delete.assert_called_once_with(aid)
 
@@ -105,7 +120,19 @@ async def test_delete_alert_returns_false_if_not_found() -> None:
     repo = AsyncMock()
     repo.get_by_id.return_value = None
     service = AlertService(alert_repo=repo)
-    result = await service.delete_alert(uuid4())
+    result = await service.delete_alert(uuid4(), user_id=_OWNER_ID)
+    assert result is False
+    repo.delete.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_delete_alert_of_other_user_is_rejected() -> None:
+    """IDOR-Regression: fremder Alert darf nicht gelöscht werden (→ False → 404)."""
+    repo = AsyncMock()
+    foreign_owner = uuid4()
+    repo.get_by_id.return_value = _make_alert(user_id=foreign_owner)
+    service = AlertService(alert_repo=repo)
+    result = await service.delete_alert(uuid4(), user_id=_OWNER_ID)
     assert result is False
     repo.delete.assert_not_called()
 

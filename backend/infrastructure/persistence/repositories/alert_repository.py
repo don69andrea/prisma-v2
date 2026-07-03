@@ -31,8 +31,8 @@ class SQLAAlertRepository(AlertRepository):
         )
         return [self._to_domain(r) for r in result.scalars().all()]
 
-    async def list_by_owner(self, target: str) -> list[Alert]:
-        result = await self._session.execute(select(AlertORM).where(AlertORM.target == target))
+    async def list_by_user(self, user_id: UUID) -> list[Alert]:
+        result = await self._session.execute(select(AlertORM).where(AlertORM.user_id == user_id))
         return [self._to_domain(r) for r in result.scalars().all()]
 
     async def delete(self, alert_id: UUID) -> None:
@@ -45,6 +45,7 @@ class SQLAAlertRepository(AlertRepository):
     def _to_orm(a: Alert) -> AlertORM:
         return AlertORM(
             id=a.id,
+            user_id=a.user_id,
             ticker=a.ticker,
             trigger_type=a.trigger_type,
             threshold=a.threshold,
@@ -61,6 +62,7 @@ class SQLAAlertRepository(AlertRepository):
     def _to_domain(r: AlertORM) -> Alert:
         return Alert(
             id=r.id,
+            user_id=r.user_id,
             ticker=r.ticker,
             trigger_type=r.trigger_type,  # type: ignore[arg-type]
             threshold=r.threshold,

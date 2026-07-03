@@ -110,3 +110,45 @@ class TestNewsIngestionService:
         svc, _, _ = _build_service(fetch_results=[])
         stats = await svc.ingest_all()
         assert stats == {"ingested": 0, "skipped_duplicate": 0, "errors": 0}
+
+    # -- W3-H-09 regression: embed before persist -------------------------------
+
+    async def test_embed_failure_does_not_persist_article(self) -> None:
+        """W3-H-09: a transient embedding failure must NOT leave an article saved.
+
+        Otherwise url_hash dedup would permanently exclude it from News-RAG.
+        """
+        svc, mock_repo, mock_llm = _build_service(fetch_results=[_RAW_NESN])
+        mock_llm.embed.side_effect = RuntimeError("voyage timeout")
+
+        stats = await svc.ingest_all()
+
+        assert stats["errors"] == 1
+        assert stats["ingested"] == 0
+        mock_repo.save_article.assert_not_called()
+        mock_repo.save_chunks.assert_not_called()
+
+    async def test_embed_count_mismatch_does_not_persist_article(self) -> None:
+        """W3-H-09: an embedding/chunk count mismatch must NOT persist the article."""
+        svc, mock_repo, mock_llm = _build_service(fetch_results=[_RAW_NESN])
+        mock_llm.embed.return_value = []  # zero embeddings for >=1 chunk
+
+        stats = await svc.ingest_all()
+
+        assert stats["errors"] == 1
+        assert stats["ingested"] == 0
+        mock_repo.save_article.assert_not_called()
+        mock_repo.save_chunks.assert_not_called()
+
+    async def test_successful_embed_persists_article_and_chunks(self) -> None:
+        """W3-H-09: on success, article is saved AFTER a successful embed, with chunks."""
+        svc, mock_repo, mock_llm = _build_service(fetch_results=[_RAW_NESN])
+
+        stats = await svc.ingest_all()
+
+        assert stats["ingested"] == 1
+        assert stats["errors"] == 0
+        mock_repo.save_article.assert_called_once()
+        mock_repo.save_chunks.assert_called_once()
+        # embed must have been awaited before save_article was called
+        assert mock_llm.embed.await_count == 1

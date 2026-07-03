@@ -121,11 +121,11 @@ class NewsIngestionService:
                         ingested_at=now,
                     )
 
-                    try:
-                        await self._repo.save_article(article)
-                    except DuplicateUrl:
-                        stats["skipped_duplicate"] += 1
-                        continue
+                    # W3-H-09: embed BEFORE persisting. A transient embedding
+                    # failure (Voyage timeout/rate-limit) or count mismatch must
+                    # NOT leave an article saved-without-chunks, because the
+                    # url_hash dedup above would then permanently lock it out of
+                    # the News-RAG index on every subsequent run.
 
                     # C-02 (Pitfall 6): chunk metadata MUST carry votes
                     chunk_metadata = {
@@ -135,6 +135,7 @@ class NewsIngestionService:
                         "votes_negative": raw.votes_negative,
                     }
                     chunks = _chunk_text_with_metadata(article, chunk_metadata)
+                    enriched: list[NewsChunk] = []
                     if chunks:
                         texts = [c.content for c in chunks]
                         embeddings = await self._llm.embed(
@@ -144,7 +145,7 @@ class NewsIngestionService:
                         )
                         if len(embeddings) != len(chunks):
                             _logger.error(
-                                "Embedding count mismatch for %s: expected %d, got %d — skipping chunks",
+                                "Embedding count mismatch for %s: expected %d, got %d — skipping article",
                                 raw.url,
                                 len(chunks),
                                 len(embeddings),
@@ -162,6 +163,15 @@ class NewsIngestionService:
                             )
                             for i, c in enumerate(chunks)
                         ]
+
+                    # Persist only after embeddings are ready. If save_article
+                    # raced with another writer, DuplicateUrl is benign.
+                    try:
+                        await self._repo.save_article(article)
+                    except DuplicateUrl:
+                        stats["skipped_duplicate"] += 1
+                        continue
+                    if enriched:
                         await self._repo.save_chunks(enriched)
 
                     stats["ingested"] += 1
@@ -203,13 +213,12 @@ class NewsIngestionService:
                     ingested_at=now,
                 )
 
-                try:
-                    await self._repo.save_article(article)
-                except DuplicateUrl:
-                    stats["skipped_duplicate"] += 1
-                    continue
-
+                # W3-H-09: embed BEFORE persisting. A transient embedding
+                # failure or count mismatch must NOT leave an article
+                # saved-without-chunks, because the url_hash dedup above would
+                # then permanently exclude it from the News-RAG index.
                 chunks = _chunk_text(article)
+                enriched: list[NewsChunk] = []
                 if chunks:
                     texts = [c.content for c in chunks]
                     embeddings = await self._llm.embed(
@@ -219,7 +228,7 @@ class NewsIngestionService:
                     )
                     if len(embeddings) != len(chunks):
                         _logger.error(
-                            "Embedding count mismatch for %s: expected %d, got %d — skipping chunks",
+                            "Embedding count mismatch for %s: expected %d, got %d — skipping article",
                             raw.url,
                             len(chunks),
                             len(embeddings),
@@ -237,6 +246,15 @@ class NewsIngestionService:
                         )
                         for i, c in enumerate(chunks)
                     ]
+
+                # Persist only after embeddings are ready. If save_article
+                # raced with another writer, DuplicateUrl is benign.
+                try:
+                    await self._repo.save_article(article)
+                except DuplicateUrl:
+                    stats["skipped_duplicate"] += 1
+                    continue
+                if enriched:
                     await self._repo.save_chunks(enriched)
 
                 stats["ingested"] += 1

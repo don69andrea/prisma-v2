@@ -145,3 +145,47 @@ async def test_get_context_restriktiv_high_rate() -> None:
 
     assert ctx.climate == "RESTRIKTIV"
     assert ctx.leitzins == 2.0
+
+
+# --- _latest_plausible_cpi (W3-M-16): aktuellster CPI statt "nächster zu 1.0%" ---
+
+
+def _series(*obs_pairs: tuple[int, float | None]) -> dict:
+    return {"observations": {str(idx): [val] for idx, val in obs_pairs}}
+
+
+def test_latest_plausible_cpi_picks_most_recent_not_nearest_to_one() -> None:
+    from backend.application.services.macro_service import _latest_plausible_cpi
+
+    # Ältere Serie exakt bei 1.0% (früher gewählt), neuere Serie bei 2.3%.
+    series_map = {
+        "0": _series((5, 1.0)),
+        "1": _series((10, 2.3)),
+    }
+    assert _latest_plausible_cpi(series_map) == 2.3
+
+
+def test_latest_plausible_cpi_uses_last_observation_per_series() -> None:
+    from backend.application.services.macro_service import _latest_plausible_cpi
+
+    series_map = {"0": _series((3, 0.8), (12, 1.9))}
+    assert _latest_plausible_cpi(series_map) == 1.9
+
+
+def test_latest_plausible_cpi_filters_implausible_and_none() -> None:
+    from backend.application.services.macro_service import _latest_plausible_cpi
+
+    # Aktuellster Wert ist implausibel (99) → nächstplausibler (ältere, 1.5) gewinnt.
+    series_map = {
+        "0": _series((20, 99.0)),
+        "1": _series((15, 1.5)),
+        "2": _series((8, None)),
+    }
+    assert _latest_plausible_cpi(series_map) == 1.5
+
+
+def test_latest_plausible_cpi_returns_none_when_empty() -> None:
+    from backend.application.services.macro_service import _latest_plausible_cpi
+
+    assert _latest_plausible_cpi({}) is None
+    assert _latest_plausible_cpi({"0": {"observations": {}}}) is None

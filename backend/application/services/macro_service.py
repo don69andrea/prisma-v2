@@ -39,6 +39,31 @@ async def _fetch_chf_eur() -> float:
     return await _ecb_chf_eur()
 
 
+def _latest_plausible_cpi(series_map: dict[str, Any]) -> float | None:
+    """Wählt den AKTUELLSTEN plausiblen CPI-Wert aus den SNB-Serien.
+
+    Pro Serie wird die jüngste Beobachtung genommen; über alle Serien gewinnt die
+    mit dem höchsten Beobachtungsindex (= zeitlich aktuellste). Früher wurde
+    stattdessen der Wert „am nächsten zu 1.0%" gewählt — das lieferte bei
+    FRED-Ausfall faktisch eine falsche (willkürliche) Inflationszahl (W3-M-16).
+    """
+    candidates: list[tuple[int, float]] = []
+    for series_data in series_map.values():
+        obs = series_data.get("observations", {})
+        if not obs:
+            continue
+        last_key = max(int(k) for k in obs)
+        value = obs[str(last_key)][0]
+        if value is not None:
+            candidates.append((last_key, float(value)))
+
+    plausible = [(idx, v) for idx, v in candidates if -2.0 <= v <= 10.0]
+    if not plausible:
+        return None
+    _, result = max(plausible, key=lambda t: t[0])
+    return round(result, 2)
+
+
 async def _fetch_swiss_inflation() -> float:
     """Schweizer CPI-Inflationsrate YoY (%) — primär FRED, Fallback SNB-API.
 
@@ -66,21 +91,10 @@ async def _fetch_swiss_inflation() -> float:
                 raise ValueError("Keine dataSets in SNB-Antwort")
 
             series_map = data_sets[0].get("series", {})
-            candidates: list[float] = []
-            for series_data in series_map.values():
-                obs = series_data.get("observations", {})
-                if not obs:
-                    continue
-                last_idx = str(max(int(k) for k in obs))
-                value = obs[last_idx][0]
-                if value is not None:
-                    candidates.append(float(value))
-
-            plausible = [v for v in candidates if -2.0 <= v <= 10.0]
-            if plausible:
-                result = min(plausible, key=lambda v: abs(v - 1.0))
+            result = _latest_plausible_cpi(series_map)
+            if result is not None:
                 _logger.info("Schweizer Inflation (SNB API Fallback): %.2f%%", result)
-                return round(result, 2)
+                return result
 
     except Exception:
         _logger.warning(

@@ -93,8 +93,15 @@ class CryptoScorer:
 
         # ── 5. RISIKO (max 10 Pt) ────────────────────────────────
         returns = close.pct_change().dropna()
-        vol_30d = float(returns.rolling(30).std().iloc[-1] * (365**0.5) * 100)
-        vol_score = float(max(0.0, 5.0 - int(vol_30d // 20)))
+        vol_std = returns.rolling(30).std()
+        raw_vol = vol_std.iloc[-1] if not vol_std.empty else float("nan")
+        if pd.isna(raw_vol):
+            # Kurze Historie (< 31 Kerzen): Volatilität unbekannt → neutraler Score
+            # statt `int(NaN)`-Crash, der den gesamten score() für neue Coins killt.
+            vol_score = 2.5
+        else:
+            vol_30d = float(raw_vol * (365**0.5) * 100)
+            vol_score = float(max(0.0, 5.0 - int(vol_30d // 20)))
 
         # Niedrige Korrelation zum SMI = Diversifikationsbonus (0–5 Pt)
         corr_abs = abs(correlation_smi_1y)

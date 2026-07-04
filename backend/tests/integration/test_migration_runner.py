@@ -57,3 +57,18 @@ async def test_audit_fks_set_null_alerts_cascade(db_session: AsyncSession) -> No
         assert await _confdeltype(f"fk_{table}_user_id") == "n", table
 
     assert await _confdeltype("fk_alerts_user_id") == "c"
+
+
+@pytest.mark.asyncio
+async def test_backtest_model_run_fk_exists_cascade(db_session: AsyncSession) -> None:
+    """W3-H-02: backtest_results.model_run_id hat FK auf ranking_runs mit CASCADE ('c')."""
+    result = await db_session.execute(
+        text(
+            "SELECT confdeltype, confrelid::regclass::text FROM pg_constraint WHERE conname = :name"
+        ),
+        {"name": "fk_backtest_results_model_run_id"},
+    )
+    row = result.one()
+    confdeltype = row[0].decode() if isinstance(row[0], bytes | bytearray) else str(row[0])
+    assert confdeltype == "c"
+    assert row[1] == "ranking_runs"

@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>PRISMA V4 — Kurzanleitung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Tokens ─────────────────────────────────────────────────────────────── */
+:root {
+  --navy:       #1F3A5F;
+  --navy-dark:  #0E2035;
+  --teal:       #2E9E8F;
+  --teal-light: #E6F7F5;
+  --white:      #FFFFFF;
+  --text:       #0D1B2C;
+  --sub:        #4A6A80;
+  --rule:       #D8E8F0;
+  --bg-grid:    #E8F0F8;
+
+  /* Spektrum (je 1 Farbe pro Kachel) */
+  --c1: #2E9E8F;  /* Teal       */
+  --c2: #2E6BE6;  /* Blau       */
+  --c3: #7B4DB5;  /* Violett    */
+  --c4: #1A9E5A;  /* Grün       */
+  --c5: #B08000;  /* Gold       */
+  --c6: #D05A18;  /* Orange     */
+  --c7: #B02060;  /* Magenta    */
+  --c8: #3A7BD5;  /* Hellblau   */
+}
+
+/* ── Page (A4, print-ready) ─────────────────────────────────────────────── */
+@page { size: A4; margin: 0; }
+
+html, body {
+  width: 210mm;
+  height: 297mm;
+  font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--white);
+  color: var(--text);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  overflow: hidden;
+}
+
+/* ── Outer layout ───────────────────────────────────────────────────────── */
+.page {
+  width: 210mm;
+  height: 297mm;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HEADER
+   ════════════════════════════════════════════════════════════════════════════ */
+.header {
+  background: var(--navy-dark);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  padding: 6mm 12mm 0 12mm;
+}
+
+/* Subtile Hintergrundlinien */
+.header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0, rgba(255,255,255,.03) 1px, transparent 1px, transparent 12mm),
+    repeating-linear-gradient(0deg,  rgba(255,255,255,.03) 0, rgba(255,255,255,.03) 1px, transparent 1px, transparent 12mm);
+  pointer-events: none;
+}
+
+/* Spektrum-Strich unten im Header */
+.header-spectrum {
+  height: 3px;
+  background: linear-gradient(to right,
+    #7B4DB5 0%, #2E6BE6 17%, #1A9E5A 34%,
+    #B08000 50%, #D05A18 67%, #B02060 83%, #3A7BD5 100%);
+  margin: 0 -12mm;
+}
+
+.header-inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8mm;
+  padding-bottom: 5mm;
+}
+
+/* ── Logo + Title (left) ────────────────────────────────────────────────── */
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5mm;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 3.5mm;
+}
+
+/* PRISMA logo SVG — 1:1 aus PrismaLogo.tsx */
+.prisma-logo-svg {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.logo-wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.logo-tag {
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--teal);
+  text-transform: uppercase;
+  font-family: 'Courier New', monospace;
+}
+
+.header-title {
+  font-size: 28pt;
+  font-weight: 900;
+  color: var(--white);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-top: 1mm;
+}
+
+.header-title span {
+  color: var(--teal);
+}
+
+.header-subtitle {
+  font-size: 8pt;
+  font-weight: 400;
+  color: #8AAFC8;
+  line-height: 1.4;
+  max-width: 110mm;
+}
+
+/* ── Right block ─────────────────────────────────────────────────────────── */
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4mm;
+  flex-shrink: 0;
+  padding-top: 1mm;
+}
+
+/* Dot matrix decoration */
+.dot-matrix {
+  display: grid;
+  grid-template-columns: repeat(5, 5px);
+  grid-template-rows: repeat(4, 5px);
+  gap: 3px;
+}
+.dot-matrix span {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #1A3A60;
+  display: block;
+}
+.dot-matrix span.lit { background: var(--teal); }
+.dot-matrix span.dim { background: #2A5080; }
+
+/* URL badge */
+.url-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--teal);
+  border-radius: 4px;
+  padding: 2.5mm 4mm;
+  background: rgba(46,158,143,.07);
+}
+.url-badge .label {
+  font-size: 7.5pt;
+  color: #8AAFC8;
+  font-weight: 400;
+}
+.url-badge .code {
+  font-family: 'Courier New', monospace;
+  font-size: 8.5pt;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TILE GRID
+   ════════════════════════════════════════════════════════════════════════════ */
+.grid-wrapper {
+  flex: 1;
+  background: var(--bg-grid);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 1.5px;
+  padding: 1.5px;
+  overflow: hidden;
+}
+
+/* ── Single Tile ─────────────────────────────────────────────────────────── */
+.tile {
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  padding: 4mm 5mm 3.5mm 5mm;
+  position: relative;
+  overflow: hidden;
+  gap: 1.5mm;
+}
+
+/* Left accent bar */
+.tile::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+
+/* Subtle top-right watermark number */
+.tile::after {
+  content: attr(data-num);
+  position: absolute;
+  right: 4mm; bottom: 2mm;
+  font-size: 28pt;
+  font-weight: 900;
+  color: rgba(0,0,0,.03);
+  line-height: 1;
+  pointer-events: none;
+  letter-spacing: -0.04em;
+}
+
+/* Tile header row: badge + icon */
+.tile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tile-badge {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+}
+
+.tile-num {
+  font-size: 18pt;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.tile-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tile-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Title */
+.tile-title {
+  font-size: 8pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--navy);
+  line-height: 1.2;
+}
+
+/* Thin rule */
+.tile-rule {
+  height: 1px;
+  background: var(--rule);
+  flex-shrink: 0;
+}
+
+/* Body text */
+.tile-body {
+  font-size: 7pt;
+  font-weight: 400;
+  color: var(--sub);
+  line-height: 1.55;
+  flex: 1;
+}
+
+.tile-body strong {
+  font-weight: 700;
+  color: var(--navy);
+}
+
+/* Hinweis pill */
+.tile-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 6pt;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-top: 1mm;
+  line-height: 1.5;
+}
+
+/* ── Spektrum-Farben pro Kachel ──────────────────────────────────────────── */
+.t1::before { background: var(--c1); }
+.t1 .tile-num { color: var(--c1); }
+.t1 .tile-icon { background: color-mix(in srgb, var(--c1) 12%, white); }
+.t1 .tile-icon svg { color: var(--c1); }
+.t1 .tile-rule { background: color-mix(in srgb, var(--c1) 25%, white); }
+.t1 .tile-hint { background: color-mix(in srgb, var(--c1) 10%, white); color: var(--c1); }
+
+.t2::before { background: var(--c2); }
+.t2 .tile-num { color: var(--c2); }
+.t2 .tile-icon { background: color-mix(in srgb, var(--c2) 12%, white); }
+.t2 .tile-icon svg { color: var(--c2); }
+.t2 .tile-rule { background: color-mix(in srgb, var(--c2) 25%, white); }
+
+.t3::before { background: var(--c3); }
+.t3 .tile-num { color: var(--c3); }
+.t3 .tile-icon { background: color-mix(in srgb, var(--c3) 12%, white); }
+.t3 .tile-icon svg { color: var(--c3); }
+.t3 .tile-rule { background: color-mix(in srgb, var(--c3) 25%, white); }
+
+.t4::before { background: var(--c4); }
+.t4 .tile-num { color: var(--c4); }
+.t4 .tile-icon { background: color-mix(in srgb, var(--c4) 12%, white); }
+.t4 .tile-icon svg { color: var(--c4); }
+.t4 .tile-rule { background: color-mix(in srgb, var(--c4) 25%, white); }
+
+.t5::before { background: var(--c5); }
+.t5 .tile-num { color: var(--c5); }
+.t5 .tile-icon { background: color-mix(in srgb, var(--c5) 12%, white); }
+.t5 .tile-icon svg { color: var(--c5); }
+.t5 .tile-rule { background: color-mix(in srgb, var(--c5) 25%, white); }
+
+.t6::before { background: var(--c6); }
+.t6 .tile-num { color: var(--c6); }
+.t6 .tile-icon { background: color-mix(in srgb, var(--c6) 12%, white); }
+.t6 .tile-icon svg { color: var(--c6); }
+.t6 .tile-rule { background: color-mix(in srgb, var(--c6) 25%, white); }
+
+.t7::before { background: var(--c7); }
+.t7 .tile-num { color: var(--c7); }
+.t7 .tile-icon { background: color-mix(in srgb, var(--c7) 12%, white); }
+.t7 .tile-icon svg { color: var(--c7); }
+.t7 .tile-rule { background: color-mix(in srgb, var(--c7) 25%, white); }
+
+.t8::before { background: var(--c8); }
+.t8 .tile-num { color: var(--c8); }
+.t8 .tile-icon { background: color-mix(in srgb, var(--c8) 12%, white); }
+.t8 .tile-icon svg { color: var(--c8); }
+.t8 .tile-rule { background: color-mix(in srgb, var(--c8) 25%, white); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   FOOTER
+   ════════════════════════════════════════════════════════════════════════════ */
+.footer {
+  background: var(--navy-dark);
+  flex-shrink: 0;
+  padding: 0 12mm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 11mm;
+  position: relative;
+}
+
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(to right,
+    #7B4DB5, #2E6BE6, #1A9E5A, #B08000, #D05A18, #B02060, #3A7BD5);
+}
+
+.footer-disclaimer {
+  font-size: 6.2pt;
+  color: #5A8090;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 5mm;
+  flex-shrink: 0;
+}
+
+.footer-version {
+  font-family: 'Courier New', monospace;
+  font-size: 7pt;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.footer-email {
+  font-size: 6pt;
+  color: #3A6070;
+}
+
+/* ── Print media ─────────────────────────────────────────────────────────── */
+@media print {
+  html, body { background: white; }
+  .page { break-inside: avoid; page-break-after: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ════ HEADER ═══════════════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="header-inner">
+
+      <!-- Logo + Titel -->
+      <div class="header-left">
+        <div class="logo-row">
+          <!-- PRISMA Logo — 1:1 aus PrismaLogo.tsx, viewBox="0 0 32 32", overflow="visible" -->
+          <svg class="prisma-logo-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+            <!-- Prisma-Körper -->
+            <path d="M16 3L29 27H3L16 3Z"
+              fill="white" fill-opacity="0.10"
+              stroke="white" stroke-width="1.5" stroke-linejoin="round" stroke-opacity="0.85"/>
+            <!-- Facettenlinie -->
+            <line x1="16" y1="3" x2="22" y2="27"
+              stroke="white" stroke-width="0.6" stroke-opacity="0.30"/>
+            <!-- Spektralstrahlen -->
+            <line x1="22" y1="11" x2="38" y2="3"  stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/>
+            <line x1="24" y1="16" x2="40" y2="13" stroke="#7ee787" stroke-width="2" stroke-linecap="round"/>
+            <line x1="26" y1="21" x2="40" y2="21" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+            <line x1="27" y1="26" x2="39" y2="33" stroke="#bc8cff" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+
+          <div class="logo-wordmark">
+            <span class="logo-tag">[ Prisma System ]</span>
+          </div>
+        </div>
+
+        <div class="header-title">PRISMA V4 <span>—</span> Kurzanleitung</div>
+
+        <p class="header-subtitle">
+          So erkundest du das Dashboard: jede Kachel beschreibt eine Funktion
+          und erklärt dir in klaren Schritten, wie du sie nutzt.
+        </p>
+      </div>
+
+      <!-- Rechte Seite: Dot-Matrix + Badge -->
+      <div class="header-right">
+        <div class="dot-matrix">
+          <span class="lit"></span><span></span><span class="dim"></span><span></span><span class="lit"></span>
+          <span></span><span class="dim"></span><span></span><span class="lit"></span><span></span>
+          <span class="dim"></span><span></span><span class="lit"></span><span></span><span class="dim"></span>
+          <span></span><span class="lit"></span><span></span><span class="dim"></span><span></span>
+        </div>
+        <div class="url-badge">
+          <span class="label">Aufruf im Browser:</span>
+          <span class="code">/crypto</span>
+        </div>
+      </div>
+
+    </div>
+    <div class="header-spectrum"></div>
+  </header>
+
+  <!-- ════ TILE GRID ═════════════════════════════════════════════════════ -->
+  <main class="grid-wrapper">
+
+    <!-- 01 Signal-Übersicht -->
+    <div class="tile t1" data-num="01">
+      <div class="tile-top">
+        <div class="tile-badge">
+          <span class="tile-num">01</span>
+        </div>
+        <div class="tile-icon">
+          <!-- Signal bars icon -->
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <rect x="1" y="9"  width="2.5" height="6" rx="0.5" fill="currentColor" stroke="none" opacity=".4"/>
+            <rect x="5" y="6"  width="2.5" height="9" rx="0.5" fill="currentColor" stroke="none" opacity=".7"/>
+            <rect x="9" y="3"  width="2.5" height="12" rx="0.5" fill="currentColor" stroke="none"/>
+            <rect x="13" y="0" width="2.5" height="15" rx="0.5" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tile-title">Signal-Übersicht</div>
+      <div class="tile-rule"></div>
+      <div class="tile-body">
+        <strong>Was du siehst:</strong> Die Watchlist aller Coins mit Signal-Badge
+        (<strong>🟢 BUY · ⚪ HOLD · 🔴 SELL</strong>), empfohlener Positionsgrösse,
+        Konfidenz-Score und einem Mini-Trend-Spark.<br><br>
+        <strong>So nutzt du es:</strong> Starte hier. Sortiere nach Signal oder Konfidenz,
+        um die stärksten Setups auf einen Blick zu sehen.
+        <div class="tile-hint">⚠ SELL = in Cash gehen — kein Shorting</div>
+      </div>
+    </div>
+
+    <!-- 02 Coin-Detail -->
+    <div class="tile t2" data-num="02">
+      <div class="tile-top">
+        <div class="tile-badge">
+          <span class="tile-num">02</span>
+        </div>
+        <div class="tile-icon">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6.5" cy="6.5" r="4.5"/>
+            <line x1="9.7" y1="9.7" x2="14" y2="14"/>
+            <line x1="4.5" y1="6.5" x2="8.5" y2="6.5" stroke-width="1.2"/>
+            <line x1="6.5" y1="4.5" x2="6.5" y2="8.5" stroke-width="1.2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tile-title">Coin-Detail &amp; Erklärung</div>
+      <div class="tile-rule"></div>
+      <div class="tile-body">
+        <strong>Was du siehst:</strong> Die Begründung für jedes Signal in drei Schichten —
+        <strong>WAS</strong> (Faktoren &amp; Feature-Gewichte),
+        <strong>WANN</strong> (Trend-Konsens aus MA / MACD / RSI) und
+        <strong>WIE VIEL</strong> (Volatilitäts-basiertes Sizing).<br><br>
+        <strong>So nutzt du es:</strong> Klick auf einen Coin in der Übersicht.
+        Die Erklärung zeigt dir, warum das System so entschieden hat.
+      </div>
+    </div>
+
+    <!-- 03 Agenten-Reasoning -->
+    <div class="tile t3" data-num="03">
+      <div class="tile-top">
+        <div class="tile-badge">
+          <span class="tile-num">03</span>
+        </div>
+        <div class="tile-icon">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h9a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H6l-3 2V9H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/>
+            <path d="M12 5h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1"/>
+            <line x1="4" y1="6" x2="9" y2="6" stroke-width="1.2"/>
+            <line x1="4" y1="8" x2="7" y2="8" stroke-width="1.2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tile-title">Agenten-Reasoning (Audit-Trail)</div>
+      <div class="tile-rule"></div>
+      <div class="tile-body">
+        <strong>Was du siehst:</strong> Die vollständig protokollierte KI-Diskussion —
+        <strong>Bull-These</strong> (warum kaufen?),
+        <strong>Bear-Argument</strong> (warum nicht?) und
+        <strong>Risk-Veto</strong> (was stoppt den Trade?).<br><br>
+        <strong>So nutzt du es:</strong> Im Coin-Detail den Agenten-Bereich aufklappen.
+        Du siehst die Abwägung im Klartext, nicht als Black Box.
+      </div>
+    </div>
+
+    <!-- 04 Chart -->
+    <div class="tile t4" data-num="04">
+      <div class="tile-top">
+        <div class="tile-badge">
+          <span class="tile-num">04</span>
+        </div>
+        <div class="tile-icon">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="1" y1="13" x2="1" y2="2"/>
+            <line x1="1" y1="13" x2="15" y2="13"/>
+            <rect x="3"  y="7"  width="2" height="5" rx="0.3" fill="currentColor" stroke="none"/>
+            <rect x="6.5" y="5" width="2" height="7" rx="0.3" fill="currentColor" stroke="none" opacity=".5"/>
+            <rect x="10" y="3" width="2" height="9" rx="0.3" fill="currentColor" stroke="none"/>
+            <polyline points="3,8 6.5,6.5 10,4 14,3" stroke-width="1.2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tile-title">Chart mit Indikatoren</div>
+      <div class="tile-rule"></div>
+      <div class="tile-body">
+        <strong>Was du siehst:</strong> Candlestick-Chart mit überlagerten technischen Indikatoren:
+        Gleitende Durchschnitte (MA20/50/200), MACD, RSI und Bollinger-Bänder.
+        Erkannte <strong>Ein-/Ausstiegs-Punkte</strong> werden als Marker eingeblendet.<br><br>
+        <strong>So nutzt du es:</strong> Wähle den Zeitrahmen (1T / 1W / 1M) und lege die
+        gewünschten Indikatoren per Toggle zu- oder weg.
+      </div>
+    </div>
+
+    <!-- 05 Backtest -->
+    <div class="tile t5" data-num="05">
+      <div class="tile-top">
+        <div class="tile-badge">
+          <span class="tile-num">05</span>
+        </div>
+        <div class="tile-icon">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1,12 4,8 7,9 10,5 14,2"/>
+            <line x1="1" y1="14" x2="15" y2="14"/>
+            <line x1="1" y1="2"  x2="1"  y2="14"/>
+            <polyline points="1,13 4,11 7,11.5 10,9.5 14,8" stroke-dasharray="1.5 1.5" stroke-width="1.1" opacity=".5"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tile-title">Backtest-Panel</div>
+      <div class="tile-rule"></div>
+      <div class="tile-body">
+        <strong>Was du siehst:</strong> Die historische Performance deiner Strategie gegen zwei
+        Benchmarks — <strong>Buy &amp; Hold</strong> und
+        <strong>Exposure-Matched</strong> — als Equity-Kurve und Drawdown-Chart.<br><br>
+        <strong>So nutzt du es:</strong> Starte-Datum und Coin auswählen, dann
+        «Backtest starten». Achtung: Vergangene Werte garantieren nichts.
+        Limitierungen (Marktregime, Transaktionskosten) sind direkt im Panel vermerkt.
+      </div>
+    </div>
+
+    <!-- 06 Portfolio -->
+    <div class="tile t6" data-num="06">
+      <div class="tile-top">
+        <div class="tile-badge">
+          <span class="tile-num">06</span>
+        </div>
+        <div class="tile-icon">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="8" r="6"/>
+            <path d="M8 8L8 2" stroke-width="1.5"/>
+            <path d="M8 8L13.2 11" stroke-width="1.5"/>
+            <path d="M8 8L2.8 11" stroke-width="1.5" opacity=".5"/>
+            <!-- Slices  -->
+            <path d="M8 2 A6 6 0 0 1 14 8" stroke="none" fill="currentColor" opacity=".2"/>
+            <path d="M8 8 L14 8 A6 6 0 0 1 11 13.2 Z" stroke="none" fill="currentColor" opacity=".4"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tile-title">Portfolio-Ansicht</div>
+      <div class="tile-rule"></div>
+      <div class="tile-body">
+        <strong>Was du siehst:</strong> Die risikogemanagte Allokation über alle Coins:
+        <strong>Inverse-Volatilität-Gewichtung</strong>, Korrelations-Caps (max. 60% in
+        einem Cluster) und automatische <strong>Drawdown-Bremse</strong>.
+        Dazu ein Portfolio-Backtest über alle Positionen.<br><br>
+        <strong>So nutzt du es:</strong> Das Gesamtbild statt Einzel-Coin — hier siehst du,
+        wie sich die Positionen gegenseitig beeinflussen.
+      </div>
+    </div>
+
+    <!-- 07 Live-Monitoring -->
+    <div class="tile t7" data-num="07">
+      <div class="tile-top">
+        <div class="tile-badge">
+          <span class="tile-num">07</span>
+        </div>
+        <div class="tile-icon">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="2" width="14" height="10" rx="1.5"/>
+            <line x1="5" y1="12" x2="5" y2="14"/>
+            <line x1="11" y1="12" x2="11" y2="14"/>
+            <line x1="3" y1="14" x2="13" y2="14"/>
+            <circle cx="8" cy="7" r="1.5" fill="currentColor" stroke="none"/>
+            <polyline points="3,7 5.5,5 7,7 9,4 11,7 13,6" stroke-width="1.2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tile-title">Live-Monitoring &amp; Paper-Log</div>
+      <div class="tile-rule"></div>
+      <div class="tile-body">
+        <strong>Was du siehst:</strong> Der <strong>Forward-Paper-Log</strong> — alle
+        Signale, die das System live ausgegeben hat, plus ihre tatsächlichen Kursergebnisse
+        danach. Kein Backtesting, echte Out-of-Sample-Daten, kein echtes Geld.<br><br>
+        <strong>So nutzt du es:</strong> Hier prüfst du, ob das System in der Realität
+        hält, was der Backtest verspricht. Scrolle durch die Log-Einträge und
+        filtere nach Coin oder Signaltyp.
+      </div>
+    </div>
+
+    <!-- 08 Konfidenz-Check -->
+    <div class="tile t8" data-num="08">
+      <div class="tile-top">
+        <div class="tile-badge">
+          <span class="tile-num">08</span>
+        </div>
+        <div class="tile-icon">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 1.5 L14 4 L14 8.5 C14 11.8 11.5 14.3 8 15 C4.5 14.3 2 11.8 2 8.5 L2 4 Z"/>
+            <polyline points="5.5,8 7.2,9.8 10.5,6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tile-title">Konfidenz-Check (Human-in-the-Loop)</div>
+      <div class="tile-rule"></div>
+      <div class="tile-body">
+        <strong>Was du siehst:</strong> Liegt die Signalkonfidenz unter
+        <strong>0.65</strong>, hält das System aktiv an und zeigt dir eine
+        Warnung mit Begründung — bevor es weitergeht.<br><br>
+        <strong>So nutzt du es:</strong> Lies die Warnung, prüfe das Argument,
+        dann wähle <strong>«Bestätigen»</strong> oder <strong>«Abbrechen»</strong>.
+        Es wird kein Trade ausgelöst, keine Aktion ohne deine Freigabe.
+        Du hast jederzeit das letzte Wort.
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ════ FOOTER ════════════════════════════════════════════════════════ -->
+  <footer class="footer">
+    <p class="footer-disclaimer">
+      Entscheidungsunterstützung, kein Anlagerat. Backtests sind keine Garantie zukünftiger Renditen.
+      PRISMA löst keine Trades aus — jede Aktion erfordert deine explizite Bestätigung.
+    </p>
+    <div class="footer-right">
+      <span class="footer-email">andrea.petretta@students.fhnw.ch</span>
+      <span class="footer-version">V4.0</span>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
